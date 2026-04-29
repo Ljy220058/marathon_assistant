@@ -1,0 +1,77 @@
+{
+  "input_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\实验五_罗锦源_202300203039_代码_v1\\domain_docs",
+  "output_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\实验五_罗锦源_202300203039_代码_v1\\cleaned_docs",
+  "total_files": 10,
+  "success_files": 9,
+  "failed_files": 1,
+  "records": [
+    {
+      "source_file": "-9787213062605.pdf",
+      "source_ext": ".pdf",
+      "error": "Stream has ended unexpectedly"
+    },
+    {
+      "source_file": "10078-60-2017-v60-2017-28.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 24991,
+      "cleaned_chars": 24262,
+      "output_file": "10078-60-2017-v60-2017-28.cleaned.txt"
+    },
+    {
+      "source_file": "2016+-+Nutrition+for+Marathon+Running.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 62157,
+      "cleaned_chars": 62157,
+      "output_file": "2016+-+Nutrition+for+Marathon+Running.cleaned.txt"
+    },
+    {
+      "source_file": "36b5639a13f6f78e00f1c2ca46b86e854898.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 88982,
+      "cleaned_chars": 84784,
+      "output_file": "36b5639a13f6f78e00f1c2ca46b86e854898.cleaned.txt"
+    },
+    {
+      "source_file": "EWM-Training-Guides-Base-Plan.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 47133,
+      "cleaned_chars": 44277,
+      "output_file": "EWM-Training-Guides-Base-Plan.cleaned.txt"
+    },
+    {
+      "source_file": "fphys-12-715044.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 110134,
+      "cleaned_chars": 110134,
+      "output_file": "fphys-12-715044.cleaned.txt"
+    },
+    {
+      "source_file": "jhse_Vol_8_N_II_350-366.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 51726,
+      "cleaned_chars": 49880,
+      "output_file": "jhse_Vol_8_N_II_350-366.cleaned.txt"
+    },
+    {
+      "source_file": "Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 40630,
+      "cleaned_chars": 39727,
+      "output_file": "Level2꞉Chapter4꞉BasicTrainingMethodology_English.cleaned.txt"
+    },
+    {
+      "source_file": "NKF-Hues-Booklet.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 46803,
+      "cleaned_chars": 45550,
+      "output_file": "NKF-Hues-Booklet.cleaned.txt"
+    },
+    {
+      "source_file": "Periodization for Massive Strength Gains.pdf",
+      "source_ext": ".pdf",
+      "raw_chars": 32197,
+      "cleaned_chars": 31693,
+      "output_file": "Periodization for Massive Strength Gains.cleaned.txt"
+    }
+  ]
+}

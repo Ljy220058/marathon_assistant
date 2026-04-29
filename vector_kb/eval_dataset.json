@@ -1,0 +1,62 @@
+[
+  {
+    "question": "训练组的1-RM腿推力从干预前到干预后增加了多少？",
+    "ground_truth": "训练组的1-RM腿推力从干预前到干预后大约增加了3.5 kg·FFM−1。",
+    "reference_chunk_id": "fphys-12-715044_p0011_c0009",
+    "reference_context": "1\nleg from pre- to post-intervention.\nCombine training group increased 1-RM leg press ∼3.5 kg·FFM−1\nleg from pre- to post-intervention.\nResistance training group increased 1-RM leg press ∼4.3 kg·FFM−1\nleg from pre- to post-intervention.\nSnijders et al.\n(2019)\n1-RM leg press, chest\npress, latissimus dorsi\npull-down, horizontal\nrow, shoulder press,\nand knee extension.\nÀ vs. pre-HIIT\n1-RM leg press was 72 ± 25 and 92 ± 35 kg pre- and post-HIIT, respectively.\n1-RM chest press was 21 ± 6 and 24 ± 7 k"
+  },
+  {
+    "question": "为什么需要记录日志？",
+    "ground_truth": "记录日志可以帮助你更加关注锻炼后身体、感受和想法的变化，并识别出某些锻炼模式和问题。",
+    "reference_chunk_id": "NKF-Hues-Booklet_p0010_c0001",
+    "reference_context": "18\n19\nGet Set\nDon’t restrict yourself to just words; you can use\nemoticons to indicate your feelings.\n*A sample log is included at the back of the book.\nYou can make copies for your use.\nWhy keep a log? A log helps you\nto be more attuned to your body, feelings and\nthoughts after exercising.\nto identify certain patterns and issues in\nexercising. You can share this information with\nsomeone else who may be able to help you\naddress these issues. For instance, if you are\nconstantly exhausted, there’s"
+  },
+  {
+    "question": "什么是periodization methodology？",
+    "ground_truth": "periodization methodology是指为了从一般训练过渡到更具体的体育训练、消散疲劳并降低受伤风险而设计的训练方法论，包括适当的程序来设计会合、微观周期和中观周期。",
+    "reference_chunk_id": "jhse_Vol_8_N_II_350-366_p0001_c0004",
+    "reference_context": "nd exercise selection) in order to progress from\ngeneral to a more sport-specific training, dissipate fatigue and reduce the risk of injury. Although further\nscientific evidences are required, the understanding of periodization methodology including the appropriate\nprocedure for designing sessions, microcycles and mesocycles is of paramount importance. Key words:\nTRAINING PLAN, PROGRAM DESIGN, MACROCYCLE, MESOCYCLE, MICROCYCLE, SESSION.\n1 Corresponding author. Principal Lecturer in Strength and"
+  },
+  {
+    "question": "如果所有问题都诚实地回答为NO，那么最安全和最容易开始的方式是什么？",
+    "ground_truth": "开始变得更为身体活跃——慢慢来并逐渐增加。",
+    "reference_chunk_id": "NKF-Hues-Booklet_p0008_c0002",
+    "reference_context": "about the kinds of activities you wish to\nparticipate in and follow his/her advice.\nFind out which community programmes are safe\nand helpful for you.\nIf you answered NO honestly to all the questions,\nyou can be reasonably sure that you can:\nStart becoming much more physically active –\nbegin slowly and build up gradually. This is the\nsafest and easiest way to go.\nTake part in a ﬁtness appraisal – this is an excellent\nway to determine your basic ﬁtness so that you\ncan plan the best way for you to"
+  },
+  {
+    "question": "《运动科学》第三版的出版年份是什么？",
+    "ground_truth": "2006",
+    "reference_chunk_id": "Periodization for Massive Strength Gains_p0017_c0005",
+    "reference_context": "d Medicine\n(3rd edition). Oxford: Oxford University Press 2006. vii 612 pp., ISBN: 978 0 19\n856850 6. Reference Reviews, 21(7), 50–50. doi: 10.1108/09504120710821848\n43) Fishbach, A., & Choi, J. (2012). When thinking about goals undermines goal\npursuit. Organizational Behavior and Human Decision Processes, 118(2), 99–\n107. doi: 10.1016/j.obhdp.2012.02.003\n44) Chiu, L. Z., & Barnes, J. L. (2003). The Fitness-Fatigue Model Revisited.\nStrength and Conditioning Journal, 25(6), 42–51. doi: 10.1519/00"
+  },
+  {
+    "question": "为什么高强度认知、爆发力或速度训练应该安排在一个合适的微观周期会话的第一部分？",
+    "ground_truth": "因为这样可以支持运动员在后续的训练 session 中不受到影响，同时符合关键原则。",
+    "reference_chunk_id": "jhse_Vol_8_N_II_350-366_p0014_c0007",
+    "reference_context": "e adaptations created by the main training capacity (Turner, 2011). The previous\nrationale legitimates the following two main considerations for an appropriate microcycle session’s\nallocation:\n1. The previous session have to support and not impair athletes performance during the subsequent\nsession (this is the key principle that should not be violated).\n2. Highly cognitive (tactical and technical), explosive or speed focused workouts should be introduced\ninto the first part leaving more enduranc"
+  },
+  {
+    "question": "训练时如何进行划船技术的改进？",
+    "ground_truth": "训练时将划船动作分为多个部分单独训练，然后逐步结合直到完成整个划船动作。",
+    "reference_chunk_id": "Level2꞉Chapter4꞉BasicTrainingMethodology_English_p0015_c0003",
+    "reference_context": "nical “drill”:\nTraining with specific exercises to improve the rowing technique. The rowing stroke\ndivided into sections and trained separately followed by combined sections – up to\nthe full stroke."
+  },
+  {
+    "question": "HIIT和MICT对耐力跑者的跑步经济性有何影响？",
+    "ground_truth": "HIIT显著减少了耐力跑者跑步时的氧气成本，相比于MICT。",
+    "reference_chunk_id": "36b5639a13f6f78e00f1c2ca46b86e854898_p0006_c0008",
+    "reference_context": "the findings of this\nmeta‐analysis, although caution should always be\ntaken when interpreting results from small studies\nwith non‐significant outcomes.\nDiscussion\nThe objective of this systematic review was\nto critically evaluate the existing literature to\ndetermine the effects of HIIT and MICT on running\neconomy (RE). The initial findings revealed that\nHIIT significantly reduced the oxygen cost of\nrunning compared to MICT in endurance runners.\nFurthermore, the effects of different training\ninte"
+  },
+  {
+    "question": "Workout 1 中的 Glute Bridge 每组多少次？",
+    "ground_truth": "2x 8 rep?",
+    "reference_chunk_id": "EWM-Training-Guides-Base-Plan_p0010_c0003",
+    "reference_context": "tretcI\n: ABCs: 1 se2\n: Ankle dorsiflexiov\n: Ankle plantar flexiov\n: Single-leg balance\nLibrary of video demos\nWorkout 1\nInstructions: 2x 8 rep?\n: Glute bridgeY\n: Clamshelk\n: Reverse clamshellY\n: Reverse air clamshell\nLibrary of video demos\nWorkout 2\nInstructions: 2x 8 rep?\n: Glute bridg}\n: Leg lift: Neutral to}\n: Leg lift: Toe downY\n: Leg lift: Toe up"
+  },
+  {
+    "question": "HIIT组6分钟步行测试的结果是什么？",
+    "ground_truth": "HIIT组6MWT结果为257 ± 62和302 ± 72米（预干预和后干预），但未在控制组中进行6MWT。",
+    "reference_chunk_id": "fphys-12-715044_p0015_c0010",
+    "reference_context": "6MWT was 257 ± 62 and 302 ± 72 m pre- and post-intervention, respectively.\n6MWT was not performed in the control group.\nMartins et al.\n(2018)\n6MWT\nÀ vs. pre-HIIT, © vs. combined training\nHIIT group 6MWT was 577 ± 83 and 600 ± 92 m pre- and post-intervention, respectively.\nCombined training group 6MWT was 614 ± 89 and 669 ± 105 m pre- and post-intervention,\nrespectively.\nTUG, timed up and go; 6MWT, 6-min walk test; SPPB, short physical performance battery; HIIT, high intensity interval training;"
+  }
+]

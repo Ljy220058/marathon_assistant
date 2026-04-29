@@ -1,0 +1,69 @@
+{
+  "version": "2.0",
+  "description": "LangGraph 多智能体编排引擎 API 契约",
+  "endpoint": "/api/chat",
+  "method": "POST",
+  "request": {
+    "question": "string",
+    "enable_rag": "boolean"
+  },
+  "response_stream_events": [
+    {
+      "type": "mode_switch",
+      "description": "引擎自动切换执行模式时触发",
+      "payload": {
+        "mode": "team | subagent"
+      }
+    },
+    {
+      "type": "usage",
+      "description": "实时推送 Token 消耗统计",
+      "payload": {
+        "usage": {
+          "prompt_tokens": "int",
+          "completion_tokens": "int",
+          "total_tokens": "int"
+        }
+      }
+    },
+    {
+      "type": "reasoning",
+      "description": "推送中间推理日志",
+      "payload": {
+        "node": "string",
+        "log": "string",
+        "count": "int"
+      }
+    },
+    {
+      "type": "rag_source",
+      "description": "推送检索到的结构化来源",
+      "payload": {
+        "source": {
+          "title": "string",
+          "snippet": "string",
+          "score": "float",
+          "source": "string"
+        }
+      }
+    },
+    {
+      "type": "final",
+      "description": "推送最终生成的专业报告",
+      "payload": {
+        "report": "markdown_string"
+      }
+    },
+    {
+      "type": "error",
+      "description": "运行时错误信息",
+      "payload": {
+        "message": "string"
+      }
+    }
+  ],
+  "constraints": {
+    "auth": "Header: X-API-Key required",
+    "content_type": "text/event-stream"
+  }
+}

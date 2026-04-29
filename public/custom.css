@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+/* 核心设计系统 - 深色模式标准化 */
+:root {
+    --primary-color: #165DFF;
+    --primary-hover: #0E42D2;
+    --primary-active: #0932B3;
+    
+    --bg-main: #121212;
+    --bg-container: #1E1E1E;
+    --bg-交互: #2D2D2D;
+    --bg-border: #3D3D3D;
+    
+    --text-title: #FFFFFF;
+    --text-body: #CCCCCC;
+    --text-secondary: #888888;
+    
+    --success: #00B42A;
+    --warning: #FF7D00;
+    --error: #F53F3F;
+    --info: #86909C;
+    
+    --radius-sm: 8px;
+    --radius-lg: 12px;
+}
+
+/* 实验室报告风格 (Structured Report v2.0) */
+.lab-report {
+    background-color: var(--bg-container);
+    border: 1px solid var(--bg-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin: 16px 0;
+    color: var(--text-body);
+    font-size: 14px;
+    line-height: 1.6;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.report-header {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.report-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-title);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+}
+
+.report-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.report-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title::before {
+    content: "";
+    width: 4px;
+    height: 16px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.findings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    border: 1px solid var(--bg-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.findings-table th {
+    background: var(--bg-交互);
+    color: var(--text-title);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--bg-border);
+}
+
+.findings-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--bg-border);
+    color: var(--text-body);
+}
+
+.findings-table tr:last-child td {
+    border-bottom: none;
+}
+
+.audit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.audit-item {
+    background: var(--bg-交互);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--bg-border);
+}
+
+.audit-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.progress-container {
+    height: 6px;
+    background: var(--bg-main);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar {
+    height: 100%;
+    transition: width 0.6s ease;
+}
+
+.audit-value {
+    font-weight: 700;
+    font-size: 18px;
+    text-align: right;
+}
+
+.evidence-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: rgba(22, 93, 255, 0.1);
+    border: 1px solid rgba(22, 93, 255, 0.2);
+    border-radius: 4px;
+    color: var(--primary-color);
+    font-size: 12px;
+    cursor: pointer;
+    margin: 4px;
+    transition: all 0.2s;
+}
+
+.evidence-tag:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.repo-badge {
+    background-color: var(--bg-交互);
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 2px 8px;
+    border: 1px solid var(--bg-border);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+/* 知识库管理表格样式 */
+.table-row {
+    border-bottom: 1px solid var(--bg-border);
+    transition: all 0.2s;
+}
+
+.table-row:hover {
+    background-color: var(--bg-交互) !important;
+}
+
+.pdf-link {
+    color: var(--text-title) !important;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.pdf-link:hover {
+    color: var(--primary-color) !important;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px;
+    transition: all 0.2s;
+}
+
+.delete-btn:hover {
+    color: var(--error) !important;
+    background-color: rgba(245, 63, 63, 0.1) !important;
+    border-radius: 4px;
+}

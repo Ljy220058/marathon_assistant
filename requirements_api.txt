@@ -1,0 +1,17 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+langgraph==0.2.53
+langchain-ollama==0.1.3
+langchain-core==0.3.40
+sse-starlette==2.1.3
+# 文档解析
+python-docx>=0.8.11
+PyMuPDF>=1.23.0
+# OCR (方案C: PaddleOCR 高精度)
+paddlepaddle>=2.6.0
+paddleocr>=2.7.0
+Pillow>=10.0.0
+# 文件类型检测
+python-magic-bin>=0.4.14; platform_system == "Windows"
+python-magic>=0.4.27; platform_system != "Windows"

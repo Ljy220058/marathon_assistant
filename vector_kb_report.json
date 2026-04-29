@@ -1,0 +1,65 @@
+{
+  "input_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\domain_docs",
+  "output_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\vector_kb",
+  "chunk_size": 500,
+  "chunk_overlap": 50,
+  "total_chunks": 1160,
+  "engine": "FAISS + Nomic Embedding",
+  "files": [
+    {
+      "source_file": "-9787213062605.pdf",
+      "pages": 0,
+      "chunks": 0,
+      "error": "Failed to open file 'C:\\\\Users\\\\26318\\\\Documents\\\\trae_projects\\\\ollama_pro\\\\马拉松助手\\\\domain_docs\\\\-9787213062605.pdf'."
+    },
+    {
+      "source_file": "10078-60-2017-v60-2017-28.pdf",
+      "pages": 7,
+      "chunks": 58
+    },
+    {
+      "source_file": "2016+-+Nutrition+for+Marathon+Running.pdf",
+      "pages": 21,
+      "chunks": 144
+    },
+    {
+      "source_file": "36b5639a13f6f78e00f1c2ca46b86e854898.pdf",
+      "pages": 22,
+      "chunks": 197
+    },
+    {
+      "source_file": "EWM-Training-Guides-Base-Plan.pdf",
+      "pages": 23,
+      "chunks": 91
+    },
+    {
+      "source_file": "fphys-12-715044.pdf",
+      "pages": 20,
+      "chunks": 251
+    },
+    {
+      "source_file": "jhse_Vol_8_N_II_350-366.pdf",
+      "pages": 17,
+      "chunks": 117
+    },
+    {
+      "source_file": "Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf",
+      "pages": 29,
+      "chunks": 101
+    },
+    {
+      "source_file": "NKF-Hues-Booklet.pdf",
+      "pages": 49,
+      "chunks": 125
+    },
+    {
+      "source_file": "Periodization for Massive Strength Gains.pdf",
+      "pages": 17,
+      "chunks": 76
+    }
+  ],
+  "artifacts": {
+    "chunks_file": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\vector_kb\\chunks.jsonl",
+    "faiss_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\vector_kb\\faiss_db"
+  }
+}
