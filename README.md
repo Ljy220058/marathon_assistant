@@ -50,12 +50,32 @@ py -3 -m py_compile marathon_qa_assistant/core/workflow.py
 py -3 tests/integration_workflow_test.py
 ```
 
-## 6. 最近更新 (2026-04-26)
-- **Service 层全面重建**: 完成了 `WikiAgent`, `FAISS Vector Store`, `KnowledgeGraph` 的重构与路径修复。
-- **多模态功能修复**: `chainlit_app.py` 中的 PDF 视觉提取与 VLM (Llama 3.2-Vision) 逻辑已调通。
-- **项目清理**: 彻底移除了 `test_chroma*` 等过时目录，清理了冗余日志。
-- **集成测试通过**: 16 节点工作流已通过长链路稳定性验证。
-- **周计划调度升级**: `plan_week_drafts()` 已接管周计划草案决策，训练生成从“逐天局部规则”升级为“周级状态推进 + 约束传播”。
-- **审计评分前端升级**: `auditor_node` 不再输出固定的 `85 / 90 / 80%`，而是根据 `is_approved`、`iteration_count`、`ranked_evidence.hybrid_score` 与 `entities` 动态计算一致性、安全性和 ROI，并由 `ui/legacy_ui.py` 在 Chainlit/Gradio 共用渲染器中展示“分数 + 评分依据 + 关联证据”。
-- **赛事倒计时容错修复**: `apps/chainlit_app.py` 的侧边栏倒计时已支持 `YYYY-MM-DD`、`YYYY/MM/DD`、`YYYY年MM月DD日`、`DD/MM/YYYY` 等日期格式；无法解析时给出明确格式提示，不再直接抛出“格式错误”。
-- **FAISS 落盘稳健性修复**: `services/vector_store.py` 在保存用户知识库前会显式重建 `faiss_db/` 目录，避免 Windows 环境下 `index.faiss for writing: No such file or directory`。
+## 7. 快速启动
+
+### 准备工作
+1. 确保已安装 Ollama 并拉取对应模型：
+   ```bash
+   ollama pull qwen2.5:latest
+   ollama pull llama3.2-vision:latest
+   ```
+2. 安装依赖：
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### 启动前端 (Chainlit)
+这是本项目的主交互界面：
+```bash
+chainlit run marathon_qa_assistant/apps/chainlit_app.py
+```
+
+### 启动后端 API (FastAPI)
+如果需要通过接口调用：
+```bash
+python marathon_qa_assistant/apps/api_app.py
+```
+
+## 8. 最近更新 (2026-04-29)
+- **Git 仓库初始化**: 已完成项目根目录 Git 初始化。
+- **依赖收口**: 统一 `requirements_api.txt` 为根目录 `requirements.txt`，补全了 Chainlit 与 FAISS 等核心依赖。
+- **Gradio 废弃**: 已移除 `legacy_ui.py` 中的 Gradio 锁屏逻辑，准备清理冗余 entry points。

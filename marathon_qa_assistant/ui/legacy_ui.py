@@ -87,20 +87,7 @@ GITHUB_STYLE = """
 }
 """
 
-# 锁屏 JS
-GRADIO_JS = """
-(v) => {
-    window.toggleUILock = (locked) => {
-        const boxes = document.querySelectorAll('#input-box textarea');
-        const btns = document.querySelectorAll('.primary-btn');
-        boxes.forEach(b => b.disabled = locked);
-        btns.forEach(b => {
-            if (locked) b.style.opacity = '0.5';
-            else b.style.opacity = '1';
-        });
-    };
-}
-"""
+# Gradio JS 锁屏逻辑已移除，项目已全面迁移至 Chainlit
 
 GITHUB_STYLE += """
 /* PDF.js Viewer 样式扩展 */
