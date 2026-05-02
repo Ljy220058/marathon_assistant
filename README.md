@@ -1,9 +1,7 @@
-# Marathon QA Assistant 重建说明文档
+# 说明文档
 
 ## 1. 架构概览
-本项目已从单体 2300+ 行的 `workflow.py` 迁移到模块化的 `marathon_qa_assistant` 包结构。
 
-### 核心设计原则：
 - **职责分离**：将状态定义、图构建逻辑、节点实现、工具函数彻底拆分。
 - **环境韧性 (Fallback)**：在缺少 `langgraph`、`pydantic` 或 `fastapi` 等依赖的环境下，通过 `FallbackIntegratedApp` 和本地 Mock 类保证代码仍可导入并执行最小功能。
 - **单向依赖**：`nodes` 依赖 `core.state_models` 与 `core.kb_provider`/`core.kb_runtime`，`core.workflow` 只负责最终装配。
@@ -11,14 +9,16 @@
 ## 2. 目录结构说明
 
 ### `marathon_qa_assistant/core/`
+
 - **`workflow.py`**: 对外统一入口，导出 `integrated_app` 及核心模型。
 - **`workflow_graph.py`**: 负责 LangGraph `StateGraph` 的构建及 `FallbackIntegratedApp` 实现。
 - **`state_models.py`**: 定义 `IntegratedState` (TypedDict) 和相关数据模型。
 - **`kb_provider.py`**: 对外提供知识库运行时访问入口，避免 `workflow` 与节点/界面层互相导入。
 - **`kb_runtime.py`**: 维护全局知识库运行时数据（RAG 上下文）。
-- **`app_state.py`**: 维护项目全局路径（BASE_DIR）及配置。
+- **`app_state.py`**: 维护项目全局路径（BASE\_DIR）及配置。
 
 ### `marathon_qa_assistant/nodes/`
+
 - **`common.py`**: 所有节点的基石，包含 LLM 初始化、安全护栏 Fallback 和通用工具。
 - **`security.py`**: 第一道防线，处理输入/输出安全检查。
 - **`router.py`**: 意图识别，判定是 QA、PLAN 还是 RESEARCH 模式。
@@ -29,23 +29,29 @@
 - **`routing/`**: 包含 LangGraph 的条件路由逻辑。
 
 ## 4. 训练计划调度补充
+
 - **周级联合调度**：`services/knowledge_graph.py` 中新增 `GraphEngine.plan_week_drafts()`，不再让 `expert_nodes.py` 逐天各自决策，而是以 `WeekState` 顺序推进整周草案。
 - **状态推进字段**：调度器在每一天决策前维护 `quality_sessions`、`last_quality_day`、`last_quality_index`、`long_run_done`、`long_run_day`、`history` 等周上下文。
 - **约束传播策略**：若当前训练被周级规则阻断，会按 `轻松跑 -> 恢复跑 -> 休息` 顺序降级，避免连续高强度、质量课超 2 次、长距离重复安排、长距离次日继续上强度。
 - **可观测性**：每个 day draft 都保留 `status`、`adjustments`、`warnings`、`decision_trace`、`week_state_before`、`week_state_after`，便于 UI 和调试层直接展开。
 
 ## 3. 命名映射清单 (旧 -> 新)
+
 - `IntegratedState` -> `marathon_qa_assistant.core.state_models.IntegratedState`
 - `security_gate_node` -> `marathon_qa_assistant.nodes.security.security_gate_node`
 - `router_node` -> `marathon_qa_assistant.nodes.router.router_node`
 - `workflow.py` (旧) -> `marathon_qa_assistant/core/workflow.py` (装配层)
 
 ## 5. 验证方式
+
 执行以下命令验证核心链路可用性：
+
 ```bash
 py -3 -m py_compile marathon_qa_assistant/core/workflow.py
 ```
+
 或运行集成测试脚本：
+
 ```bash
 py -3 tests/integration_workflow_test.py
 ```
@@ -53,6 +59,7 @@ py -3 tests/integration_workflow_test.py
 ## 7. 快速启动
 
 ### 准备工作
+
 1. 确保已安装 Ollama 并拉取对应模型：
    ```bash
    ollama pull qwen2.5:latest
@@ -64,18 +71,42 @@ py -3 tests/integration_workflow_test.py
    ```
 
 ### 启动前端 (Chainlit)
+
 这是本项目的主交互界面：
+
 ```bash
 chainlit run marathon_qa_assistant/apps/chainlit_app.py
 ```
 
+Windows 下也可直接双击或执行项目根目录的 `run.bat`，它会自动切换到当前目录并启动 `chainlit run app_chainlit.py -w`。
+当前 `chainlit_app.py` 已改为在 `@cl.on_chat_start` 会话启动时再加载知识库，不再在模块导入阶段触发 `load_vector_kb()`，以避免导入测试和热重载场景被启动副作用拖慢。
+当前知识库启动策略为：优先探测运行期 `vector_kb_user` 是否可健康加载；若用户库产物缺失、`chunks.jsonl` 为空或 FAISS 索引不可用，则自动回退到默认库 `vector_kb`；只有当候选库都不健康时，才以空库模式启动，并在运行时状态中记录 `kb_source` 与失败原因，便于排查“上传文档未生效”或“为何退回默认库”等问题。
+
 ### 启动后端 API (FastAPI)
+
 如果需要通过接口调用：
+
 ```bash
 python marathon_qa_assistant/apps/api_app.py
 ```
 
+当前 `/query` 接口按项目现状仅支持单用户画像，`user_id` 需传 `default_user`；传入其他值会被显式拒绝，避免误以为已经支持多用户隔离。
+
+### RAG 评测脚本
+
+项目内置 RAG 评测脚本：
+
+```bash
+python scripts/evaluate_rag_ragas.py
+```
+
+该脚本使用当前 `marathon_qa_assistant.services.vector_store` 中的向量库实现，并默认读取项目根目录下的 `vector_kb`。运行前需确保已安装 `requirements.txt` 中的 RAG 评测依赖，并已准备 `vector_kb/eval_dataset.json`。
+评测报告默认输出到当前项目根目录下的 `rag_eval_report.md`。脚本只汇总显式启用的 Ragas 评分项，不再把 `reference` 之类的数据列误记为指标。
+传统检索部分默认输出三档 Top-5 口径：`精确块命中`（同一 `chunk_id`）、`同页命中`（同一 `source_file` 且同页）、`同文档命中`（同一 `source_file`），便于区分“没召回到参考文档”和“召回到相邻块但未命中精确 chunk”这两类情况。
+当前检索侧还会对中文问题额外构造一个偏英文术语的查询变体，并与原查询结果做融合重排，用于缓解“中文问题检索英文知识库”时的召回偏弱。
+
 ## 8. 最近更新 (2026-04-29)
+
 - **Git 仓库初始化**: 已完成项目根目录 Git 初始化。
 - **依赖收口**: 统一 `requirements_api.txt` 为根目录 `requirements.txt`，补全了 Chainlit 与 FAISS 等核心依赖。
 - **Gradio 废弃**: 已移除 `legacy_ui.py` 中的 Gradio 锁屏逻辑，准备清理冗余 entry points。

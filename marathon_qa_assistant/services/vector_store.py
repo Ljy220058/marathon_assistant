@@ -2,6 +2,7 @@ import argparse
 import json
 import pickle
 import os
+import re
 import time
 import shutil
 import logging
@@ -11,7 +12,13 @@ from typing import List, Dict, Any, Tuple
 # 配置日志
 logger = logging.getLogger("vector_kb")
 
-from marathon_qa_assistant.core.app_state import BASE_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
+from marathon_qa_assistant.core.app_state import (
+    BASE_DIR,
+    DEFAULT_VECTOR_DIR,
+    LEGACY_UPLOAD_DOCS_DIR,
+    UPLOAD_DOCS_DIR,
+    USER_VECTOR_DIR,
+)
 from marathon_qa_assistant.services.document_preprocess import normalize_text
 
 # 引入 LangChain 和 FAISS
@@ -46,6 +53,15 @@ QUERY_HINTS = {
     "文档": "book document source reference literature paper pdf",
     "参考": "reference source bibliography citations documentation",
     "原则": "principle methodology theory fundamental framework guidelines",
+    "年份": "year publication date published edition",
+    "出版": "publish published publication edition year",
+    "日志": "log journal diary training log record tracking",
+    "划船": "rowing rowing technique stroke drill",
+    "步行测试": "6-minute walk test 6MWT walking test",
+    "腿推力": "leg press 1RM one repetition maximum",
+    "训练组": "training group intervention group exercise group",
+    "结果": "result outcome finding findings response effect",
+    "定义": "definition concept meaning explanation",
 }
 
 DEFAULT_TEST_QUESTIONS = [
@@ -95,6 +111,82 @@ def _normalize_chunk_source(chunk: dict) -> dict:
 
 def get_embeddings():
     return OllamaEmbeddings(model=EMBEDDING_MODEL, base_url=OLLAMA_BASE_URL)
+
+
+def _contains_chinese(text: str) -> bool:
+    return bool(re.search(r"[\u4e00-\u9fff]", text))
+
+
+def _dedupe_preserve_order(items: List[str]) -> List[str]:
+    seen = set()
+    ordered = []
+    for item in items:
+        normalized = " ".join(item.split()).strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        ordered.append(normalized)
+    return ordered
+
+
+def _build_query_variants(question: str) -> List[str]:
+    query = normalize_text(question)
+    matched_hints = [hint for key, hint in QUERY_HINTS.items() if key in query]
+    variants = []
+
+    base_variant = query
+    if matched_hints:
+        base_variant = f"{query} {' '.join(matched_hints)}"
+    variants.append(base_variant)
+
+    # 对中文问题额外生成一个偏英文术语的检索变体，缓解中问英库召回偏弱。
+    if _contains_chinese(query):
+        ascii_terms = re.findall(r"[A-Za-z0-9][A-Za-z0-9\-\./]*", query)
+        english_variant_parts = ascii_terms + matched_hints
+        english_variant = " ".join(english_variant_parts).strip()
+        if english_variant:
+            variants.append(english_variant)
+
+    return _dedupe_preserve_order(variants)
+
+
+def _doc_to_hit(doc: Document, distance: float) -> dict:
+    score = round(1.0 / (1.0 + float(distance)), 6)
+    return {
+        "score": score,
+        "rank_score": 0.0,
+        "chunk_id": doc.metadata.get("chunk_id", "unknown"),
+        "source_file": doc.metadata.get("source_file", "unknown"),
+        "source_path": doc.metadata.get("source_path", "") or infer_source_path(doc.metadata.get("source_file", "")),
+        "page": doc.metadata.get("page", 1),
+        "text": doc.page_content,
+        "distance": float(distance),
+    }
+
+
+def _merge_ranked_hits(search_runs: List[List[dict]], top_k: int) -> list[dict]:
+    merged: Dict[str, dict] = {}
+
+    for run_hits in search_runs:
+        for rank, hit in enumerate(run_hits, start=1):
+            chunk_id = hit["chunk_id"]
+            entry = merged.get(chunk_id)
+            if entry is None:
+                entry = dict(hit)
+                entry["rank_score"] = 0.0
+                merged[chunk_id] = entry
+            entry["rank_score"] += 1.0 / (60 + rank)
+            if hit["score"] > entry["score"]:
+                entry["score"] = hit["score"]
+            if hit["distance"] < entry["distance"]:
+                entry["distance"] = hit["distance"]
+
+    ranked_hits = sorted(
+        merged.values(),
+        key=lambda x: (x["rank_score"], x["score"]),
+        reverse=True,
+    )
+    return ranked_hits[:top_k]
 
 def extract_pdf_pages(file_path: Path) -> list[tuple[int, str]]:
     """提取 PDF 每一页的内容"""
@@ -341,100 +433,193 @@ def load_chunks(chunks_file: Path) -> list[dict]:
             chunks.append(_normalize_chunk_source(json.loads(line)))
     return chunks
 
+
+def _vector_artifact_paths(vector_dir: Path) -> dict[str, Path]:
+    faiss_dir = vector_dir / "faiss_db"
+    return {
+        "chunks_file": vector_dir / "chunks.jsonl",
+        "faiss_dir": faiss_dir,
+        "faiss_index": faiss_dir / "index.faiss",
+        "faiss_pickle": faiss_dir / "index.pkl",
+    }
+
+
+def _kb_source_label(vector_dir: Path) -> str:
+    if vector_dir == USER_VECTOR_DIR:
+        return "user"
+    if vector_dir == DEFAULT_VECTOR_DIR:
+        return "default"
+    return "custom"
+
+
+def _load_faiss_store(faiss_dir: Path, embeddings):
+    faiss_index_file = faiss_dir / "index.faiss"
+    if not faiss_index_file.exists():
+        logger.warning(f"FAISS 索引文件缺失: {faiss_index_file}，将以空库运行。")
+        return None
+
+    try:
+        # 在 Windows 下，避免 resolve() 穿透 Junction/Symlink，直接使用绝对路径字符串
+        faiss_dir_str = str(faiss_dir.absolute())
+
+        # 解决 FAISS C++ 底层 fopen 不支持 Windows 中文绝对路径的问题
+        # 方案1: 获取 Windows 8.3 短路径 (仅限 ASCII)
+        short_path = faiss_dir_str
+        if os.name == 'nt':
+            try:
+                import ctypes
+                from ctypes import wintypes
+                _GetShortPathNameW = ctypes.windll.kernel32.GetShortPathNameW
+                _GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+                _GetShortPathNameW.restype = wintypes.DWORD
+
+                buf_size = _GetShortPathNameW(faiss_dir_str, None, 0)
+                if buf_size > 0:
+                    buf = ctypes.create_unicode_buffer(buf_size)
+                    if _GetShortPathNameW(faiss_dir_str, buf, buf_size):
+                        short_path = buf.value
+            except Exception as e:
+                logger.debug(f"获取短路径失败: {e}")
+
+        # 方案2: 相对路径 (通常不含项目根目录的中文)
+        try:
+            rel_path = os.path.relpath(faiss_dir_str, os.getcwd())
+        except ValueError:
+            rel_path = faiss_dir_str
+
+        # 依次尝试 短路径 -> 相对路径 -> 绝对路径
+        loaded = False
+        faiss_store = None
+        for try_path in [short_path, rel_path, faiss_dir_str]:
+            try:
+                faiss_store = FAISS.load_local(try_path, embeddings, allow_dangerous_deserialization=True)
+                logger.info(f"FAISS 索引加载成功 (使用路径: {try_path})")
+                loaded = True
+                break
+            except Exception as e:
+                logger.debug(f"尝试路径 {try_path} 失败: {e}")
+
+        if not loaded:
+            # 方案3: 内存反序列化兜底 (完全绕过 FAISS C++ 文件读取)
+            logger.warning("所有常规路径加载 FAISS 失败，尝试内存反序列化兜底加载...")
+            import faiss
+            import numpy as np
+
+            with open(faiss_index_file, "rb") as f:
+                index_bytes = f.read()
+
+            with open(faiss_dir / "index.pkl", "rb") as f:
+                docstore, index_to_docstore_id = pickle.load(f)
+
+            try:
+                index_array = np.frombuffer(index_bytes, dtype=np.uint8)
+                index = faiss.deserialize_index(index_array)
+            except Exception:
+                index = faiss.deserialize_index(index_bytes)
+
+            faiss_store = FAISS(
+                embedding_function=embeddings.embed_query,
+                index=index,
+                docstore=docstore,
+                index_to_docstore_id=index_to_docstore_id
+            )
+            logger.info("FAISS 索引加载成功(内存反序列化)")
+
+        return faiss_store
+    except Exception as e:
+        logger.error(f"加载 FAISS 失败 (路径: {faiss_dir}): {e}")
+        return None
+
+
+def probe_vector_kb_health(vector_dir: Path) -> dict[str, Any]:
+    """探测知识库目录是否可健康加载，供启动回退逻辑与状态上报使用。"""
+    paths = _vector_artifact_paths(vector_dir)
+    source = _kb_source_label(vector_dir)
+    missing = [
+        name for name, path in paths.items()
+        if name != "faiss_dir" and not path.exists()
+    ]
+    if missing:
+        reason = "缺少产物: " + ", ".join(missing)
+        return {
+            "ok": False,
+            "vector_dir": str(vector_dir),
+            "source": source,
+            "reason": reason,
+            "chunks_count": 0,
+            "faiss_ready": False,
+        }
+
+    try:
+        chunks = load_chunks(paths["chunks_file"])
+    except Exception as exc:
+        return {
+            "ok": False,
+            "vector_dir": str(vector_dir),
+            "source": source,
+            "reason": f"chunks 加载失败: {exc}",
+            "chunks_count": 0,
+            "faiss_ready": False,
+        }
+
+    if not chunks:
+        return {
+            "ok": False,
+            "vector_dir": str(vector_dir),
+            "source": source,
+            "reason": "chunks.jsonl 为空",
+            "chunks_count": 0,
+            "faiss_ready": False,
+        }
+
+    try:
+        embeddings = get_embeddings()
+        faiss_store = _load_faiss_store(paths["faiss_dir"], embeddings)
+    except Exception as exc:
+        return {
+            "ok": False,
+            "vector_dir": str(vector_dir),
+            "source": source,
+            "reason": f"向量索引探测失败: {exc}",
+            "chunks_count": len(chunks),
+            "faiss_ready": False,
+        }
+
+    if not faiss_store:
+        return {
+            "ok": False,
+            "vector_dir": str(vector_dir),
+            "source": source,
+            "reason": "FAISS 索引不可用",
+            "chunks_count": len(chunks),
+            "faiss_ready": False,
+        }
+
+    return {
+        "ok": True,
+        "vector_dir": str(vector_dir),
+        "source": source,
+        "reason": "",
+        "chunks_count": len(chunks),
+        "faiss_ready": True,
+    }
+
 def load_vector_kb(vector_dir: Path):
     """
     加载向量库，返回 (chunks, vectorizer, matrix, bm25) 结构。
     实际上 matrix 位置放置的是 FAISS 实例。
     """
-    chunks_file = vector_dir / "chunks.jsonl"
-    faiss_dir = vector_dir / "faiss_db"
+    paths = _vector_artifact_paths(vector_dir)
+    chunks_file = paths["chunks_file"]
+    faiss_dir = paths["faiss_dir"]
     
     if not chunks_file.exists():
         raise FileNotFoundError(f"未找到 chunks 文件: {chunks_file}")
     
     chunks = load_chunks(chunks_file)
     
-    # 初始化 FAISS 客户端作为 "matrix"
     embeddings = get_embeddings()
-    faiss_store = None
-    
-    # 更加严谨的可用性判断：不仅检查目录，还要检查索引文件 index.faiss
-    faiss_index_file = faiss_dir / "index.faiss"
-    
-    if faiss_index_file.exists():
-        try:
-            import os
-            # 在 Windows 下，避免 resolve() 穿透 Junction/Symlink，直接使用绝对路径字符串
-            faiss_dir_str = str(faiss_dir.absolute())
-            
-            # 解决 FAISS C++ 底层 fopen 不支持 Windows 中文绝对路径的问题
-            # 方案1: 获取 Windows 8.3 短路径 (仅限 ASCII)
-            short_path = faiss_dir_str
-            if os.name == 'nt':
-                try:
-                    import ctypes
-                    from ctypes import wintypes
-                    _GetShortPathNameW = ctypes.windll.kernel32.GetShortPathNameW
-                    _GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
-                    _GetShortPathNameW.restype = wintypes.DWORD
-                    
-                    buf_size = _GetShortPathNameW(faiss_dir_str, None, 0)
-                    if buf_size > 0:
-                        buf = ctypes.create_unicode_buffer(buf_size)
-                        if _GetShortPathNameW(faiss_dir_str, buf, buf_size):
-                            short_path = buf.value
-                except Exception as e:
-                    logger.debug(f"获取短路径失败: {e}")
-            
-            # 方案2: 相对路径 (通常不含项目根目录的中文)
-            try:
-                rel_path = os.path.relpath(faiss_dir_str, os.getcwd())
-            except ValueError:
-                rel_path = faiss_dir_str
-
-            # 依次尝试 短路径 -> 相对路径 -> 绝对路径
-            loaded = False
-            for try_path in [short_path, rel_path, faiss_dir_str]:
-                try:
-                    faiss_store = FAISS.load_local(try_path, embeddings, allow_dangerous_deserialization=True)
-                    logger.info(f"FAISS 索引加载成功 (使用路径: {try_path})")
-                    loaded = True
-                    break
-                except Exception as e:
-                    logger.debug(f"尝试路径 {try_path} 失败: {e}")
-            
-            if not loaded:
-                # 方案3: 内存反序列化兜底 (完全绕过 FAISS C++ 文件读取)
-                logger.warning("所有常规路径加载 FAISS 失败，尝试内存反序列化兜底加载...")
-                import faiss
-                import pickle
-                import numpy as np
-                
-                with open(faiss_index_file, "rb") as f:
-                    index_bytes = f.read()
-                
-                with open(faiss_dir / "index.pkl", "rb") as f:
-                    docstore, index_to_docstore_id = pickle.load(f)
-                    
-                try:
-                    index_array = np.frombuffer(index_bytes, dtype=np.uint8)
-                    index = faiss.deserialize_index(index_array)
-                except Exception:
-                    index = faiss.deserialize_index(index_bytes)
-                    
-                faiss_store = FAISS(
-                    embedding_function=embeddings.embed_query,
-                    index=index,
-                    docstore=docstore,
-                    index_to_docstore_id=index_to_docstore_id
-                )
-                logger.info("FAISS 索引加载成功(内存反序列化)")
-
-        except Exception as e:
-            logger.error(f"加载 FAISS 失败 (路径: {faiss_dir}): {e}")
-            faiss_store = None
-    else:
-        logger.warning(f"FAISS 索引文件缺失: {faiss_index_file}，将以空库运行。")
+    faiss_store = _load_faiss_store(faiss_dir, embeddings)
         
     # 返回: chunks, vectorizer(dummy), matrix(faiss), bm25(dummy)
     return chunks, "faiss_vectorizer", faiss_store, "faiss_bm25"
@@ -448,39 +633,19 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int, 
         logger.warning("FAISS 数据库未初始化，返回空检索结果。")
         return []
         
-    query = normalize_text(question)
-    enhanced_query = query
-    # 注入检索提示词增强效果
-    for k, v in QUERY_HINTS.items():
-        if k in query:
-            enhanced_query = f"{enhanced_query} {v}"
-            
-    # 执行 FAISS 向量相似度检索 (带分数)
-    try:
-        results = faiss_store.similarity_search_with_score(enhanced_query, k=top_k)
-    except Exception as e:
-        logger.error(f"FAISS 检索失败: {e}")
-        return []
-        
-    hits = []
-    for doc, distance in results:
-        # FAISS 默认使用 L2 距离，转换为相似度得分
-        # 得分转换公式：score = 1.0 / (1.0 + distance)
-        score = round(1.0 / (1.0 + float(distance)), 6)
-        
-        hits.append({
-            "score": score,
-            "chunk_id": doc.metadata.get("chunk_id", "unknown"),
-            "source_file": doc.metadata.get("source_file", "unknown"),
-            "source_path": doc.metadata.get("source_path", "") or infer_source_path(doc.metadata.get("source_file", "")),
-            "page": doc.metadata.get("page", 1),
-            "text": doc.page_content,
-            "distance": float(distance)
-        })
-        
-    # 按 score 降序排列
-    hits = sorted(hits, key=lambda x: x["score"], reverse=True)
-    return hits
+    query_variants = _build_query_variants(question)
+    search_runs: List[List[dict]] = []
+    per_query_k = max(top_k, min(top_k * 3, 15))
+
+    for query_variant in query_variants:
+        try:
+            results = faiss_store.similarity_search_with_score(query_variant, k=per_query_k)
+        except Exception as e:
+            logger.error(f"FAISS 检索失败: {e}")
+            return []
+        search_runs.append([_doc_to_hit(doc, distance) for doc, distance in results])
+
+    return _merge_ranked_hits(search_runs, top_k)
 
 def build_answer(hits: list[dict]) -> str:
     """从检索结果构建简短回答片段（供调试/测试用）"""

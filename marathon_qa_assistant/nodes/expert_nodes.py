@@ -24,6 +24,13 @@ def _profile_summary(profile: Dict[str, Any]) -> str:
     )
 
 
+def _format_wiki_context(wiki_context: str) -> str:
+    text = str(wiki_context or "").strip()
+    if not text:
+        return "暂无外部概念补充"
+    return text
+
+
 async def _run_expert_llm(
     role_name: str,
     task_instruction: str,
@@ -50,8 +57,11 @@ async def _run_expert_llm(
 本地知识库证据：
 {format_evidence_lines(rag_sources, limit=3)}
 
+Wiki 概念补充上下文：
+{_format_wiki_context(state.get("wiki_context", ""))}
+
 引用规则：
-凡使用上述证据中的事实信息，必须在对应句末标注 [1]、[2] 等来源编号（例如：...由于过度训练 [1]）。
+凡使用上述本地知识库证据中的事实信息，必须在对应句末标注 [1]、[2] 等来源编号（例如：...由于过度训练 [1]）。Wiki 只用于解释概念背景，不作为训练处方依据，也不要给 Wiki 内容编造 [n] 引用。
 
 请输出简洁、可执行、可审核的中文 Markdown，严格遵守引用规则，避免编造资料来源。
 {get_security_prompt_suffix()}"""

@@ -24,3 +24,19 @@ ZONE_LABELS = {
     "Z8": "Z8 无氧耐力 (101-105%)",
     "Z9": "Z9 极高强度 (>105%)"
 }
+
+ZONE_ORDER = tuple(f"Z{i}" for i in range(1, 10))
+
+
+def build_zone_mapping_table(hr_zones: dict | None, pace_zones: dict | None) -> str:
+    """构建侧边栏使用的 Z1-Z9 区间映射表。"""
+    hr_zones = hr_zones or {}
+    pace_zones = pace_zones or {}
+
+    rows = ["| 区间 | 心率 | 配速 |", "| :--- | :--- | :--- |"]
+    for zone in ZONE_ORDER:
+        hr_value = str(hr_zones.get(zone, "-")).split(" ")[0]
+        pace_value = pace_zones.get(zone, "-")
+        rows.append(f"| **{zone}** | {hr_value} | {pace_value} |")
+
+    return "\n".join(rows)

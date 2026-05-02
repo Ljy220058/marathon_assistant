@@ -20,6 +20,7 @@ from marathon_qa_assistant.nodes.common import (
     infer_entities,
 )
 from marathon_qa_assistant.nodes.routing import evaluate_plan_evidence
+from marathon_qa_assistant.services.wiki_agent import wiki_agent
 
 logger = logging.getLogger("workflow_engine")
 
@@ -617,9 +618,56 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     }
 
 
+def _should_use_wiki_context(query: str, intent_type: str, mode: str, entities: List[str]) -> bool:
+    if intent_type == "plan":
+        return False
+    if not entities:
+        return False
+    lowered = str(query or "").lower()
+    concept_markers = [
+        "什么是",
+        "是什么",
+        "什么意思",
+        "概念",
+        "定义",
+        "原理",
+        "机制",
+        "解释",
+        "介绍",
+        "了解",
+        "why",
+        "what is",
+        "meaning",
+        "definition",
+    ]
+    if mode == "research":
+        return True
+    return any(marker in lowered for marker in concept_markers)
+
+
 async def wiki_search_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    del state, config
-    return {"wiki_context": "", "reasoning_log": ["[wiki_search] 当前保持 KB-only，本轮未启用外部知识"]}
+    del config
+    query = state.get("query", "")
+    intent_type = state.get("intent_type", "qa")
+    mode = state.get("mode", "team")
+    entities = state.get("selected_entities") or state.get("entities") or infer_entities(query)
+
+    if not _should_use_wiki_context(query, intent_type, mode, entities):
+        return {"wiki_context": "", "reasoning_log": ["[wiki_search] 当前问题不需要外部概念补充"]}
+
+    try:
+        wiki_context = await wiki_agent.search(entities, lang="zh")
+    except Exception as exc:
+        logger.warning(f"Wiki Search failed: {exc}")
+        return {"wiki_context": "", "reasoning_log": ["[wiki_search] 外部概念检索失败，已回退为 KB-only"]}
+
+    if not wiki_context:
+        return {"wiki_context": "", "reasoning_log": ["[wiki_search] 未检索到可用外部概念补充"]}
+
+    return {
+        "wiki_context": wiki_context,
+        "reasoning_log": [f"[wiki_search] 已补充 {len(entities[:3])} 个实体的外部概念信息"],
+    }
 
 
 TRAINING_PROFILE_FORM = """📋 **训练画像表单** — 请直接编辑并发送（替换 `_____` 为你的数据）

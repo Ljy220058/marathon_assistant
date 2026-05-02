@@ -292,9 +292,13 @@ async def process_message(message: cl.Message):
                 return
         
         report_html = UIHelper.render_structured_report(final_state.get("structured_report"), final_state.get("final_report"), include_sources=True)
+        wiki_panel_md = UIHelper.render_chainlit_wiki_context_md(final_state.get("structured_report"))
         preview_bundle = UIHelper.build_evidence_preview_bundle(final_state.get("structured_report"), final_state.get("final_report"))
         msg.content = report_html
         await msg.update()
+
+        if wiki_panel_md:
+            await cl.Message(content=wiki_panel_md).send()
 
         if preview_bundle.get("panel_md") and preview_bundle.get("actions"):
             preview_actions = [cl.Action(name=spec["name"], payload=spec["payload"], label=spec["label"], icon="visibility") for spec in preview_bundle["actions"]]

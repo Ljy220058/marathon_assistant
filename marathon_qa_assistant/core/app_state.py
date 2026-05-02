@@ -81,6 +81,8 @@ class GlobalState:
     def __init__(self):
         self.chunks = []
         self.kb_chunks_len = 0
+        self.kb_source = "unknown"
+        self.kb_health_reason = ""
 
 global_state = GlobalState()
 

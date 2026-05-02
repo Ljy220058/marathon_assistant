@@ -51,6 +51,7 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
 
     summary = final_report if final_report and final_report.strip() else "（本轮未产生实质性回复内容）"
     audit_scores = state.get("audit_scores", {})
+    wiki_context = str(state.get("wiki_context", "") or "").strip()
     findings = [
         {"key": "用户问题", "value": state.get("query", "") or "—"},
         {"key": "意图分类", "value": state.get("category", "coach")},
@@ -60,6 +61,8 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
         {"key": "安全性评分", "value": str(audit_scores.get("safety", "—"))},
         {"key": "知识回报率 (ROI)", "value": f"{audit_scores.get('roi', 0)}%"},
     ]
+    if wiki_context:
+        findings.append({"key": "Wiki补充", "value": wiki_context[:200]})
     recommendations = [
         state.get("review_feedback", "") or "当前轮次未触发额外审查反馈",
     ]
@@ -81,6 +84,7 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             "query": state.get("query", ""),
             "key_entities": state.get("entities", []),
             "graph_context": state.get("graph_context", ""),
+            "wiki_context": wiki_context,
         },
         "execution_steps": execution_steps,
         "audit_block": {
@@ -121,8 +125,16 @@ async def guided_questions_node(state: IntegratedState, config: RunnableConfig) 
     intent = state.get("intent_type", "qa")
     draft_plan = state.get("draft_plan", "")
     final_report = state.get("final_report", "")
+    missing_fields = state.get("missing_fields", [])
 
-    if intent == "plan" and (draft_plan or final_report):
+    if intent == "plan" and final_report == "__FILL_FIELDS__":
+        return {
+            "guided_questions": [],
+            "token_usage": ensure_usage(state.get("token_usage")),
+            "reasoning_log": ["[guided_questions] 计划待补信息，跳过追问"],
+        }
+
+    if intent == "plan" and not missing_fields and (draft_plan or final_report):
         return {
             "guided_questions": [],
             "token_usage": ensure_usage(state.get("token_usage")),

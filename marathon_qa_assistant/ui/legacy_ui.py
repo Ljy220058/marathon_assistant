@@ -527,6 +527,22 @@ class UIHelper:
         return md
 
     @staticmethod
+    def render_chainlit_wiki_context_md(structured_data):
+        if not isinstance(structured_data, dict):
+            return ""
+
+        analysis_framework = structured_data.get("analysis_framework", {}) or {}
+        wiki_context = str(analysis_framework.get("wiki_context", "") or "").strip()
+        if not wiki_context or wiki_context == "暂无外部概念补充":
+            return ""
+
+        return (
+            "### 🌐 Wiki补充\n\n"
+            "> 以下内容仅用于概念背景解释，不作为训练处方依据，也不对应本地知识库编号引用。\n\n"
+            f"{wiki_context}\n"
+        )
+
+    @staticmethod
     def build_evidence_preview_bundle(structured_data, raw_report, max_items: int = 5):
         import re
 

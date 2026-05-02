@@ -9,12 +9,10 @@ if str(BASE_DIR) not in sys.path:
 
 from marathon_qa_assistant.core.workflow import integrated_app, IntegratedState, load_user_profile
 
-async def run_integration_test():
-    print("[Start] 启动 16 节点工作流集成测试...")
-    
-    # 初始化状态
+
+def _build_state() -> IntegratedState:
     profile = load_user_profile()
-    state: IntegratedState = {
+    return {
         "query": "我最近膝盖有点疼，该如何调整我的全马训练计划？目前我每周跑 50 公里。",
         "mode": "team",
         "intent_type": "qa",
@@ -42,6 +40,33 @@ async def run_integration_test():
         "history": []
     }
 
+
+async def _run_integration() -> IntegratedState:
+    state = _build_state()
+    return await integrated_app.ainvoke(state)
+
+
+def test_integration_workflow_returns_consistent_final_state():
+    final_state = asyncio.run(_run_integration())
+
+    assert final_state["intent_type"] == "plan"
+    assert final_state["structured_report"] is not None
+    assert "summary" in final_state["structured_report"]
+    assert set(final_state["audit_scores"]).issuperset({"consistency", "safety", "roi", "summary"})
+
+    if final_state["final_report"] == "__FILL_FIELDS__":
+        assert final_state["missing_fields"] or not final_state["rag_sources"]
+        assert not final_state["guided_questions"]
+        assert "[guided_questions] 计划待补信息，跳过追问" in final_state["reasoning_log"]
+        assert "[guided_questions] 计划已生成，跳过追问" not in final_state["reasoning_log"]
+    else:
+        assert final_state["final_report"].strip()
+        assert "[formatter] 已生成结构化报告" in final_state["reasoning_log"]
+
+
+async def run_integration_test():
+    print("[Start] 启动 16 节点工作流集成测试...")
+    state = _build_state()
     print(f"\n[Question] 测试问题: {state['query']}")
     print("-" * 50)
 
@@ -66,6 +91,11 @@ async def run_integration_test():
                         if name == "formatter":
                             print(f"\n[Success] 最终报告生成成功 (长度: {len(output['final_report'])} 字符)")
 
+        final_state = await integrated_app.ainvoke(_build_state())
+        if final_state["final_report"] == "__FILL_FIELDS__":
+            print(f"[Assert] 计划待补字段: {', '.join(final_state['missing_fields'])}")
+        else:
+            print(f"[Assert] 最终报告长度: {len(final_state['final_report'])}")
         print("-" * 50)
         print("[Done] 集成测试完成！工作流各节点链路连通性良好。")
         

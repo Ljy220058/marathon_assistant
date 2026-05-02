@@ -1,9 +1,9 @@
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Depends, Security, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -15,28 +15,31 @@ if str(BASE_DIR) not in sys.path:
 
 from marathon_qa_assistant.core.workflow import integrated_app, IntegratedState, load_user_profile
 
+DEFAULT_API_USER_ID = "default_user"
+
 app = FastAPI(title="Marathon QA Assistant API", version="1.0.0")
 
 # 配置 CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    # Browsers reject "*" + credentials, so keep the API permissive but stateless.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 class QueryRequest(BaseModel):
     query: str
-    mode: str = "team" # team (coach) or research
-    user_id: str = "default_user"
+    mode: str = "team"  # team (coach) or research
+    user_id: str = DEFAULT_API_USER_ID
     stream: bool = False
 
 class QueryResponse(BaseModel):
     report: str
     structured_report: Optional[Dict[str, Any]] = None
     token_usage: Dict[str, int]
-    audit_scores: Dict[str, float]
+    audit_scores: Dict[str, Any]
     guided_questions: List[str]
 
 @app.get("/health")
@@ -46,6 +49,12 @@ async def health_check():
 @app.post("/query", response_model=QueryResponse)
 async def execute_query(request: QueryRequest):
     """同步查询接口"""
+    if request.user_id != DEFAULT_API_USER_ID:
+        raise HTTPException(
+            status_code=400,
+            detail=f"当前 API 仅支持单用户画像，user_id 必须为 {DEFAULT_API_USER_ID!r}。",
+        )
+
     profile = load_user_profile()
     
     initial_state: IntegratedState = {

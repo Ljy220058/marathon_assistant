@@ -5,7 +5,7 @@
 | 层次 | 技术选型 |
 |------|---------|
 | 编程语言 | Python |
-| UI / 本地服务承载 | Gradio（本地 Web UI） |
+| UI / 本地服务承载 | Chainlit（主交互 UI） + FastAPI（本地 API） |
 | Agent 编排 | LangGraph（`StateGraph`，含 conditional routing / loop / astream 流式事件 / HITL checkpoint） |
 | LLM 接入（两条线） | LangChain `ChatOllama`（直连 `http://localhost:11434`）；OpenAI 兼容 SDK `openai`（`base_url="http://localhost:11434/v1"`） |
 | RAG（向量检索） | TF‑IDF（scikit‑learn）+ 稀疏矩阵（scipy）+ 本地文件落盘（jsonl / pkl / npz） |
@@ -17,12 +17,20 @@
 
 | 文件 | 职责 |
 |------|------|
-| `integrated_platform.py` | **集成平台主入口**：Gradio 三页签（问答 / 知识库 / 评测）+ LangGraph 多代理工作流 + TF‑IDF RAG + Ollama。UI 侧通过 `integrated_app.astream(state)` 流式输出 reasoning log。 |
-| `langgraph_multi_agent.py` | **多 Agent 工作流命令行演示**：同步 `app.invoke()`，节点含 `classifier / coach / nutritionist / therapist / reviewer / formatter`，审核失败路由回对应专家重写（最多迭代，超限强制放行）。 |
-| `build_vector_kb.py` | **知识库构建 / 测试 CLI**（`--mode build | test`）：从 `domain_docs/` 抽取 → 清洗 → 切块 → TF‑IDF → 落盘；或对问题集跑检索测试导出报告。 |
-| `preprocess_docs.py` | **文档预处理 CLI**：PDF / DOCX / TXT / MD 抽取文本并规范化，写入 `cleaned_docs/` 与 `preprocess_report.json`。 |
-| `graphrag_project/run_query_experiments.py` | **GraphRAG 查询实验入口**：生成 `python -m graphrag query ...` 命令并读取 `output/*.parquet` 统计索引规模。 |
-| `实验七_多模态应用/multimodal_chatbot.py` | **多模态对比竞技场入口**：Gradio + OpenAI SDK（Ollama `/v1` 兼容）对两个视觉模型做双路流式输出。 |
+| `app_chainlit.py` / `run.bat` | **当前主入口**：Windows 下推荐通过 `run.bat` 启动，它会切换到项目根目录后执行 `chainlit run app_chainlit.py -w`；实际 Chainlit 逻辑位于 `marathon_qa_assistant/apps/chainlit_app.py`。 |
+| `marathon_qa_assistant/apps/api_app.py` | **当前 API 入口**：提供 `/health` 与 `/query`；`__main__` 通过 `uvicorn.run(app, host="0.0.0.0", port=8000)` 启动。 |
+| `scripts/evaluate_rag_ragas.py` | **当前 RAG 评测入口**：读取项目根 `vector_kb`，执行 Ragas 指标和传统检索指标评测，输出 `rag_eval_report.md`。 |
+| `scripts/generate_eval_dataset.py` | **评测集生成脚本**：为 RAG 评测生成或整理 `eval_dataset.json`。 |
+| `scripts/kb_gap_check.py` | **知识库缺口检查脚本**：用于定位知识库覆盖缺失与证据缺口。 |
+| `archive/2026-04-30_history_batch/` | **历史原型归档区**：旧版 `langgraph_multi_agent.py`、`evaluate_workflow.py` 等原型脚本已归档，不再作为当前入口。 |
+
+---
+
+### 2.1 当前高风险回归测试
+
+- `tests/test_high_risk_contracts.py`：补充跨模块契约测试，覆盖 `plan_nodes._build_plan_prompt()` 的周计划硬约束与证据引用规则、`profile_and_retrieval.build_ranked_evidence()` 的证据编号顺序、`output_nodes._build_structured_report()` 的结构化报告字段完整性，以及 `chainlit_app.update_sidebar()` 在 Coach Mode 下的 `Z1-Z9` 九区展示一致性。
+- `tests/test_wiki_module_contract.py`：补充 Wiki 辅助检索契约测试，覆盖概念类/研究类问题触发 Wiki、计划类问题跳过 Wiki、`expert_nodes._run_expert_llm()` 消费 `wiki_context` 但不把 Wiki 当作编号证据，以及 `output_nodes._build_structured_report()` 保留 Wiki 上下文用于审计。
+- `tests/test_api_cli_startup_contract.py`：补充入口启动契约测试，覆盖 `api_app.py` 的 `/health` 默认模型回退、`__main__` 分支对 `uvicorn.run(app, host="0.0.0.0", port=8000)` 的启动参数约束，以及 `app_chainlit.py` 壳入口对 Chainlit 符号透传和命令提示 `chainlit run app_chainlit.py -w` 的稳定性。
 
 ---
 
@@ -30,13 +38,12 @@
 
 | 文件 | 模式 | 说明 |
 |------|------|------|
-| `langgraph_multi_agent.py` | 多 Agent 协作（分类 → 专家 → 审核 → 迭代 → 排版） | 核心原型，审核失败循环路由回专家 |
-| `langgraph_router.py` | 条件路由 | `add_conditional_edges` 根据 `classify` 结果路由到 physiology / methodology / safety |
-| `langgraph_pipeline.py` | 串行流水线 | `research → write → review → revise → final_article` 线性连接 |
-| `langgraph_iterative.py` | 循环迭代 | `should_continue` 决定回到 generate 还是 END |
-| `langgraph_hitl.py` | HITL（Human-in-the-Loop） | `MemorySaver` checkpointer + 终端 `input()` 人工审核，支持 `thread_id` 状态持久化 |
-| `langgraph_agent.py` | 简化三段式 | 检索文献（mock） → LLM 分析 → 报告生成 |
-| `multi_rag_test.py` | 多代理 RAG 测试 | 与 `langgraph_multi_agent.py` 基本同构的测试脚本 |
+| `marathon_qa_assistant/core/workflow.py` | 工作流装配层 | 汇总各节点处理器并导出 `integrated_app`、状态模型与画像读写接口 |
+| `marathon_qa_assistant/core/workflow_graph.py` | 图构建 / fallback | 在有 `langgraph` 依赖时构建 `StateGraph`；缺失依赖时退化为 `FallbackIntegratedApp` |
+| `marathon_qa_assistant/nodes/security.py` | 安全入口 | 执行安全门控与模式分流前置校验 |
+| `marathon_qa_assistant/nodes/router.py` / `nodes/routing/__init__.py` | 条件路由 | 根据问题类型、画像状态与审查结果决定下一节点 |
+| `marathon_qa_assistant/nodes/profile_and_retrieval.py` | 画像与检索 | 执行画像补全、实体抽取、Wiki 概念辅助检索与证据融合排序；Wiki 不作为训练处方主证据源 |
+| `marathon_qa_assistant/nodes/plan_nodes.py` / `expert_nodes.py` / `output_nodes.py` | 计划生成与输出 | 负责计划骨架、逐日执行、审计、格式化与引导问题生成 |
 
 ---
 
@@ -53,7 +60,7 @@ llm = ChatOllama(
 )
 ```
 
-调用方：`integrated_platform.py`、`langgraph_multi_agent.py` 等所有 LangGraph 节点。
+调用方：`marathon_qa_assistant/apps/chainlit_app.py`、`marathon_qa_assistant/apps/api_app.py` 及当前工作流节点。
 
 ### 4.2 OpenAI 兼容 API（用于多模态 / GraphRAG）
 
@@ -76,19 +83,20 @@ client = OpenAI(
 
 ### 5.1 预处理 / 文档抽取
 
-- **脚本**：`preprocess_docs.py`
+- **当前实现入口**：`marathon_qa_assistant/services/document_preprocess.py` + `marathon_qa_assistant/services/vector_store.py`
 - **输入**：PDF（PyMuPDF `fitz` 优先，fallback `pypdf`）、DOCX（`python-docx`）、TXT、MD
-- **输出**：`cleaned_docs/*.cleaned.txt` + `preprocess_report.json`
+- **处理方式**：运行时直接抽取页面文本并做 `normalize_text()` 标准化，再进入切块流程；不再依赖项目根单独的 `preprocess_docs.py` 脚本作为现行入口
 
 ### 5.2 向量库构建 / 加载 / 检索
 
-- **脚本**：`build_vector_kb.py`
+- **当前实现入口**：`marathon_qa_assistant/services/vector_store.py::main()`
 - **切块**：`split_text(chunk_size, chunk_overlap)`，每块带 `chunk_id`
 - **向量化**：`sklearn.feature_extraction.text.TfidfVectorizer`
 - **持久化**：
   - `chunks.jsonl`（文本块列表）
   - `tfidf_vectorizer.pkl`（模型）
   - `tfidf_matrix.npz`（稀疏矩阵，fallback 纯 `pkl`）
+- **构建 / 测试 CLI**：仍通过 `--mode build | test` 暴露，但入口已收口到 `vector_store.py`，不再依赖项目根单独的 `build_vector_kb.py`
 - **检索**：`retrieve(query, top_k)` — query 归一化 + 关键词 hints 扩展 + 余弦 / 点积相似度
 
 ### 5.3 知识库目录结构
@@ -101,7 +109,8 @@ vector_kb/            # 全局 TF‑IDF 知识库（chunks.jsonl / vectorizer.pk
 ../_runtime_data/<project_name>/vector_kb_user/  # 运行期用户知识库产物（项目根目录外）
 ```
 
-- **加载优先级**：运行时入口（如 `app_chainlit.py`、`integrated_platform.py`、`api_service.py`）会优先加载 `vector_kb_user/`；仅当用户知识库尚未构建时，才回退到 `vector_kb/`。这样可避免“上传并重建成功，但重启后仍命中旧库”的错位问题。
+- **加载优先级**：运行时入口（如 `app_chainlit.py`、`marathon_qa_assistant/apps/chainlit_app.py`、`api_app.py`）会优先加载 `vector_kb_user/`；仅当用户知识库尚未构建时，才回退到 `vector_kb/`。这样可避免“上传并重建成功，但重启后仍命中旧库”的错位问题。
+- **Chainlit 启动时机**：`marathon_qa_assistant/apps/chainlit_app.py` 不再在模块导入阶段同步执行 `init_knowledge_base()`；改为在 `@cl.on_chat_start` 中按需调用 `ensure_knowledge_base_ready()`，并在重建索引后显式 `force_reload=True` 刷新，避免导入测试、热重载和入口探测阶段产生知识库加载副作用。
 - **构建落盘约束**：重建 `vector_kb_user/` 时，构建流程会先清理并重新创建 `faiss_db/` 目录，再写入 `index.faiss`；若该子目录不存在，FAISS 会直接报 `could not open ...\index.faiss for writing`。
 - **Windows 写盘兜底**：若 FAISS 在 Windows 运行时目录（尤其含中文路径）直接写盘失败，保存链路会先落到系统临时目录下的 ASCII 暂存目录，再将 `index.faiss / index.pkl` 回写到 `vector_kb_user/faiss_db/`，避免因路径兼容性导致重建失败。
 - **热重载隔离**：Chainlit 以 `-w` 启动时，项目目录内的运行期文件写入可能触发 `watchfiles` 重载；因此 `uploaded_docs/` 与 `vector_kb_user/` 已迁移到项目根目录外的 `_runtime_data/`，避免构建 FAISS 时被热重载打断。
@@ -157,10 +166,11 @@ vector_kb/            # 全局 TF‑IDF 知识库（chunks.jsonl / vectorizer.pk
 
 | 文件 | 职责 |
 |------|------|
-| `evaluate_workflow.py` | 调用 `langgraph_multi_agent.app` 批量跑测试用例，捕获 stdout 日志并生成 `workflow_evaluation_report.md` |
-| `run.py` | 极简导入检查脚本（确认 `langgraph_multi_agent` 可 import） |
-| `download_marathon_papers.py` / `download_specific_papers.py` | 语料获取辅助脚本，供 `domain_docs/` 或 GraphRAG input 使用 |
-| `visualize_graph.py` | 工作流 / 图谱结果可视化（输出 `workflow_graph.png` / `graph_visualization.png`） |
+| `scripts/evaluate_rag_ragas.py` | 当前 RAG 评测主脚本，输出 `rag_eval_report.md` 并区分精确块 / 同页 / 同文档命中口径 |
+| `scripts/generate_eval_dataset.py` | 生成或整理评测样本，供 RAG 评测脚本使用 |
+| `scripts/kb_gap_check.py` | 检查知识库覆盖缺口与问题-证据不匹配情况 |
+| `tests/minimal_import_test.py` | 最小导入冒烟检查，确认核心工作流、节点、服务与 UI 组件可导入 |
+| `archive/2026-04-30_history_batch/` | 历史评测原型归档区，旧版 `evaluate_workflow.py` 等文件保留备查，不作为当前评测入口 |
 
 ---
 
@@ -170,7 +180,7 @@ vector_kb/            # 全局 TF‑IDF 知识库（chunks.jsonl / vectorizer.pk
   - `Z1 <72%`、`Z2 72-78%`、`Z3 79-84%`、`Z4 85-89%`、`Z5 90-93%`、`Z6 94-97%`、`Z7 98-100%`、`Z8 101-105%`、`Z9 >105%`
 - **配速区间（T-Pace）**：已升级为九区模型 `Z1-Z9`
   - `Z1 115%-130%`、`Z2 108%-115%`、`Z3 102%-108%`、`Z4 98%-102%`、`Z5 95%-100%`、`Z6 92%-96%`、`Z7 90%-94%`、`Z8 85%-92%`、`Z9 75%-88%`
-- **展示与生成对齐策略**：Chainlit 画像页、画像持久化以及训练计划 Prompt 统一展示 `心率 Z1-Z9 + 配速 Z1-Z9`，不再将 `Z6-Z9` 的配速列写死为 `—`
+- **展示与生成对齐策略**：Chainlit 侧边栏 `update_sidebar()` 已改为通过共享的九区顺序渲染完整 `心率 Z1-Z9 + 配速 Z1-Z9` 表格；画像持久化与训练计划 Prompt 继续复用同一套九区口径，不再将 `Z6-Z9` 的配速列写死为 `—`
 - **训练计划稳定性保障**：
   - **周结构约束**：强制执行“双质一长、高强度间隔、周末长距离”等规则，并引入 `repair_week_structure` 自动修复不合理骨架。
   - **参数唯一来源**：逐日生成中，`reps / distance / duration / rest / zone` 等主课参数统一来自 `decide_workout_draft()`；渲染层只负责把 draft 转成表格文本，不再允许 LLM 自由决定训练参数。
@@ -200,19 +210,19 @@ vector_kb/            # 全局 TF‑IDF 知识库（chunks.jsonl / vectorizer.pk
 ## 9 模块依赖关系（简化）
 
 ```
-integrated_platform.py（主入口）
-├── langgraph_multi_agent.py（工作流定义 + app）
-│   ├── build_vector_kb.py（TF-IDF retrieve）
-│   │   └── preprocess_docs.py（文档抽取）
+app_chainlit.py / run.bat（主入口）
+├── marathon_qa_assistant/apps/chainlit_app.py（Chainlit UI）
+│   ├── marathon_qa_assistant/core/workflow.py（工作流装配）
+│   │   └── marathon_qa_assistant/core/workflow_graph.py（图构建 / fallback）
+│   ├── marathon_qa_assistant/services/vector_store.py（检索与索引）
 │   └── ChatOllama（LLM）
 │
-graphrag_project/
-├── settings.yaml（GraphRAG 配置 + LiteLLM）
-├── run_query_experiments.py（查询实验）
-└── （外部 Microsoft GraphRAG CLI）
+marathon_qa_assistant/apps/api_app.py（FastAPI 入口）
+├── marathon_qa_assistant/core/workflow.py
+└── uvicorn
 
-实验七_多模态应用/multimodal_chatbot.py
-└── openai SDK（Ollama /v1 兼容）
+scripts/evaluate_rag_ragas.py / generate_eval_dataset.py / kb_gap_check.py
+└── marathon_qa_assistant/services/vector_store.py
 ```
 
 ---
@@ -240,7 +250,8 @@ graphrag_project/
 ### 10.2 前端展示策略
 
 - **展示位置**：最终结构化报告顶部增加“质量与安全审计”区块，先展示三项分数，再展示“评分依据”与“关联证据”。
-- **兼容性**：Chainlit 与 Gradio 均复用 `UIHelper.render_structured_report()`，因此无需分别维护两套审计 UI。
+- **当前入口**：审计区块当前由 Chainlit 链路消费；`UIHelper.render_structured_report()` 仍保留为共享 Markdown 渲染器，但项目已不再维护 Gradio 作为现行主入口。
+- **Wiki 补充展示**：当 `structured_report.analysis_framework.wiki_context` 非空时，Chainlit 会在主报告下方额外发送一个 `Wiki补充` 区块，显式展示外部概念背景，并提示该内容不作为训练处方依据。
 - **来源说明**：
   - 一致性：展示“审核状态 + 迭代次数”。
   - 安全性：展示“治疗师审查反馈 + 计划模式证据校验结果”。
@@ -251,7 +262,7 @@ graphrag_project/
 
 - `expert_nodes.py` 负责计算动态分数与评分依据，不关心 UI 样式。
 - `output_nodes.py` 负责把 `audit_scores`、`score_sources` 和 `evidence_base` 组装进 `structured_report.audit_block`。
-- `legacy_ui.py` 负责将审计元数据渲染成 Markdown 面板，保证 Chainlit/Gradio 一致展示。
+- `legacy_ui.py` 负责将审计元数据与 `Wiki补充` 区块渲染成 Markdown 面板，供当前 Chainlit 输出链路复用，并为后续非 Chainlit 渲染器保留统一格式。
 
 ## 11 赛事倒计时与日期容错（当前实现）
 

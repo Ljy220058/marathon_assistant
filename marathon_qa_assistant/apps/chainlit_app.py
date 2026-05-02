@@ -48,6 +48,7 @@ except ImportError:
 
 from marathon_qa_assistant.services.vector_store import (
     load_vector_kb, 
+    probe_vector_kb_health,
     retrieve,
     collect_chunks,
     build_hybrid_indices,
@@ -55,6 +56,17 @@ from marathon_qa_assistant.services.vector_store import (
     infer_source_path
 )
 from marathon_qa_assistant.nodes.profile_and_retrieval import _parse_profile_form, FIELD_LABELS, FIELD_HINTS
+from marathon_qa_assistant.apps.chainlit.ui_config import build_zone_mapping_table
+
+_KB_READY = False
+_KB_VECTOR_DIR = None
+
+
+def _kb_candidate_dirs() -> list[Path]:
+    preferred_vector_dir = get_preferred_vector_dir()
+    if preferred_vector_dir == USER_VECTOR_DIR:
+        return [USER_VECTOR_DIR, DEFAULT_VECTOR_DIR]
+    return [DEFAULT_VECTOR_DIR]
 
 class KBHelper:
     @staticmethod
@@ -119,28 +131,63 @@ def _build_expert_elements() -> list[cl.Image]:
     avatar_path = str(Path(__file__).parents[2] / "assets" / "images" / "avatar.png")
     return [cl.Image(name="Assistant", path=avatar_path, display="inline")]
 
-def init_knowledge_base():
-    """初始化全局知识库"""
+def init_knowledge_base(force_reload: bool = False):
+    """初始化全局知识库。仅在真正进入运行态后调用，避免 import-time 副作用。"""
+    global _KB_READY, _KB_VECTOR_DIR
+    candidate_dirs = _kb_candidate_dirs()
+    preferred_vector_dir = candidate_dirs[0]
+    if _KB_READY and not force_reload and _KB_VECTOR_DIR == preferred_vector_dir:
+        return False
+
     cl.logger.info("正在加载本地全局知识库 (Hybrid: TF-IDF + BM25)...")
-    try:
-        active_vector_dir = get_preferred_vector_dir()
-        chunks, vectorizer, matrix, bm25 = load_vector_kb(active_vector_dir)
+    failures = []
+    for candidate_dir in candidate_dirs:
+        probe = probe_vector_kb_health(candidate_dir)
+        if not probe["ok"]:
+            reason = probe["reason"]
+            failures.append(f"{probe['source']}:{reason}")
+            cl.logger.warning(f"跳过不健康知识库 ({candidate_dir}): {reason}")
+            continue
+
+        try:
+            chunks, vectorizer, matrix, bm25 = load_vector_kb(candidate_dir)
+        except Exception as exc:
+            failures.append(f"{probe['source']}:加载失败:{exc}")
+            cl.logger.warning(f"知识库加载失败，继续尝试下一候选目录 ({candidate_dir}): {exc}")
+            continue
+
+        if not matrix:
+            reason = "探测通过但加载结果为空"
+            failures.append(f"{probe['source']}:{reason}")
+            cl.logger.warning(f"知识库加载结果为空，继续尝试下一候选目录 ({candidate_dir})")
+            continue
+
         set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
         global_state.chunks = chunks
         global_state.kb_chunks_len = len(chunks)
-        
-        # 只有在 matrix (FAISS 实例) 真正加载成功时才报加载成功
-        if matrix:
-            cl.logger.info(f"全局知识库加载成功！当前目录: {active_vector_dir}")
-        else:
-            cl.logger.warning(f"全局知识库以空库模式启动（未找到 FAISS 索引）。当前目录: {active_vector_dir}")
-    except Exception as e:
-        error_msg = str(e)
-        cl.logger.error(f"全局知识库加载失败: {error_msg}")
-        set_kb_data([], None, None, retrieve)
+        global_state.kb_source = probe["source"]
+        global_state.kb_health_reason = ""
+        _KB_READY = True
+        _KB_VECTOR_DIR = candidate_dir
+        cl.logger.info(
+            f"全局知识库加载成功！来源: {probe['source']} | 当前目录: {candidate_dir} | chunks: {len(chunks)}"
+        )
+        return True
 
-# 同步初始化知识库
-init_knowledge_base()
+    failure_reason = " | ".join(failures) if failures else "未找到可用知识库产物"
+    cl.logger.warning(f"全局知识库以空库模式启动: {failure_reason}")
+    set_kb_data([], None, None, retrieve)
+    global_state.chunks = []
+    global_state.kb_chunks_len = 0
+    global_state.kb_source = "empty"
+    global_state.kb_health_reason = failure_reason
+    _KB_READY = False
+    _KB_VECTOR_DIR = None
+    return False
+
+def ensure_knowledge_base_ready(force_reload: bool = False):
+    """在 Chainlit 会话真正启动后再加载知识库。"""
+    return init_knowledge_base(force_reload=force_reload)
 
 async def update_sidebar(profile_override=None):
     """更新侧边栏运动员档案或知识图谱统计"""
@@ -168,6 +215,8 @@ async def update_sidebar(profile_override=None):
         hz = profile.get("hr_zones", {})
         pz = profile.get("pace_zones", {})
         
+        zone_mapping_table = build_zone_mapping_table(hz, pz)
+
         sidebar_content = f"""### 🏃‍♂️ 运动员档案 (Coach)
         
 **核心指标**
@@ -177,14 +226,8 @@ async def update_sidebar(profile_override=None):
 - **目标赛事**: `{profile.get('goal', '未知')}`
 - **赛事倒计时**: `{countdown_str}`
 
-**区间映射 (Z1-Z5)**
-| 区间 | 心率 | 配速 |
-| :--- | :--- | :--- |
-| **Z1** | {hz.get('Z1', '-').split(' ')[0]} | {pz.get('Z1', '-')} |
-| **Z2** | {hz.get('Z2', '-').split(' ')[0]} | {pz.get('Z2', '-')} |
-| **Z3** | {hz.get('Z3', '-').split(' ')[0]} | {pz.get('Z3', '-')} |
-| **Z4** | {hz.get('Z4', '-').split(' ')[0]} | {pz.get('Z4', '-')} |
-| **Z5** | {hz.get('Z5', '-').split(' ')[0]} | {pz.get('Z5', '-')} |
+**区间映射 (Z1-Z9)**
+{zone_mapping_table}
 
 ---
 *数据实时同步自个人画像文件*
@@ -251,6 +294,8 @@ async def set_chat_profiles():
 async def start():
     if cl.user_session.get("initialized"):
         return
+
+    ensure_knowledge_base_ready()
     
     chat_profile = cl.user_session.get("chat_profile")
     profile = load_user_profile()
@@ -578,6 +623,9 @@ async def main(message: cl.Message):
             final_state.get("final_report"),
             include_sources=True
         )
+        wiki_panel_md = UIHelper.render_chainlit_wiki_context_md(
+            final_state.get("structured_report")
+        )
         msg.content = report_html
         
         # 关联 PDF 预览 Action 载荷，使正文中的 action:view_pdf 链接生效
@@ -597,6 +645,9 @@ async def main(message: cl.Message):
             ]
         
         await msg.update()
+
+        if wiki_panel_md:
+            await cl.Message(content=wiki_panel_md).send()
         
         # 发送统计信息
         usage = final_state.get("token_usage", {})
@@ -817,7 +868,7 @@ async def on_reindex_kb(action: cl.Action):
         status, meta = await cl.make_async(build_kb_sync)(valid_files)
         if meta:
             await cl.Message(content=f"✅ **索引构建成功！**\n- 总分片数: `{meta['total_chunks']}`\n- 产物目录: `{meta['artifacts'].get('faiss_dir')}`").send()
-            init_knowledge_base()
+            ensure_knowledge_base_ready(force_reload=True)
             actions = [
                 cl.Action(name="build_graph_ai", payload={"mode": "full"}, label="全量重构图谱（推荐）", icon="refresh")
             ]

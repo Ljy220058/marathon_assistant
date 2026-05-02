@@ -13,6 +13,8 @@ pydantic==2.9.2
 # Vector DB & RAG
 faiss-cpu>=1.7.4
 ragas>=0.1.0
+datasets>=2.18.0
+openai>=1.30.0
 
 # Document Processing & OCR
 python-docx>=0.8.11
