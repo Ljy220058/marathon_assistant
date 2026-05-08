@@ -31,6 +31,18 @@ DEFAULT_PROFILE: Dict[str, Any] = {
 }
 
 
+def _coerce_number(value: Any, default: float = 0) -> float:
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        text = value.strip().replace("+", "")
+        try:
+            return float(text)
+        except ValueError:
+            return default
+    return default
+
+
 def sync_user_zones(profile: Dict[str, Any]) -> bool:
     """
     根据 LTHR 和 T-Pace 同步心率和配速区间。
@@ -39,7 +51,7 @@ def sync_user_zones(profile: Dict[str, Any]) -> bool:
     changed = False
     
     # 1. 同步心率区间 (强制 9 区)
-    lthr = profile.get("lthr", 0)
+    lthr = _coerce_number(profile.get("lthr", 0))
     if lthr > 40:
         hr_zones = profile.get("hr_zones", {})
         # 如果是空的，或者不是 9 区，或者需要根据最新逻辑重算
@@ -96,8 +108,9 @@ def save_user_profile(profile: Dict[str, Any]) -> None:
     try:
         # 保存前强制触发一次同步，确保修改了 lthr/t_pace 后区间随之更新
         # 注意：这里我们放宽 sync_user_zones 的触发条件，或者直接在这里强制重算
-        if profile.get("lthr", 0) > 40:
-            profile["hr_zones"] = calculate_hr_zones(profile["lthr"])
+        lthr = _coerce_number(profile.get("lthr", 0))
+        if lthr > 40:
+            profile["hr_zones"] = calculate_hr_zones(lthr)
         if profile.get("t_pace"):
             profile["pace_zones"] = calculate_pace_zones(profile["t_pace"])
 

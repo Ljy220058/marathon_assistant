@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
@@ -177,7 +177,7 @@ def test_build_structured_report_contains_required_contract_fields():
     assert any("风险提示" in item for item in report["recommendations"])
 
 
-def test_update_sidebar_renders_nine_zone_table_in_coach_mode(monkeypatch):
+def test_update_sidebar_renders_medium_lightweight_training_profile(monkeypatch):
     from marathon_qa_assistant.apps import chainlit_app
 
     class _FakeSession:
@@ -230,9 +230,19 @@ def test_update_sidebar_renders_nine_zone_table_in_coach_mode(monkeypatch):
     asyncio.run(chainlit_app.update_sidebar(profile_override=profile))
 
     payload = _FakeText.sent_payloads[-1]
-    assert payload["name"] == "Athlete Stats"
+    assert payload["name"] == "马拉松助手 · 统一面板"
     assert payload["display"] == "side"
     assert payload["for_id"] == "sidebar-1"
-    assert "**区间映射 (Z1-Z9)**" in payload["content"]
-    assert "| **Z9** |" in payload["content"]
-    assert "Z1-Z5" not in payload["content"]
+    assert "### 🏃‍♂️ 核心画像" in payload["content"]
+    assert "**强度模型**" in payload["content"]
+    assert "LTHR 九区 Z1-Z9" in payload["content"]
+    assert "**阈值配速**" in payload["content"]
+    assert "3:50/km" in payload["content"]
+    assert "Z1-Z9 为主，配速仅参考" in payload["content"]
+    assert "**强度速查**" in payload["content"]
+    assert "| **Z9** | 冲刺神经肌肉区 | 119 bpm | 9:00/km |" in payload["content"]
+    assert "### 📚 证据库" in payload["content"]
+    assert "篇资料" in payload["content"]
+    assert "**心率区间与配速（Z1-Z9）**" not in payload["content"]
+    assert "Z9 (Z9 冲刺神经肌肉区" not in payload["content"]
+    assert "核心实体" not in payload["content"]

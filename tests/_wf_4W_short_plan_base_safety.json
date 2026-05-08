@@ -1,0 +1,87 @@
+{
+  "query": "请给我制定4周半马训练计划，我每周跑80公里，可训练日为周二、周四、周六、周日，目标安全完赛，避免受伤。",
+  "profile_goal": "半马 90 分",
+  "structured_training_plan": {},
+  "structured_report": {
+    "title": "马拉松专业分析报告",
+    "summary": "## 需要补充训练画像\n为了生成更稳的训练计划，请先补充以下信息：\n",
+    "findings": [
+      {
+        "key": "用户问题",
+        "value": "请给我制定4周半马训练计划，我每周跑80公里，可训练日为周二、周四、周六、周日，目标安全完赛，避免受伤。"
+      },
+      {
+        "key": "意图分类",
+        "value": "therapist"
+      },
+      {
+        "key": "识别实体",
+        "value": "半马, 训练计划"
+      },
+      {
+        "key": "图谱关联",
+        "value": "知识图谱关联路径：\n- 年度周期问题 --(讨论)--> 长期训练计划的重要性\n- 组织竞赛 --(使困难)--> 训练计划的制定和实施\n- 训练 --(与)--> 目标\n- 训练 --(与)--> 要求\n- 训练 --(与)--> 特征\n- 训练 --(随)--> 特定训练时期\n- 训练 --(可能变化)--> 一般训练\n- 训练 --(可能变化)--> 针对比赛的训练"
+      },
+      {
+        "key": "一致性评分",
+        "value": "0"
+      },
+      {
+        "key": "安全性评分",
+        "value": "0"
+      },
+      {
+        "key": "知识回报率 (ROI)",
+        "value": "0%"
+      }
+    ],
+    "recommendations": [
+      "当前轮次未触发额外审查反馈"
+    ],
+    "report_metadata": {
+      "version": "2.1",
+      "mode": "subagent",
+      "title": "Marathon QA Assistant Report"
+    },
+    "analysis_framework": {
+      "query": "请给我制定4周半马训练计划，我每周跑80公里，可训练日为周二、周四、周六、周日，目标安全完赛，避免受伤。",
+      "key_entities": [
+        "半马",
+        "训练计划"
+      ],
+      "graph_context": "知识图谱关联路径：\n- 年度周期问题 --(讨论)--> 长期训练计划的重要性\n- 组织竞赛 --(使困难)--> 训练计划的制定和实施\n- 训练 --(与)--> 目标\n- 训练 --(与)--> 要求\n- 训练 --(与)--> 特征\n- 训练 --(随)--> 特定训练时期\n- 训练 --(可能变化)--> 一般训练\n- 训练 --(可能变化)--> 针对比赛的训练",
+      "wiki_context": ""
+    },
+    "adaptive_adjustment": {},
+    "structured_training_plan": null,
+    "training_plan_overview": {},
+    "training_explanation_panel": {},
+    "daily_workout_cards": [],
+    "weekly_structure_constraints": {},
+    "weekly_structure_validation": {},
+    "phase_summary": [],
+    "training_plan_weeks": [],
+    "execution_steps": [
+      {
+        "task_id": "TASK-1",
+        "objective": "直接回复用户问题",
+        "findings": {
+          "summary": "## 需要补充训练画像\n为了生成更稳的训练计划，请先补充以下信息：\n"
+        },
+        "conclusion": "当前轮次以直接问答形式完成。"
+      }
+    ],
+    "audit_block": {
+      "scores": {
+        "consistency": 0,
+        "safety": 0,
+        "roi": 0,
+        "summary": ""
+      },
+      "review_feedback": "",
+      "risk_alert": ""
+    },
+    "evidence_base": []
+  },
+  "final_report": "## 需要补充训练画像\n为了生成更稳的训练计划，请先补充以下信息：\n"
+}

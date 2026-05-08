@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Any, Dict, List
 import re
 
@@ -6,7 +7,10 @@ try:
 except ImportError:
     RunnableConfig = Any
 
+from marathon_qa_assistant.core.periodization import Macrocycle
 from marathon_qa_assistant.core.state_models import IntegratedState
+from marathon_qa_assistant.core.training_plan_context import align_plan_duration_context
+from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     ensure_usage,
@@ -112,11 +116,44 @@ def _fmt_pace(seconds: float) -> str:
     return f"{m}:{s:02d}"
 
 
+def _build_cycle_phase_summary(total_weeks: int) -> str:
+    macrocycle = Macrocycle.from_race_date(
+        race_date=date.today() + timedelta(weeks=max(1, total_weeks)),
+        total_weeks=total_weeks,
+    )
+    lines = []
+    for mesocycle in macrocycle.mesocycles:
+        lines.append(
+            f"- {mesocycle.name}：第{mesocycle.start_week}-{mesocycle.end_week}周，"
+            f"{mesocycle.goal}（周跑量系数≈{mesocycle.weekly_mileage_ratio:.2f}）"
+        )
+    return "\n".join(lines)
+
+
+def _resolve_weeks_source_label(source: str) -> str:
+    return {
+        "query": "用户显式请求",
+        "target_race_date": "比赛倒计时",
+        "profile": "画像存量字段",
+        "default": "系统默认值",
+    }.get(source, source)
+
+
 def _build_plan_prompt(state: IntegratedState) -> str:
     rag_sources = state.get("rag_sources", [])
-    profile = state.get("user_profile", {})
+    plan_context = align_plan_duration_context(state.get("query", ""), state.get("user_profile", {}))
+    profile = plan_context["aligned_profile"]
     evidence_lines = format_evidence_lines(rag_sources, limit=3)
     graph_context = state.get("graph_context", "")
+    requested_weeks = state.get("requested_weeks")
+    if requested_weeks is None:
+        requested_weeks = plan_context["requested_weeks"]
+    requested_weeks_text = f"{requested_weeks} 周" if requested_weeks else "未显式指定"
+    target_race_weeks = plan_context["target_race_weeks"]
+    target_race_weeks_text = f"{target_race_weeks} 周" if target_race_weeks else "未换算"
+    resolved_plan_weeks = plan_context["resolved_plan_weeks"]
+    weeks_source_label = _resolve_weeks_source_label(plan_context["resolved_from"])
+    cycle_phase_summary = _build_cycle_phase_summary(resolved_plan_weeks)
 
     zones = _compute_pace_zones(profile)
     derived = zones.get('_derived_from', 'unknown')
@@ -131,7 +168,7 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 
     pace_table = "\n".join(pace_table_lines) if pace_table_lines else "（无可用配速数据，请根据用户描述推导）"
 
-    prompt = f"""你是马拉松训练计划教练。你必须生成一份严谨、结构完整的周训练计划。
+    prompt = f"""你是马拉松训练计划教练。你必须先按给定训练周期理解当前阶段，再生成严谨、结构完整的训练计划输出。
 
 ══════════════════════════
 【用户需求】
@@ -148,6 +185,29 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 - 场地偏好：{profile.get('terrain_preference', '未指定')}
 - VO₂max：{profile.get('vo2max', '未设置')}
 - 用户配速偏好：{pace_pref or '未设置'}
+
+"""
+
+    enhancement_missing = state.get("enhancement_missing_fields", [])
+    if enhancement_missing:
+        from marathon_qa_assistant.nodes.profile_and_retrieval import ENHANCEMENT_FIELD_LABELS
+        enhancement_hints = "\n".join(
+            f"- {ENHANCEMENT_FIELD_LABELS.get(f, f)}：未设置（使用默认估算值）"
+            for f in enhancement_missing
+        )
+        prompt += f"""═══════════════════════════
+【可补强精度字段】（以下字段缺失，当前使用默认估算值，补充后可获得更个性化训练计划）
+{enhancement_hints}
+
+"""
+
+    prompt += f"""═══════════════════════════
+【训练周期上下文】（后续训练负荷递进必须严格参考这里，不得回退为默认 12 周或"第一周计划"心智模型）
+- 本次显式请求周数：{requested_weeks_text}
+- 比赛倒计时换算周数：{target_race_weeks_text}
+- 当前对齐后的训练周期：{resolved_plan_weeks} 周（来源：{weeks_source_label}）
+- 周期阶段摘要：
+{cycle_phase_summary}
 
 ══════════════════════════
 【生理学配速映射】（推导来源: {derived}，你必须在对应训练类型中严格使用这些配速区间）
@@ -217,17 +277,19 @@ def _build_plan_subtasks(state: IntegratedState) -> List[Dict[str, Any]]:
     query = state.get("query", "")
     entities = state.get("entities", [])[:3]
     focus_text = "\u3001".join(entities) if entities else "训练目标"
+    plan_context = align_plan_duration_context(query, state.get("user_profile", {}))
+    resolved_plan_weeks = plan_context["resolved_plan_weeks"]
 
     return [
         {
             "task_id": "TASK-1",
             "objective": "明确训练目标与约束",
-            "focus": f"基于问题\u201c{query}\u201d提炼目标、风险与周期范围",
+            "focus": f"基于问题\u201c{query}\u201d提炼目标、风险与 {resolved_plan_weeks} 周周期范围",
         },
         {
             "task_id": "TASK-2",
             "objective": "生成训练结构",
-            "focus": f"围绕 {focus_text} 设计训练日结构与强度分配",
+            "focus": f"围绕 {focus_text} 设计 {resolved_plan_weeks} 周周期下的训练日结构与强度分配",
         },
         {
             "task_id": "TASK-3",
@@ -275,25 +337,41 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     if not subtasks:
         return {
             "draft_plan": "",
+            "structured_training_plan": None,
             "reasoning_log": ["[executor] 没有可执行的子任务"],
             "token_usage": ensure_usage(state.get("token_usage")),
         }
 
     rag_sources = state.get("rag_sources", [])
     prompt = _build_plan_prompt(state)
+    structured_training_plan = build_structured_training_plan_skeleton(
+        query=state.get("query", ""),
+        profile=state.get("user_profile", {}),
+        requested_weeks=state.get("requested_weeks"),
+    )
 
     try:
         content, usage = await ai_invoke(prompt, config, state.get("token_usage"))
-    except Exception:
+        fallback_reason = ""
+    except Exception as exc:
+        fallback_reason = f"[executor] LLM 调用失败，已使用静态模板兜底: {exc}"
         profile = state.get("user_profile", {})
         evidence_lines = format_evidence_lines(rag_sources, limit=3)
         content = _static_executor_fallback(state, profile, evidence_lines)
         usage = ensure_usage(state.get("token_usage"))
 
+    logs = [
+        f"[executor] 已生成 {structured_training_plan.get('plan_meta', {}).get('actual_weeks', 0)} 周结构化训练骨架",
+        "[executor] 已通过 LLM 生成完整周训练计划",
+    ]
+    if fallback_reason:
+        logs.append(fallback_reason)
+
     return {
         "draft_plan": content,
+        "structured_training_plan": structured_training_plan,
         "is_approved": True,
         "rag_sources": rag_sources,
         "token_usage": usage,
-        "reasoning_log": ["[executor] 已通过 LLM 生成完整周训练计划"],
+        "reasoning_log": logs,
     }

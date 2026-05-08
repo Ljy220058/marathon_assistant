@@ -10,7 +10,14 @@ class _FakeIntegratedApp:
     async def ainvoke(self, initial_state):
         return {
             "final_report": "测试报告",
-            "structured_report": {"summary": "ok"},
+            "structured_report": {
+                "summary": "ok",
+                "training_explanation_panel": {
+                    "panel_version": "v2",
+                    "coverage_status": "full",
+                    "weeks": [],
+                },
+            },
             "token_usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
             "audit_scores": {"consistency": 85, "safety": 90, "roi": 60, "summary": "通过"},
             "guided_questions": ["后续问题"],
@@ -40,3 +47,9 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
     payload = response.json()
     assert payload["report"] == "测试报告"
     assert payload["audit_scores"]["summary"] == "通过"
+    assert payload["training_explanation_panel"] == {
+        "panel_version": "v2",
+        "coverage_status": "full",
+        "weeks": [],
+    }
+    assert payload["structured_report"]["training_explanation_panel"] == payload["training_explanation_panel"]

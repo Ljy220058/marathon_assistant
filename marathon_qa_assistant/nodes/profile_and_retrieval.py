@@ -10,6 +10,10 @@ except ImportError:
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
+from marathon_qa_assistant.core.training_plan_context import (
+    align_plan_duration_context,
+    derive_plan_duration_weeks,
+)
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     build_rag_sources,
@@ -270,6 +274,7 @@ PROFILE_FIELD_ORDER = [
     "weekly_mileage",
     "lthr",
     "t_pace",
+    "pace_preference",
     "available_days",
     "max_session_minutes",
     "terrain_preference",
@@ -327,9 +332,38 @@ def profile_selections_to_save(selections: dict) -> dict:
             result[profile_key] = ",".join(val)
         else:
             result[profile_key] = str(val)
+    target_race_date = result.get("target_race_date")
+    derived_weeks = derive_plan_duration_weeks(target_race_date)
+    if derived_weeks is not None:
+        result["plan_duration_weeks"] = derived_weeks
     return result
 
+MINIMUM_REQUIRED_FIELDS = ["goal", "weekly_mileage", "available_days"]
+
+ENHANCEMENT_FIELDS = [
+    "vo2max", "lthr", "t_pace", "experience_level",
+    "target_race_date", "max_session_minutes", "pace_preference",
+    "terrain_preference", "training_types",
+]
+
+ENHANCEMENT_FIELD_LABELS = {
+    "vo2max": "最大摄氧量 (VO₂max) — 用于更精准的心率区间推算",
+    "lthr": "乳酸阈心率 (LTHR) — 用于九区心率划分",
+    "t_pace": "阈值配速 (T-Pace) — 用于九区配速划分和强度控制",
+    "experience_level": "经验水平 — 用于训练负荷阶梯校准",
+    "target_race_date": "距比赛天数 — 用于训练周期精确对齐",
+    "max_session_minutes": "单次最长训练时长 — 用于课表时长上限",
+    "pace_preference": "配速偏好 — 用于个性化配速目标",
+    "terrain_preference": "场地偏好 — 用于场地匹配",
+    "training_types": "课表类型偏好 — 用于课表类型优先级",
+}
+
+
 def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> List[str]:
+    """
+    仅检查最小必要字段（硬阻塞）：goal / weekly_mileage / available_days。
+    增强字段（vo2max、lthr 等）缺失不阻塞计划生成，由 _detect_missing_enhancement_fields() 单独检测。
+    """
     missing: List[str] = []
     intent = state.get("intent_type", "")
     query = (state.get("query", "") or "").lower()
@@ -339,9 +373,7 @@ def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> L
 
     has_goal = profile.get("goal") or profile.get("target_race")
     has_weekly = profile.get("weekly_mileage")
-    has_vo2max = profile.get("vo2max")
-    has_lthr = profile.get("lthr")
-    has_pace = profile.get("t_pace") or profile.get("pace_preference")
+    has_days = profile.get("available_days")
 
     query_has_goal = any(kw in query for kw in ["半马", "全马", "10k", "5k", "马拉松", "比赛", "目标", "pb", "分钟", "小时"])
     query_has_pace = any(kw in query for kw in ["配速", "分", "/km"])
@@ -350,19 +382,26 @@ def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> L
         missing.append("goal")
     if not has_weekly:
         missing.append("weekly_mileage")
-    if not has_vo2max:
-        missing.append("vo2max")
-    if not has_lthr:
-        missing.append("lthr")
-    if not has_pace:
-        missing.append("t_pace")
-
-    has_days = profile.get("available_days")
     if not has_days:
         missing.append("available_days")
 
     if missing and query_has_goal and query_has_pace:
         missing = []
+
+    return missing
+
+
+def _detect_missing_enhancement_fields(state: IntegratedState, profile: Dict[str, Any]) -> List[str]:
+    """检测增强字段缺失（非硬阻塞），用于计划生成后给出补全提示。"""
+    missing: List[str] = []
+    intent = state.get("intent_type", "")
+
+    if intent != "plan":
+        return missing
+
+    for field in ENHANCEMENT_FIELDS:
+        if not profile.get(field):
+            missing.append(field)
 
     return missing
 
@@ -537,17 +576,31 @@ async def profiler_node(state: IntegratedState, config: RunnableConfig) -> dict:
         if extracted:
             current_profile.update(extracted)
 
+    week_context = align_plan_duration_context(query, current_profile) if intent == "plan" else {}
+    if week_context:
+        current_profile = week_context["aligned_profile"]
+
     save_user_profile(current_profile)
     missing = _detect_missing_fields(state, current_profile)
+    enhancement_missing = _detect_missing_enhancement_fields(state, current_profile)
     status = "画像已同步"
     if missing:
-        status = "画像可用，但缺少处方关键指标"
+        status = "画像可用，但缺少最小必要字段（硬阻塞）"
+    elif enhancement_missing:
+        status = f"画像已就绪，{len(enhancement_missing)} 个增强字段待补充（不阻塞生成）"
     if extracted:
         status += f" (从对话提取 {len(extracted)} 个字段)"
+    if week_context:
+        status += (
+            f" (训练周期对齐为 {week_context['resolved_plan_weeks']} 周，"
+            f"来源: {week_context['resolved_from']})"
+        )
 
     return {
         "user_profile": current_profile,
+        "requested_weeks": week_context.get("requested_weeks"),
         "missing_fields": missing,
+        "enhancement_missing_fields": enhancement_missing,
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": [f"[profiler] {status}"],
     }
@@ -736,12 +789,23 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
 
     if intent == "plan":
         missing = state.get("missing_fields", [])
-        labels = [FIELD_LABELS.get(k, k) for k in missing]
+        if missing:
+            labels = [FIELD_LABELS.get(k, k) for k in missing]
+            return {
+                "final_report": (
+                    "## 需要补充训练画像\n"
+                    "为了生成更稳的训练计划，请先补充以下信息：\n"
+                    + "\n".join(f"- {label}" for label in labels)
+                ),
+                "missing_fields": missing,
+                "missing_info_status": "awaiting_profile",
+                "reasoning_log": [f"[missing_info] 缺少画像字段: {', '.join(labels)}，已发送逐字段填写入口"],
+                "token_usage": ensure_usage(state.get("token_usage")),
+            }
+        # missing is empty → pass through without blocking
         return {
-            "final_report": "__FILL_FIELDS__",
-            "missing_fields": missing,
-            "reasoning_log": [f"[missing_info] 缺少画像字段: {', '.join(labels)}，已发送逐字段填写入口"],
             "token_usage": ensure_usage(state.get("token_usage")),
+            "reasoning_log": ["[missing_info] 无缺失字段，放行"],
         }
 
     missing = state.get("missing_fields", [])
@@ -778,6 +842,7 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
         content = f"## 需要更多信息\n{result}" if result else _static_fallback(missing, rag_sources)
         return {
             "final_report": content,
+            "missing_info_status": "",
             "reasoning_log": ["[missing_info] 已通过 LLM 生成缺失信息引导"],
             "token_usage": usage,
         }
@@ -785,6 +850,7 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
         content = _static_fallback(missing, rag_sources)
         return {
             "final_report": content,
+            "missing_info_status": "",
             "reasoning_log": ["[missing_info] 已生成缺失信息引导 (LLM 回退到静态模板)"],
             "token_usage": ensure_usage(state.get("token_usage")),
         }

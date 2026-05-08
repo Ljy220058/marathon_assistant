@@ -6,6 +6,15 @@ from marathon_qa_assistant.nodes.profile_and_retrieval import (
 )
 from marathon_qa_assistant.apps.chainlit.ui_config import MULTI_VALUE_FIELDS
 
+QUICK_PROFILE_FIELD_ORDER = ["goal", "weekly_mileage", "available_days", "__confirm__"]
+
+
+def _get_active_field_order() -> list:
+    mode = cl.user_session.get("profile_wizard_mode", "full")
+    if mode == "quick":
+        return QUICK_PROFILE_FIELD_ORDER
+    return PROFILE_FIELD_ORDER
+
 def _split_multi_value_text(field_key: str, value) -> list[str]:
     """把历史字符串或脏格式多选值拆成稳定的选项列表。"""
     if isinstance(value, list):
@@ -68,22 +77,24 @@ def _get_current_profile_step_token() -> str:
 
 def _prev_field(field_key: str):
     """获取当前字段的上一个字段（跳过最终确认位）"""
-    if field_key not in PROFILE_FIELD_ORDER:
+    field_order = _get_active_field_order()
+    if field_key not in field_order:
         return None
-    idx = PROFILE_FIELD_ORDER.index(field_key)
+    idx = field_order.index(field_key)
     for i in range(idx - 1, -1, -1):
-        key = PROFILE_FIELD_ORDER[i]
+        key = field_order[i]
         if key != "__confirm__":
             return key
     return None
 
 def _next_field(field_key: str):
     """获取当前字段的下一个字段"""
-    if field_key not in PROFILE_FIELD_ORDER:
+    field_order = _get_active_field_order()
+    if field_key not in field_order:
         return None
-    idx = PROFILE_FIELD_ORDER.index(field_key)
-    if idx + 1 < len(PROFILE_FIELD_ORDER):
-        return PROFILE_FIELD_ORDER[idx + 1]
+    idx = field_order.index(field_key)
+    if idx + 1 < len(field_order):
+        return field_order[idx + 1]
     return None
 
 def _render_profile_step(field_key: str, selections: dict):
@@ -98,8 +109,9 @@ def _render_profile_step(field_key: str, selections: dict):
     options = cfg.get("options", [])
     current_val = selections.get(field_key)
 
-    field_idx = PROFILE_FIELD_ORDER.index(field_key) if field_key in PROFILE_FIELD_ORDER else 0
-    total = len([f for f in PROFILE_FIELD_ORDER if f != "__confirm__"])
+    active_order = _get_active_field_order()
+    field_idx = active_order.index(field_key) if field_key in active_order else 0
+    total = len([f for f in active_order if f != "__confirm__"])
     progress = min(field_idx + 1, total)
 
     header = f"### 📋 训练画像 [{progress}/{total}]\n\n**{label}**\n\n_{hint}_"
@@ -145,42 +157,32 @@ def _render_profile_step(field_key: str, selections: dict):
                     label="🗑 清空选择",
                 )
             )
-        return header + "\n\n请点击选择（可改选/清空）：", actions
+        return header + "\n\n请点击选择（可改选/清空）：\n\n---\n\n", actions
 
     elif field_type == "multi":
         current_val = _normalize_multi_selection(current_val, field_key)
         selected_set = set(current_val)
 
-        for opt in options:
-            actions.append(
-                cl.Action(
-                    name="toggle_option",
-                    payload=_build_step_payload(field_key, step_token, value=opt["key"]),
-                    label=f"切换 {opt['display']}",
-                    description=opt.get("desc", ""),
-                )
-            )
-
-        selected_display = "、".join(current_val) if current_val else "(无)"
-        status_lines = []
-        for opt in options:
-            marker = "✓" if opt["key"] in selected_set else "○"
-            status_lines.append(f"{marker} {opt['display']}")
-        status_md = "\n".join(status_lines)
-        content = (
-            f"{header}\n\n"
-            f"已选: **{selected_display}**\n\n"
-            f"点击对应按钮可切换（再次点击可取消）\n\n"
-            f"{status_md}"
-        )
-
         actions.append(
             cl.Action(
                 name="confirm_multi",
                 payload=_build_step_payload(field_key, step_token),
-                label="✓ 确认并下一步",
+                label="✅ 确认并下一步",
             )
         )
+
+        for opt in options:
+            is_selected = opt["key"] in selected_set
+            marker = " ✓" if is_selected else ""
+            actions.append(
+                cl.Action(
+                    name="toggle_option",
+                    payload=_build_step_payload(field_key, step_token, value=opt["key"]),
+                    label=f"{opt['display']}{marker}",
+                    description=opt.get("desc", ""),
+                )
+            )
+
         actions.append(
             cl.Action(
                 name="clear_multi",
@@ -199,6 +201,20 @@ def _render_profile_step(field_key: str, selections: dict):
                     description="返回上一个问题并可改选",
                 )
             )
+
+        selected_display = "、".join(current_val) if current_val else "(无)"
+        status_lines = []
+        for opt in options:
+            marker = "✅" if opt["key"] in selected_set else "⬜"
+            status_lines.append(f"{marker} {opt['display']}")
+        status_md = "\n".join(status_lines)
+        content = (
+            f"{header}\n\n"
+            f"已选: **{selected_display}**\n\n"
+            f"点击选项按钮切换，完成后点「✅ 确认并下一步」\n\n"
+            f"{status_md}\n\n"
+            f"---\n\n"
+        )
         return content, actions
 
     elif field_type == "custom":
@@ -223,7 +239,8 @@ def _render_confirm_step(selections: dict):
     step_token = _get_current_profile_step_token()
     content = "### ✅ 训练画像预览\n\n确认以下信息无误后点击生成计划：\n\n"
 
-    for field_key in PROFILE_FIELD_ORDER:
+    active_order = _get_active_field_order()
+    for field_key in active_order:
         if field_key == "__confirm__":
             continue
         cfg = PROFILE_OPTIONS.get(field_key, {})

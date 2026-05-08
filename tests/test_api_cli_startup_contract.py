@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from marathon_qa_assistant.apps import api_app
 
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 

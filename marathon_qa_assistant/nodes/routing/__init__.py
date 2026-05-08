@@ -90,7 +90,7 @@ def entity_route_decision(state: IntegratedState):
     evidence = evaluate_plan_evidence(gate_hits, state.get("query", ""), state.get("intent_type", "qa"))
     is_plan_missing_evidence = evidence.get("required", False) and not evidence.get("has_plan_evidence", True)
 
-    if (not gate_hits or is_plan_missing_evidence) and state.get("mode") != "research":
+    if is_plan_missing_evidence and state.get("mode") != "research":
         return "missing_info_handler"
 
     if state.get("mode") == "subagent":

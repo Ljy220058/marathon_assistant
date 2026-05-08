@@ -33,6 +33,7 @@ LEGACY_UPLOAD_DOCS_DIR = BASE_DIR / "uploaded_docs"
 LEGACY_USER_VECTOR_DIR = BASE_DIR / "vector_kb_user"
 UPLOAD_DOCS_DIR = RUNTIME_DATA_DIR / "uploaded_docs"
 USER_VECTOR_DIR = RUNTIME_DATA_DIR / "vector_kb_user"
+GOOGLE_CREDENTIALS_PATH = RUNTIME_DATA_DIR / "google_credentials.json"
 
 def _seed_runtime_dir(legacy_dir: Path, runtime_dir: Path) -> None:
     """

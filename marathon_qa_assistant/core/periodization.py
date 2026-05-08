@@ -257,3 +257,71 @@ class Macrocycle:
             return (self.race_date - date.today()).days
         except Exception:
             return None
+
+
+@dataclass
+class BlockParams:
+    """四周板块参数：用于跑量约束引擎"""
+    block_index: int
+    start_week: int
+    end_week: int
+    weeks: int
+    block_coeff: float
+    block_peak_km: float
+
+
+WITHIN_BLOCK_FACTORS = {1: 1.00, 2: 1.06, 3: 1.10, 4: 0.90}
+
+
+def _baseline_block_coeff(block_index: int, meso_ratio: float) -> float:
+    if meso_ratio <= 0.65:
+        return meso_ratio
+    return max(1.0, 1.0 + 0.04 * (block_index - 1), meso_ratio)
+
+
+def resolve_4week_blocks(total_weeks: int, base_weekly_mileage: float) -> List[BlockParams]:
+    """将总周数拆分为 4 周板块，返回每块的峰值参数"""
+    num_blocks = (total_weeks + 3) // 4
+    macrocycle = Macrocycle._compute_mesocycles(total_weeks)
+
+    def _meso_for_week(w: int):
+        for m in macrocycle:
+            if m.start_week <= w <= m.end_week:
+                return m
+        return macrocycle[-1]
+
+    block_coeffs = []
+    for b in range(num_blocks):
+        mid_week = b * 4 + 2.5
+        meso = _meso_for_week(int(mid_week))
+        block_coeffs.append(_baseline_block_coeff(b + 1, float(meso.weekly_mileage_ratio)))
+
+    blocks = []
+    for b in range(num_blocks):
+        start = b * 4 + 1
+        end = min(start + 3, total_weeks)
+        ws = end - start + 1
+        coeff = block_coeffs[b]
+        blocks.append(BlockParams(
+            block_index=b + 1,
+            start_week=start,
+            end_week=end,
+            weeks=ws,
+            block_coeff=round(coeff, 3),
+            block_peak_km=round(base_weekly_mileage * coeff, 1),
+        ))
+    return blocks
+
+
+def compute_week_volume_factor(week_index: int, blocks: List[BlockParams]) -> float:
+    """根据板块和周内位置返回跑量缩放因子"""
+    for blk in blocks:
+        if blk.start_week <= week_index <= blk.end_week:
+            wib = week_index - blk.start_week + 1
+            if blk.block_coeff <= 0.65:
+                return round(blk.block_coeff * max(0.85, 1.0 - 0.04 * (wib - 1)), 4)
+            factor = WITHIN_BLOCK_FACTORS.get(wib, 1.0)
+            if blk.weeks < 4:
+                factor = max(1.0, factor - 0.02 * (4 - blk.weeks))
+            return round(blk.block_coeff * factor, 4)
+    return 1.0

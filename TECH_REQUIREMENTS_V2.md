@@ -79,6 +79,7 @@
 - **缺失逻辑加固**: 修改 `_detect_missing_fields()`，将 `lthr` 提升为计划生成前的“必须指标”，若缺失则强制引导用户通过向导补全。
 - **生理学计算引擎升级**: 在 `physiology.py` 中将 `is_zone_empty()` 的默认预期区间数由 5 提升至 9，确保 `profile_store.py` 在加载/保存时能准确识别并自动同步最新的 9 区数据。
 - **UI 标签专业化**: 更新 `ui_config.py` 中的 `ZONE_LABELS`，采用“Z4 阈值下限”、“Z6 无氧阈”等专业生理学名词，提升报告的科学性。
+- **前端入口模块化**: `chainlit_app.py` 现降为壳入口，仅负责 Chainlit 启动与会话初始化；训练画像逐步向导、消息处理与按钮回调统一挂到 `apps/chainlit/setup.py`、`apps/chainlit/logic.py`、`apps/chainlit/actions.py`，避免“新版向导代码已存在但未接入实际入口”的脱节。
 - **侧边栏九区对齐**: 将 `chainlit_app.py::update_sidebar()` 的区间映射表改为复用 `ui_config.py` 中共享的 `Z1-Z9` 顺序与渲染逻辑，彻底移除旧版 `Z1-Z5` 硬编码，保证侧边栏展示与画像持久化、计划生成使用同一套九区口径。
 - **计划生成深度适配**: 重构 `plan_nodes.py` 中的 `_compute_pace_zones()`，废弃旧的 7 类型偏移算法，优先读取画像中持久化的 9 区配速表；若数据缺失，则调用生理学引擎进行 9 区反推，确保生成的周计划配速与侧边栏显示的区间完全一致。
 
@@ -86,6 +87,64 @@
 - **高精度处方**: 训练计划中的“间歇跑”、“节奏跑”等配速现在精确对应用户的 LTHR 九区，不再依赖模糊的经验值。
 - **一致性体验**: 用户填写的 LTHR 实时转化为完整 `Z1-Z9` 九区表展示在侧边栏，并同步驱动后台 LLM 的 Prompt 构建，实现了“所填即所得”。
 - **系统稳健性**: 彻底解决了“填了画像但生成的计划还是旧配速”以及“缺失核心指标仍盲目生成计划”的问题。
+
+### 5.4 训练画像向导交互可点击性优化 (Profile Wizard Clickability Fix)
+
+**背景**：实测发现 Chainlit 训练画像逐步向导存在两项可用性问题 —— 多选题按钮数量过多导致确认按钮被淹没、按钮区贴近底部输入框容易点不中。
+
+**修改文件**：`marathon_qa_assistant/apps/chainlit/wizard_logic.py` 中的 `_render_profile_step()`。
+
+**改动内容**：
+
+- **多选步骤按钮重排**：将 `confirm_multi`（确认并下一步）从 actions 列表末尾提前到第一位，使其在 Chainlit 消息下方成为最左侧、最突出的操作按钮，减少被 7-10 个选项按钮淹没的风险。
+- **多选选项按钮简化**：标签从 `切换 周一` 改为 `周一 ✓`（选中时）/ `周一`（未选时），去掉冗余的 "切换" 前缀，降低视觉噪声。
+- **底部防碰撞间距**：多选和单选步骤的 markdown 内容末尾均追加 `\n\n---\n\n` 分隔符，在按钮区与 Chainlit 聊天输入框之间插入额外垂直空白，降低"可见但点不中"的拦截风险。
+
+**不涉及**：回调注册、步进防串写机制、画像持久化逻辑均未改动。
+
+### 5.5 极速画像 3 步闭环 (Quick Profile Wizard)
+
+**背景**：为降低新用户首次填写门槛，系统在完整画像之外新增极速画像入口，仅要求用户先完成 `goal / weekly_mileage / available_days` 三个最小必要字段，即可先生成基础训练计划；`vo2max / lthr / t_pace` 等增强字段改为后补，不再阻塞首次生成。
+
+**修改文件**：`marathon_qa_assistant/apps/chainlit/setup.py`、`marathon_qa_assistant/apps/chainlit/actions.py`、`marathon_qa_assistant/apps/chainlit/wizard_logic.py`。
+
+**改动内容**：
+
+- **欢迎页新增极速入口**：`setup.py` 增加 `quick_profile` Action，用户可从欢迎页直接进入 3 步极速画像。
+- **向导模式切换**：`actions.py` 新增 `on_quick_profile()`，启动向导时写入 `profile_wizard_mode="quick"`，并从 `goal` 开始。
+- **模式感知字段顺序**：`wizard_logic.py` 新增 `QUICK_PROFILE_FIELD_ORDER = ["goal", "weekly_mileage", "available_days", "__confirm__"]`，`_get_active_field_order()` 会根据模式切换字段顺序，`_prev_field()` / `_next_field()` / 进度显示 / 确认页预览均按当前模式渲染。
+- **提交后最小计划生成**：`profile_submit` 在 quick 模式下直接生成基础训练计划，优先让用户先拿到首版课表；随后如存在高级字段缺失，再由计划链路单独提示补全。
+- **增强字段后补**：`profile_and_retrieval.py` 继续将 `vo2max / lthr / t_pace` 等字段归入增强精度字段，缺失时仅触发补全提示，不再硬阻塞首次生成。
+
+**组间实现方法说明**：
+
+- `setup.py` 负责暴露入口按钮，只决定用户从欢迎页进入哪种画像模式。
+- `actions.py` 负责初始化向导状态，并通过 `profile_wizard_mode` 区分快速模式、完整模式和高级补全模式。
+- `wizard_logic.py` 负责根据当前模式切换字段顺序、渲染步骤与确认页，不在 UI 层硬编码固定 12 步流程。
+- `profile_and_retrieval.py` 负责最小必要字段与增强字段的缺失判断，确保“先生成、后补全”的业务契约一致。
+- `logic.py` 负责在计划生成后接收增强字段缺失提示，并提供后补入口，不打断首轮计划交付。
+
+**不涉及**：训练计划骨架、知识库检索、API Schema 与多周模板渲染逻辑均未改动。
+
+### 5.6 极速画像提交后画像持久化容错 (Quick Profile Persistence Guard)
+
+**背景**：真实 Chainlit + Chrome 端到端验证中，极速画像 3 步链路虽可提交并触发计划生成，但服务端日志暴露画像持久化异常：当 `lthr` 以字符串形式存在于当前画像中时，`save_user_profile()` 内部会直接执行 `>` 数值比较，导致保存阶段报错 `'>' not supported between instances of 'str' and 'int'`。
+
+**修改文件**：`marathon_qa_assistant/core/profile_store.py`、`marathon_qa_assistant/apps/chainlit/actions.py`、`marathon_qa_assistant/apps/chainlit/logic.py`。
+
+**改动内容**：
+
+- **统一数值容错转换**：`profile_store.py` 新增 `_coerce_number()`，在 `sync_user_zones()` 与 `save_user_profile()` 中先把 `lthr` 规范化为可比较的数值，再决定是否重算 9 区心率。
+- **前端提交阶段补齐数值字段名单**：`actions.py` 的 `profile_submit` 提交保存前，将 `lthr` 纳入与 `weekly_mileage / vo2max / max_session_minutes` 同级的数值字段转换逻辑，减少字符串脏值进入持久化层。
+- **补填入口保持一致**：`logic.py` 的缺失字段手动补填流程同步把 `lthr` 视为数值型字段，避免“向导提交正常、后补入口异常”的双口径问题。
+
+**组间实现方法说明**：
+
+- `actions.py` 和 `logic.py` 负责在 Chainlit 入口层尽量把用户输入整理成稳定类型。
+- `profile_store.py` 负责在最终持久化前兜底做一次数值规范化，避免历史画像或其他入口传入字符串时再次击穿。
+- 该修复属于极速画像闭环内的稳定性补丁，不改变业务字段语义，也不改变最小必要字段策略。
+
+---
 
 ## 6. Wiki 概念辅助检索模块 (Wiki-assisted Concept Retrieval)
 
@@ -105,4 +164,536 @@
 - **处方安全边界清晰**: 训练计划仍以本地 KB、图谱、画像和约束为主，Wiki 不参与计划参数决策。
 - **可审计性提升**: 结构化报告中保留 Wiki 上下文，后续可以清晰追踪哪些内容来自外部概念补充。
 
-## 7. 待优化与未来方向
+## 7. 多周训练计划结构化基础层 (Structured Multi-week Training Plan Foundation)
+
+### 7.1 背景与动机
+当前训练计划主链仍以单周 Markdown 文本为主，难以稳定支持 4 周到 20 周以上的周期化生成，也无法可靠检测“第二周与第一周重复”这类周间回归问题。为支撑长期稳方案，必须先建立独立于渲染层的多周计划结构模型与重复检测规则。
+
+### 7.2 实现方法
+- **独立数据契约**: 新增 `marathon_qa_assistant/core/training_plan_models.py`，定义 `StructuredTrainingPlan / PlanMeta / PhaseBlock / WeekPlan / DayPlan / RepeatGuardSignature` 数据模型，作为后续多周生成、校验和模板渲染的统一真源。
+- **周数解析与对齐层**: 新增 `marathon_qa_assistant/core/training_plan_context.py`，提供 `parse_requested_weeks()`、`derive_plan_duration_weeks()` 与 `align_plan_duration_context()`，统一解析用户请求中的 `4周/20周/1个月/半年` 等周期表达，并与画像中的 `target_race_date / plan_duration_weeks` 对齐。
+- **结构化校验**: 提供 `validate_plan_meta()`、`validate_week_count()`、`validate_week_structure()`、`validate_phase_summary()` 与 `validate_full_training_plan()`，硬性约束 `requested_weeks` 范围、`week_index` 连续性、7 天完整覆盖、周目标与执行提醒完整性。
+- **周重复检测**: 提供 `compare_adjacent_weeks()` 与 `compare_all_adjacent_weeks()`，按 `quality_sessions / long_run_minutes / key_intensity / weekly_volume_km` 等特征进行相邻周相似度评估，并输出 `pass / warn / fail` 三级结果。
+- **signature 派生层**: `ensure_repeat_guard_signature()` 会在周对象缺少 `repeat_guard_signature` 时，根据 `days` 自动推导质量课、长距离、休息日等特征，避免后续生成链路尚未完全接线时无法比较周间差异。
+- **状态扩展**: `state_models.py::IntegratedState` 新增 `structured_training_plan` 字段，为后续将多周结构挂入 LangGraph 主状态预留位置，但本轮不改动现有 Chainlit/FastAPI 渲染链路。
+- **缺失信息契约显式化**: `state_models.py::IntegratedState` 现新增 `missing_info_status`；计划模式缺画像时，`missing_info_handler_node()` 通过 `missing_info_status="awaiting_profile"` 显式标记“待补画像”状态，替代把 `final_report="__FILL_FIELDS__"` 当作前后端主协议。
+- **生成链路前半段接线**: `profile_and_retrieval.py::profiler_node()` 在计划模式下会先做周数对齐，再把结果写回 `user_profile.plan_duration_weeks` 并透出 `requested_weeks`；`plan_nodes.py::_build_plan_prompt()` 同步消费对齐后的周期信息和阶段摘要，避免再次回退到默认 12 周或“第一周训练计划”心智模型。
+- **生成链路后半段接线**: 新增 `marathon_qa_assistant/core/training_plan_skeleton.py`，由 `plan_nodes.py::executor_node()` 在 LLM 文本计划之外同步产出 `structured_training_plan` 多周结构骨架，包含 `phase_summary + week_plans[] + repeat_guard_signature`，作为后续逐周模板渲染的真源。
+- **输出层周级化**: `output_nodes.py::_build_structured_report()` 现除透出 `structured_training_plan` 外，还会从 `week_plans[]` 派生 `training_plan_overview + phase_summary + training_plan_weeks[]`，让 `structured_report` 自身具备稳定的逐周输出块。
+- **展示契约稳定化（M1-TASK-09）**: `training_plan_models.py` 现将 `key_workouts[] / action_suggestions[] / first_week_actions[]` 收口为结构化计划正式字段；`training_plan_skeleton.py` 负责在生成骨架时直接产出这些展示字段，避免前端继续从 `days[]` 和原始 Markdown 临时猜测“关键训练”和“第一步做什么”。
+- **渲染层优先消费展示字段**: `legacy_ui.py` 渲染多周计划时优先读取 `structured_training_plan.week_plans[].key_workouts / action_suggestions` 与 `training_plan_overview.first_week_actions`，仅在旧数据缺字段时才退回到本地推导，确保 4 周、8 周、12 周输出口径一致。
+- **首周执行入口与失败兜底（M1-TASK-11）**: 新增 `apps/chainlit/plan_ui.py` 作为计划展示交互辅助层；`logic.py` 在计划成功后追加“开始第1周训练”按钮，在计划异常或未拿到可展示结果时追加“重试计划生成 / 检查训练画像”动作；`actions.py` 新增 `start_first_week` 与 `retry_plan_generation` 回调，让用户拿到计划后知道下一步做什么，失败时也有明确恢复路径。
+- **训练反馈快速提交（Week 4-B）**: `apps/chainlit/plan_ui.py` 现补充 `render_training_feedback_input_md()` 与 `build_training_feedback_bundle()`，支持把用户在 Chainlit 中提交的 `完成状态 / 完成质量 / 疲劳 / 不适 / 睡眠 / 备注` 模板输入统一解析为 `训练反馈卡 + workout_feedback + adaptive_feedback + adaptive_adjustment`；`actions.py::start_first_week` 改为提供“完成后提交反馈 / 未完成也提交反馈”入口，`logic.py` 复用现有 `pending_operation` 机制接收真实反馈文本，写回 `latest_training_feedback_card` 与当前会话状态中的 `adaptive_feedback / adaptive_adjustment`，让 Week 4 的反馈提交可直接衔接 Week 5 自适应契约。
+- **4/8/12 周展示验证矩阵与长计划导航（M1-TASK-13）**: `tests/test_high_risk_contracts.py` 现补齐 `4/8/12 周` 渲染矩阵，显式校验结构化真源优先、旧 Markdown 仅兜底、周卡片数量完整且无截断错乱；`legacy_ui.py` 对 `>=8 周` 长计划新增 `周卡片导航`，按阶段列出周次范围，帮助用户在 8 周和 12 周计划中快速定位当前训练阶段。
+- **自适应调整 DTO / 状态契约（M2-W5-A）**: `state_models.py` 现正式定义 `WorkoutFeedback / AdaptiveReason / AdaptiveFeedback / AdaptiveAdjustment` 四层契约，并提供 `normalize_workout_feedback()`、`derive_adaptive_reasons()`、`build_adaptive_adjustment_contract()`。Week 5 当前先把训练反馈统一映射到 `mild_fatigue / high_fatigue / pain_risk / missed_workout` 四类原因，再输出 `next_day_adjustment / weekly_adjustment / alternative_workout / risk_alert / rationale` 五段式调整骨架，避免自适应链路继续只传一段原始自然语言。
+- **自适应最小规则引擎（M2-W5-B）**: `state_models.py` 现内置最小规则库，把 `pain_risk / high_fatigue / mild_fatigue / missed_workout` 四类原因直接映射为结构化调整内容，而不再只返回空骨架。`build_adaptive_adjustment_contract()` 会按原因优先级组合生成 `next_day_adjustment / weekly_adjustment / alternative_workout / risk_alert / rationale`，无触发原因时也返回稳定的“按原计划执行”默认结构；`output_nodes.py` 同步把明日调整 / 本周微调 / 替代训练写入 `recommendations`，让 Week 5 的结构化结果无需等待前端新卡片也能被当前报告直接消费。
+- **自适应前端展示卡（M2-W5-C）**: `legacy_ui.py` 现为 `structured_report.adaptive_adjustment` 增加共享 `自适应调整卡` 区块，在主报告中固定展示状态、触发原因、明日调整、本周微调、替代训练、风险提示与“为什么这么调”；`apps/chainlit/plan_ui.py` 同步新增 Chainlit 专用 `adaptive_adjustment_card` helper，`logic.py` 在工作流完成后额外发送一张显眼的自适应卡，并挂上“继续补充训练反馈”动作，形成“规则结果 -> 共享报告 -> Chainlit 专用卡”的完整展示闭环。
+- **关键训练解释面板（M2-W6）**: `output_nodes.py` 现新增 `structured_report.training_explanation_panel`，按周为关键训练汇总 `为什么安排 / 主要训练目标 / 风险提醒 / 状态不佳时替代 / 决策摘要` 五段式解释；若原始 day draft 已带 `template_id / constraints / warnings / decision_trace`，则优先透传这些素材，否则退化为基于 `week_goal / phase / training_type / execution_reminder` 的最小稳定解释，确保前端无空白块。
+- **Week 6 后端增强版 DTO**: 在原有展示字段之外，`training_explanation_panel` 现补充 `panel_version / coverage_status`，每周补充 `week_goal / execution_reminder / item_count`，每个解释项补充 `item_id / explanation_source / target_labels / warnings / adjustments / constraints / decision_trace` 等稳定结构字段，避免前端或后续 API 只能反解析自然语言摘要。
+- **QA 引用格式双保险**: `expert_nodes.py::_run_expert_llm()` 的引用规则 prompt 已从单句升级为 4 条明确规则，新增"严禁 `[来源: xxx.pdf]` / `[ref: xxx]` / `[citation needed]`"等反例声明；同时 `legacy_ui.py` 新增 `_match_source_to_evidence_ids()` 作为后置兜底，能从 LLM 偶尔输出的 `[来源: filename.pdf]` 中提取文件名（含 URL 编码归一化），反向映射回 `evidence_base` 的数字编号，确保"查看证据（同号按钮）"面板不因格式违规而静默消失。
+- **本周证据高亮补漏**: `legacy_ui.py` 与 `apps/chainlit/plan_ui.py` 现把关键训练解释项的 `warnings / adjustments / constraints / decision_trace / target_labels / evidence_ids` 收纳到 `<details>` 可展开区域，默认只显示摘要，点击后可查看决策细节和高亮后的关联证据编号，并附带"下方同编号按钮可预览原文"的提示；当周解释为空、未提取到 `evidence_ids` 或证据原文路径缺失时，界面会显式给出空态/异常态文案，不再静默消失。`output_nodes.py::_format_evidence_suffix()` 已同步改为 `` `[n]` `` 反引号格式，确保 `why_scheduled` 正文末尾的证据编号在 Chainlit/Gradio 中渲染为灰色代码标签而非纯黑字。
+- **Week 6 API 快捷字段**: `apps/api_app.py` 的 `QueryResponse` 现额外提供顶层 `training_explanation_panel`，其值直接从 `structured_report.training_explanation_panel` 派生，方便前端在少解析一层结构的情况下快速获取 Week 6 解释面板。
+- **Week 7 埋点闭环补齐**: `services/analytics.py` 作为本地 JSONL 事件记录器，统一生成 `event_name / user_id_hash / session_id / version / timestamp / properties` 公共字段；Chainlit 当前已接入路线图事件 `app_opened / profile_wizard_started / profile_submitted / plan_generate_clicked / plan_generated / workout_feedback_submitted / adaptive_plan_generated / weekly_review_viewed / evidence_opened`。其中 `plan_generate_clicked` 只从显式用户动作来源记录（自由输入、确认生成、重生成、重试、跳过补填），自动续跑和内部递归调用不再重复计数。事件默认写入运行期 `_runtime_data/<项目名>/analytics_events.jsonl`，避免写入项目源码目录触发热重载或污染提交。已对各事件 properties 追加可聚合结构化字段：`plan_generate_clicked` 区分 `source_type: message|action`；`app_opened` 追加 `entry/initial_mode/profile_field_count`；`profile_wizard_started` 追加 `has_existing_profile/pre_filled_field_count`；`profile_submitted` 追加 `total_fields_available`；`plan_generated` 追加 `final_report_length/plan_type/actual_weeks/rag_source_count`；`workout_feedback_submitted` 区分 `source_type: text|action`，文本路径追加 `feedback_length/has_keywords`；`adaptive_plan_generated` 追加 `recommendation_count/has_training_feedback`；`weekly_review_viewed` 追加 `workout_count`；`evidence_opened` 追加 `source_type/snippet_length`。
+- **Week 6 渲染契约测试**: `tests/test_week6_explanation_dto_contract.py` 现同时覆盖结构化 DTO、共享报告渲染、Chainlit 专用卡片渲染，以及“仅靠 `evidence_ids` 也能进入 `参考来源 / 查看证据（同号按钮）` 预览链”“多周计划第 N 周解释卡说明”“路径缺失时显式报出无法预览”等回归场景，确保 `training_explanation_panel` 的展开细节、证据编号与决策轨迹在两条入口都能稳定显示。
+- **Chainlit 消费收口**: `apps/chainlit/logic.py` 在每次新请求进入工作流前都会清空 `missing_info_status`，并在工作流结束后基于该显式状态决定是否弹出"逐字段补填"动作，避免会话态残留导致旧请求状态串写。
+- **画像字段分层（极速画像 M1）**: `profile_and_retrieval.py` 新增 `MINIMUM_REQUIRED_FIELDS`（goal / weekly_mileage / available_days，3 个硬阻塞字段）和 `ENHANCEMENT_FIELDS`（vo2max / lthr / t_pace 等 9 个增强精度字段）；`_detect_missing_fields()` 仅校验最小必要字段，增强字段缺失不阻塞计划生成，由 `_detect_missing_enhancement_fields()` 独立检测。
+- **增强字段补全链路**: `plan_nodes.py::_build_plan_prompt()` 在 LLM 提示中注入缺失增强字段清单及其默认估算说明；`logic.py` 在计划成功生成后弹出逐字段补全入口（最多 5 项），让用户在拿到首轮计划后仍可逐项补充精度。
+- **极速画像前端闭环**: `logic.py` 现将补填链路拆为两类：`required` 模式用于最小必要字段补齐，补完后自动继续生成基础计划；`enhancement` 模式用于高级画像补全，补完后只提供“基于最新画像重生成计划”的显式入口，不再强制打断当前计划浏览。
+- **目标赛事注入结构化骨架（D1.1）**: `training_plan_skeleton.py` 现会解析 `goal` 中的半马/全马目标，并在首周结构化计划中直接改变主质量课、周目标说明和长距离策略；半马优先阈值耐受与专项配速感，全马优先可持续马拉松配速、有氧容量与补给练习。
+- **高级画像入口补齐**: `actions.py` 新增 `fill_advanced_profile` 与 `regen_plan_from_profile`；前者支持从缺失高级字段直接进入完整画像向导，后者支持用户在补全后手动触发重生成，更符合“先生成基础计划，后补强精度”的 M1 目标。
+- **Coach Mode 状态契约收口（M1-TASK-06）**: 新增 `apps/chainlit/coach_state.py` 作为 Coach 前端状态真源，统一维护 `页面状态 + 消息状态 + session 默认值 + 状态文案 + 下一步提示`，覆盖 `idle_ready / workflow_running / awaiting_required_profile / profile_wizard_full / plan_ready_with_enhancement / error_fallback` 等主链路状态，避免继续把业务状态散落在 `logic.py / actions.py / setup.py` 的局部 `session key` 判断中。
+- **侧边栏状态可视化**: `setup.py::update_sidebar()` 现采用中等轻量化侧边栏：默认展示核心画像、简化 Z1-Z9 强度速查、证据库一句话摘要与 `下一步` 区块；不再暴露页面状态、消息状态、知识密度、知识分片等开发态字段。
+- **前端交互文案对齐**: `setup.py::show_profile_summary()` 在欢迎区展示状态与下一步建议；`actions.py::on_fill_field()` 区分基础画像和高级画像输入提示；`logic.py` 在缺基础画像、继续补字段、计划生成后补高级画像等节点明确告诉用户“当前在干什么、下一步点哪里”。
+- **状态流转表自动化测试**: `tests/test_coach_ui_state_contract.py` 已按 `M1-STORY-03` 状态流转表补齐 14 类回归测试，覆盖进入 Coach、提交计划、缺基础画像、单字段补填、补齐后继续生成、计划完成后高级画像补全、显式重生成、异常兜底与非 Coach 入口隔离。
+- **契约测试**: `tests/test_training_plan_models.py` 覆盖有效 4 周结构、缺天失败、相邻周完全重复 fail、渐进周 pass、减量周阈值放宽与 20 周长计划中部重复检测。
+- **周数链路测试**: 新增 `tests/test_training_plan_context.py`，覆盖显式 `4周/20周` 请求解析、`target_race_date` 到周数的换算，以及“显式请求优先于画像倒计时”的对齐规则；`tests/test_high_risk_contracts.py` 同步校验 Prompt 已带入对齐后的周期上下文。
+- **骨架生成测试**: 新增 `tests/test_training_plan_skeleton.py`，覆盖 4 周结构骨架合法性、24 周长计划支持，以及相邻周不出现直接 `fail` 级重复。
+
+### 7.3 组间实现方法说明
+- `training_plan_models.py` 负责“结构定义 + 校验 + 重复检测”，不直接拼接最终 Markdown。
+- `training_plan_context.py` 负责“用户请求周数解析 + 比赛倒计时换算 + 周数对齐”，不直接生成课表文本。
+- `profile_and_retrieval.py` 负责把对齐后的 `plan_duration_weeks` 写回计划生成所消费的画像状态。
+- `training_plan_skeleton.py` 负责把周期阶段、训练日约束、目标赛事类型和基础 progression 组装为 `structured_training_plan` 骨架，不直接处理 UI。
+- `training_plan_skeleton.py` 同时负责补齐周级展示字段：每周 `key_workouts[]`、`action_suggestions[]` 与计划级 `first_week_actions[]`，让后续周卡片渲染不再依赖 Markdown 反解析。
+- `plan_nodes.py` 现同时产出 LLM 文本计划和 `structured_training_plan` 骨架，后续逐周渲染应优先消费结构化真源。
+- `profile_and_retrieval.py::missing_info_handler_node()` 负责写入 `missing_info_status` 与缺失字段列表，不再让 UI 依赖哨兵字符串判断主链路状态。
+- `output_nodes.py` 现额外把 `structured_training_plan.week_plans[]` 展开成 `structured_report.training_plan_weeks[]`，供当前渲染层直接消费。
+- `apps/chainlit/logic.py` 负责消费 `missing_info_status` 并弹出逐字段补填入口；同时基于 `filling_field_mode` 区分基础画像补齐与高级画像补全，防止两条链路串写。
+- `actions.py` 负责 `fill_profile / fill_advanced_profile / fill_field / regen_plan_from_profile` 等动作回调，并通过 `profile_wizard_mode` 区分“首次完整画像”和“高级画像补全”提交后的行为。
+- `apps/chainlit/coach_state.py` 负责从 `state + user_session` 派生 Coach 页面状态、消息状态与下一步提示，并提供统一的 sidebar 状态文案；其余 UI 模块只消费该契约，不再重复发明状态枚举。
+- `apps/chainlit/setup.py` 负责欢迎区与侧边栏状态展示，`actions.py` 负责字段输入提示，`logic.py` 负责缺字段、补字段和高级画像补全后的阶段文案，三者共同让用户能在每个阶段看清“当前状态 + 下一步动作”。
+- `apps/chainlit/plan_ui.py` 负责从 `structured_report` 提炼首周执行上下文，并统一输出“首周执行入口 / 快速训练反馈模板 / 训练反馈卡 / 失败兜底”文案以及反馈状态 bundle；`logic.py` 只负责在 `pending_operation` 收到用户反馈文本后写回统一状态，`actions.py` 负责点击后的会话内交互，避免把反馈解析和状态组装散落在多个回调里。
+- `legacy_ui.py` 现已优先使用 `structured_training_plan` 逐周模板渲染，`raw_report` 仅作为缺省兜底，减少多周截断和第二周格式错乱；长计划默认采用“周摘要 + 关键训练 + 折叠每日处方”的紧凑周卡片，且在 `>=8 周` 时补充阶段级 `周卡片导航`，避免 8/12/20 周计划全量平铺后难以快速定位。
+- `adaptive_coach_node()` 现先消费标准化 `WorkoutFeedback` 和派生出的 `AdaptiveReason[]`，再把 `AdaptiveAdjustment` 骨架注入 Prompt；`output_nodes.py` 同步将该骨架透出到 `structured_report.adaptive_adjustment`，为后续 Week 5 规则引擎和前端调整卡提供稳定字段口径。
+- `state_models.py` 在 Week 5-B 中继续承担“原因 -> 规则结果”的最小引擎职责：按 `pain_risk > high_fatigue > mild_fatigue > missed_workout` 顺序拼装结构化调整字段，并对“无风险信号”返回稳定默认值，避免下游再次判断空字符串。
+- `legacy_ui.py` 在 Week 5-C 中负责共享渲染层展示，把 `adaptive_adjustment` 固化为统一 Markdown 区块；`apps/chainlit/plan_ui.py` 负责把同一份结构结果包装成 Chainlit 专用卡片，`logic.py` 决定何时追加单独消息与“继续补充训练反馈”动作，避免把自适应展示逻辑散落在多个入口。
+- `output_nodes.py` 负责把周级展示字段继续透出到 `structured_report.training_plan_weeks[]` 与 `training_plan_overview.first_week_actions`；`legacy_ui.py` 直接消费这些字段，保证展示层级与 Week 3 路线图一致。
+- `output_nodes.py` 在 Week 6 中继续承担解释 DTO 装配，把关键训练解释收口到 `structured_report.training_explanation_panel`；除展示文案外，还负责保留 `constraints / warnings / adjustments / decision_trace` 的结构化真源，并显式标记 `explanation_source=decision_graph|fallback_heuristic`，供后续前端面板、埋点和 API 统一消费。
+- `legacy_ui.py` 负责共享报告中的周级解释区块、引用并表与证据预览提取，`apps/chainlit/plan_ui.py` 负责 Week 6 专用解释卡；两者都只默认展示五段式解释摘要，并把 `warnings / adjustments / constraints / decision_trace / evidence_ids` 放入可展开详情块，同时保证 `evidence_ids` 即使未内联到正文句子里，也能进入 `参考来源 / 查看证据（同号按钮）` 预览链；多周场景下，Chainlit 卡片需显式说明当前展示周次与完整覆盖周次，`logic.py` 负责在有无预览按钮两种情况下都把证据面板消息发出来，避免空态被静默吞掉。
+- `services/analytics.py` 负责 Week 7 本地事件记录、公共字段生成与 `plan_generate_clicked` 口径收口，并在 `build_plan_click_properties` 中区分 `source_type: message|action`；`apps/chainlit_app.py` 在会话启动后记录 `app_opened`（附加 `entry/initial_mode/profile_field_count`）；`apps/chainlit/logic.py` 在显式用户入口记录 `plan_generate_clicked`、在计划型结果生成后记录 `plan_generated`（附加 `final_report_length/plan_type/actual_weeks/rag_source_count`）、在自适应调整卡生成后记录 `adaptive_plan_generated`（附加 `recommendation_count/has_training_feedback`）、文本反馈路径记录 `workout_feedback_submitted` 并标记 `source_type: text`（附加 `feedback_length/has_keywords`）；`apps/chainlit/actions.py` 负责把 `profile_submit / regen_plan_from_profile / retry_plan_generation / cancel_fill` 等显式按钮动作透传为点击来源，并接入 `profile_wizard_started`（附加 `has_existing_profile/pre_filled_field_count`）、`profile_submitted`（附加 `total_fields_available`）、`weekly_review_viewed`（附加 `workout_count`）、`evidence_opened`（附加 `source_type/snippet_length`），同时快捷反馈路径继续标记 `source_type: action`。
+
+### 7.4 本轮收益
+- **为 4-20 周扩展打底**: 先把多周结构和校验规则固化，后续接入 8 周、12 周、20 周时无需重写模型。
+- **重复周可程序化拦截**: 周计划“只改标题不改内容”将可被自动标记为 `fail`，不再只能靠人工肉眼检查。
+- **渲染与生成解耦**: 后续可改为“LLM 输出结构，代码模板渲染”，从根上减少第二周格式错乱和截断问题。
+- **输出链可直接透传骨架**: 后续无论接 Chainlit、FastAPI 还是单独导出 JSON，都可以直接读取 `structured_training_plan`，不必再从 Markdown 反解析周计划。
+- **多周展示开始转向结构驱动**: 当前共享渲染器已能基于结构化周计划生成稳定的逐周 Markdown，并通过折叠周卡片控制长计划输出长度，不再完全依赖 LLM 原始周计划文本。
+
+## 8. 方案 A：每日课表检索卡最小闭环
+
+### 8.1 背景与目标
+当前多周计划已经具备 `structured_training_plan.week_plans[].days[]` 的日计划结构，但每日处方仍主要来自规则骨架和 LLM 文本，尚未把动作库中的课表证据稳定绑定到某一天的训练类型。为先验证“周二安排有氧阈值时，系统能从动作库检索并返回可追溯课表卡”的产品体验，本轮先落地方案 A 的最小闭环，只支持 `aerobic_threshold`。
+
+### 8.2 实现方法
+- **轻量课表召回器**: 新增 `marathon_qa_assistant/services/workout_template_retriever.py`，提供 `build_workout_template_query()`、`retrieve_daily_workout_template_card()` 与 `build_daily_workout_template_card_from_hits()`，复用现有 `vector_store.load_vector_kb()` / `retrieve()` 检索能力，不新增独立索引。
+- **训练类型别名扩展**: `aerobic_threshold` 会扩展为“有氧阈值训练 / 最大脂肪氧化训练 / 有氧阈 / 乳酸阈值 / 阈值跑 / Aerobic Threshold / Steady-State / Endurance / 3-4*3000 / 5-6*2000 / 5000+3*2000”等查询信号，以提升动作库 chunk 召回稳定性。
+- **动作库证据优先**: 最小闭环仅接受 `source_file=动作库.pdf` 且文本包含有氧阈值相关信号的命中，避免从其他论文或普通知识片段中拼出无来源课表。
+- **每日课表卡结构**: 输出 `title / workout_type / training_type / source / main_set_candidates / intensity_target / training_objective / warmup_suggestion / evidence_status / evidence`，其中 `evidence_status` 显式区分 `direct / missing`，冷身和替代训练在当前库证据不足时保持 `missing`，不由 LLM 编造。
+- **契约测试**: 新增 `tests/test_workout_template_retriever.py`，覆盖有氧阈值 query 扩展、动作库命中生成“周二｜有氧阈值训练课”卡片、证据缺失时返回“课表证据不足”且不生成主训练候选。
+
+### 8.3 组间实现方法说明
+- `workout_template_retriever.py` 只负责“训练类型 -> 检索 query -> 证据筛选 -> 每日课表卡结构”，不直接修改 `structured_training_plan`，也不处理前端 Markdown 渲染。
+- `vector_store.py` 继续负责底层知识库加载与 FAISS 检索，方案 A 不改变现有 RAG 产物格式。
+- `training_plan_skeleton.py` 仍负责生成周/日训练骨架；后续若进入方案 B，再把 `DailyWorkoutTemplateCard` 绑定到 `DayPlan` 或 `structured_report` 的专用字段。
+- `legacy_ui.py` 暂不消费课表卡，避免一次性扩大到多入口渲染；当前先用服务层与契约测试验证“能稳定生成每日课表卡”。
+
+### 8.4 本轮收益
+- **先验证产品效果**: 可以基于 `workout_type=aerobic_threshold` 生成类似“周二｜有氧阈值训练课”的结构化卡片。
+- **证据边界清晰**: 主训练、强度、目标、热身均来自动作库命中；冷身和替代训练缺证据时显式标记缺失。
+- **为方案 B 铺路**: 后续可把该卡片接入 `structured_training_plan.week_plans[].days[]` 或 `structured_report.daily_workout_cards`，实现每天固定课表展示。
+
+## 9. 方案 B：固定日课表结构接入结构化报告与共享渲染
+
+### 9.1 背景与目标
+在方案 A 已能生成 `DailyWorkoutTemplateCard` 后，本轮将每日课表卡接入结构化输出和共享 UI 渲染，目标是让计划型报告在识别到“周二｜有氧阈值训练”这类日计划时，能自动展示固定格式的每日课表卡，而不是只停留在服务层可调用。
+
+### 9.2 实现方法
+- **结构化输出接入**: `output_nodes.py::_build_structured_report()` 新增 `daily_workout_cards` 字段。该字段从 `structured_training_plan.week_plans[].days[]` 中识别有氧阈值相关日计划，并基于 `rag_sources -> evidence_base` 转换后的动作库证据生成课表卡。
+- **训练类型识别**: 当前最小闭环只识别 `training_type/main_set` 中包含“有氧阈”或“最大脂肪氧化”的日计划，并归一化为 `aerobic_threshold`，避免一次性扩大到所有训练类型。
+- **共享渲染接入**: `legacy_ui.py` 新增每日课表卡 Markdown 渲染逻辑，并在结构化报告摘要后、详细分析前展示 `daily_workout_cards`，使 Chainlit 与 Gradio 共用渲染入口都能消费该字段。
+- **证据边界**: UI 展示 `来源 / 训练类型 / 主训练候选 / 强度目标 / 训练目标 / 热身建议 / 证据状态`，冷身和替代训练缺证据时继续显示“还需要补充课表库”，不做 LLM 补写。
+- **契约测试**: 扩展 `tests/test_workout_template_retriever.py`，验证 `_build_structured_report()` 能暴露 `daily_workout_cards`，且 `UIHelper.render_structured_report()` 能渲染“每日课表卡”区块。
+
+### 9.3 组间实现方法说明
+- `workout_template_retriever.py` 继续保持服务层职责，只负责从证据命中构建每日课表卡，不直接操作 UI。
+- `output_nodes.py` 负责把结构化计划和 RAG 证据组合为 `structured_report.daily_workout_cards`，这是方案 B 的最小数据接入点。
+- `legacy_ui.py` 负责共享 Markdown 展示，当前不单独改 Chainlit/Gradio 入口，避免多入口重复实现。
+- `training_plan_skeleton.py` 暂不修改；日计划骨架仍由原有结构生成，方案 B 只在报告输出阶段附加课表卡。
+
+### 9.4 当前边界
+- 当前只支持 `aerobic_threshold`/有氧阈值训练的固定日课表卡。
+- 当前依赖 `rag_sources` 中已经包含 `动作库.pdf` 相关证据；如果上游检索没有召回动作库，课表卡会显示证据不足或不生成。
+- 暂未把卡片反写入 `structured_training_plan.week_plans[].days[]`，避免影响现有多周计划真源结构。
+
+## 10. 方案 C：月历课表、证据分层回退与 Z1-Z9 强度语义
+
+### 10.1 背景与目标
+
+方案 B 已能展示多训练类型每日课表卡，但在动作库缺少直接证据时会产生大量“课表证据不足”空卡，影响用户阅读。方案 C 的目标是把每日课表升级为一个月可点击日历视图：动作库有证据时直接使用动作库课表；动作库无证据时，继续从其他知识库中寻找相关内容生成参考课表；确实无可用证据时，只保留基础计划骨架，不再逐日堆叠空卡。同时，所有训练强度统一使用 LTHR 九区的 Z1-Z9 中文术语，配速仅作为参考，不作为固定执行目标。
+
+### 10.2 实现方法
+
+- **Z1-Z9 语义统一**：`workout_template_retriever.py` 新增 `ZONE_LABELS`、`ZONE_LABELS_DETAIL` 与 `zone_range`，所有训练类型的 `intensity_target` 改为中文 Z 区间表述。
+- **证据分层**：新增 `EVIDENCE_TIER_LABELS`，稳定区分 `action_library`（动作库课表）、`kb_fallback`（参考知识库生成）、`plan_only`（基础计划）。
+- **月历生成服务**：新增 `daily_schedule_generator.py`，把 `structured_training_plan` 转成 `MonthlyTrainingCalendar.days[]`，并为每一天补齐训练类型、Z 区间、热身、主课、放松、替代训练、证据状态和来源信息。
+- **知识库回退**：当动作库未命中直接证据时，服务层会过滤掉动作库以外的 KB 命中，并基于相关知识片段生成参考课表字段；无可用命中时才退回 `plan_only`。
+- **结构化报告接入**：`output_nodes.py` 额外输出 `monthly_training_calendar`、`daily_schedule_cards` 与 `evidence_tier_map`，使 Chainlit、FastAPI 和后续 App 层共用同一数据真源。
+- **Chainlit 月历组件**：新增 `public/elements/MonthlyTrainingCalendar.jsx`，通过月历网格展示每天训练，点击日期后用右侧抽屉展示当日课表详情。
+- **Markdown 空卡过滤**：`legacy_ui.py` 不再逐日渲染缺证据空卡；如果所有每日课表均无有效内容，只展示一条汇总提示。
+- **FastAPI 端点**：`api_app.py` 新增 `/training-calendar`、`/zone-reference` 与 `/evidence-tier-reference`，为后续独立前端或 React Native 迁移提供接口契约。
+
+### 10.3 组间实现方法说明
+
+- `workout_template_retriever.py` 负责训练类型注册表、Z1-Z9 术语、动作库证据卡和证据分层标签。
+- `daily_schedule_generator.py` 负责月历课表编排与 KB fallback，不直接处理 UI。
+- `output_nodes.py` 负责把结构化计划、每日课表卡和月历数据统一写入 `structured_report`。
+- `apps/chainlit/plan_ui.py` 负责从 `structured_report` 提炼 `MonthlyTrainingCalendar` props；`apps/chainlit/logic.py` 负责发送 CustomElement。
+- `ui/legacy_ui.py` 负责共享 Markdown 兜底，重点保证缺证据时不刷屏。
+- `apps/api_app.py` 负责外部接口层，不复制课表生成逻辑。
+- `tests/test_daily_schedule_generator.py` 负责覆盖 Z 区间、证据分层、KB 回退、月历序列化、结构化报告接入和空卡过滤回归。
+
+### 10.4 当前边界
+
+- 当前 KB fallback 为确定性模板化生成：基于检索命中的知识片段填充参考课表字段；如需真正调用 LLM 改写，可在该服务层继续接入现有 LLM 调用器。
+- `/training-calendar/day-detail/{day_index}` 当前保持轻量占位契约，客户端优先从 `/training-calendar` 返回的完整日历中按 `day_index` 查找详情。
+- 月历组件已具备可点击日期和详情抽屉，仍需在真实 Chainlit 浏览器中进行视觉验收。
+
+### 10.5 待优化与未来方向
+
+## 11. 方案 B 升级：训练类型注册表驱动多类型课表卡接入
+
+### 11.1 背景与目标
+
+方案 A/B 初始实现仅支持 `aerobic_threshold`（有氧阈值训练）单一训练类型。其他类型（长距离、轻松跑、间歇跑、节奏跑等）虽然已经在 `training_plan_skeleton.py` 中由骨架生成器正常产出，但 `output_nodes.py` 的 `_build_daily_workout_cards()` 无法识别它们，导致无法生成课表卡。
+
+目标：将所有训练类型的课表卡生成统一到注册表驱动架构，实现"新增训练类型只需加配置，不改逻辑"。
+
+### 11.2 实现方法
+
+新增 `WORKOUT_TEMPLATE_REGISTRY` 作为核心配置中心，取代原有的 `AEROBIC_THRESHOLD_ALIASES` + `WORKOUT_TYPE_ALIASES` 硬编码。
+
+**注册表结构** (`workout_template_retriever.py`):
+
+```python
+WORKOUT_TEMPLATE_REGISTRY = {
+    "aerobic_threshold": {
+        "display_name": "有氧阈值训练",
+        "training_type_label": "有氧阈值训练（最大脂肪氧化训练）",
+        "aliases": [...],
+        "title_template": "有氧阈值训练课",
+        "source_priority": ["动作库.pdf"],
+        "intensity_target": "75-85% HRmax",
+        "intensity_keywords": ["75", "85", "HRmax"],
+        "extractor": "aerobic_threshold",
+    },
+    # ... 共 8 种训练类型
+}
+```
+
+**支持的训练类型**:
+
+| 注册表 key | 中文名称 | extractor 类型 |
+|---|---|---|
+| `aerobic_threshold` | 有氧阈值训练 | 专用抽取器 |
+| `long_run` | 长距离 | 通用抽取器 |
+| `easy_run` | 轻松跑 | 通用抽取器 |
+| `tempo_run` | 节奏跑 | 通用抽取器 |
+| `interval_run` | 间歇跑 | 通用抽取器 |
+| `anaerobic_threshold` | 无氧阈跑 | 通用抽取器 |
+| `marathon_pace` | 马拉松配速跑 | 通用抽取器 |
+| `progression_run` | 渐进跑 | 通用抽取器 |
+| `vo2max_interval` | 摄氧量训练 | 通用抽取器 |
+
+**类型识别**: 新增 `WORKOUT_TYPE_KEYWORD_MAP` + `normalize_workout_type_for_template()` 函数，按关键词长度降序匹配，确保"无氧阈跑"不会误匹配到"间歇跑"（因为"间歇"是"巡航间歇"的子串）。
+
+**通用抽取器**: 新增三个通用抽取函数替代原有的有氧阈值专用抽取：
+- `_extract_generic_main_set_candidates()`：从证据文本中提取训练候选（支持 `content:`、`主训练:`、`a./b./c.` 等多种格式），并保留换行作为候选边界，避免把整段证据误拼成一个候选。
+- `_extract_generic_objective()`：提取 `objective:` 字段，遇到热身、冷身或下一段标题时截断。
+- `_extract_generic_warmup()`：提取热身建议。
+
+`build_daily_workout_template_card_from_hits()` 改为注册表驱动：查注册表 → 选择 extractor → 抽取字段 → 填卡。
+
+### 11.3 组间职责边界
+
+| 组件 | 改动 | 职责 |
+|---|---|---|
+| `training_plan_skeleton.py` | 个性化周结构 | 新增 `weekly_structure_constraints` 解析、首周训练日约束覆盖和 `weekly_structure_validation` 生成后校验，支持用户指定“一节有氧阈、一节节奏跑、一节摄氧量”等周结构；增强解析时将“周二节奏跑”识别为日期绑定而非数量 2，并按逗号/顿号/周几/安排等片段隔离“周一休息，安排一节XXX”这类串句 |
+| `workout_template_retriever.py` | 核心重构 | 新增 `WORKOUT_TEMPLATE_REGISTRY`、`WORKOUT_TYPE_KEYWORD_MAP`、通用抽取器、`normalize_workout_type_for_template()` |
+| `output_nodes.py` | 委托升级 | 移除本地 `_normalize_workout_type_for_template()`，改为 `from ... import normalize_workout_type_for_template`，并把周结构约束与校验结果写入结构化报告 |
+| `legacy_ui.py` | 渲染升级 | `_render_daily_workout_cards_md()` 按 `DailyWorkoutTemplateCard` 结构渲染每日课表卡，新增 `_render_weekly_structure_md()` 展示个性化周结构要求与满足情况 |
+| `tests/test_workout_template_retriever.py` | 测试矩阵升级 | 覆盖全部类型的识别、单类型课表生成、多类型结构化报告、注册表一致性、个性化周结构生成与 UI 渲染回归测试 |
+
+**验证闭环**: `test_single_day_daily_workout_card_matrix_for_all_training_types()` 以单天证据模拟覆盖 9 类训练类型（新增 `vo2max_interval` 摄氧量训练），逐项验证 `training_type/main_set -> workout_type` 识别、卡片标题、训练类型标签、动作库来源、主训练候选、强度目标、训练目标、热身建议与证据状态，避免后续改动导致某一训练类型 silently 退化。`test_structured_report_renders_daily_cards_for_all_training_types()` 进一步覆盖 `structured_training_plan -> _build_structured_report() -> daily_workout_cards -> UIHelper.render_structured_report()` 整链路，确保多类训练日都能进入结构化报告并在共享 UI 中渲染对应每日课表卡；该测试同时锁定每日课表卡构建使用完整 RAG 来源，而不受报告参考来源 Top-5 展示限制影响。`test_personalized_week_structure_constraints_are_applied_and_rendered()` 覆盖“这周我想要安排一节有氧阈，一节节奏跑一节摄氧量”的用户个性化周结构解析、首周计划覆盖、生成后校验和 UI 显示。`test_personalized_week_structure_parses_weekday_bindings_without_count_leakage()` 锁定“周二节奏跑，周四摄氧量，周日长距离”不会把周几误识别为数量；`test_personalized_week_structure_isolates_rest_day_segment_from_later_workouts()` 锁定“周一休息，安排一节马拉松配速跑，一节渐进跑”中休息日片段不会串联污染后续专项课；`test_personalized_week_structure_combination_matrix_for_common_user_demands()` 进一步把常见用户需求组合纳入回归矩阵，覆盖“两节轻松跑 + 一节长距离”、“不安排间歇跑 + 无氧阈跑 + 轻松跑”和“四个指定星期训练日”的解析、首周落位与满足状态。
+
+### 11.4 当前边界
+
+- 通用抽取器的召回率依赖于动作库中训练条目的结构化程度（有 `content:/objective:/热身:` 等标签则效果好）
+- 用户个性化周结构当前优先作用于首周计划；多周逐周差异化约束后续可扩展为按 week_index 分组
+- `休息` 和 `恢复跑` 等低结构化类型暂不生成课表卡（`normalize_workout_type_for_template` 返回空字符串）
+- intensity_target 采用强度关键词全匹配策略（至少 2 个关键词命中），未命中时为空
+- 暂未接入"模板库兜底"（方案 C），缺证据时仍显示"还需要补充课表库"
+
+### 11.5 长计划防重复增强（半年级专项强化）
+
+**背景**：用户可能有半年（20-26 周）甚至半年后的比赛，当前周质量课模板轮换策略在 20 周以上时后半程变化偏弱、减量期不够细腻，容易出现非相邻周模式复用。
+
+**策略**：对 `>=20 周` 长计划自动切换半年级路径，按阶段（`_phase_family`）提供独立的训练类型池与递进序列，而非简单地在 3-4 个训练类型间轮换。
+
+**核心改动**：
+
+| 组件 | 改动 |
+|---|---|
+| `training_plan_skeleton.py` | 新增 `_is_half_year_plan()` 阈值判断（≥20 周）；新增 `_phase_family()` 将阶段名归一化到 `base_1/base_2/build_1/build_2/peak/taper`；`_build_quality_session()` 加入长计划参数，按阶段独立提供 3 种训练类型的选项池；`_build_secondary_session()` 在长计划中采用条件分支（恢复跑/轻松跑/节奏跑/马拉松配速跑/渐进跑）；`_build_long_run_main_set()` 在长计划中采用递进式长距离变化（含减量期逐步下行、马拉松配速插入、巅峰期附加递进）；`total_weeks` 从 `build_structured_training_plan_skeleton` 级联传递至所有分支函数 |
+| `tests/test_training_plan_skeleton.py` | 新增 `test_half_year_plan_anti_duplication_for_half_marathon()` 与 `test_half_year_plan_anti_duplication_for_marathon()`，覆盖 26 周半马/全马计划的全周无重复、阶段多样性、减量期下行、长距离模式多样性、马种训练类型逐阶段差异 |
+
+**验证闭环**：
+
+- `test_half_year_plan_anti_duplication_for_half_marathon()`：26 周半马计划通过 `compare_all_adjacent_weeks` 全相邻周比较无 `fail`；减量期 >=3 周，长距离分钟数逐步下行；至少 5 种不同长距离主课片段；含恢复跑或渐进跑等新训练类型
+- `test_half_year_plan_anti_duplication_for_marathon()`：26 周全马计划无完全相同的周；每个阶段的周二质量课类型 >=2 种；覆盖基础期/建设期/巅峰期/减量期四个阶段；`validate_full_training_plan` 全部通过
+
+**组间实现方法说明**：
+
+- 半年级强化路径不会改变 `<20 周` 短计划的既有效果，`total_weeks` 默认为 0 时完全走原分支
+- `_build_quality_session` 和 `_build_secondary_session` 中的半年级分支使用 `phase_family != "taper"` 控制减量期单独走普通策略，避免减量期被错误注入高质量课
+- 长距离变化在长计划中采用 `week_index % 5/4/3` 多样化策略，并在 26 周级别将上限拉高到 150（半马）/185（全马）分钟，且减量期额外按 `taper_step` 逐周下行
+
+---
+
+## 12. 20 周半马大周期生成与专业评审（2026-05-04）
+
+### 12.1 生成概要
+
+**目标**: 验证系统能否生成完整的 20 周半马大周期计划，并对其进行多维度专业评审。
+
+**生成参数**:
+- `goal`: 半马 1小时30分
+- `experience_level`: 进阶
+- `weekly_mileage`: 50km
+- `t_pace`: 4:15/km
+- `available_days`: 周二,周四,周六,周日
+- `max_session_minutes`: 110min
+- `requested_weeks`: 20
+- `plan_type`: multi_week
+
+**生成结果**: 成功生成 20 周 6 阶段结构化训练计划，包含 20 个完整周计划、80 个训练日、6 个阶段摘要。
+
+### 12.2 专业评审结果
+
+按照五个维度对生成计划进行系统评审，综合得分 **8.0/10**：
+
+| 维度 | 得分 | 权重 | 关键发现 |
+|------|------|------|----------|
+| 周期化结构 | 8.0 | 25% | 六阶段结构完整（基础期-1/2 → 建设期-1/2 → 巅峰期 → 减量期）；巅峰期仅 2 周偏短 |
+| 防重复性 | 8.5 | 20% | 19 组相邻周对比：18 pass / 1 warn / 0 fail；半年防重复机制成功激活 |
+| 负荷渐进 | 8.0 | 20% | 长距离跑 113→135min 渐进合理，减量期 77→70→63→56 梯次下行；W10-W16 瓶颈于 135min |
+| 训练多样性 | 7.5 | 20% | 10 种训练类型；节奏跑占比 17.5% 偏高；马拉松配速跑仅 2 次；摄氧量训练仅 2 次 |
+| 个体适应性 | 8.0 | 15% | 训练日严格匹配；配速与 1:30 目标吻合；缺失赛前测试跑 |
+
+### 12.3 系统验证状态
+
+| 测试项 | 结果 | 耗时 |
+|--------|------|------|
+| `test_build_structured_training_plan_skeleton_outputs_valid_four_week_plan` | ✅ PASS | - |
+| `test_build_structured_training_plan_skeleton_supports_twenty_four_weeks_without_adjacent_failures` | ✅ PASS | - |
+| `test_goal_race_type_changes_first_week_structure_and_long_run_strategy` | ✅ PASS | - |
+| `test_half_year_plan_anti_duplication_for_half_marathon` | ✅ PASS | - |
+| `test_half_year_plan_anti_duplication_for_marathon` | ✅ PASS | - |
+| **总计** | **5/5 PASS** | **10.16s** |
+
+### 12.4 评审工具
+
+生成脚本: `scripts/generate_review_20w_half.py`
+- 调用 `build_structured_training_plan_skeleton()` 生成 20 周计划
+- 按阶段分组逐周打印训练内容
+- 运行 `compare_all_adjacent_weeks()` 和 `validate_full_training_plan()` 进行结构校验
+- 自动统计训练类型分布、长距离跑模式、各阶段质量课多样性
+
+### 12.5 改进方向
+
+| 优先级 | 建议 | 维度 |
+|--------|------|------|
+| P0 | 巅峰期从 2 周扩展到 3-4 周，为半马 1:30 留出充足的速度储备 | 周期化 |
+| P1 | 建设期增加 1-2 次马拉松配速跑专项训练（目前仅 2 次/20 周） | 多样性 |
+| P1 | 插入一次超长距离（140-150min）突破训练上限瓶颈 | 负荷渐进 |
+| P2 | 巅峰期前插入 10km 测试跑作为能力基准 | 适应性 |
+| P2 | 减量期周跑量增加递减梯度（替代当前 4 周均 37.5km） | 负荷渐进 |
+| P3 | 增加摄氧量训练至 4-6 次，强化最高有氧能力 | 多样性 |
+
+---
+
+## 13. 跑量硬约束分配引擎（4周板块驱动）
+
+### 13.1 背景与目标
+
+此前周跑量 `weekly_volume_km` 仅为展示用目标值，各天 DayPlan 的实际距离与目标跑量完全解耦。用户要求实现：
+- 4 周为一块：适应 → 加量 → 峰值 → 小减量
+- 用户画像 `weekly_mileage` 是当前基准跑量，不是阶段折扣后的峰值；非减量板块必须在该基准上加量
+- 板块间跑量系数渐进递增
+- 每天显式标注 warmup_km / main_km / cooldown_km
+- 硬约束：Σ 周总跑量 ≈ 板块目标跑量（±2km）
+
+### 13.2 实现方法
+
+**DayPlan 扩展** (`training_plan_models.py`)：
+- 新增 `warmup_km: float = 0.0`, `main_km: float = 0.0`, `cooldown_km: float = 0.0` 字段
+- 新增 `total_km` 属性：`warmup_km + main_km + cooldown_km`
+- 向后兼容：旧数据不传则默认 0.0
+
+**4 周板块系统** (`periodization.py`)：
+- 新增 `BlockParams` 数据类：`block_index / start_week / end_week / weeks / block_coeff / block_peak_km`
+- `resolve_4week_blocks()`：将总周数拆分为 4 周板块，非减量板块以用户画像 `weekly_mileage` 为基准下限，叠加板块间递进系数；减量板块保留阶段递减系数
+- `WITHIN_BLOCK_FACTORS = {1: 1.00, 2: 1.06, 3: 1.10, 4: 0.90}`：板块内适应/加量/峰值/恢复周节奏，W4 为明确 cutback 周，需相对 W3 回落约 10%，但仍由板块系数确保前 3 周围绕用户基准跑量上移
+- `compute_week_volume_factor()`：计算单周跑量缩放因子，减量板块 (block_coeff ≤ 0.65) 使用逐周递减模式
+
+**分配引擎** (`training_plan_skeleton.py`)：
+- 新增 `TRAINING_DISTANCE_FRACTIONS`：10 种训练类型的距离占比区间（如长距离 22-35% 周总跑量）
+- 新增 `FIXED_WARMUP_COOLDOWN`：按训练日类型固定热身/冷身距离
+- 新增 `_allocate_weekly_volume()`：核心分配引擎，按优先级分配：
+  1. 固定热身/冷身距离（质量课 4.5km、长距离 3.5km、轻松跑 3.0km）
+  2. 长距离 main_km（板块周次决定取 lower/mid/upper）
+  3. 主质量课 main_km（板块周次 + 训练类型区间）
+  4. 次课 main_km（始终取 lower 避免超支）
+  5. 轻松跑均分剩余跑量（下限 3.0km/天）
+  6. 无轻松跑候选时，剩余跑量回流至 easy/recovery 类型的主/次课
+- 减量板块自动强制 lower 配比
+- 主/次课为轻松跑/恢复跑时自动降级固定成本
+- 新增 `_allocate_high_load_four_day_main_km()`：高负荷四日分配模式，当训练日 ≤4 天且日均跑量 ≥18km 时自动激活：
+  - 按角色权重分配日跑量上限：质量课 (primary) 28%、次课 (secondary) 28%、轻松跑 25%、长距离 35%
+  - 权重基线：primary 0.24、secondary 0.21-0.24、easy 0.19、long_run 0.33
+  - 分配后剩余跑量按 cap 上限向可调日回流（步长 1.0km），避免单个轻松跑撑爆
+  - 最终从日总跑量中扣除 warmup/cooldown 固定距离，产出 per-day `main_km`
+- 新增 `_fixed_km_for_training_type()`：按训练类型+角色返回热身/冷身固定距离
+
+**渲染升级** (`legacy_ui.py`)：
+- 每日处方新增跑量行：`热身Xkm + 主课Xkm + 冷身Xkm = 总Ykm`
+- 周摘要展示实配跑量与目标对比：`周跑量 Xkm (目标 Ykm)`
+
+### 13.3 组间职责边界
+
+| 组件 | 改动 | 职责 |
+|------|------|------|
+| `training_plan_models.py` | DayPlan 加三字段 + total_km | 数据模型扩展，向后兼容 |
+| `periodization.py` | 新增 BlockParams + resolve_4week_blocks + compute_week_volume_factor | 板块拆分与周跑量因子计算 |
+| `training_plan_skeleton.py` | 新增 TRAINING_DISTANCE_FRACTIONS / FIXED_WARMUP_COOLDOWN / _allocate_weekly_volume / _main_km_for_type / _easy_km_text；替换 _build_weekly_volume 签名为 blocks 驱动；重写 _build_week_days 接入分配引擎 | 跑量约束核心引擎 |
+| `legacy_ui.py` | 日跑量行 + 周实配/目标对比 | 前端跑量展示 |
+| `tests/test_volume_allocation.py` | 13 项回归测试 | 覆盖 DTO 向后兼容、板块分辨率、画像跑量基准与恢复周语义、板块内峰值、减量递减、20周四类约束、4周3天约束、每日 km 填充、板块峰值递进、80km四练高负荷无离谱轻松跑、日均<18km不误激活高负荷、基础期禁止高强度间歇 |
+
+### 13.4 验证闭环
+
+- `test_volume_allocation.py` 13 项全部通过：
+  - DayPlan km 默认值、total_km 聚合
+  - 4 周板块参数：20 周 → 5 块，块 5 为减量
+  - 用户画像 `weekly_mileage=80` 时，板块前 3 周以 80km 为基准递增，第 4 周按方案 B cutback 至约 72km
+  - 板块内节奏：W3 跑量 > W1/W2，W4 < W3
+  - 减量板块：W17→W20 逐周递减
+  - 20 周半马全约束：≥18/20 周在 ±2km 内
+  - 4 周 3 天紧凑日程跑量约束
+  - 日类型 km 填充质量课 >1.5km、长距离 >5km
+  - 板块峰值跨块递进
+  - 80km 四练高负荷：轻松跑单日≤22km，正常周≤周跑量25%，杜绝 30km+ 极端轻松跑
+  - 日均<18km（55km/4天）不误激活高负荷分配，普通场景跑量一致
+  - 基础期（4/8/12周短中计划）不出间歇跑/摄氧量等高强度课
+- 原有 26 项测试全部回归通过
+
+### 13.5 当前边界
+
+- 跑量约束精度目标 ±2km，80km四练高负荷场景达成 20/20 周
+- 高负荷四日分配激活条件：训练日 ≤4 且日均跑量 ≥18km；低于此阈值走原有均分路径
+- 高负荷模式下单日上限：质量课 28%、次课 28%、轻松跑 25%、长距离 35%（基于周跑量百分比）
+- 减量/taper 周轻松跑不强制 25% 比例约束（绝对值合理即可，当前 ≤22km）
+- 训练类型距离占比基于目标跑量百分比，受训人周跑量过低 (<30km) 时可能无法满足最低质量课距离 → 已自动降级至 lower 配比
+- 非减量板块内 W4 采用传统恢复周/cutback 语义，允许相对用户画像基准短暂回落，以换取更明确的负荷吸收窗口
+- 暂未支持用户自定义板块节奏比例（如 2:1:1 块模式）
+- 暂未针对 3 天及以下的高负荷场景做特殊适配
+
+---
+
+## 12. 周期化训练课分配改造 (Periodization Workout Type Allocation)
+
+### 12.1 背景与动机
+前期短计划（<20周）在基础期仍可能安排间歇跑、无氧阈跑等低收益高强度训练，不符合周期训练共识：基础期应聚焦有氧基础（有氧阈值、节奏跑、渐进跑、法特莱克），高强度（间歇、VO2max）应在建设期/巅峰期引入。同时训练类型仅 9 种，缺少法特莱克、坡道训练、短冲等关键课型。
+
+### 12.2 实现方法
+- **基础期课型池重定义**: `_build_quality_session()` 基础期选项从 `[节奏跑, 间歇跑, 无氧阈跑]` 改为 `[有氧阈值训练, 节奏跑, 渐进跑]`，仅长计划（≥20周）额外加入法特莱克和短冲。
+- **新训练类型注册**: `WORKOUT_TEMPLATE_REGISTRY` 从 9 种扩充至 12 种，新增 法特莱克 (`fartlek`)、坡道训练 (`hill_repeats`)、短冲 (`strides`)。
+- **训练类型全链路扩展**: `TRAINING_DISTANCE_FRACTIONS`、`_classify_day_label()`、`_build_quality_session()` option pools、`QUALITY_WORKOUT_TYPES`、`WORKOUT_MAIN_SET_HINTS`、`WORKOUT_NOTES` 同时补全新课型。
+- **冷身与备选训练提取**: `DailyWorkoutTemplateCard` 新增 `cooldown_suggestion` 与 `alternative_workout` 字段；`_extract_generic_cooldown()` 和 `_extract_alternative_workout()` 从动作库命中中提取冷身建议和备选训练；`evidence_status` 改用提取值替代硬编码 `"missing"`。
+- **阶段感知次课分配**: `_build_secondary_session()` 新增建设期分支：偶数周安排节奏跑、奇数周安排法特莱克，取代之前全周期统一用轻松跑的默认逻辑。
+- **短路路径重排**: `_build_quality_session()` 的 elif 链中将 `"基础" in phase_name` 检查提到 `race_type == "half_marathon"` 之前，确保短计划基础期不受半马课型池污染。
+- **自动化验证**: `tests/test_volume_allocation.py` 新增 `test_phase_workout_safety_base_phase_no_high_intensity_intervals`，覆盖 4/8/12 周计划中基础期不出间歇跑/摄氧量训练/无氧阈。
+
+### 12.3 组间实现方法说明
+- `training_plan_skeleton.py` 负责课型池定义、基础期安全约束和阶段感知次课分配。
+- `workout_template_retriever.py` 负责新训练类型注册、冷身/备选提取和 DailyWorkoutTemplateCard 字段扩展。
+- `legacy_ui.py` 负责冷身建议和备选训练的共享 Markdown 渲染。
+- `tests/test_volume_allocation.py:test_phase_workout_safety` 负责跨周期回归验证。
+
+### 12.4 本轮收益
+- 训练类型从 9 种扩充至 12 种，支持更丰富的训练课型（法特莱克、坡道训练、短冲）
+- 基础期彻底杜绝间歇跑/VO2max/无氧阈，符合周期训练科学
+- 每日课表卡支持冷身建议和备选训练展示
+- 建设期次课（周四）开始按周奇偶切换节奏跑与法特莱克
+- 34/34 自动化测试通过
+
+---
+
+## 13. 工作流路由缺陷修复 (Bug Fixes)
+
+### 13.1 missing_info_handler_node 无条件设置 awaiting_profile
+**问题**: 当 `intent_type="plan"` 时，无论 `missing_fields` 是否为空，`missing_info_handler_node()` 始终返回 `missing_info_status="awaiting_profile"` 和 `final_report="需要补充训练画像"`，导致画像完整的计划请求也被错误阻塞。
+
+**修复**: 增加 `if missing:` 守卫，仅当确实存在缺失字段时才返回阻塞状态；否则正常放行。
+
+**涉及文件**: `nodes/profile_and_retrieval.py::missing_info_handler_node()`
+
+### 13.2 entity_route_decision 空 gate_hits 阻断计划生成
+**问题**: 当知识库检索无命中（`gate_hits` 为空列表）时，`entity_route_decision()` 的 `not gate_hits` 条件无条件路由到 `missing_info_handler`，导致所有无 RAG 命中的计划请求均被拦截。
+
+**修复**: 将 `(not gate_hits or is_plan_missing_evidence)` 改为仅检查 `is_plan_missing_evidence`，因为 `evaluate_plan_evidence()` 已在 gate_hits 为空时通过查询文本自身判断计划证据可用性。
+
+**涉及文件**: `nodes/routing/__init__.py::entity_route_decision()`
+
+---
+
+## 14. Chainlit 计划流式输出修复与阶段生成式交互改造
+
+### 14.1 背景与动机
+Chainlit 端计划生成存在两个体验缺陷：
+1. **executor 节点对前端不可见**：`executor` 不在 `on_chain_start` 和 `on_chat_model_stream` 的白名单中，导致 planner 之后用户看不到任何输出，以为流程卡住。
+2. **长计划（≥4 周）一次性生成体验差**：12 周完整计划一次性等待 3-5 分钟无反馈，且输出过长难以消化。
+
+### 14.2 实现方法
+
+#### 14.2.1 executor 流式输出与异常诊断
+- **logic.py**: `executor` 加入 `on_chain_start` 节点提示白名单和 `on_chat_model_stream` 流式转发白名单，用户可实时看到计划生成进度和 LLM token 输出。
+- **plan_nodes.py**: `executor_node` 的 `ai_invoke()` 异常不再静默吞掉，而是将失败原因写入 `reasoning_log`，前端可看到 `[executor] LLM 调用失败，已使用静态模板兜底: {exc}` 的诊断提示。
+
+#### 14.2.2 周期阶段总览与分阶段生成
+- **plan_ui.py**: 新增 `extract_phase_overview_context()` 和 `render_phase_overview_md()`，从 `structured_training_plan.phase_summary` 提取阶段列表并渲染 Markdown 表格。
+- **logic.py**: 长计划（≥2 个阶段且 ≥4 周）生成后先展示周期总览卡片而非完整报告；完整报告缓存到 session 供"查看完整计划"按钮调用。短计划（<4 周）保持原有完整输出行为，同时享受 executor 流式优化。
+- **actions.py**: 新增两个回调：
+  - `generate_phase_training`：从 session 中的 `structured_training_plan` 提取指定阶段的 `week_plans`，构造聚焦 Prompt 调用 `ai_invoke` 生成该阶段详细课表。
+  - `show_full_plan`：读取缓存的完整报告 `full_plan_report_html` 和 `full_plan_final_state`，全量渲染 EntryStatusBar、WeekTrainingCard、ExplanationDrawer 和首周执行入口。
+
+#### 14.2.3 阶段 Prompt 构造
+`_build_phase_detail_prompt()` 将阶段内每周的骨架数据（训练类型、热身、主课、冷身、场地、提醒）序列化为结构化文本，合并运动员画像和知识库证据，沿用主计划 Prompt 的主课格式、配速标注和一周七天全覆盖等硬性约束。
+
+### 14.3 组间实现方法说明
+- `logic.py` 负责 executor 流式白名单、阶段总览拦截、完整状态缓存和返回。
+- `plan_nodes.py` 负责 executor 异常日志而非静默兜底。
+- `plan_ui.py` 负责周期总览的上下文提取和 Markdown 渲染。
+- `actions.py` 负责阶段生成 LLM 调用和完整计划回显。
+- 共享层（`legacy_ui.py`、`output_nodes.py`、`training_plan_skeleton.py`）无改动。
+
+### 14.4 本轮收益
+- executor 节点支持前端可见进度提示和流式 token 输出，彻底解决 planner 后"空白等待"问题。
+- 长计划（≥4 周）默认先展示周期阶段总览，用户可按需逐阶段生成详细课表，避免一次性长时间等待。
+- LLM 调用失败时前端可看到诊断信息，不再静默显示空报告或模板草案。
+- 短计划仍走完整报告直出路径，不受阶段总览逻辑影响。
+- 31/33 自动化测试通过（2 个预存失败与本次改动无关）。
+
+---
+
+## 15. 数据库主存储与 Google Calendar OAuth 同步链路
+
+### 15.1 背景与动机
+训练计划已具备多周结构化生成与月历展示能力，但此前主要保存在会话态和结构化报告中，缺少可长期追踪、反馈回写和外部日历同步的持久化底座。为支撑方案 C，需要先建立本地数据库主存储，再接入 Google Calendar OAuth 与事件同步。
+
+### 15.2 实现方法
+- **运行期路径收口**：`app_state.py` 新增 `GOOGLE_CREDENTIALS_PATH`，默认指向运行期 `_runtime_data/<项目名>/google_credentials.json`，避免 OAuth 凭据进入源码目录或触发热重载。
+- **SQLite 持久化底座**：新增 `services/database.py`，初始化 `training_plans / training_calendar_events / training_event_feedback / training_event_exceptions / sync_state` 表，作为训练计划、日历事件、训练反馈和同步状态的统一存储基础。
+- **Google Calendar Provider**：新增 `services/google_calendar_provider.py`，封装 OAuth 桌面授权、加密 token 保存、token 刷新、事件插入、事件更新、事件删除和日历事件构造。
+- **Token 加密约束**：OAuth access token 与 refresh token 使用 `MARATHON_SYNC_KEY` 派生的 Fernet 密钥加密后写入 `sync_state`，未配置密钥时拒绝保存或解密令牌。
+- **Chainlit 动作入口**：`apps/chainlit/actions.py` 新增 `authorize_google_calendar / sync_to_google_calendar / revoke_google_calendar` 三个回调，分别负责浏览器授权、将未同步训练事件推送到 Google Calendar、撤销本地授权状态。
+- **消息更新兼容**：同步回调沿用项目现有 `content + update()` 消息更新方式，避免依赖不稳定的消息编辑接口。
+
+### 15.3 组间实现方法说明
+- `app_state.py` 只负责运行期文件路径定义，不承载授权业务逻辑。
+- `database.py` 负责 SQLite schema 和最小 CRUD，后续计划生成链路只通过该层写入计划与日历事件。
+- `google_calendar_provider.py` 负责外部 Google Calendar API 边界，不直接读取 Chainlit 会话态。
+- `actions.py` 负责用户点击后的交互编排、状态提示和埋点，不直接拼接数据库 schema。
+- 后续将由计划持久化层把 `structured_training_plan.week_plans[].days[]` 转换为 `training_calendar_events`，再由同步回调推送到外部日历。
+
+### 15.4 当前边界
+- 当前采用 **方案 B3：纯本地 SQLite + Chainlit 内嵌月历组件**，不依赖任何外部日历服务。
+- 计划生成成功后，`structured_training_plan.week_plans[].days[]` 写入 `training_calendar_events`，并生成 `training_plan_id`。
+- Chainlit 计划完成后提供"查看已保存计划"和"查看训练日历"入口，浏览已保存计划并通过 `MonthlyTrainingCalendar` 组件渲染月历视图。
+- Google Calendar Provider 与授权/同步回调代码保留在仓库中，但不接入 UI 入口；如需外部日历同步，可后续重新接入。
+- 当前验证覆盖语法编译、日历持久化测试、日历组件 props 转换测试和相关 UI/日历回归测试。
+
+### 15.5 训练计划入库实现补充
+- `services/database.py` 新增 `save_training_plan()`，负责写入 `training_plans` 主记录，并按 `week_index + day_label` 生成本地日历事件。
+- 日历事件默认以当前日期为第 1 周周一推导 `scheduled_date`，以 `07:00` 作为默认训练开始时间；后续可在用户配置中进一步开放训练日期与时间偏好。
+- 事件字段保留 `warmup/main_set/cooldown/venue/notes/km/phase/load_level/content_json/ics_uid`，保证回查和后续反馈回写都有稳定来源。
+- `apps/chainlit/logic.py` 新增计划生成成功后的持久化接入：未缺基础画像且存在 `structured_training_plan.week_plans` 时写入数据库，并把 `training_plan_id` 写回 `final_state`。
+- 新增 `tests/test_training_calendar_persistence.py` 覆盖计划主记录、日历事件、未同步事件查询和同步状态更新。
+
+### 15.6 本地日历浏览实现（B3）
+- `services/database.py` 新增 `list_training_plans()`，按创建时间倒序返回最近 20 条已保存计划。
+- `apps/chainlit/plan_ui.py` 新增 `build_calendar_props_from_db(plan_id)`，从 SQLite `training_calendar_events` 表读取事件并转换为 `MonthlyTrainingCalendar` CustomElement 所需 props 格式。
+- `apps/chainlit/actions.py` 新增 `browse_saved_plans` 和 `view_saved_plan` 两个回调：
+  - `browse_saved_plans`：列出所有已保存计划，点击可跳转日历视图
+  - `view_saved_plan`：根据 `plan_id` 读取事件、构建 props、渲染 `MonthlyTrainingCalendar` 组件
+- `apps/chainlit/logic.py` 中的 `_send_calendar_sync_actions` 替换为 `_send_saved_plan_browse_action`，Google Calendar 授权/同步按钮替换为本地"查看已保存计划"和"查看训练日历"按钮。
+- Google Calendar 回调代码（`authorize_google_calendar`、`sync_to_google_calendar`、`revoke_google_calendar`）保留在 `actions.py` 中，仅从 UI 入口移除；`google_calendar_provider.py` 保持完整，后续可重新激活。
+

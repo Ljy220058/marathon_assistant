@@ -18,36 +18,78 @@ from marathon_qa_assistant.services.input_validator import (
 )
 from marathon_qa_assistant.core.workflow import load_user_profile
 from marathon_qa_assistant.apps.chainlit.ui_config import ZONE_LABELS
+from marathon_qa_assistant.apps.chainlit.coach_state import (
+    render_coach_ui_status_md,
+    sync_coach_ui_snapshot,
+)
 from marathon_qa_assistant.nodes.common import llm as common_llm
 from marathon_qa_assistant.nodes.profile_and_retrieval import FIELD_LABELS, FIELD_HINTS
 
-async def show_profile_summary(profile, profile_name="Coach Mode"):
-    sidebar_visible = cl.user_session.get("sidebar_visible", True)
+def _build_left_action_groups(sidebar_visible: bool):
     toggle_label = "隐藏侧边栏" if sidebar_visible else "打开侧边栏"
     toggle_icon = "visibility_off" if sidebar_visible else "visibility"
+    return [
+        {
+            "title": "训练计划",
+            "items": [
+                {"name": "quick_profile", "label": "极速画像", "description": "3 步后生成基础计划", "icon": "⚡", "payload": {"value": "quick_profile"}},
+                {"name": "fill_profile", "label": "完整画像", "description": "补齐更多信息，生成更精准计划", "icon": "📋", "payload": {"value": "profile"}},
+                {"name": "adaptive_plan", "label": "自适应调整", "description": "根据近期反馈调整当前计划", "icon": "⚡", "payload": {"value": "adaptive"}},
+            ],
+        },
+        {
+            "title": "知识库",
+            "items": [
+                {"name": "search_graph", "label": "搜索知识图谱", "description": "检索训练知识实体", "icon": "🔍", "payload": {"value": "search"}},
+                {"name": "cross_research", "label": "交叉研究实体", "description": "比较多个运动科学实体", "icon": "🔗", "payload": {"value": "research"}},
+                {"name": "manage_kb", "label": "管理知识库", "description": "上传、查看和重建资料库", "icon": "⚙️", "payload": {"value": "kb"}},
+            ],
+        },
+        {
+            "title": "界面",
+            "items": [
+                {"name": "refresh_profile", "label": "刷新画像", "description": "同步最新侧边栏画像", "icon": "🔄", "payload": {"value": "refresh"}},
+                {"name": "toggle_sidebar", "label": toggle_label, "description": "切换侧边栏显示状态", "icon": "👁️", "icon_name": toggle_icon, "payload": {"value": "toggle"}},
+            ],
+        },
+    ]
+
+
+async def show_profile_summary(profile, profile_name="Coach Mode"):
+    sidebar_visible = cl.user_session.get("sidebar_visible", True)
 
     is_coach = (profile_name == "Coach Mode")
     welcome_title = "🏃‍♂️ **你好！我是您的 AI 跑步教练 (Coach Mode)**" if is_coach else "🔬 **你好！我是您的 科学研究助手 (Research Mode)**"
 
-    actions = [
-        cl.Action(name="fill_profile", payload={"value": "profile"}, label="📋 填写训练画像", icon="edit_note"),
-        cl.Action(name="adaptive_plan", payload={"value": "adaptive"}, label="⚡ 自适应调整", icon="bolt"),
-        cl.Action(name="refresh_profile", payload={"value": "refresh"}, label="🔄 刷新画像", icon="refresh"),
-        cl.Action(name="search_graph", payload={"value": "search"}, label="🔍 搜索图谱", icon="search"),
-        cl.Action(name="cross_research", payload={"value": "research"}, label="🔗 交叉研究", icon="hub"),
-        cl.Action(name="manage_kb", payload={"value": "kb"}, label="⚙️ 知识库管理", icon="settings"),
-        cl.Action(name="toggle_sidebar", payload={"value": "toggle"}, label=toggle_label, icon=toggle_icon),
-    ]
+    actions = []
 
     _avatar_path = str(Path(__file__).parents[3] / "assets" / "images" / "avatar.png")
     expert_elements = [
         cl.Image(name="Assistant", path=_avatar_path, display="inline"),
     ]
 
+    session_state = cl.user_session.get("state") or {}
+    snapshot = sync_coach_ui_snapshot(cl.user_session.get, cl.user_session.set, session_state)
+    status_line = ""
+    if is_coach:
+        status_line = (
+            f"\n\n🧭 **当前状态**：{snapshot['page_label']} / {snapshot['message_label']}"
+            f"\n\n👉 **下一步**：{snapshot['next_step_hint']}"
+        )
+
     welcome_msg = f"""{welcome_title}
 
-📊 **右侧面板**查看训练画像与知识图谱，通过**下方功能栏**开始探索："""
-    await cl.Message(content=welcome_msg, actions=actions, elements=expert_elements).send()
+📊 **右侧面板**会实时显示核心画像、证据库与下一步建议。{status_line}"""
+    action_element = cl.CustomElement(
+        name="LeftActionRail",
+        props={
+            "title": "AI 跑步教练操作台" if is_coach else "科研助手操作台",
+            "subtitle": "常用功能已移动到左侧分组卡片栏。",
+            "status": f"当前状态：{snapshot['page_label']} / {snapshot['message_label']}\n下一步：{snapshot['next_step_hint']}" if is_coach else "请选择左侧入口开始使用。",
+            "groups": _build_left_action_groups(sidebar_visible),
+        },
+    )
+    await cl.Message(content=welcome_msg, actions=actions, elements=[*expert_elements, action_element]).send()
 
 async def _generate_knowledge_card(entity: str, result: dict) -> str:
     """用 LLM 基于图谱数据生成实体知识卡片 (带文献溯源)"""
@@ -216,8 +258,40 @@ def init_knowledge_base():
         cl.logger.error(f"全局知识库加载失败: {error_msg}")
         set_kb_data([], None, None, retrieve)
 
+def _format_t_pace_for_sidebar(value) -> str:
+    text = str(value or "").strip()
+    if not text or text in ("-", "—", "未设置"):
+        return "未设置"
+    if ":" in text:
+        return text if "/" in text else f"{text}/km"
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if digits == text and len(digits) in (3, 4):
+        return f"{int(digits[:-2])}:{digits[-2:]}/km"
+    return text
+
+
+def _zone_label_short(key: str) -> str:
+    label = ZONE_LABELS.get(key, key)
+    if label.startswith(f"{key} "):
+        label = label[len(key) + 1:]
+    return label.split("(", 1)[0].strip() or key
+
+
+def _build_simplified_zone_table(profile: dict) -> str:
+    hz = profile.get("hr_zones", {}) or {}
+    pz = profile.get("pace_zones", {}) or {}
+    rows = []
+    for i in range(1, 10):
+        key = f"Z{i}"
+        label = _zone_label_short(key)
+        hr_val = hz.get(key, "—")
+        pace_val = pz.get(key, "—")
+        rows.append(f"| **{key}** | {label} | {hr_val} | {pace_val} |")
+    return "\n".join(rows)
+
+
 def _build_profile_section(profile: dict) -> str:
-    """构建运动员档案段（PB + 心率/配速区间）"""
+    """构建运动员档案段（用户摘要）"""
     target_date_str = str(profile.get("target_race_date", "") or "").strip()
     countdown_str = "未设置"
     if target_date_str and target_date_str.lower() not in ("none", "null", "未设置"):
@@ -239,82 +313,63 @@ def _build_profile_section(profile: dict) -> str:
         else:
             countdown_str = target_date_str
 
-    hz = profile.get("hr_zones", {})
-    pz = profile.get("pace_zones", {})
+    t_pace = _format_t_pace_for_sidebar(profile.get("t_pace"))
+    zones_table = _build_simplified_zone_table(profile)
 
-    zones_rows = []
-    for i in range(1, 10):
-        key = f"Z{i}"
-        label = ZONE_LABELS.get(key, key)
-        hr_val = hz.get(key, "—")
-        pace_val = pz.get(key, "—")
-        zones_rows.append(f"| **{key} ({label})** | {hr_val} | {pace_val} |")
-    zones_table = "\n".join(zones_rows)
+    return f"""### 🏃‍♂️ 核心画像
 
-    pb_str = f"""| 5k | 10k | 半马 | 全马 |
-| :--- | :--- | :--- | :--- |
-| {profile.get('pb_5k', '-')} | {profile.get('pb_10k', '-')} | {profile.get('pb_half', '-')} | {profile.get('pb_full', '-')} |"""
-
-    return f"""### 🏃‍♂️ 运动员档案
-
-**核心指标**
-- **当前跑量**: `{profile.get('weekly_mileage', 0)} km/周`
-- **乳酸阈 (LTHR)**: `{profile.get('lthr', 0)} bpm`
-- **乳酸阈配速**: `{profile.get('t_pace', '-')} min/km`
 - **目标赛事**: `{profile.get('goal', '未知')}`
 - **赛事倒计时**: `{countdown_str}`
+- **当前跑量**: `{profile.get('weekly_mileage', 0)} km/周`
+- **强度模型**: `LTHR 九区 Z1-Z9`
+- **乳酸阈**: `{profile.get('lthr', 0)} bpm`
+- **阈值配速**: `{t_pace}`
+- **执行口径**: `Z1-Z9 为主，配速仅参考`
 
-**最佳成绩 (PB)**
-{pb_str}
-
-**心率区间与配速（Z1-Z9）**
-| 区间 | 心率范围 (LTHR) | 配速范围 (T-Pace) |
-| :--- | :--- | :--- |
+**强度速查**
+| 区间 | 用途 | 心率 | 配速参考 |
+| :--- | :--- | :--- | :--- |
 {zones_table}"""
 
 
 def _build_graph_section() -> str:
-    """构建知识图谱统计段"""
+    """构建证据库摘要段"""
     node_count = len(graph_engine.nodes) if graph_engine else 0
-    edge_count = len(graph_engine.edges) if graph_engine else 0
-    chunk_count = len(KB_CHUNKS)
-
     unique_files = set(c.get("source_file") for c in KB_CHUNKS if "source_file" in c)
-    density = edge_count / node_count if node_count > 0 else 0
+    status = "已就绪" if node_count > 0 or unique_files else "待加载"
+    return f"""### 📚 证据库
 
-    return f"""### 🧠 知识图谱
-
-**图谱规模**
-- **核心实体**: `{node_count}`
-- **逻辑关联**: `{edge_count}`
-- **知识密度**: `{density:.2f} 关系/节点`
-
-**索引数据**
-- **已索引文档**: `{len(unique_files)}` 篇
-- **知识分片**: `{chunk_count}`
-- **图谱状态**: `{"已就绪" if node_count > 0 else "待构建"}`"""
+{len(unique_files)} 篇资料 · {status}"""
 
 
 async def update_sidebar(profile_override=None):
-    """更新侧边栏 — 双段式：运动员档案 + 知识图谱统计"""
+    """更新侧边栏 — 中等轻量化训练画像摘要"""
     sidebar_visible = cl.user_session.get("sidebar_visible", True)
+    session_state = cl.user_session.get("state") or {}
 
     if profile_override:
         profile = profile_override
     else:
-        state = cl.user_session.get("state")
-        profile = state.get("user_profile") if state else await cl.make_async(load_user_profile)()
+        profile = session_state.get("user_profile") if session_state else await cl.make_async(load_user_profile)()
 
     profile_section = _build_profile_section(profile)
     graph_section = _build_graph_section()
+    snapshot = sync_coach_ui_snapshot(cl.user_session.get, cl.user_session.set, session_state)
+    status_section = render_coach_ui_status_md(snapshot)
+    status_block = ""
+    if status_section:
+        status_block = f"""
+
+---
+
+{status_section}"""
+
     sidebar_content = f"""{profile_section}
 
 ---
 
 {graph_section}
-
----
-*数据实时同步自个人画像与知识库*"""
+{status_block}"""
 
     sidebar_name = "马拉松助手 · 统一面板"
 

@@ -1,0 +1,254 @@
+import sys
+from pathlib import Path
+
+
+root = Path(__file__).parents[1]
+if str(root) not in sys.path:
+    sys.path.insert(0, str(root))
+
+
+from marathon_qa_assistant.core.training_plan_models import (
+    DayPlan,
+    PhaseBlock,
+    PlanMeta,
+    RepeatGuardSignature,
+    StructuredTrainingPlan,
+    WeekPlan,
+    compare_all_adjacent_weeks,
+    validate_full_training_plan,
+)
+from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
+
+
+def _plan_from_dict(data):
+    return StructuredTrainingPlan(
+        plan_meta=PlanMeta(**data["plan_meta"]),
+        phase_summary=[PhaseBlock(**item) for item in data["phase_summary"]],
+        week_plans=[
+            WeekPlan(
+                week_index=item["week_index"],
+                phase=item["phase"],
+                week_goal=item["week_goal"],
+                load_level=item["load_level"],
+                load_progression_note=item["load_progression_note"],
+                days=[DayPlan(**day) for day in item["days"]],
+                execution_reminder=item["execution_reminder"],
+                key_workouts=item.get("key_workouts", []),
+                action_suggestions=item.get("action_suggestions", []),
+                repeat_guard_signature=RepeatGuardSignature(**item.get("repeat_guard_signature", {})),
+            )
+            for item in data["week_plans"]
+        ],
+        first_week_actions=data.get("first_week_actions", []),
+    )
+
+
+def test_build_structured_training_plan_skeleton_outputs_valid_four_week_plan():
+    data = build_structured_training_plan_skeleton(
+        query="请给我制定4周半马训练计划，训练日固定周二、周四、周日。",
+        profile={
+            "goal": "半马 90 分",
+            "experience_level": "进阶",
+            "weekly_mileage": 58,
+            "t_pace": "4:00/km",
+            "target_race_date": "3个月",
+            "plan_duration_weeks": 12,
+            "available_days": "周二,周四,周日",
+            "max_session_minutes": 100,
+        },
+        requested_weeks=4,
+    )
+
+    plan = _plan_from_dict(data)
+
+    assert plan.plan_meta.actual_weeks == 4
+    assert plan.plan_meta.plan_type == "multi_week"
+    assert validate_full_training_plan(plan) == []
+    assert all(len(week.days) == 7 for week in plan.week_plans)
+    assert len(plan.first_week_actions) >= 2
+    assert all(week.key_workouts for week in plan.week_plans)
+    assert all(week.action_suggestions for week in plan.week_plans)
+
+
+def test_build_structured_training_plan_skeleton_supports_twenty_four_weeks_without_adjacent_failures():
+    data = build_structured_training_plan_skeleton(
+        query="请给我制定24周全马训练计划。",
+        profile={
+            "goal": "全马 330",
+            "experience_level": "进阶",
+            "weekly_mileage": 62,
+            "t_pace": "4:15/km",
+            "target_race_date": "6个月",
+            "plan_duration_weeks": 24,
+            "available_days": "周二,周四,周六,周日",
+            "max_session_minutes": 120,
+        },
+        requested_weeks=24,
+    )
+
+    plan = _plan_from_dict(data)
+    comparisons = compare_all_adjacent_weeks(plan)
+
+    assert plan.plan_meta.actual_weeks == 24
+    assert validate_full_training_plan(plan) == []
+    assert len(comparisons) == 23
+    assert all(result["status"] != "fail" for result in comparisons)
+    assert plan.first_week_actions
+    assert all(len(week.key_workouts) >= 2 for week in plan.week_plans[:4])
+    assert all(len(week.action_suggestions) >= 2 for week in plan.week_plans[:4])
+
+
+def test_goal_race_type_changes_first_week_structure_and_long_run_strategy():
+    base_profile = {
+        "experience_level": "进阶",
+        "weekly_mileage": 50,
+        "t_pace": "4:15/km",
+        "target_race_date": "1个月",
+        "plan_duration_weeks": 4,
+        "available_days": "周二,周四,周日",
+        "max_session_minutes": 100,
+    }
+
+    half_data = build_structured_training_plan_skeleton(
+        query="请给我制定4周训练计划。",
+        profile={**base_profile, "goal": "半马 90 分"},
+        requested_weeks=4,
+    )
+    marathon_data = build_structured_training_plan_skeleton(
+        query="请给我制定4周训练计划。",
+        profile={**base_profile, "goal": "全马 3小时30分"},
+        requested_weeks=4,
+    )
+
+    half_week = half_data["week_plans"][0]
+    marathon_week = marathon_data["week_plans"][0]
+    half_long_run = next(day for day in half_week["days"] if day["training_type"] == "长距离")
+    marathon_long_run = next(day for day in marathon_week["days"] if day["training_type"] == "长距离")
+
+    assert "半马目标" in half_week["week_goal"]
+    assert "全马目标" in marathon_week["week_goal"]
+    assert half_week["key_workouts"][0] != marathon_week["key_workouts"][0]
+    assert "无氧阈跑" in half_week["key_workouts"][0]
+    assert "马拉松配速跑" in marathon_week["key_workouts"][0]
+    assert "半马专项" in half_long_run["main_set"]
+    assert "补给" in marathon_long_run["main_set"]
+    assert half_long_run["main_set"] != marathon_long_run["main_set"]
+
+
+def test_half_year_plan_anti_duplication_for_half_marathon():
+    data = build_structured_training_plan_skeleton(
+        query="请给我制定26周半马训练计划，比赛在半年后，每周二周四周日训练。",
+        profile={
+            "goal": "半马训练",
+            "experience_level": "进阶",
+            "weekly_mileage": 42,
+            "t_pace": "4:45/km",
+            "available_days": "周二,周四,周日",
+            "max_session_minutes": 100,
+        },
+        requested_weeks=26,
+    )
+    plan = _plan_from_dict(data)
+    weeks = plan.week_plans
+
+    assert plan.plan_meta.actual_weeks >= 20
+    assert validate_full_training_plan(plan) == []
+
+    comparisons = compare_all_adjacent_weeks(plan)
+    assert len(comparisons) == plan.plan_meta.actual_weeks - 1
+    assert all(result["status"] != "fail" for result in comparisons)
+
+    seen_phases = set(week.phase for week in weeks)
+    assert len(seen_phases) >= 3
+
+    main_set_pool = set()
+    for week in weeks:
+        for day in week.days:
+            if day.training_type == "长距离":
+                main_set_pool.add(day.main_set[:15])
+    assert len(main_set_pool) >= 5
+
+    taper_weeks = [w for w in weeks if "减量" in w.phase or "调整" in w.phase]
+    assert len(taper_weeks) >= 3
+    taper_long_run_minutes = []
+    for w in taper_weeks:
+        long_day = next((d for d in w.days if d.training_type == "长距离"), None)
+        if long_day:
+            import re
+            m = re.search(r"(\d+)分钟", long_day.main_set)
+            if m:
+                taper_long_run_minutes.append(int(m.group(1)))
+    assert len(taper_long_run_minutes) >= 2
+    assert all(
+        taper_long_run_minutes[i] <= taper_long_run_minutes[0]
+        for i in range(1, len(taper_long_run_minutes))
+    )
+
+    adjacent_normalized = []
+    for result in comparisons:
+        if result["status"] == "pass":
+            continue
+        a_weeks = result.get("week_a_weeks", [])
+        b_weeks = result.get("week_b_weeks", [])
+        for a, b in zip(a_weeks, b_weeks):
+            if a.phase == b.phase:
+                adjacent_normalized.append((a.week_index, b.week_index))
+    assert len(adjacent_normalized) < plan.plan_meta.actual_weeks // 2
+
+    has_rest_day_recovery = any(
+        "恢复跑" in d.training_type or "恢复" in d.main_set
+        for w in weeks for d in w.days
+    )
+    has_progression = any(
+        "渐进" in d.training_type for w in weeks for d in w.days
+    )
+    assert has_rest_day_recovery or has_progression
+
+
+def test_half_year_plan_anti_duplication_for_marathon():
+    data = build_structured_training_plan_skeleton(
+        query="请给我制定26周全马训练计划，比赛在半年后，每周二四六日训练。",
+        profile={
+            "goal": "全马训练",
+            "experience_level": "进阶",
+            "weekly_mileage": 55,
+            "t_pace": "5:00/km",
+            "available_days": "周二,周四,周六,周日",
+            "max_session_minutes": 120,
+        },
+        requested_weeks=26,
+    )
+    plan = _plan_from_dict(data)
+    weeks = plan.week_plans
+
+    assert plan.plan_meta.actual_weeks >= 20
+    assert validate_full_training_plan(plan) == []
+
+    comparisons = compare_all_adjacent_weeks(plan)
+    assert all(result["status"] != "fail" for result in comparisons)
+
+    primary_types_per_phase = {}
+    for week in weeks:
+        phase = week.phase
+        if phase not in primary_types_per_phase:
+            primary_types_per_phase[phase] = set()
+        tue_day = next((d for d in week.days if d.day == "周二" and d.training_type != "休息"), None)
+        if tue_day:
+            primary_types_per_phase[phase].add(tue_day.training_type)
+
+    for phase, types in primary_types_per_phase.items():
+        if "减量" in phase or "调整" in phase:
+            continue
+        assert len(types) >= 2, f"Phase {phase} has only {len(types)} primary types: {types}"
+
+    seen_exact_schedules = set()
+    for week in weeks:
+        sig = "|".join(f"{d.day}:{d.training_type}:{d.main_set}" for d in week.days)
+        assert sig not in seen_exact_schedules, f"Week {week.week_index} has exact duplicate schedule"
+        seen_exact_schedules.add(sig)
+
+    has_base_phase = any("基础" in w.phase for w in weeks)
+    has_build_phase = any("建设" in w.phase for w in weeks)
+    has_peak_phase = any("巅峰" in w.phase for w in weeks)
+    has_taper_phase = any("减量" in w.phase for w in weeks)
+    assert has_base_phase and has_build_phase and has_peak_phase and has_taper_phase

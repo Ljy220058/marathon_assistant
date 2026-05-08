@@ -5,7 +5,12 @@ try:
 except ImportError:
     RunnableConfig = Any
 
-from marathon_qa_assistant.core.state_models import IntegratedState
+from marathon_qa_assistant.core.state_models import (
+    IntegratedState,
+    build_adaptive_adjustment_contract,
+    derive_adaptive_reasons,
+    normalize_workout_feedback,
+)
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     ensure_usage,
@@ -60,8 +65,11 @@ async def _run_expert_llm(
 Wiki 概念补充上下文：
 {_format_wiki_context(state.get("wiki_context", ""))}
 
-引用规则：
-凡使用上述本地知识库证据中的事实信息，必须在对应句末标注 [1]、[2] 等来源编号（例如：...由于过度训练 [1]）。Wiki 只用于解释概念背景，不作为训练处方依据，也不要给 Wiki 内容编造 [n] 引用。
+引用规则（严格遵守，违反即为不合格）：
+1. 凡使用上述本地知识库证据中的事实信息，必须在对应句末标注 [1]、[2] 等数字来源编号，只允许纯数字编号格式。
+2. 正确示例：...由于过度训练 [1]。...VO₂max 提升与间歇跑有关 [1][2]。
+3. 严禁使用以下格式：[来源: xxx.pdf]、[来源: 某论文]、[ref: xxx]、[citation needed] 或任何非纯数字的引用格式。这些格式前端无法生成可点击的预览按钮。
+4. Wiki 只用于解释概念背景，不作为训练处方依据，也不要给 Wiki 内容编造 [n] 引用。
 
 请输出简洁、可执行、可审核的中文 Markdown，严格遵守引用规则，避免编造资料来源。
 {get_security_prompt_suffix()}"""
@@ -104,12 +112,30 @@ async def coach_node(state: IntegratedState, config: RunnableConfig) -> dict:
 
 
 async def adaptive_coach_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    adaptive_feedback = state.get("adaptive_feedback", {})
+    raw_feedback_text = str(state.get("query", "") or "").strip()
+    existing_feedback = state.get("adaptive_feedback", {}) or {}
+    workout_feedback = normalize_workout_feedback(
+        existing_feedback.get("workout_feedback") if isinstance(existing_feedback, dict) else {},
+        raw_text=raw_feedback_text,
+    )
+    reasons = derive_adaptive_reasons(workout_feedback, raw_text=raw_feedback_text)
+    adaptive_feedback = {
+        "workout_feedback": workout_feedback,
+        "reason_codes": [reason["code"] for reason in reasons],
+        "reasons": reasons,
+        "raw_text": raw_feedback_text,
+        "source": "query_text",
+    }
+    adaptive_adjustment = build_adaptive_adjustment_contract(workout_feedback, raw_text=raw_feedback_text)
     content, usage = await _run_expert_llm(
         role_name="Adaptive Coach",
         task_instruction=(
-            "基于疲劳、缺课和异常心率反馈，对当前计划做降载或替代建议。"
-            f"\n自适应反馈：{adaptive_feedback}"
+            "基于训练反馈，对当前计划做自适应调整建议。"
+            "\n请优先围绕以下四类原因作答：轻微疲劳、明显疲劳、疼痛风险、漏训。"
+            "\n输出中至少覆盖：明日调整、本周微调、替代训练、风险提示、为什么这么调。"
+            f"\n标准化反馈卡：{workout_feedback}"
+            f"\n已识别原因：{reasons}"
+            f"\n调整输出骨架：{adaptive_adjustment}"
         ),
         state=state,
         config=config,
@@ -117,6 +143,8 @@ async def adaptive_coach_node(state: IntegratedState, config: RunnableConfig) ->
     )
     return {
         "draft_plan": content,
+        "adaptive_feedback": adaptive_feedback,
+        "adaptive_adjustment": adaptive_adjustment,
         "rag_sources": state.get("rag_sources", []),
         "token_usage": usage,
         "reasoning_log": ["[adaptive_coach] 已生成自适应调整建议"],
