@@ -11,6 +11,14 @@ from marathon_qa_assistant.nodes.common import ensure_usage, output_guard_obj
 from marathon_qa_assistant.services.workout_template_retriever import build_daily_workout_template_card_from_hits, normalize_workout_type_for_template
 from marathon_qa_assistant.services.workout_template_retriever import EVIDENCE_TIER_LABELS as _EVIDENCE_TIER_LABELS
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
+from marathon_qa_assistant.core.half_marathon_glossary import (
+    evidence_basis_for_constraint,
+    get_hmp_glossary_terms,
+    term_ids_for_constraint,
+    term_ids_for_phase,
+    term_ids_for_workout,
+)
+from marathon_qa_assistant.core.half_marathon_protocol import HM_PHASE_RULES
 
 
 def _safe_text(value: Any, fallback: str = "—") -> str:
@@ -511,6 +519,139 @@ def _build_daily_workout_cards(
     return cards
 
 
+def _build_half_marathon_protocol_panel(structured_training_plan: Any) -> Dict[str, Any]:
+    if not isinstance(structured_training_plan, dict):
+        return {}
+
+    protocol = structured_training_plan.get("half_marathon_protocol") or {}
+    if not isinstance(protocol, dict) or not protocol.get("active"):
+        return {}
+
+    validation = structured_training_plan.get("half_marathon_protocol_validation") or {}
+    if not isinstance(validation, dict):
+        validation = {}
+
+    selected = protocol.get("selected_archetype") or {}
+    if not isinstance(selected, dict):
+        selected = {}
+
+    phase_sequence = []
+    for phase_id in protocol.get("phase_sequence") or []:
+        phase_rule = HM_PHASE_RULES.get(phase_id)
+        phase_sequence.append(
+            {
+                "id": _safe_text(phase_id, ""),
+                "label": _safe_text(phase_rule.label if phase_rule else phase_id, ""),
+                "objective": _safe_text(phase_rule.objective if phase_rule else "", ""),
+            }
+        )
+
+    preferred_workouts = [
+        item for item in (protocol.get("preferred_workouts") or []) if isinstance(item, dict)
+    ][:5]
+
+    glossary_term_ids = ["hmp"]
+    for item in phase_sequence:
+        glossary_term_ids.extend(term_ids_for_phase(str(item.get("id") or "")))
+    for item in preferred_workouts:
+        glossary_term_ids.extend(term_ids_for_workout(str(item.get("id") or "")))
+
+    issues = []
+    for item in validation.get("issues") or []:
+        if not isinstance(item, dict):
+            continue
+        constraint_id = _safe_text(item.get("constraint_id"), "")
+        workout_type = _safe_text(item.get("workout_type"), "")
+        term_ids = [
+            _safe_text(term_id, "") for term_id in (item.get("term_ids") or []) if _safe_text(term_id, "")
+        ]
+        if not term_ids:
+            term_ids = [*term_ids_for_constraint(constraint_id), *term_ids_for_workout(workout_type)]
+        evidence_basis = item.get("evidence_basis") if isinstance(item.get("evidence_basis"), dict) else {}
+        if not evidence_basis and constraint_id:
+            evidence_basis = evidence_basis_for_constraint(constraint_id, workout_type)
+        glossary_term_ids.extend(term_ids)
+        issues.append(
+            {
+                "severity": _safe_text(item.get("severity"), "warning"),
+                "constraint_id": constraint_id,
+                "label": _safe_text(item.get("label"), ""),
+                "message": _safe_text(item.get("message"), ""),
+                "recommendation": _safe_text(item.get("recommendation"), ""),
+                "week_index": item.get("week_index"),
+                "day": _safe_text(item.get("day"), ""),
+                "workout_type": workout_type,
+                "term_ids": term_ids,
+                "evidence_basis": {
+                    "summary": _safe_text(evidence_basis.get("summary"), ""),
+                    "source_docs": [
+                        _safe_text(source, "") for source in (evidence_basis.get("source_docs") or []) if _safe_text(source, "")
+                    ],
+                    "term_ids": [
+                        _safe_text(term_id, "") for term_id in (evidence_basis.get("term_ids") or []) if _safe_text(term_id, "")
+                    ],
+                } if evidence_basis else {},
+            }
+        )
+
+    error_count = len(validation.get("errors") or [])
+    warning_count = len(validation.get("warnings") or [])
+    status = "passed"
+    if error_count:
+        status = "error"
+    elif warning_count:
+        status = "warning"
+
+    return {
+        "active": True,
+        "panel_version": "hmp_v1",
+        "status": status,
+        "passed": bool(validation.get("passed", True)),
+        "selected_archetype": {
+            "archetype_id": _safe_text(selected.get("archetype_id"), ""),
+            "label": _safe_text(selected.get("label"), ""),
+            "score": int(selected.get("score") or 0),
+            "reasons": _compact_text_list(selected.get("reasons"), limit=5),
+        },
+        "archetype_candidates": [
+            item for item in (protocol.get("archetype_candidates") or []) if isinstance(item, dict)
+        ][:4],
+        "phase_sequence": phase_sequence,
+        "preferred_workouts": preferred_workouts,
+        "glossary_terms": get_hmp_glossary_terms(glossary_term_ids, limit=8),
+        "validation_summary": {
+            "status": status,
+            "passed": bool(validation.get("passed", True)),
+            "error_count": error_count,
+            "warning_count": warning_count,
+            "issue_count": len(issues),
+            "checked_constraints": [
+                _safe_text(item, "") for item in (validation.get("checked_constraints") or []) if _safe_text(item, "")
+            ],
+        },
+        "issues": issues,
+        "repair_applied": bool(validation.get("repair_applied")),
+        "repair_log": [
+            item for item in (validation.get("repair_log") or protocol.get("repair_log") or []) if isinstance(item, dict)
+        ],
+        "repair_suggestions": [
+            item for item in (validation.get("repair_suggestions") or []) if isinstance(item, dict)
+        ],
+        "profile_gaps": [
+            item for item in (protocol.get("profile_gaps") or []) if isinstance(item, dict)
+        ],
+        "pace_calibration": protocol.get("pace_calibration") if isinstance(protocol.get("pace_calibration"), dict) else {},
+        "capacity_budget": protocol.get("capacity_budget") if isinstance(protocol.get("capacity_budget"), dict) else {},
+        "recent_marathon": bool(protocol.get("recent_marathon")),
+        "input_weekly_mileage_km": protocol.get("input_weekly_mileage_km"),
+        "source_docs": [
+            "Sub-70半程马拉松训练_图片OCR整理.md",
+            "docs/half_marathon_hmp_protocol.md",
+            "docs/half_marathon_source_audit.md",
+        ],
+    }
+
+
 def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[str, Any]:
     rag_sources = state.get("rag_sources", [])
     structured_training_plan = state.get("structured_training_plan")
@@ -587,6 +728,14 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
         evidence_base,
         audit_scores,
     )
+    half_marathon_protocol_panel = _build_half_marathon_protocol_panel(structured_training_plan)
+    if training_explanation_panel and half_marathon_protocol_panel:
+        training_explanation_panel["protocol_context"] = {
+            "protocol": "half_marathon_hmp",
+            "status": half_marathon_protocol_panel.get("status"),
+            "selected_archetype": half_marathon_protocol_panel.get("selected_archetype"),
+            "validation_summary": half_marathon_protocol_panel.get("validation_summary"),
+        }
     wiki_context = str(state.get("wiki_context", "") or "").strip()
     findings = [
         {"key": "用户问题", "value": state.get("query", "") or "—"},
@@ -670,6 +819,9 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
         "structured_training_plan": structured_training_plan,
         "training_plan_overview": training_plan_overview,
         "training_explanation_panel": training_explanation_panel,
+        "half_marathon_protocol": structured_training_plan.get("half_marathon_protocol", {}) if isinstance(structured_training_plan, dict) else {},
+        "half_marathon_protocol_validation": structured_training_plan.get("half_marathon_protocol_validation", {}) if isinstance(structured_training_plan, dict) else {},
+        "half_marathon_protocol_panel": half_marathon_protocol_panel,
         "daily_workout_cards": daily_workout_cards,
         "monthly_training_calendar": monthly_training_calendar.to_dict() if monthly_training_calendar else {},
         "daily_schedule_cards": daily_schedule_cards,

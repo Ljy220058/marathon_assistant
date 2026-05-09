@@ -18,6 +18,17 @@ from marathon_qa_assistant.core.half_marathon_protocol import (
     select_phase_sequence,
     workout_rules_for_archetype,
 )
+from marathon_qa_assistant.core.half_marathon_pace_calibration import (
+    build_half_marathon_pace_calibration,
+    detect_half_marathon_profile_gaps,
+)
+from marathon_qa_assistant.core.half_marathon_capacity_budget import build_half_marathon_capacity_budget
+from marathon_qa_assistant.core.half_marathon_validator import validate_half_marathon_protocol_plan
+from marathon_qa_assistant.core.half_marathon_repair_executor import apply_half_marathon_repairs
+from marathon_qa_assistant.core.half_marathon_schedule_composer import (
+    build_hmp_repair_suggestions,
+    compose_hmp_week_sessions,
+)
 from marathon_qa_assistant.core.training_plan_context import align_plan_duration_context
 from marathon_qa_assistant.core.training_plan_models import (
     DayPlan,
@@ -533,9 +544,14 @@ def _build_hm_protocol_context(profile: Dict[str, Any], total_weeks: int, race_t
     decisions = recommend_archetypes(archetype_input)
     primary = decisions[0]
     preferred_rules = workout_rules_for_archetype(primary.archetype_id)
+    profile_gaps = detect_half_marathon_profile_gaps(profile)
+    pace_calibration = build_half_marathon_pace_calibration(profile)
     return {
         "active": True,
         "recent_marathon": archetype_input.recent_marathon,
+        "input_weekly_mileage_km": archetype_input.weekly_mileage_km,
+        "profile_gaps": profile_gaps,
+        "pace_calibration": pace_calibration,
         "selected_archetype": primary.to_dict(),
         "archetype_candidates": [decision.to_dict() for decision in decisions],
         "phase_sequence": select_phase_sequence(total_weeks, recent_marathon=archetype_input.recent_marathon),
@@ -1250,7 +1266,8 @@ def _build_week_days(
     available_days: List[str],
     blocks: List[BlockParams],
     total_weeks: int = 0,
-) -> Tuple[List[DayPlan], float]:
+    hm_protocol_context: Optional[Dict[str, Any]] = None,
+) -> Tuple[List[DayPlan], float, Dict[str, Any]]:
     threshold_pace_seconds = _parse_pace_seconds(profile.get("t_pace"))
     race_type = _resolve_goal_race_type(profile.get("goal"))
     base_weekly_mileage = float(profile.get("weekly_mileage") or 40.0)
@@ -1277,6 +1294,43 @@ def _build_week_days(
         race_type,
         total_weeks,
     )
+    hmp_week_decision: Dict[str, Any] = {}
+    if hm_protocol_context and hm_protocol_context.get("active") and race_type == "half_marathon":
+        phase_id = _hm_protocol_phase_id(mesocycle, week_index, total_weeks, hm_protocol_context) or ""
+        selected = hm_protocol_context.get("selected_archetype") or {}
+        pace_calibration = hm_protocol_context.get("pace_calibration") or {}
+        hmp_week_decision = compose_hmp_week_sessions(
+            week_index=week_index,
+            total_weeks=total_weeks,
+            phase_id=phase_id,
+            archetype_id=str(selected.get("archetype_id") or "general_half_marathon"),
+            recent_marathon=bool(hm_protocol_context.get("recent_marathon")),
+            weekly_volume_km=weekly_volume_km,
+            speed_calibration_available=bool(pace_calibration.get("speed_calibration_available")),
+            pace_calibration_status=str(pace_calibration.get("status") or ""),
+            capacity_budget=build_half_marathon_capacity_budget(
+                weekly_volume_km=weekly_volume_km,
+                phase_id=phase_id or "general",
+                available_days_count=len(available_days),
+                recent_marathon=bool(hm_protocol_context.get("recent_marathon")),
+                fatigue_or_injury=bool(profile.get("injury_or_fatigue") or profile.get("fatigue") or profile.get("injury")),
+                speed_calibration_available=bool(pace_calibration.get("speed_calibration_available")),
+            ),
+        )
+        for session in hmp_week_decision.get("sessions") or []:
+            if not isinstance(session, dict):
+                continue
+            role = str(session.get("role") or "")
+            if role == "primary" and phase_id != "general":
+                primary_type = str(session.get("training_type") or primary_type)
+                primary_main_set = str(session.get("main_set") or primary_main_set)
+                primary_note = str(session.get("note") or primary_note)
+            elif role == "secondary" and secondary_quality_day and len(available_days) >= 4:
+                secondary_type = str(session.get("training_type") or secondary_type)
+                secondary_main_set = str(session.get("main_set") or secondary_main_set)
+                secondary_note = str(session.get("note") or secondary_note)
+            elif role == "long_run" and _phase_family(mesocycle.name) != "taper":
+                long_run_main_set = str(session.get("main_set") or long_run_main_set)
 
     week_in_block = ((week_index - 1) % 4) + 1
     current_block = next((b for b in blocks if b.start_week <= week_index <= b.end_week), None)
@@ -1295,7 +1349,7 @@ def _build_week_days(
         week_in_block=week_in_block,
         is_taper_block=is_taper_block,
     )
-    return days, weekly_volume_km
+    return days, weekly_volume_km, hmp_week_decision
 
 
 def build_structured_training_plan_skeleton(
@@ -1330,10 +1384,19 @@ def build_structured_training_plan_skeleton(
     ]
 
     week_plans: List[WeekPlan] = []
+    hmp_week_decisions: List[Dict[str, Any]] = []
     for week_index in range(1, total_weeks + 1):
         mesocycle = macrocycle.get_phase_for_week(week_index) or macrocycle.mesocycles[-1]
         week_in_phase = week_index - mesocycle.start_week + 1
-        days, weekly_volume_km = _build_week_days(mesocycle, week_index, aligned_profile, available_days, blocks, total_weeks)
+        days, weekly_volume_km, hmp_week_decision = _build_week_days(
+            mesocycle,
+            week_index,
+            aligned_profile,
+            available_days,
+            blocks,
+            total_weeks,
+            hm_protocol_context,
+        )
         if week_index == 1:
             days = _apply_weekly_structure_constraints(days, weekly_structure_constraints, available_days)
         phase_weeks = mesocycle.weeks
@@ -1343,6 +1406,24 @@ def build_structured_training_plan_skeleton(
         if hm_week_note:
             key_workouts.append(hm_week_note)
             action_suggestions = [hm_week_note] + action_suggestions
+        if hmp_week_decision.get("active"):
+            hmp_week_decisions.append({
+                "week_index": week_index,
+                "phase_id": hmp_week_decision.get("phase_id"),
+                "phase_label": hmp_week_decision.get("phase_label"),
+                "sessions": hmp_week_decision.get("sessions") or [],
+                "repair_notes": hmp_week_decision.get("repair_notes") or [],
+                "capacity_budget": hmp_week_decision.get("capacity_budget") or {},
+            })
+            for session in hmp_week_decision.get("sessions") or []:
+                if not isinstance(session, dict):
+                    continue
+                summary = (
+                    f"HMP生成器：{session.get('workout_id')} / {session.get('role')} / "
+                    f"{session.get('reason')}"
+                )
+                if summary not in action_suggestions:
+                    action_suggestions.append(summary)
         week_plan = WeekPlan(
             week_index=week_index,
             phase=mesocycle.name,
@@ -1377,7 +1458,26 @@ def build_structured_training_plan_skeleton(
     )
     plan_dict = plan.to_dict()
     if hm_protocol_context.get("active"):
+        hm_protocol_context["weekly_decisions"] = hmp_week_decisions
+        hm_protocol_context["capacity_budget"] = (
+            hmp_week_decisions[0].get("capacity_budget") if hmp_week_decisions else {}
+        )
         plan_dict["half_marathon_protocol"] = hm_protocol_context
+        validation = validate_half_marathon_protocol_plan(plan_dict)
+        if validation.get("issues"):
+            repaired_plan = apply_half_marathon_repairs(plan_dict, validation)
+            repair_log = repaired_plan.get("half_marathon_protocol_repair_log") or []
+            if repair_log:
+                plan_dict = repaired_plan
+                validation = validate_half_marathon_protocol_plan(plan_dict)
+                validation["repair_log"] = repair_log
+                validation["repair_applied"] = True
+            else:
+                validation["repair_applied"] = False
+        else:
+            validation["repair_applied"] = False
+        validation["repair_suggestions"] = build_hmp_repair_suggestions(validation)
+        plan_dict["half_marathon_protocol_validation"] = validation
     if weekly_structure_constraints.get("required_workouts") or weekly_structure_constraints.get("forbidden_workouts") or weekly_structure_constraints.get("required_rest_days") or weekly_structure_constraints.get("weekly_frequency"):
         plan_dict["weekly_structure_constraints"] = weekly_structure_constraints
         plan_dict["weekly_structure_validation"] = _validate_weekly_structure_constraints(plan_dict, weekly_structure_constraints)

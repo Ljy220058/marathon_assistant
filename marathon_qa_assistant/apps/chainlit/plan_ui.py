@@ -131,15 +131,36 @@ def render_minimal_plan_summary_md(final_state: Dict[str, Any]) -> str:
     plan_type = _safe_text(meta.get("plan_type"), "—")
     actual_weeks = int(meta.get("actual_weeks") or len(weeks) or 0)
     goal = _safe_text(meta.get("goal"), _safe_text(overview.get("goal"), "训练计划"))
+    hmp_panel = structured_report.get("half_marathon_protocol_panel") or {}
+    hmp_line = ""
+    if isinstance(hmp_panel, dict) and hmp_panel.get("active"):
+        selected = hmp_panel.get("selected_archetype") or {}
+        validation = hmp_panel.get("validation_summary") or {}
+        status_label = {
+            "passed": "通过",
+            "warning": "有提醒",
+            "error": "有错误",
+        }.get(str(hmp_panel.get("status") or ""), _safe_text(hmp_panel.get("status"), "未知"))
+        hmp_line = (
+            f"- **HMP 协议**：{_safe_text(selected.get('label'), '半马画像已识别')} · "
+            f"验证{status_label} · "
+            f"{int(validation.get('error_count') or 0)} 错误 / {int(validation.get('warning_count') or 0)} 提醒"
+        )
 
     lines = [
         "### ✅ 训练计划已生成",
         "",
         f"- **类型**：{plan_type} · **周数**：{actual_weeks} 周 · **目标**：{goal}",
-        "",
-        "> 点击「📄 查看完整计划」查看原始报告。",
-        "",
     ]
+    if hmp_line:
+        lines.append(hmp_line)
+    lines.extend(
+        [
+            "",
+            "> 点击「📄 查看完整计划」查看原始报告。",
+            "",
+        ]
+    )
     return "\n".join(lines).strip()
 
 

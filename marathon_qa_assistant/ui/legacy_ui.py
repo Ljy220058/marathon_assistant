@@ -596,6 +596,184 @@ def _render_adaptive_adjustment_md(structured_data):
     return "\n".join(lines).strip()
 
 
+def _render_half_marathon_protocol_panel_md(structured_data):
+    if not isinstance(structured_data, dict):
+        return ""
+
+    panel = structured_data.get("half_marathon_protocol_panel") or {}
+    if not isinstance(panel, dict) or not panel.get("active"):
+        return ""
+
+    selected = panel.get("selected_archetype") or {}
+    validation = panel.get("validation_summary") or {}
+    status_label = {
+        "passed": "通过",
+        "warning": "有提醒",
+        "error": "有错误",
+    }.get(str(panel.get("status") or ""), _safe_md_text(panel.get("status"), "未知"))
+
+    lines = [
+        "#### 🧬 半马 HMP 协议面板",
+        "",
+        f"- 协议状态：{status_label}",
+        f"- 选中画像：{_safe_md_text(selected.get('label'))}（`{_safe_md_text(selected.get('archetype_id'), 'unknown')}`，评分 {int(selected.get('score') or 0)}）",
+        f"- 画像依据：{'；'.join(str(item) for item in (selected.get('reasons') or []) if str(item).strip()) or '未记录'}",
+        f"- 输入周跑量：{_safe_md_text(panel.get('input_weekly_mileage_km'), '未提供')} km",
+        f"- 近期全马：{'是' if panel.get('recent_marathon') else '否'}",
+        f"- 验证摘要：错误 {int(validation.get('error_count') or 0)} 条 / 提醒 {int(validation.get('warning_count') or 0)} 条 / 已检查 {len(validation.get('checked_constraints') or [])} 条约束",
+        "",
+    ]
+
+    pace_calibration = panel.get("pace_calibration") or {}
+    if isinstance(pace_calibration, dict) and pace_calibration:
+        lines.extend(
+            [
+                "**HMP 配速校准**",
+                "",
+                f"- 校准状态：{_safe_md_text(pace_calibration.get('status'))}",
+                f"- 目标 HMP：{_safe_md_text(pace_calibration.get('target_hmp_pace'), '未估算')}",
+                f"- 当前能力 HMP：{_safe_md_text(pace_calibration.get('current_hmp_pace'), '未估算')}",
+                f"- 差值：{_safe_md_text(pace_calibration.get('gap_seconds_per_km'), '未知')} 秒/公里",
+                f"- 速度课校准：{'可用' if pace_calibration.get('speed_calibration_available') else '缺少当前5K/10K，按保守策略'}",
+                "",
+            ]
+        )
+        zone_rows = [item for item in (pace_calibration.get("current_zone_table") or pace_calibration.get("target_zone_table") or []) if isinstance(item, dict)]
+        if zone_rows:
+            lines.extend(["| HMP区间 | 百分比 | 配速 | 用途 |", "| :--- | :---: | :--- | :--- |"])
+            for item in zone_rows:
+                if item.get("zone_id") not in {"support_endurance_90", "specific_endurance_95", "race_specific_100", "specific_speed_105", "support_speed_107_110"}:
+                    continue
+                lines.append(
+                    "| "
+                    f"{_safe_md_text(item.get('label')).replace('|', '&#124;')} | "
+                    f"{_safe_md_text(item.get('percent')).replace('|', '&#124;')} | "
+                    f"{_safe_md_text(item.get('pace')).replace('|', '&#124;')} | "
+                    f"{_safe_md_text(item.get('purpose')).replace('|', '&#124;')} |"
+                )
+            lines.append("")
+        notes = [str(item or "").strip() for item in (pace_calibration.get("notes") or []) if str(item or "").strip()]
+        if notes:
+            lines.extend(["**校准提示**", ""])
+            for item in notes[:4]:
+                lines.append(f"- {item}")
+            lines.append("")
+
+    capacity_budget = panel.get("capacity_budget") or {}
+    if isinstance(capacity_budget, dict) and capacity_budget:
+        lines.extend(
+            [
+                "**HMP 容量预算**",
+                "",
+                f"- 质量课上限：{_safe_md_text(capacity_budget.get('quality_sessions_max'), '未知')} 堂/周",
+                f"- 95% HMP 上限：{_safe_md_text(capacity_budget.get('hmp_95_max_km'), '未知')} km",
+                f"- 100% HMP 上限：{_safe_md_text(capacity_budget.get('hmp_100_total_max_km'), '未知')} km",
+                f"- 105% HMP 上限：{_safe_md_text(capacity_budget.get('hmp_105_total_max_km'), '未知')} km",
+                f"- 110% HMP 上限：{_safe_md_text(capacity_budget.get('hmp_110_total_max_km'), '未知')} km",
+                "",
+            ]
+        )
+        notes = [str(item or "").strip() for item in (capacity_budget.get("notes") or []) if str(item or "").strip()]
+        if notes:
+            for item in notes[:4]:
+                lines.append(f"- {item}")
+            lines.append("")
+
+    profile_gaps = [item for item in (panel.get("profile_gaps") or []) if isinstance(item, dict)]
+    if profile_gaps:
+        lines.extend(["**画像缺口**", ""])
+        for item in profile_gaps[:8]:
+            lines.append(
+                f"- {_safe_md_text(item.get('label') or item.get('field'))}：{_safe_md_text(item.get('reason'))}"
+            )
+        lines.append("")
+
+    phases = [item for item in (panel.get("phase_sequence") or []) if isinstance(item, dict)]
+    if phases:
+        lines.extend(["**阶段目标**", ""])
+        for item in phases:
+            lines.append(
+                f"- `{_safe_md_text(item.get('id'), '')}`：{_safe_md_text(item.get('label'))}；{_safe_md_text(item.get('objective'), '')}"
+            )
+        lines.append("")
+
+    workouts = [item for item in (panel.get("preferred_workouts") or []) if isinstance(item, dict)]
+    if workouts:
+        lines.extend(["**关键课表候选**", "", "| 课表 | 区间 | 目标 | 风险提示 |", "| :--- | :--- | :--- | :--- |"])
+        for item in workouts:
+            label = _safe_md_text(item.get("label") or item.get("id")).replace("|", "&#124;")
+            zone = _safe_md_text(item.get("primary_zone"), "").replace("|", "&#124;")
+            objective = _safe_md_text(item.get("objective"), "").replace("|", "&#124;")
+            caution = _safe_md_text(item.get("caution"), "").replace("|", "&#124;")
+            lines.append(f"| {label} | `{zone}` | {objective} | {caution} |")
+        lines.append("")
+
+    glossary_terms = [item for item in (panel.get("glossary_terms") or []) if isinstance(item, dict)]
+    if glossary_terms:
+        lines.extend(["**HMP 术语解释**", ""])
+        for item in glossary_terms[:8]:
+            label = _safe_md_text(item.get("label") or item.get("id"))
+            definition = _safe_md_text(item.get("definition"), "")
+            implication = _safe_md_text(item.get("training_implication"), "")
+            text = f"- {label}：{definition}"
+            if implication:
+                text += f" 执行含义：{implication}"
+            lines.append(text)
+        lines.append("")
+
+    issues = [item for item in (panel.get("issues") or []) if isinstance(item, dict)]
+    if issues:
+        lines.extend(["**验证问题与建议**", ""])
+        for item in issues[:8]:
+            location = ""
+            if item.get("week_index"):
+                location = f"第 {item.get('week_index')} 周"
+                if str(item.get("day") or "").strip():
+                    location += f" {item.get('day')}"
+            prefix = f"[{_safe_md_text(item.get('severity'), 'warning')}] {_safe_md_text(item.get('label') or item.get('constraint_id'))}"
+            lines.append(f"- {prefix}：{_safe_md_text(location, '').strip()} {_safe_md_text(item.get('message'))}".strip())
+            recommendation = _safe_md_text(item.get("recommendation"), "")
+            if recommendation:
+                lines.append(f"  建议：{recommendation}")
+            evidence_basis = item.get("evidence_basis") if isinstance(item.get("evidence_basis"), dict) else {}
+            evidence_summary = _safe_md_text(evidence_basis.get("summary"), "")
+            if evidence_summary:
+                lines.append(f"  依据：{evidence_summary}")
+        lines.append("")
+    else:
+        lines.extend(["**验证问题与建议**", "", "- 当前 HMP 专项验证未发现错误或提醒。", ""])
+
+    repair_log = [item for item in (panel.get("repair_log") or []) if isinstance(item, dict)]
+    repair_suggestions = [item for item in (panel.get("repair_suggestions") or []) if isinstance(item, dict)]
+    if repair_log:
+        lines.extend(["**自动修复记录**", ""])
+        for item in repair_log[:8]:
+            location = ""
+            if item.get("week_index"):
+                location = f"第 {item.get('week_index')} 周"
+                if str(item.get("day") or "").strip():
+                    location += f" {item.get('day')}"
+            lines.append(
+                f"- {_safe_md_text(item.get('constraint_id'))}：{_safe_md_text(location, '').strip()} "
+                f"{_safe_md_text(item.get('action'))}".strip()
+            )
+        lines.append("")
+    elif repair_suggestions:
+        lines.extend(["**修复建议**", ""])
+        for item in repair_suggestions[:8]:
+            lines.append(f"- {_safe_md_text(item.get('constraint_id'))}：{_safe_md_text(item.get('action'))}")
+        lines.append("")
+
+    source_docs = [str(item or "").strip() for item in (panel.get("source_docs") or []) if str(item or "").strip()]
+    if source_docs:
+        lines.extend(["**基石资料**", ""])
+        for item in source_docs:
+            lines.append(f"- `{item}`")
+        lines.append("")
+
+    return "\n".join(lines).strip()
+
+
 def _render_training_explanation_panel_md(structured_data):
     if not isinstance(structured_data, dict):
         return ""
@@ -1120,6 +1298,7 @@ class UIHelper:
         structured_plan_md = _render_structured_training_plan_md(structured_data)
         weekly_structure_md = _render_weekly_structure_md(structured_data)
         daily_workout_cards_md = _render_daily_workout_cards_md(structured_data)
+        half_marathon_protocol_md = _render_half_marathon_protocol_panel_md(structured_data)
 
         summary = structured_data.get('summary', '')
         adaptive_adjustment_md = _render_adaptive_adjustment_md(structured_data)
@@ -1180,6 +1359,9 @@ class UIHelper:
 
         if adaptive_adjustment_md:
             md += adaptive_adjustment_md + "\n\n"
+
+        if half_marathon_protocol_md:
+            md += half_marathon_protocol_md + "\n\n"
 
         if training_explanation_md:
             md += training_explanation_md + "\n\n"

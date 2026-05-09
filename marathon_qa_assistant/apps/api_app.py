@@ -14,7 +14,13 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 from marathon_qa_assistant.core.workflow import integrated_app, IntegratedState, load_user_profile
+from marathon_qa_assistant.core.kb_bootstrap import (
+    bootstrap_knowledge_base,
+    ensure_knowledge_base_ready,
+    get_knowledge_base_health_snapshot,
+)
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
+from marathon_qa_assistant.services.database import get_db
 from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
     ZONE_LABELS,
@@ -73,7 +79,30 @@ class DayDetailResponse(BaseModel):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "model": os.getenv("OLLAMA_MODEL", "qwen2.5:latest")}
+    return {
+        "status": "healthy",
+        "model": os.getenv("OLLAMA_MODEL", "qwen2.5:latest"),
+        "rag": get_knowledge_base_health_snapshot(),
+    }
+
+
+@app.on_event("startup")
+async def startup_load_knowledge_base():
+    app.state.rag_bootstrap = bootstrap_knowledge_base()
+
+
+@app.delete("/plans/{plan_id}")
+async def delete_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
+    """删除已保存的训练计划及其日历事件。"""
+    if user_id != DEFAULT_API_USER_ID:
+        raise HTTPException(
+            status_code=400,
+            detail=f"当前 API 仅支持单用户画像，user_id 必须为 {DEFAULT_API_USER_ID!r}。",
+        )
+    if not get_db().delete_training_plan(plan_id):
+        raise HTTPException(status_code=404, detail="训练计划不存在。")
+    return {"deleted": True, "plan_id": plan_id}
+
 
 @app.post("/query", response_model=QueryResponse)
 async def execute_query(request: QueryRequest):
@@ -84,6 +113,7 @@ async def execute_query(request: QueryRequest):
             detail=f"当前 API 仅支持单用户画像，user_id 必须为 {DEFAULT_API_USER_ID!r}。",
         )
 
+    ensure_knowledge_base_ready()
     profile = load_user_profile()
     
     initial_state: IntegratedState = {

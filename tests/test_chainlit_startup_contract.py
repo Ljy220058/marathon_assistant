@@ -45,42 +45,33 @@ def test_chainlit_app_import_does_not_load_kb(monkeypatch):
 def test_ensure_knowledge_base_ready_is_lazy_and_idempotent(monkeypatch):
     module = _reload_chainlit_app()
 
-    load_calls = []
-    set_calls = []
+    bootstrap_calls = []
 
-    def fake_load_vector_kb(path):
-        load_calls.append(str(path))
-        return ([{"chunk_id": "c1", "source_file": "demo.pdf"}], "vec", object(), "bm25")
+    def fake_bootstrap(candidate_dirs=None):
+        bootstrap_calls.append(list(candidate_dirs or []))
+        return {
+            "ok": True,
+            "vector_dir": "C:/fake/vector_kb",
+            "source": "default",
+            "reason": "",
+            "chunks_count": 1,
+        }
 
-    def fake_set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
-        set_calls.append(
-            {
-                "chunks": list(chunks),
-                "vectorizer": vectorizer,
-                "matrix": matrix,
-                "bm25": bm25,
-                "retrieve_fn": retrieve_fn,
-            }
-        )
-
-    monkeypatch.setattr(module, "load_vector_kb", fake_load_vector_kb)
-    monkeypatch.setattr(module, "set_kb_data", fake_set_kb_data)
-    monkeypatch.setattr(module, "probe_vector_kb_health", lambda path: {
+    monkeypatch.setattr(module, "bootstrap_knowledge_base", fake_bootstrap)
+    monkeypatch.setattr(module, "get_knowledge_base_health_snapshot", lambda: {
         "ok": True,
-        "vector_dir": str(path),
         "source": "default",
         "reason": "",
         "chunks_count": 1,
-        "faiss_ready": True,
     })
+    monkeypatch.setattr(module, "get_kb_runtime_state", lambda: {"chunks": [{"chunk_id": "c1", "source_file": "demo.pdf"}]})
     monkeypatch.setattr(module, "_kb_candidate_dirs", lambda: [Path("C:/fake/vector_kb")])
 
     _reset_kb_state(module)
 
     assert module.ensure_knowledge_base_ready() is True
     assert module.ensure_knowledge_base_ready() is False
-    assert len(load_calls) == 1
-    assert len(set_calls) == 1
+    assert len(bootstrap_calls) == 1
     assert module.global_state.kb_chunks_len == 1
 
 
@@ -89,53 +80,33 @@ def test_init_knowledge_base_falls_back_to_default_when_user_kb_unhealthy(monkey
 
     user_dir = Path("C:/fake/vector_kb_user")
     default_dir = Path("C:/fake/vector_kb")
-    load_calls = []
-    set_calls = []
 
-    def fake_probe_vector_kb_health(path):
-        if path == user_dir:
-            return {
-                "ok": False,
-                "vector_dir": str(path),
-                "source": "user",
-                "reason": "FAISS 索引不可用",
-                "chunks_count": 12,
-                "faiss_ready": False,
-            }
+    bootstrap_calls = []
+
+    def fake_bootstrap(candidate_dirs=None):
+        bootstrap_calls.append(list(candidate_dirs or []))
         return {
             "ok": True,
-            "vector_dir": str(path),
+            "vector_dir": str(default_dir),
             "source": "default",
             "reason": "",
-            "chunks_count": 5,
-            "faiss_ready": True,
+            "chunks_count": 1,
         }
 
-    def fake_load_vector_kb(path):
-        load_calls.append(path)
-        return ([{"chunk_id": "c1", "source_file": "default.pdf"}], "vec", object(), "bm25")
-
-    def fake_set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
-        set_calls.append(
-            {
-                "chunks": list(chunks),
-                "vectorizer": vectorizer,
-                "matrix": matrix,
-                "bm25": bm25,
-                "retrieve_fn": retrieve_fn,
-            }
-        )
-
     monkeypatch.setattr(module, "_kb_candidate_dirs", lambda: [user_dir, default_dir])
-    monkeypatch.setattr(module, "probe_vector_kb_health", fake_probe_vector_kb_health)
-    monkeypatch.setattr(module, "load_vector_kb", fake_load_vector_kb)
-    monkeypatch.setattr(module, "set_kb_data", fake_set_kb_data)
+    monkeypatch.setattr(module, "bootstrap_knowledge_base", fake_bootstrap)
+    monkeypatch.setattr(module, "get_knowledge_base_health_snapshot", lambda: {
+        "ok": True,
+        "source": "default",
+        "reason": "",
+        "chunks_count": 1,
+    })
+    monkeypatch.setattr(module, "get_kb_runtime_state", lambda: {"chunks": [{"chunk_id": "c1", "source_file": "default.pdf"}]})
 
     _reset_kb_state(module)
 
     assert module.init_knowledge_base() is True
-    assert load_calls == [default_dir]
-    assert len(set_calls) == 1
+    assert bootstrap_calls == [[user_dir, default_dir]]
     assert module.global_state.kb_chunks_len == 1
     assert module.global_state.kb_source == "default"
     assert module.global_state.kb_health_reason == ""
@@ -147,46 +118,26 @@ def test_init_knowledge_base_uses_empty_mode_when_all_candidates_unhealthy(monke
 
     user_dir = Path("C:/fake/vector_kb_user")
     default_dir = Path("C:/fake/vector_kb")
-    load_calls = []
-    set_calls = []
-
-    def fake_probe_vector_kb_health(path):
-        return {
-            "ok": False,
-            "vector_dir": str(path),
-            "source": "user" if path == user_dir else "default",
-            "reason": "缺少产物: faiss_index",
-            "chunks_count": 0,
-            "faiss_ready": False,
-        }
-
-    def fake_load_vector_kb(path):
-        load_calls.append(path)
-        raise AssertionError("unhealthy knowledge base should not be loaded")
-
-    def fake_set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
-        set_calls.append(
-            {
-                "chunks": list(chunks),
-                "vectorizer": vectorizer,
-                "matrix": matrix,
-                "bm25": bm25,
-                "retrieve_fn": retrieve_fn,
-            }
-        )
 
     monkeypatch.setattr(module, "_kb_candidate_dirs", lambda: [user_dir, default_dir])
-    monkeypatch.setattr(module, "probe_vector_kb_health", fake_probe_vector_kb_health)
-    monkeypatch.setattr(module, "load_vector_kb", fake_load_vector_kb)
-    monkeypatch.setattr(module, "set_kb_data", fake_set_kb_data)
+    monkeypatch.setattr(module, "bootstrap_knowledge_base", lambda candidate_dirs=None: {
+        "ok": False,
+        "vector_dir": "",
+        "source": "empty",
+        "reason": "user:缺少产物: faiss_index; default:缺少产物: faiss_index",
+        "chunks_count": 0,
+    })
+    monkeypatch.setattr(module, "get_knowledge_base_health_snapshot", lambda: {
+        "ok": False,
+        "source": "empty",
+        "reason": "user:缺少产物: faiss_index; default:缺少产物: faiss_index",
+        "chunks_count": 0,
+    })
+    monkeypatch.setattr(module, "get_kb_runtime_state", lambda: {"chunks": []})
 
     _reset_kb_state(module)
 
     assert module.init_knowledge_base() is False
-    assert load_calls == []
-    assert len(set_calls) == 1
-    assert set_calls[0]["chunks"] == []
-    assert set_calls[0]["matrix"] is None
     assert module.global_state.kb_chunks_len == 0
     assert module.global_state.kb_source == "empty"
     assert "user:缺少产物" in module.global_state.kb_health_reason

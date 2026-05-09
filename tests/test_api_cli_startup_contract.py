@@ -24,7 +24,10 @@ def test_health_endpoint_uses_default_model_when_env_missing(monkeypatch):
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "model": "qwen2.5:latest"}
+    payload = response.json()
+    assert payload["status"] == "healthy"
+    assert payload["model"] == "qwen2.5:latest"
+    assert set(payload["rag"]).issuperset({"ready", "source", "chunks_count", "faiss_ready"})
 
 
 def test_api_app_main_starts_uvicorn_with_expected_contract(monkeypatch):

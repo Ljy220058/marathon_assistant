@@ -1,0 +1,1583 @@
+---
+import "../styles/global.css";
+
+const quickActions = [
+  {
+    label: "生成完整计划",
+    meta: "画像 + 比赛日",
+    prompt: "请基于我的用户画像、当前周跑量、可训练日和目标比赛日期，生成一份结构化马拉松训练计划。请同时输出周计划、月历、每日强度区间、训练负荷摘要和关键训练解释。",
+  },
+  {
+    label: "复核训练负荷",
+    meta: "TL + 7日影响",
+    prompt: "请复核当前训练计划的训练负荷安排，列出总负荷、7日负荷影响、42日基础体能、每周训练负荷变化，并标记可能过载或过低的训练日。",
+  },
+  {
+    label: "本周降载调整",
+    meta: "疲劳/恢复",
+    prompt: "我最近疲劳偏高，请在尽量保留训练连续性的前提下，把本周训练调整为更保守的降载方案。请说明保留、降级、替换和取消的训练。",
+  },
+  {
+    label: "解释单日训练",
+    meta: "原因 + 替代",
+    prompt: "请解释当前计划中最近一次关键训练为什么这样安排，包括训练目标、强度区间、训练负荷、风险提醒，以及如果当天状态不好应该怎么替代。",
+  },
+];
+
+const migrationCards = [
+  ["已迁移", "API 健康检查、快捷指令、训练问答、强度区间与证据分层"],
+  ["本轮迁移", "结果摘要、自动存储、可点击日历、训练课详情"],
+  ["继续迁移", "用户画像、证据预览、训练反馈表单、历史计划浏览"],
+];
+
+const profileFields = [
+  ["goal", "目标", "半马完赛 / 全马 PB / 健康跑"],
+  ["experience", "经验", "新手 / 进阶 / 有比赛经验"],
+  ["weeklyMileage", "当前周跑量", "例如 35 km"],
+  ["raceDate", "比赛日期", "例如 2026-10-18"],
+  ["availableDays", "可训练日", "例如 周二、周四、周六、周日"],
+  ["longRun", "最长训练", "例如 90 分钟或 16 km"],
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>马拉松助手工作台</title>
+    <meta
+      name="description"
+      content="马拉松助手 Astro 新前端，逐步承接 Chainlit 旧前端能力。"
+    />
+  </head>
+  <body>
+    <div class="grid-background" aria-hidden="true"></div>
+    <header class="top-nav">
+      <a class="brand" href="#workspace" aria-label="马拉松助手首页">
+        <span class="brand-mark">M</span>
+        <span>Marathon Assistant</span>
+      </a>
+      <nav aria-label="主导航">
+        <a href="#plan">训练计划</a>
+        <a href="#profile">画像</a>
+        <a href="#calendar-section">日历</a>
+        <a href="#evidence">证据</a>
+        <a href="#feedback-workbench">反馈</a>
+      </nav>
+      <div id="navHealth" class="nav-health">连接中</div>
+    </header>
+
+    <main id="workspace" class="workspace">
+      <section class="hero-panel">
+        <p class="eyebrow">Chainlit 能力迁移到 Astro 工作台</p>
+        <h1>训练计划、解释证据和反馈闭环，放进一个更清爽的跑步控制台。</h1>
+        <p class="hero-copy">
+          保留现有 FastAPI / Chainlit 后端能力，先把旧前端里的常用入口迁移到新框架：快捷指令、训练计划、日历、强度区间和证据分层。
+        </p>
+        <div class="migration-grid" aria-label="迁移状态">
+          {
+            migrationCards.map(([title, body]) => (
+              <article class="migration-card">
+                <strong>{title}</strong>
+                <span>{body}</span>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+
+      <div class="app-layout">
+        <aside class="side-rail" aria-label="快捷操作">
+          <section class="panel rail-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">Quick Actions</p>
+              <h2>常用训练任务</h2>
+            </div>
+            <div class="quick-list">
+              {
+                quickActions.map((item) => (
+                  <button class="quick-button" data-prompt={item.prompt}>
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.meta}</small>
+                    </span>
+                    <span class="quick-arrow">填入</span>
+                  </button>
+                ))
+              }
+            </div>
+          </section>
+
+          <section class="panel rail-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">Connection</p>
+              <h2>后端接口</h2>
+            </div>
+            <label class="field-label" for="apiBase">API Base</label>
+            <input id="apiBase" value="http://127.0.0.1:8000" />
+            <div id="health" class="status-note">等待连接</div>
+          </section>
+
+          <section id="feedback" class="panel rail-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">Feedback</p>
+              <h2>反馈预设</h2>
+            </div>
+            <div class="feedback-stack">
+              <button class="ghost-button" data-feedback-preset data-completion="已完成" data-fatigue="轻微" data-pain="没有疼痛" data-sleep="良好" data-notes="训练完成度正常，主观疲劳轻微，没有疼痛。">
+                完成良好
+              </button>
+              <button class="ghost-button" data-feedback-preset data-completion="已完成" data-fatigue="明显" data-pain="轻微不适" data-sleep="一般" data-notes="训练完成，但疲劳明显，恢复一般，希望降低下一次训练负荷。">
+                今天偏累
+              </button>
+              <button class="ghost-button" data-feedback-preset data-completion="部分完成" data-fatigue="高疲劳" data-pain="疼痛风险" data-sleep="较差" data-notes="训练中出现不适或疼痛信号，请优先给出保守调整建议。">
+                疼痛预警
+              </button>
+            </div>
+          </section>
+
+          <section class="panel rail-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">History</p>
+              <h2>历史计划</h2>
+            </div>
+            <div class="feedback-stack">
+              <button id="savePlanDraft" class="ghost-button">保存当前计划快照</button>
+              <button id="loadPlanDrafts" class="ghost-button">刷新本地历史</button>
+            </div>
+            <div id="historyList" class="compact-list">
+              <div class="empty-state">暂无本地历史。</div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="main-stack">
+          <section id="plan" class="panel composer-panel">
+            <div class="panel-heading split">
+              <div>
+                <p class="section-kicker">Command Center</p>
+                <h2>训练问答与计划生成</h2>
+              </div>
+              <span class="pill">default_user</span>
+            </div>
+            <textarea
+              id="queryInput"
+              placeholder="输入你的训练问题，例如：帮我生成一个 12 周半马训练计划，并解释关键训练安排。"
+            ></textarea>
+            <div class="model-controls">
+              <div class="model-switch">
+                <span class="field-label">模型来源</span>
+                <div class="model-toggle" role="group" aria-label="选择模型来源">
+                  <button type="button" class="model-provider-button active" data-provider-choice="ollama">Ollama</button>
+                  <button type="button" class="model-provider-button" data-provider-choice="ds">DeepSeek</button>
+                </div>
+              </div>
+              <label>
+                <span class="field-label">模型来源</span>
+                <select id="llmProvider">
+                  <option value="ollama">Ollama</option>
+                  <option value="ds">DS API</option>
+                </select>
+              </label>
+              <label>
+                <span class="field-label">模型</span>
+                <select id="llmModel">
+                  <option value="qwen2.5:latest">qwen2.5:latest</option>
+                </select>
+              </label>
+            </div>
+            <div class="api-key-controls">
+              <label>
+                <span class="field-label">DeepSeek API Key</span>
+                <input id="dsApiKey" type="password" placeholder="sk-..." autocomplete="off" />
+              </label>
+              <div class="api-key-actions">
+                <button id="saveDsApiKey" type="button" class="secondary-button">保存 API Key</button>
+                <button id="clearDsApiKey" type="button" class="secondary-button">清除</button>
+              </div>
+              <span id="dsApiKeyStatus" class="muted">仅保存在当前浏览器本地。</span>
+            </div>
+            <div class="toolbar">
+              <div class="button-row">
+                <button id="runQuery" class="primary-button">发送</button>
+                <button id="loadMeta" class="secondary-button">刷新区间与证据</button>
+                <button id="clearResult" class="secondary-button">清空</button>
+              </div>
+              <span id="queryHint" class="muted">Ctrl / ⌘ + Enter 可发送</span>
+            </div>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="panel report-panel">
+              <div class="panel-heading split">
+                <div>
+                  <p class="section-kicker">Coach Output</p>
+                  <h2>结果摘要</h2>
+                </div>
+                <span id="resultBadge" class="pill muted-pill">等待请求</span>
+              </div>
+              <div id="report" class="empty-state">还没有结果。先从左侧选择一个入口，或直接输入训练问题。</div>
+            </article>
+
+            <aside class="panel metrics-panel">
+              <div class="panel-heading">
+                <p class="section-kicker">Structured Signals</p>
+                <h2>结构化信息</h2>
+              </div>
+              <div class="metric-grid">
+                <div class="metric-card">
+                  <span>Token</span>
+                  <strong id="tokenUsage">-</strong>
+                </div>
+                <div class="metric-card">
+                  <span>审计评分</span>
+                  <strong id="auditScores">-</strong>
+                </div>
+                <div class="metric-card wide">
+                  <span>引导问题</span>
+                  <strong id="guidedQuestions">-</strong>
+                </div>
+              </div>
+            </aside>
+          </section>
+
+          <section id="profile" class="panel">
+            <div class="panel-heading split">
+              <div>
+                <p class="section-kicker">Profile Wizard</p>
+                <h2>跑者画像草稿</h2>
+              </div>
+              <span id="profileStatus" class="pill muted-pill">用户画像</span>
+            </div>
+            <div class="profile-grid">
+              {
+                profileFields.map(([id, label, placeholder]) => (
+                  <label class="profile-field" for={`profile-${id}`}>
+                    <span>{label}</span>
+                    <input id={`profile-${id}`} data-profile-field={id} placeholder={placeholder} />
+                  </label>
+                ))
+              }
+            </div>
+            <div class="toolbar profile-toolbar">
+              <div class="button-row">
+                <button id="saveProfileDraft" class="secondary-button">保存画像草稿</button>
+                <button id="buildProfilePrompt" class="secondary-button">生成画像提示</button>
+                <button id="runProfilePlan" class="primary-button">基于画像生成计划</button>
+              </div>
+              <span class="muted">画像会用于生成训练计划、强度区间和训练安排解释。</span>
+            </div>
+          </section>
+
+          <section id="calendar-section" class="panel">
+            <div class="panel-heading split">
+              <div>
+                <p class="section-kicker">Training Calendar</p>
+                <h2>训练日历</h2>
+              </div>
+              <span id="calendarCount" class="pill muted-pill">0 天</span>
+            </div>
+            <div id="loadSummary" class="load-summary-panel empty-state">
+              训练负荷会在生成计划后显示。
+            </div>
+            <div id="calendar" class="calendar-grid">
+              <div class="empty-state">计划生成后会在这里展示日历卡片。</div>
+            </div>
+            <div id="dayDetail" class="day-detail-panel">
+              <div class="empty-state">点击日历中的某一天，查看热身、主课、冷身和引用证据。</div>
+            </div>
+          </section>
+
+          <section id="feedback-workbench" class="panel">
+            <div class="panel-heading split">
+              <div>
+                <p class="section-kicker">Feedback Loop</p>
+                <h2>训练反馈表单</h2>
+              </div>
+              <span class="pill muted-pill">生成调整提示</span>
+            </div>
+            <div class="feedback-form">
+              <label>
+                <span>完成状态</span>
+                <select id="feedbackCompletion">
+                  <option value="已完成">已完成</option>
+                  <option value="部分完成">部分完成</option>
+                  <option value="未完成">未完成</option>
+                </select>
+              </label>
+              <label>
+                <span>主观疲劳</span>
+                <select id="feedbackFatigue">
+                  <option value="轻微">轻微</option>
+                  <option value="中等">中等</option>
+                  <option value="明显">明显</option>
+                  <option value="高疲劳">高疲劳</option>
+                </select>
+              </label>
+              <label>
+                <span>疼痛/不适</span>
+                <select id="feedbackPain">
+                  <option value="没有疼痛">没有疼痛</option>
+                  <option value="轻微不适">轻微不适</option>
+                  <option value="疼痛风险">疼痛风险</option>
+                </select>
+              </label>
+              <label>
+                <span>睡眠恢复</span>
+                <select id="feedbackSleep">
+                  <option value="良好">良好</option>
+                  <option value="一般">一般</option>
+                  <option value="较差">较差</option>
+                </select>
+              </label>
+              <label class="wide">
+                <span>补充说明</span>
+                <textarea id="feedbackNotes" placeholder="例如：后半程心率偏高，第二天小腿紧张。"></textarea>
+              </label>
+            </div>
+            <div class="toolbar">
+              <div class="button-row">
+                <button id="composeFeedbackPrompt" class="primary-button">生成反馈调整提示</button>
+                <button id="submitFeedbackApi" class="secondary-button">提交到调整接口</button>
+                <button id="clearFeedback" class="secondary-button">清空反馈</button>
+              </div>
+              <span class="muted">提交后会调用后端反馈接口，并把恢复、疼痛和疲劳状态纳入后续计划调整。</span>
+            </div>
+          </section>
+
+          <section id="evidence" class="reference-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <p class="section-kicker">Intensity</p>
+                <h2>强度区间</h2>
+              </div>
+              <div id="zones" class="chip-grid">
+                <div class="empty-state">未加载</div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <p class="section-kicker">Evidence</p>
+                <h2>证据分层</h2>
+              </div>
+              <div id="tiers" class="chip-grid">
+                <div class="empty-state">未加载</div>
+              </div>
+            </article>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading split">
+              <div>
+                <p class="section-kicker">Evidence Preview</p>
+                <h2>证据预览</h2>
+              </div>
+              <span id="evidenceCount" class="pill muted-pill">0 条</span>
+            </div>
+            <div id="evidencePreview" class="evidence-list">
+              <div class="empty-state">生成计划后，会从返回结果中提取证据编号、证据层级和来源摘要。</div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script is:inline>
+      const state = {
+        apiBase: "http://127.0.0.1:8000",
+        lastResponse: null,
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const apiBaseInput = $("apiBase");
+      const queryInput = $("queryInput");
+      const llmProviderInput = $("llmProvider");
+      const llmModelInput = $("llmModel");
+      const providerButtons = Array.from(document.querySelectorAll("[data-provider-choice]"));
+      const dsApiKeyInput = $("dsApiKey");
+      const saveDsApiKeyButton = $("saveDsApiKey");
+      const clearDsApiKeyButton = $("clearDsApiKey");
+      const dsApiKeyStatus = $("dsApiKeyStatus");
+      const healthBox = $("health");
+      const navHealth = $("navHealth");
+      const reportBox = $("report");
+      const resultBadge = $("resultBadge");
+      const calendarBox = $("calendar");
+      const dayDetailBox = $("dayDetail");
+      const loadSummaryBox = $("loadSummary");
+      const calendarCount = $("calendarCount");
+      const tokenUsageBox = $("tokenUsage");
+      const auditScoresBox = $("auditScores");
+      const guidedQuestionsBox = $("guidedQuestions");
+      const zonesBox = $("zones");
+      const tiersBox = $("tiers");
+      const profileStatus = $("profileStatus");
+      const evidencePreview = $("evidencePreview");
+      const evidenceCount = $("evidenceCount");
+      const historyList = $("historyList");
+
+      function getApiBase() {
+        return (apiBaseInput.value || state.apiBase).replace(/\/$/, "");
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function text(value, fallback = "-") {
+        const normalized = String(value ?? "").trim();
+        return normalized || fallback;
+      }
+
+      function setEmpty(el, message) {
+        el.className = "empty-state";
+        el.textContent = message;
+      }
+
+      function setBusy(message) {
+        reportBox.className = "loading-state";
+        reportBox.textContent = message;
+        resultBadge.textContent = "处理中";
+      }
+
+      async function apiFetch(path, options = {}) {
+        const response = await fetch(`${getApiBase()}${path}`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {}),
+          },
+          ...options,
+        });
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const payload = await response.json();
+            detail = payload.detail || detail;
+          } catch {}
+          throw new Error(detail);
+        }
+        return response.json();
+      }
+
+      function renderHealth(status, model, provider, error) {
+        if (error) {
+          healthBox.className = "status-note error";
+          navHealth.className = "nav-health error";
+          healthBox.textContent = `离线：${error}`;
+          navHealth.textContent = "API 离线";
+          return;
+        }
+        healthBox.className = "status-note ok";
+        navHealth.className = "nav-health ok";
+        healthBox.textContent = `在线：${status} / ${provider || "unknown"} / ${model || "unknown"}`;
+        navHealth.textContent = "API 在线";
+      }
+
+      async function loadLlmOptions() {
+        try {
+          const data = await apiFetch("/llm-options");
+          const providers = Array.isArray(data.providers) ? data.providers : [];
+          if (providers.length) {
+            llmProviderInput.innerHTML = providers
+              .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label || item.id)}</option>`)
+              .join("");
+          }
+          const defaultsByProvider = {};
+          const modelsByProvider = {};
+          providers.forEach((item) => {
+            defaultsByProvider[item.id] = item.default_model || "";
+            modelsByProvider[item.id] = Array.isArray(item.models) ? item.models : [item.default_model].filter(Boolean);
+          });
+          const savedProvider = localStorage.getItem("marathon_llm_provider");
+          const savedModel = localStorage.getItem("marathon_llm_model");
+          llmProviderInput.value = savedProvider || data.default?.provider || "ollama";
+          llmProviderInput.dataset.defaults = JSON.stringify(defaultsByProvider);
+          llmProviderInput.dataset.models = JSON.stringify(modelsByProvider);
+          renderModelOptions(savedModel || data.default?.model || defaultsByProvider[llmProviderInput.value] || "");
+        } catch (error) {
+          llmProviderInput.value = localStorage.getItem("marathon_llm_provider") || "ollama";
+          llmProviderInput.dataset.models = JSON.stringify({
+            ollama: ["qwen2.5:latest"],
+            ds: ["deepseek-v4-pro"],
+          });
+          llmProviderInput.dataset.defaults = JSON.stringify({
+            ollama: "qwen2.5:latest",
+            ds: "deepseek-v4-pro",
+          });
+          renderModelOptions(localStorage.getItem("marathon_llm_model") || "");
+        }
+      }
+
+      function renderModelOptions(preferredModel = "") {
+        const modelsByProvider = JSON.parse(llmProviderInput.dataset.models || "{}");
+        const defaultsByProvider = JSON.parse(llmProviderInput.dataset.defaults || "{}");
+        const provider = llmProviderInput.value || "ollama";
+        const models = modelsByProvider[provider] || [defaultsByProvider[provider] || "qwen2.5:latest"];
+        const selected = preferredModel && models.includes(preferredModel)
+          ? preferredModel
+          : (defaultsByProvider[provider] || models[0] || "");
+        llmModelInput.innerHTML = models
+          .map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`)
+          .join("");
+        llmModelInput.value = selected;
+        syncProviderButtons();
+      }
+
+      function syncProviderButtons() {
+        providerButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.providerChoice === llmProviderInput.value);
+        });
+      }
+
+      function formatTokenUsage(tokenUsage) {
+        if (!tokenUsage) return "-";
+        const total = tokenUsage.total_tokens ?? 0;
+        const prompt = tokenUsage.prompt_tokens ?? 0;
+        const completion = tokenUsage.completion_tokens ?? 0;
+        return `总 ${total} / 提示 ${prompt} / 输出 ${completion}`;
+      }
+
+      function formatAuditScores(auditScores) {
+        if (!auditScores) return "-";
+        const parts = [
+          ["一致性", auditScores.consistency],
+          ["安全", auditScores.safety],
+          ["ROI", auditScores.roi],
+        ];
+        return parts.map(([label, value]) => `${label} ${value ?? "-"}`).join(" · ");
+      }
+
+      function renderQuestions(questions) {
+        if (!Array.isArray(questions) || !questions.length) return "-";
+        return questions.slice(0, 3).map((item) => `• ${item}`).join("\n");
+      }
+
+      function getStructuredReport(response) {
+        return response?.structured_report || {};
+      }
+
+      function getStructuredPlan(response) {
+        return response?.structured_training_plan || getStructuredReport(response).structured_training_plan || {};
+      }
+
+      function getCalendar(response) {
+        const report = getStructuredReport(response);
+        return response?.monthly_training_calendar || report.monthly_training_calendar || {};
+      }
+
+      function numberValue(value, fallback = 0) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function formatLoad(value) {
+        const parsed = numberValue(value, 0);
+        return String(Math.round(parsed));
+      }
+
+      function formatDuration(value) {
+        const parsed = numberValue(value, 0);
+        return parsed > 0 ? `${Math.round(parsed)} min` : "-";
+      }
+
+      function getTrainingLoadSummary(response) {
+        const report = getStructuredReport(response);
+        const calendar = getCalendar(response);
+        const plan = getStructuredPlan(response);
+        return (
+          response?.training_load_summary ||
+          report.training_load_summary ||
+          calendar.training_load_summary ||
+          plan.training_load_summary ||
+          {}
+        );
+      }
+
+      function getDailyCards(response) {
+        const report = getStructuredReport(response);
+        return response?.daily_schedule_cards || report.daily_schedule_cards || [];
+      }
+
+      function getWeekPlanDays(response) {
+        const plan = getStructuredPlan(response);
+        const rows = [];
+        (plan.week_plans || []).forEach((week) => {
+          (week.days || []).forEach((day, index) => {
+            rows.push({
+              ...day,
+              week_index: week.week_index,
+              day_index: day.day_index || index + 1,
+              phase: week.phase,
+              load_level: week.load_level,
+              week_goal: week.week_goal,
+            });
+          });
+        });
+        return rows;
+      }
+
+      function cleanEvidenceLabel(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "训练依据";
+        const map = {
+          action_library: "动作库证据",
+          kb_fallback: "训练资料支持",
+          plan_only: "计划规则",
+          saved_plan: "已保存计划",
+          training_explanation: "训练解释",
+          source: "来源",
+        };
+        return map[raw] || raw
+          .replace(/参考知识库生成/g, "")
+          .replace(/知识库生成/g, "")
+          .replace(/参考知识库/g, "训练资料")
+          .trim() || "训练依据";
+      }
+
+      function getProfileDraft() {
+        const draft = {};
+        document.querySelectorAll("[data-profile-field]").forEach((input) => {
+          draft[input.dataset.profileField] = input.value.trim();
+        });
+        return draft;
+      }
+
+      function profileDraftToApi(draft) {
+        return {
+          goal: draft.goal || "",
+          experience_level: draft.experience || "",
+          weekly_mileage: draft.weeklyMileage || "",
+          target_race_date: draft.raceDate || "",
+          available_days: draft.availableDays || "",
+          max_session_minutes: draft.longRun || "",
+        };
+      }
+
+      function profileApiToDraft(profile) {
+        return {
+          goal: profile.goal || "",
+          experience: profile.experience_level || profile.experience || "",
+          weeklyMileage: profile.weekly_mileage || "",
+          raceDate: profile.target_race_date || "",
+          availableDays: Array.isArray(profile.available_days)
+            ? profile.available_days.join("、")
+            : profile.available_days || "",
+          longRun: profile.max_session_minutes || profile.long_run || "",
+        };
+      }
+
+      function fillProfileDraft(draft) {
+        document.querySelectorAll("[data-profile-field]").forEach((input) => {
+          input.value = draft[input.dataset.profileField] || "";
+        });
+      }
+
+      function profileDraftToPrompt(draft) {
+        const lines = [
+          "请基于以下跑者画像生成训练计划，并明确说明关键训练安排的原因：",
+          `- 目标：${draft.goal || "未填写"}`,
+          `- 经验：${draft.experience || "未填写"}`,
+          `- 当前周跑量：${draft.weeklyMileage || "未填写"}`,
+          `- 比赛日期：${draft.raceDate || "未填写"}`,
+          `- 可训练日：${draft.availableDays || "未填写"}`,
+          `- 最长训练：${draft.longRun || "未填写"}`,
+          "请输出结构化周计划、训练日历、强度区间、关键解释和证据来源。",
+        ];
+        return lines.join("\n");
+      }
+
+      async function saveProfileDraft() {
+        const draft = getProfileDraft();
+        localStorage.setItem("marathon-profile-draft", JSON.stringify(draft));
+        try {
+          await apiFetch("/profile", {
+            method: "POST",
+            body: JSON.stringify({
+              user_id: "default_user",
+              profile: profileDraftToApi(draft),
+            }),
+          });
+          profileStatus.textContent = "已同步";
+        } catch {
+          profileStatus.textContent = "已本地保存";
+        }
+      }
+
+      async function loadProfileDraft() {
+        try {
+          const payload = await apiFetch("/profile");
+          fillProfileDraft(profileApiToDraft(payload.profile || {}));
+          profileStatus.textContent = "来自 API";
+          return;
+        } catch {}
+
+        const raw = localStorage.getItem("marathon-profile-draft");
+        if (!raw) return;
+        try {
+          const draft = JSON.parse(raw);
+          fillProfileDraft(draft);
+          profileStatus.textContent = "已载入";
+        } catch {
+          profileStatus.textContent = "草稿异常";
+        }
+      }
+
+      async function buildProfilePrompt() {
+        const prompt = profileDraftToPrompt(getProfileDraft());
+        queryInput.value = prompt;
+        queryInput.focus();
+        await saveProfileDraft();
+      }
+
+      function getPlanHistory() {
+        try {
+          return JSON.parse(localStorage.getItem("marathon-plan-history") || "[]");
+        } catch {
+          return [];
+        }
+      }
+
+      function renderLocalPlanHistory() {
+        const items = getPlanHistory();
+        if (!items.length) {
+          historyList.innerHTML = '<div class="empty-state">暂无本地历史。</div>';
+          return;
+        }
+        historyList.className = "compact-list";
+        historyList.innerHTML = items
+          .slice(0, 6)
+          .map((item, index) => `
+            <div class="history-row">
+              <button class="history-item" data-history-index="${index}" type="button">
+              <strong>${escapeHtml(item.title)}</strong>
+              <small>${escapeHtml(item.createdAt)}</small>
+              </button>
+              <button class="history-delete" data-delete-history-index="${index}" type="button" aria-label="删除本地历史计划">删除</button>
+            </div>
+          `)
+          .join("");
+        historyList.querySelectorAll("[data-history-index]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const item = getPlanHistory()[Number(button.dataset.historyIndex)];
+            if (!item?.response) return;
+            state.lastResponse = item.response;
+            renderReport(item.response);
+            renderCalendar(item.response);
+            renderEvidencePreview(item.response);
+            tokenUsageBox.textContent = formatTokenUsage(item.response.token_usage);
+            auditScoresBox.textContent = formatAuditScores(item.response.audit_scores);
+            guidedQuestionsBox.textContent = renderQuestions(item.response.guided_questions);
+          });
+        });
+        historyList.querySelectorAll("[data-delete-history-index]").forEach((button) => {
+          button.addEventListener("click", () => deleteLocalPlanSnapshot(Number(button.dataset.deleteHistoryIndex)));
+        });
+      }
+
+      async function renderPlanHistory() {
+        try {
+          const payload = await apiFetch("/plans");
+          const plans = payload.plans || [];
+          if (plans.length) {
+            historyList.className = "compact-list";
+            historyList.innerHTML = plans
+              .map((plan) => `
+                <div class="history-row">
+                  <button class="history-item" data-plan-id="${escapeHtml(plan.id)}" type="button">
+                  <strong>${escapeHtml(plan.goal || "训练计划")} · ${escapeHtml(plan.actual_weeks || plan.requested_weeks || "?")} 周</strong>
+                  <small>${escapeHtml((plan.created_at || "").slice(0, 16))}</small>
+                  </button>
+                  <button class="history-delete" data-delete-plan-id="${escapeHtml(plan.id)}" type="button" aria-label="删除已保存计划">删除</button>
+                </div>
+              `)
+              .join("");
+            historyList.querySelectorAll("[data-plan-id]").forEach((button) => {
+              button.addEventListener("click", () => loadSavedPlan(button.dataset.planId));
+            });
+            historyList.querySelectorAll("[data-delete-plan-id]").forEach((button) => {
+              button.addEventListener("click", () => deleteSavedPlan(button.dataset.deletePlanId));
+            });
+            return;
+          }
+        } catch {}
+        renderLocalPlanHistory();
+      }
+
+      function deleteLocalPlanSnapshot(index) {
+        if (!Number.isInteger(index) || index < 0) return;
+        const items = getPlanHistory();
+        if (!items[index]) return;
+        if (!window.confirm("确认删除这条本地历史计划吗？")) return;
+        items.splice(index, 1);
+        localStorage.setItem("marathon-plan-history", JSON.stringify(items));
+        renderLocalPlanHistory();
+      }
+
+      async function deleteSavedPlan(planId) {
+        if (!planId) return;
+        if (!window.confirm("确认删除这条已保存计划吗？")) return;
+        try {
+          await apiFetch(`/plans/${encodeURIComponent(planId)}`, { method: "DELETE" });
+          if (state.lastResponse?.training_plan_id === planId) {
+            clearResult();
+          }
+          await renderPlanHistory();
+        } catch (error) {
+          historyList.innerHTML = `<div class="empty-state">删除失败：${escapeHtml(error.message)}</div>`;
+        }
+      }
+
+      async function loadSavedPlan(planId) {
+        if (!planId) return;
+        try {
+          const detail = await apiFetch(`/plans/${encodeURIComponent(planId)}`);
+          const response = {
+            structured_training_plan: detail.structured_training_plan || {},
+            structured_report: {
+              monthly_training_calendar: {
+                days: (detail.events || []).map((event) => ({
+                  week_index: event.week_no,
+                  day_index: event.day_no,
+                  day_label: event.day_label,
+                  training_type: event.title || event.workout_type,
+                  event_id: event.id,
+                  plan_id: detail.plan?.id,
+                  warmup: event.warmup,
+                  main_set: event.main_set,
+                  cooldown: event.cooldown,
+                  venue: event.venue,
+                  notes: event.notes,
+                  zone_range: event.intensity_zone,
+                  evidence_ids: event.evidence_ids ? String(event.evidence_ids).split(",").map((id) => id.trim()).filter(Boolean) : [],
+                  evidence_tier: "saved_plan",
+                  evidence_tier_label: "已保存计划",
+                  is_rest: event.workout_type === "rest",
+                })),
+              },
+            },
+            report: detail.plan?.source_query || "",
+            training_plan_id: planId,
+            token_usage: {},
+            audit_scores: {},
+            guided_questions: [],
+          };
+          state.lastResponse = response;
+          renderReport(response);
+          renderCalendar(response);
+          renderEvidencePreview(response);
+          resultBadge.textContent = "历史计划";
+        } catch (error) {
+          historyList.innerHTML = `<div class="empty-state">历史计划加载失败：${escapeHtml(error.message)}</div>`;
+        }
+      }
+
+      async function saveCurrentPlanSnapshot() {
+        if (!state.lastResponse) {
+          historyList.innerHTML = '<div class="empty-state">没有可保存的计划结果。</div>';
+          return;
+        }
+        const summary = summarizePlan(state.lastResponse);
+        const structuredPlan = getStructuredPlan(state.lastResponse);
+        if (state.lastResponse.training_plan_id) {
+          await renderPlanHistory();
+          return;
+        }
+        if (structuredPlan?.week_plans?.length) {
+          try {
+            await apiFetch("/plans", {
+              method: "POST",
+              body: JSON.stringify({
+                user_id: "default_user",
+                source_query: queryInput.value || state.lastResponse.report || "",
+                structured_training_plan: structuredPlan,
+              }),
+            });
+            await renderPlanHistory();
+            return;
+          } catch {}
+        }
+        const items = getPlanHistory();
+        items.unshift({
+          title: `${summary.goal} · ${summary.weeks} 周`,
+          createdAt: new Date().toLocaleString("zh-CN"),
+          response: state.lastResponse,
+        });
+        localStorage.setItem("marathon-plan-history", JSON.stringify(items.slice(0, 12)));
+        renderLocalPlanHistory();
+      }
+
+      function collectFeedbackPayload() {
+        const completion = $("feedbackCompletion").value;
+        const fatigue = $("feedbackFatigue").value;
+        const pain = $("feedbackPain").value;
+        const sleep = $("feedbackSleep").value;
+        const notes = $("feedbackNotes").value.trim();
+        return { completion, fatigue, pain, sleep, notes };
+      }
+
+      function composeFeedbackPrompt() {
+        const { completion, fatigue, pain, sleep, notes } = collectFeedbackPayload();
+        queryInput.value = [
+          "请根据这次训练反馈调整后续计划：",
+          `- 完成状态：${completion}`,
+          `- 主观疲劳：${fatigue}`,
+          `- 疼痛/不适：${pain}`,
+          `- 睡眠恢复：${sleep}`,
+          notes ? `- 补充说明：${notes}` : "",
+          "请给出明日调整、本周微调、替代训练和风险提醒。",
+        ].filter(Boolean).join("\n");
+        queryInput.focus();
+      }
+
+      async function submitFeedbackApi() {
+        const { completion, fatigue, pain, sleep, notes } = collectFeedbackPayload();
+        const rawText = [
+          `完成状态：${completion}`,
+          `主观疲劳：${fatigue}`,
+          `疼痛/不适：${pain}`,
+          `睡眠恢复：${sleep}`,
+          notes ? `补充说明：${notes}` : "",
+        ].filter(Boolean).join("；");
+        try {
+          const payload = await apiFetch("/feedback", {
+            method: "POST",
+            body: JSON.stringify({
+              user_id: "default_user",
+              raw_text: rawText,
+              feedback: {
+                completion_status: completion,
+                subjective_fatigue: fatigue,
+                pain_status: pain,
+                sleep_quality: sleep,
+                notes,
+              },
+            }),
+          });
+          reportBox.className = "report-content";
+          reportBox.innerHTML = `
+            <div class="callout-card">
+              <span>反馈调整</span>
+              <p>${escapeHtml(payload.adaptive_adjustment?.rationale || "已生成反馈判断。")}</p>
+            </div>
+            <div class="report-summary">
+              <div><span>是否调整</span><strong>${payload.adaptive_adjustment?.adjustment_required ? "是" : "否"}</strong></div>
+              <div><span>明日调整</span><strong>${escapeHtml(payload.adaptive_adjustment?.next_day_adjustment || "-")}</strong></div>
+              <div><span>本周微调</span><strong>${escapeHtml(payload.adaptive_adjustment?.weekly_adjustment || "-")}</strong></div>
+              <div><span>风险提醒</span><strong>${escapeHtml(payload.adaptive_adjustment?.risk_alert || "-")}</strong></div>
+            </div>
+          `;
+          resultBadge.textContent = "反馈已计算";
+        } catch (error) {
+          setEmpty(reportBox, `反馈提交失败：${error.message}`);
+          resultBadge.textContent = "反馈失败";
+        }
+      }
+
+      function collectEvidenceItems(response) {
+        const report = getStructuredReport(response);
+        const items = [];
+        const evidenceBase = report.evidence_base || response?.rag_sources || [];
+        if (Array.isArray(evidenceBase)) {
+          evidenceBase.slice(0, 8).forEach((item, index) => {
+            items.push({
+              id: item.id || item.evidence_id || index + 1,
+              title: item.source_name || item.source || item.file_name || "证据来源",
+              body: item.snippet || item.content || item.text || item.summary || "",
+              tier: item.evidence_tier || item.tier || "source",
+            });
+          });
+        }
+
+        const panel = response?.training_explanation_panel || report.training_explanation_panel || {};
+        const weeks = Array.isArray(panel.weeks) ? panel.weeks : [];
+        weeks.forEach((week) => {
+          (week.items || []).forEach((item) => {
+            const ids = Array.isArray(item.evidence_ids) ? item.evidence_ids : [];
+            ids.forEach((id) => {
+              if (items.some((existing) => String(existing.id) === String(id))) return;
+              items.push({
+                id,
+                title: item.title || item.day || "训练解释",
+                body: item.why_scheduled || item.decision_summary || "",
+                tier: item.explanation_source || "training_explanation",
+              });
+            });
+          });
+        });
+        return items;
+      }
+
+      function renderEvidencePreview(response) {
+        const items = collectEvidenceItems(response);
+        evidenceCount.textContent = `${items.length} 条`;
+        if (!items.length) {
+          setEmpty(evidencePreview, "本次返回里没有可预览的证据。");
+          return;
+        }
+        evidencePreview.className = "evidence-list";
+        evidencePreview.innerHTML = items
+          .slice(0, 10)
+          .map((item) => `
+            <article class="evidence-card">
+              <div class="day-card-top">
+                <strong>#${escapeHtml(item.id)}</strong>
+                <span>${escapeHtml(item.tier)}</span>
+              </div>
+              <h3>${escapeHtml(item.title)}</h3>
+              <p>${escapeHtml(text(item.body, "暂无摘要"))}</p>
+            </article>
+          `)
+          .join("");
+      }
+
+      function summarizePlan(response) {
+        const plan = getStructuredPlan(response);
+        const meta = plan.plan_meta || {};
+        const weeks = Array.isArray(plan.week_plans) ? plan.week_plans : [];
+        const firstWeek = weeks[0] || {};
+        const explanation =
+          response?.training_explanation_panel ||
+          getStructuredReport(response).training_explanation_panel ||
+          plan.training_explanation_panel ||
+          {};
+
+        return {
+          hasStructuredPlan: Boolean(weeks.length || meta.goal || meta.actual_weeks),
+          goal: meta.goal || "训练目标待确认",
+          planType: meta.plan_type || "计划类型待确认",
+          weeks: meta.actual_weeks || weeks.length || "-",
+          phase: firstWeek.phase || "阶段待生成",
+          load: firstWeek.load_level || "负荷待生成",
+          weekGoal: firstWeek.week_goal || "本周目标待生成",
+          explanationSummary: explanation.summary || "",
+        };
+      }
+
+      function renderReport(response) {
+        const summary = summarizePlan(response);
+        if (!summary.hasStructuredPlan) {
+          const rawReport = String(response?.report || "").trim();
+          reportBox.className = rawReport ? "report-content" : "empty-state";
+          reportBox.innerHTML = rawReport
+            ? `<div class="callout-card"><span>模型回复</span><p>${escapeHtml(rawReport)}</p></div>
+               <div class="callout-card secondary"><span>结构化计划</span><p>当前响应没有返回可渲染的结构化周计划。请检查模型调用是否成功，或稍后重新发送生成请求。</p></div>`
+            : "后端没有返回训练计划内容。请检查模型 API Key 或重新发送请求。";
+          resultBadge.textContent = rawReport ? "缺少结构化计划" : "无结果";
+          return;
+        }
+        const sections = [
+          `<div class="report-summary">
+            <div><span>目标</span><strong>${escapeHtml(summary.goal)}</strong></div>
+            <div><span>周期</span><strong>${escapeHtml(summary.weeks)} 周</strong></div>
+            <div><span>阶段</span><strong>${escapeHtml(summary.phase)}</strong></div>
+            <div><span>负荷</span><strong>${escapeHtml(summary.load)}</strong></div>
+          </div>`,
+          `<div class="callout-card">
+            <span>本周目标</span>
+            <p>${escapeHtml(summary.weekGoal)}</p>
+          </div>`,
+        ];
+
+        if (summary.explanationSummary) {
+          sections.push(`<div class="callout-card secondary"><span>关键解释</span><p>${escapeHtml(summary.explanationSummary)}</p></div>`);
+        }
+
+        reportBox.className = "report-content";
+        reportBox.innerHTML = sections.join("");
+        resultBadge.textContent = "已生成";
+      }
+
+      function dayKeyCandidates(day) {
+        if (!day) return [];
+        const week = day.week_index || "";
+        const keys = [];
+        if (week && day.day_index) keys.push(`${week}-${day.day_index}`);
+        if (week && day.day_label) keys.push(`${week}-${day.day_label}`);
+        if (week && day.day) keys.push(`${week}-${day.day}`);
+        return keys;
+      }
+
+      function buildDayMap(days) {
+        const map = new Map();
+        days.forEach((day) => {
+          dayKeyCandidates(day).forEach((key) => map.set(key, day));
+        });
+        return map;
+      }
+
+      function normalizeCalendarDays(response) {
+        const calendar = getCalendar(response);
+        const days = Array.isArray(calendar.days) ? calendar.days : [];
+        const dailyCards = getDailyCards(response);
+        const weekDays = getWeekPlanDays(response);
+        if (!dailyCards.length && !weekDays.length) return days;
+
+        const cardByKey = buildDayMap(dailyCards);
+        const weekByKey = buildDayMap(weekDays);
+        const baseDays = days.length ? days : weekDays;
+        return baseDays.map((day) => {
+          const matchingWeekDay = dayKeyCandidates(day).map((key) => weekByKey.get(key)).find(Boolean);
+          const matchingCard = dayKeyCandidates(day).map((key) => cardByKey.get(key)).find(Boolean);
+          return { ...matchingWeekDay, ...matchingCard, ...day };
+        });
+      }
+
+      function getDaySortValue(day, index) {
+        const week = numberValue(day.week_index, 0);
+        const dayIndex = numberValue(day.day_index, 0);
+        if (week || dayIndex) return week * 7 + dayIndex;
+        return index + 1;
+      }
+
+      function buildTrainingLoadSeries(days) {
+        const loadDays = days
+          .map((day, index) => ({
+            label: text(day.date_str || day.date || day.day_label || day.day || `D${index + 1}`),
+            sort: getDaySortValue(day, index),
+            load: numberValue(day.training_load, 0),
+          }))
+          .sort((a, b) => a.sort - b.sort);
+
+        return loadDays.map((item, index) => {
+          const acuteStart = Math.max(0, index - 6);
+          const chronicStart = Math.max(0, index - 41);
+          const acuteSlice = loadDays.slice(acuteStart, index + 1);
+          const chronicSlice = loadDays.slice(chronicStart, index + 1);
+          const acute7 = acuteSlice.reduce((sum, day) => sum + day.load, 0);
+          const chronic42 = chronicSlice.length
+            ? (chronicSlice.reduce((sum, day) => sum + day.load, 0) / chronicSlice.length) * 7
+            : 0;
+          return {
+            ...item,
+            acute7,
+            chronic42,
+          };
+        });
+      }
+
+      function renderTrainingLoadChart(days) {
+        const series = buildTrainingLoadSeries(days);
+        const hasLoad = series.some((item) => item.load || item.acute7 || item.chronic42);
+        if (!series.length || !hasLoad) {
+          return `<div class="load-chart-empty">暂无可绘制的训练负荷曲线。</div>`;
+        }
+
+        const width = 820;
+        const height = 260;
+        const pad = { top: 20, right: 26, bottom: 42, left: 46 };
+        const plotWidth = width - pad.left - pad.right;
+        const plotHeight = height - pad.top - pad.bottom;
+        const maxValue = Math.max(
+          10,
+          ...series.flatMap((item) => [item.load, item.acute7, item.chronic42])
+        );
+        const x = (index) => pad.left + (series.length === 1 ? plotWidth / 2 : (index / (series.length - 1)) * plotWidth);
+        const y = (value) => pad.top + plotHeight - (value / maxValue) * plotHeight;
+        const barWidth = Math.max(4, Math.min(18, plotWidth / Math.max(series.length, 1) * 0.48));
+        const acutePoints = series.map((item, index) => `${x(index).toFixed(1)},${y(item.acute7).toFixed(1)}`).join(" ");
+        const chronicPoints = series.map((item, index) => `${x(index).toFixed(1)},${y(item.chronic42).toFixed(1)}`).join(" ");
+        const labelIndexes = new Set([0, Math.floor((series.length - 1) / 2), series.length - 1]);
+        const gridValues = [0, Math.round(maxValue / 2), Math.round(maxValue)];
+
+        return `
+          <div class="load-chart-card">
+            <div class="load-chart-heading">
+              <div>
+                <span class="section-kicker">Training Load Curve</span>
+                <h3>长期 / 短期训练负荷</h3>
+              </div>
+              <div class="load-chart-legend">
+                <span><i class="legend-bar"></i>每日 TL</span>
+                <span><i class="legend-acute"></i>短期 7日</span>
+                <span><i class="legend-chronic"></i>长期 42日</span>
+              </div>
+            </div>
+            <svg class="load-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="训练负荷曲线">
+              ${gridValues.map((value) => `
+                <g>
+                  <line x1="${pad.left}" y1="${y(value).toFixed(1)}" x2="${width - pad.right}" y2="${y(value).toFixed(1)}" class="load-grid-line" />
+                  <text x="${pad.left - 10}" y="${(y(value) + 4).toFixed(1)}" class="load-axis-label" text-anchor="end">${escapeHtml(formatLoad(value))}</text>
+                </g>
+              `).join("")}
+              ${series.map((item, index) => {
+                const barHeight = Math.max(0, pad.top + plotHeight - y(item.load));
+                return `<rect class="load-bar" x="${(x(index) - barWidth / 2).toFixed(1)}" y="${y(item.load).toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}">
+                  <title>${escapeHtml(item.label)} TL ${escapeHtml(formatLoad(item.load))}</title>
+                </rect>`;
+              }).join("")}
+              <polyline class="load-line acute-line" points="${acutePoints}" />
+              <polyline class="load-line chronic-line" points="${chronicPoints}" />
+              ${series.map((item, index) => labelIndexes.has(index) ? `
+                <text x="${x(index).toFixed(1)}" y="${height - 16}" class="load-axis-label" text-anchor="middle">${escapeHtml(item.label)}</text>
+              ` : "").join("")}
+            </svg>
+          </div>
+        `;
+      }
+
+      function renderTrainingLoadSummary(response, days) {
+        const summary = getTrainingLoadSummary(response);
+        const totalFromDays = days.reduce((sum, day) => sum + numberValue(day.training_load, 0), 0);
+        const totalLoad = numberValue(summary.total_planned_load, totalFromDays);
+        const loadImpact = numberValue(summary.load_impact_7d, 0);
+        const baseFitness = numberValue(summary.base_fitness_42d_weekly_equivalent, 0);
+        const trend = text(summary.intensity_trend, "-");
+        const trendZone = text(summary.intensity_trend_zone, "-");
+        const chartHtml = renderTrainingLoadChart(days);
+
+        if (!totalLoad && !loadImpact && !baseFitness) {
+          loadSummaryBox.className = "load-summary-panel empty-state";
+          loadSummaryBox.innerHTML = chartHtml;
+          return;
+        }
+
+        loadSummaryBox.className = "load-summary-panel";
+        loadSummaryBox.innerHTML = `
+          <div class="load-summary-card">
+            <span>计划总负荷</span>
+            <strong>${escapeHtml(formatLoad(totalLoad))}</strong>
+          </div>
+          <div class="load-summary-card">
+            <span>7日负荷影响</span>
+            <strong>${escapeHtml(formatLoad(loadImpact))}</strong>
+          </div>
+          <div class="load-summary-card">
+            <span>42日基础体能</span>
+            <strong>${escapeHtml(formatLoad(baseFitness))}</strong>
+          </div>
+          <div class="load-summary-card accent-load">
+            <span>强度趋势</span>
+            <strong>${escapeHtml(trend)}</strong>
+            <small>${escapeHtml(trendZone)}</small>
+          </div>
+          ${chartHtml}
+        `;
+      }
+
+      function renderCalendar(response) {
+        const days = normalizeCalendarDays(response);
+        renderTrainingLoadSummary(response, days);
+        calendarCount.textContent = `${days.length} 天`;
+        if (!days.length) {
+          setEmpty(calendarBox, "本次返回里没有日历数据。可以尝试明确要求生成训练计划或月历。");
+          setEmpty(dayDetailBox, "日历生成后，点击某一天查看训练细节。");
+          return;
+        }
+
+        calendarBox.className = "calendar-grid";
+        calendarBox.innerHTML = days
+          .slice(0, 42)
+          .map((day, index) => {
+            const isRest = Boolean(day.is_rest);
+            const title = text(day.training_type || day.focus || day.summary, isRest ? "休息" : "训练");
+            const label = text(day.day_label || day.date || `第 ${day.day_index ?? index + 1} 天`);
+            const zone = text(day.zone_range || day.zone_label || day.zone, "轻松");
+            const evidence = cleanEvidenceLabel(day.evidence_tier || day.evidence_tier_label);
+            const load = numberValue(day.training_load, 0);
+            const duration = numberValue(day.duration_min, 0);
+            const loadPercent = Math.max(6, Math.min(100, load));
+            return `
+              <button class="day-card ${isRest ? "rest" : ""}" data-day-index="${index}" type="button">
+                <div class="day-card-top">
+                  <strong>${escapeHtml(label)}</strong>
+                  <span>${escapeHtml(zone)}</span>
+                </div>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(text(day.main_set || day.intensity_target || day.note, "等待详细安排"))}</p>
+                <div class="day-load-row">
+                  <span>TL ${escapeHtml(formatLoad(load))}</span>
+                  <span>${escapeHtml(formatDuration(duration))}</span>
+                </div>
+                <div class="day-load-meter" aria-hidden="true">
+                  <i style="width: ${load ? loadPercent : 0}%"></i>
+                </div>
+                <small>${escapeHtml(evidence)}</small>
+              </button>
+            `;
+          })
+          .join("");
+        calendarBox.querySelectorAll("[data-day-index]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const index = Number(button.dataset.dayIndex);
+            renderDayDetail(days[index]);
+          });
+        });
+        renderDayDetail(days.find((day) => !day.is_rest) || days[0]);
+      }
+
+      function renderDayDetail(day) {
+        if (!day) {
+          setEmpty(dayDetailBox, "请选择一个训练日。");
+          return;
+        }
+        const title = text(day.training_type || day.title, day.is_rest ? "休息" : "训练");
+        const warmup = text(day.warmup || day.warmup_text, day.is_rest ? "无需热身" : "按计划轻松热身");
+        const mainSet = text(day.main_set || day.main || day.intensity_target, day.is_rest ? "休息恢复" : "等待主课安排");
+        const cooldown = text(day.cooldown || day.cooldown_text, day.is_rest ? "无需冷身" : "慢跑或拉伸放松");
+        const venue = text(day.venue, "按实际情况选择");
+        const notes = text(day.notes || day.risk_alert || day.note, "保持动作质量，若出现疼痛或异常疲劳，优先降低强度。");
+        const evidenceIds = Array.isArray(day.evidence_ids) ? day.evidence_ids : [];
+        const evidence = cleanEvidenceLabel(day.evidence_tier || day.evidence_tier_label || day.explanation_source);
+        const load = numberValue(day.training_load, 0);
+        const duration = numberValue(day.duration_min, 0);
+        const loadMethod = text(day.training_load_method, day.is_rest ? "rest_day" : "plan_estimate");
+        const factors = day.training_load_factors && typeof day.training_load_factors === "object" ? day.training_load_factors : {};
+        const factorText = [
+          factors.zone_range ? `Zone ${factors.zone_range}` : "",
+          factors.intensity_weight ? `Weight ${Number(factors.intensity_weight).toFixed(2)}` : "",
+        ].filter(Boolean).join(" · ") || "-";
+        dayDetailBox.className = "day-detail-panel";
+        dayDetailBox.innerHTML = `
+          <div class="panel-heading split">
+            <div>
+              <p class="section-kicker">Session Detail</p>
+              <h2>${escapeHtml(text(day.day_label || day.date, "训练日"))} · ${escapeHtml(title)}</h2>
+            </div>
+            <span class="pill muted-pill">${escapeHtml(evidence)}</span>
+          </div>
+          <div class="session-grid">
+            <article class="session-block">
+              <span>热身</span>
+              <p>${escapeHtml(warmup)}</p>
+            </article>
+            <article class="session-block primary-session">
+              <span>主课</span>
+              <p>${escapeHtml(mainSet)}</p>
+            </article>
+            <article class="session-block">
+              <span>冷身</span>
+              <p>${escapeHtml(cooldown)}</p>
+            </article>
+          </div>
+          <div class="session-meta">
+            <div><span>Training Load</span><strong>${escapeHtml(formatLoad(load))}</strong></div>
+            <div><span>Duration</span><strong>${escapeHtml(formatDuration(duration))}</strong></div>
+            <div><span>Load Method</span><strong>${escapeHtml(loadMethod)}</strong></div>
+            <div><span>Load Factors</span><strong>${escapeHtml(factorText)}</strong></div>
+            <div><span>场地</span><strong>${escapeHtml(venue)}</strong></div>
+            <div><span>备注</span><strong>${escapeHtml(notes)}</strong></div>
+            <div><span>引用证据</span><strong>${evidenceIds.length ? evidenceIds.map((id) => `#${escapeHtml(id)}`).join(" ") : escapeHtml(evidence)}</strong></div>
+          </div>
+        `;
+      }
+
+      function renderReferences(target, payload, valueKey, detailKey, emptyMessage) {
+        const values = payload?.[valueKey] || {};
+        const details = payload?.[detailKey] || {};
+        const keys = Object.keys(values);
+        if (!keys.length) {
+          setEmpty(target, emptyMessage);
+          return;
+        }
+
+        target.className = "chip-grid";
+        target.innerHTML = keys
+          .map((key) => {
+            const label = values[key];
+            const detail = details[key] || "";
+            return `
+              <div class="info-chip">
+                <strong>${escapeHtml(key)} ${escapeHtml(label)}</strong>
+                ${detail ? `<small>${escapeHtml(detail)}</small>` : ""}
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      async function ping() {
+        try {
+          const data = await apiFetch("/health");
+          renderHealth(data.status, data.model, data.provider);
+        } catch (error) {
+          renderHealth("", "", "", error.message);
+        }
+      }
+
+      async function loadMeta() {
+        try {
+          const [zones, tiers] = await Promise.all([
+            apiFetch("/zone-reference"),
+            apiFetch("/evidence-tier-reference"),
+          ]);
+          renderReferences(zonesBox, zones, "zones", "zones_detail", "没有强度区间数据");
+          renderReferences(tiersBox, tiers, "evidence_tiers", "descriptions", "没有证据分层数据");
+        } catch (error) {
+          setEmpty(zonesBox, `区间加载失败：${error.message}`);
+          setEmpty(tiersBox, "请确认 FastAPI 后端已启动。");
+        }
+      }
+
+      async function runQuery(textValue) {
+        const query = (textValue || queryInput.value || "").trim();
+        if (!query) {
+          setEmpty(reportBox, "先输入一个训练问题。");
+          resultBadge.textContent = "缺少输入";
+          return;
+        }
+
+        setBusy("正在请求后端生成训练建议...");
+        calendarBox.innerHTML = '<div class="loading-state">正在等待结构化日历</div>';
+
+        if (llmProviderInput.value === "ds" && !dsApiKeyInput.value.trim()) {
+          setEmpty(reportBox, "使用 DeepSeek 前，请先填写并保存 API Key。");
+          resultBadge.textContent = "缺少 API Key";
+          dsApiKeyStatus.textContent = "请填写 DeepSeek API Key 后再发送。";
+          return;
+        }
+
+        try {
+          const payload = await apiFetch("/query", {
+            method: "POST",
+            body: JSON.stringify({
+              query,
+              mode: "team",
+              user_id: "default_user",
+              stream: false,
+              llm_provider: llmProviderInput.value,
+              llm_model: llmModelInput.value.trim(),
+              ds_api_key: llmProviderInput.value === "ds" ? dsApiKeyInput.value.trim() : "",
+            }),
+          });
+          state.lastResponse = payload;
+          renderReport(payload);
+          renderCalendar(payload);
+          renderEvidencePreview(payload);
+          tokenUsageBox.textContent = formatTokenUsage(payload.token_usage);
+          auditScoresBox.textContent = formatAuditScores(payload.audit_scores);
+          guidedQuestionsBox.textContent = renderQuestions(payload.guided_questions);
+          if (payload.training_plan_id) {
+            renderPlanHistory();
+          }
+        } catch (error) {
+          setEmpty(reportBox, `请求失败：${error.message}`);
+          setEmpty(calendarBox, "无法刷新日历。");
+          resultBadge.textContent = "失败";
+        }
+      }
+
+      function clearResult() {
+        setEmpty(loadSummaryBox, "训练负荷会在生成计划后显示。");
+        state.lastResponse = null;
+        setEmpty(reportBox, "还没有结果。先从左侧选择一个入口，或直接输入训练问题。");
+        setEmpty(calendarBox, "计划生成后会在这里展示日历卡片。");
+        setEmpty(dayDetailBox, "点击日历中的某一天，查看热身、主课、冷身和引用证据。");
+        setEmpty(evidencePreview, "生成计划后，会从返回结果中提取证据编号、证据层级和来源摘要。");
+        resultBadge.textContent = "等待请求";
+        calendarCount.textContent = "0 天";
+        evidenceCount.textContent = "0 条";
+        tokenUsageBox.textContent = "-";
+        auditScoresBox.textContent = "-";
+        guidedQuestionsBox.textContent = "-";
+      }
+
+      apiBaseInput.addEventListener("change", () => {
+        state.apiBase = getApiBase();
+        localStorage.setItem("marathon-api-base", state.apiBase);
+        ping();
+        loadLlmOptions();
+        loadMeta();
+      });
+
+      llmProviderInput.addEventListener("change", () => {
+        renderModelOptions();
+        localStorage.setItem("marathon_llm_provider", llmProviderInput.value);
+        localStorage.setItem("marathon_llm_model", llmModelInput.value.trim());
+      });
+
+      providerButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          llmProviderInput.value = button.dataset.providerChoice || "ollama";
+          renderModelOptions();
+          localStorage.setItem("marathon_llm_provider", llmProviderInput.value);
+          localStorage.setItem("marathon_llm_model", llmModelInput.value.trim());
+        });
+      });
+
+      llmModelInput.addEventListener("change", () => {
+        localStorage.setItem("marathon_llm_model", llmModelInput.value.trim());
+      });
+
+      saveDsApiKeyButton.addEventListener("click", () => {
+        const value = dsApiKeyInput.value.trim();
+        if (!value) {
+          dsApiKeyStatus.textContent = "请先填写 API Key。";
+          return;
+        }
+        localStorage.setItem("marathon_ds_api_key", value);
+        dsApiKeyStatus.textContent = "API Key 已保存到当前浏览器。";
+      });
+
+      clearDsApiKeyButton.addEventListener("click", () => {
+        dsApiKeyInput.value = "";
+        localStorage.removeItem("marathon_ds_api_key");
+        dsApiKeyStatus.textContent = "API Key 已清除。";
+      });
+
+      document.querySelectorAll("[data-prompt]").forEach((button) => {
+        button.addEventListener("click", () => {
+          queryInput.value = button.getAttribute("data-prompt") || "";
+          queryInput.focus();
+        });
+      });
+
+      document.querySelectorAll("[data-feedback-preset]").forEach((button) => {
+        button.addEventListener("click", () => {
+          $("feedbackCompletion").value = button.dataset.completion || "已完成";
+          $("feedbackFatigue").value = button.dataset.fatigue || "轻微";
+          $("feedbackPain").value = button.dataset.pain || "没有疼痛";
+          $("feedbackSleep").value = button.dataset.sleep || "良好";
+          $("feedbackNotes").value = button.dataset.notes || "";
+          composeFeedbackPrompt();
+          $("feedback-workbench").scrollIntoView({ behavior: "smooth", block: "start" });
+          queryInput.focus();
+        });
+      });
+
+      $("runQuery").addEventListener("click", () => runQuery());
+      $("loadMeta").addEventListener("click", () => loadMeta());
+      $("clearResult").addEventListener("click", clearResult);
+      $("saveProfileDraft").addEventListener("click", saveProfileDraft);
+      $("buildProfilePrompt").addEventListener("click", buildProfilePrompt);
+      $("runProfilePlan").addEventListener("click", () => {
+        buildProfilePrompt();
+        runQuery();
+      });
+      $("composeFeedbackPrompt").addEventListener("click", composeFeedbackPrompt);
+      $("submitFeedbackApi").addEventListener("click", submitFeedbackApi);
+      $("clearFeedback").addEventListener("click", () => {
+        $("feedbackNotes").value = "";
+      });
+      $("savePlanDraft").addEventListener("click", saveCurrentPlanSnapshot);
+      $("loadPlanDrafts").addEventListener("click", renderPlanHistory);
+      queryInput.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          runQuery();
+        }
+      });
+
+      const savedBase = localStorage.getItem("marathon-api-base");
+      if (savedBase) {
+        apiBaseInput.value = savedBase;
+        state.apiBase = savedBase;
+      }
+      const savedDsApiKey = localStorage.getItem("marathon_ds_api_key");
+      if (savedDsApiKey) {
+        dsApiKeyInput.value = savedDsApiKey;
+        dsApiKeyStatus.textContent = "已加载本机保存的 API Key。";
+      }
+
+      ping();
+      loadLlmOptions();
+      loadMeta();
+      loadProfileDraft();
+      renderPlanHistory();
+    </script>
+  </body>
+</html>

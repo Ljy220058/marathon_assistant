@@ -8,7 +8,11 @@ from typing import Dict, Iterable
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama, OllamaEmbeddings
-from ragas.run_config import RunConfig
+
+try:
+    from ragas.run_config import RunConfig
+except ImportError:
+    RunConfig = None
 
 PROJECT_ROOT = Path(__file__).absolute().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -206,6 +210,8 @@ async def run_evaluation():
 
     # 4. 计算 Ragas 指标
     print("正在使用 Ragas 计算指标 (LLM-as-a-judge)...")
+    if RunConfig is None:
+        raise RuntimeError("运行 RAGAS 指标前请先安装额外依赖：pip install ragas")
     dataset = Dataset.from_dict({
         "question": data["question"],
         "contexts": data["contexts"],

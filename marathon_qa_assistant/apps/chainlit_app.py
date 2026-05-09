@@ -11,16 +11,14 @@ if str(_TMP_BASE) not in sys.path:
 
 from marathon_qa_assistant.core.workflow import IntegratedState, load_user_profile
 from marathon_qa_assistant.core.app_state import (
-    DEFAULT_VECTOR_DIR,
-    USER_VECTOR_DIR,
     global_state,
 )
-from marathon_qa_assistant.core.kb_provider import set_kb_data
-from marathon_qa_assistant.services.vector_store import (
-    load_vector_kb,
-    probe_vector_kb_health,
-    retrieve,
+from marathon_qa_assistant.core.kb_bootstrap import (
+    bootstrap_knowledge_base,
+    default_kb_candidate_dirs,
+    get_knowledge_base_health_snapshot,
 )
+from marathon_qa_assistant.core.kb_provider import get_kb_runtime_state
 from marathon_qa_assistant.apps.chainlit.setup import (
     show_profile_summary,
     update_sidebar,
@@ -36,40 +34,21 @@ _KB_VECTOR_DIR: Path | None = None
 
 
 def _kb_candidate_dirs() -> list[Path]:
-    return [USER_VECTOR_DIR, DEFAULT_VECTOR_DIR]
+    return default_kb_candidate_dirs()
 
 
 def init_knowledge_base() -> bool:
     global _KB_READY, _KB_VECTOR_DIR
 
-    health_reports = []
-    for vector_dir in _kb_candidate_dirs():
-        health = probe_vector_kb_health(vector_dir)
-        health_reports.append(health)
-        if not health.get("ok"):
-            continue
-
-        chunks, vectorizer, matrix, bm25 = load_vector_kb(vector_dir)
-        set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
-        global_state.chunks = chunks
-        global_state.kb_chunks_len = len(chunks)
-        global_state.kb_source = str(health.get("source") or "unknown")
-        global_state.kb_health_reason = ""
-        _KB_READY = True
-        _KB_VECTOR_DIR = vector_dir
-        return True
-
-    set_kb_data([], None, None, retrieve)
-    global_state.chunks = []
-    global_state.kb_chunks_len = 0
-    global_state.kb_source = "empty"
-    global_state.kb_health_reason = "; ".join(
-        f"{item.get('source') or 'unknown'}:{item.get('reason') or 'unhealthy'}"
-        for item in health_reports
-    )
-    _KB_READY = False
-    _KB_VECTOR_DIR = None
-    return False
+    report = bootstrap_knowledge_base(_kb_candidate_dirs())
+    snapshot = get_knowledge_base_health_snapshot()
+    global_state.chunks = list(get_kb_runtime_state().get("chunks") or [])
+    global_state.kb_chunks_len = int(snapshot.get("chunks_count") or 0)
+    global_state.kb_source = str(snapshot.get("source") or "unknown")
+    global_state.kb_health_reason = str(snapshot.get("reason") or "")
+    _KB_READY = bool(report.get("ok"))
+    _KB_VECTOR_DIR = Path(str(report.get("vector_dir"))) if report.get("vector_dir") else None
+    return _KB_READY
 
 
 def ensure_knowledge_base_ready() -> bool:

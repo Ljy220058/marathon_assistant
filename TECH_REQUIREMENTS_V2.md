@@ -799,3 +799,587 @@ Chainlit 端计划生成存在两个体验缺陷：
   - HMP 协议模板无检索命中时仍能生成结构化卡片。
   - 半马协议候选能投射到合适质量训练日且保留原始主课。
   - 导入期未匹配候选不会提前投射 95% HMP 高风险课表。
+
+### 16.7 第四阶段接入：HMP 专项验证器与基石文档补漏审计
+
+**目标**：在 HMP 协议已进入计划骨架、模板库和每日课表层之后，新增半马专项验证器，让系统不仅知道“该安排什么”，也能识别“什么时候不能安排”。
+
+**实现方法**：
+
+- 新增 `marathon_qa_assistant/core/half_marathon_validator.py`：
+  - `validate_half_marathon_protocol_plan(plan_dict)` 返回结构化验证报告。
+  - 报告包含 `passed / errors / warnings / issues[] / checked_constraints[]`。
+  - 每条 issue 包含 `severity / constraint_id / label / week_index / day / workout_type / message / recommendation`。
+- `training_plan_skeleton.py` 在半马计划输出中追加：
+  - `half_marathon_protocol.input_weekly_mileage_km`
+  - `half_marathon_protocol_validation`
+- `half_marathon_protocol.py` 扩展安全约束：
+  - `race_specific_timing`：100% HMP 巡航恢复课应主要位于赛前约 6 周内，并按 1km -> 2km -> 3km 逐步推进。
+  - `environment_or_fatigue_downgrade`：高温、强风、伤痛、酸痛或疲劳状态下，需要降级、延后或替代方案。
+- 新增 `docs/half_marathon_source_audit.md`，记录基石文档已覆盖内容和待补 OCR 缺口。
+
+**验证器当前覆盖规则**：
+
+- 刚比完全马后前 1-2 周不得出现 95/100/105/107-110% HMP 高消耗专项课。
+- 普通跑者不得默认照搬 Sub-70 案例 110-130km/周级别跑量。
+- 半马专项质量课之间应保留约 48 小时恢复。
+- 95% HMP 长距离快速跑不得直接跳到 20-25km 上限课，需有 90% HMP 或较短 95% HMP 支撑。
+- 100% HMP 核心专项课不得过早进入基础/导入阶段，并检查 6/4/2 周进阶节奏。
+- 105-110% HMP 速度课需要当前 5K/8K/10K 能力或测试赛校准。
+- 环境/伤病/疲劳异常时需要显式降级或替代安排。
+
+**基石文档补漏结论**：
+
+- `Sub-70半程马拉松训练_图片OCR整理.md` 已覆盖 HMP 主协议所需的阶段、强度、案例、关键课表、进阶和风险边界。
+- 当前明确缺口是末尾“补充 1：马拉松/半马训练专业术语参考表”只有标题，没有表格内容。
+- 该缺口不阻塞 HMP 验证器，但后续做术语解释、UI 标准文案和证据展示时应回到原图或原文补齐。
+
+**验证**：
+
+- `tests/test_half_marathon_validator.py` 覆盖非半马 noop、刚比完全马导入期硬课、95% HMP 跳级、90% HMP 支撑后放行、100% HMP 过早和恢复间隔不足、Sub-70 跑量照搬、速度课缺校准、环境风险未降级。
+- `tests/test_training_plan_skeleton.py` 覆盖半马骨架输出包含 `half_marathon_protocol_validation`。
+
+### 16.8 第五阶段接入：HMP 协议解释层与报告展示
+
+**目标**：把 `half_marathon_protocol` 和 `half_marathon_protocol_validation` 从内部结构字段提升为可读的报告/UI 解释层，让用户能直接看到系统为何选择某个 A/B/C/D 半马画像、采用哪些阶段目标和关键课表候选，以及当前计划是否通过 HMP 专项风险校验。
+
+**实现方法**：
+
+- `nodes/output_nodes.py` 新增 `half_marathon_protocol_panel`：
+  - 汇总选中跑者画像、候选阶段序列、关键 HMP 课表候选、近期全马与输入周跑量。
+  - 读取 `half_marathon_protocol_validation`，输出 `status / passed / error_count / warning_count / checked_constraints / issues[]`。
+  - 每条 issue 保留 `severity / constraint_id / label / week_index / day / workout_type / message / recommendation`，供报告层直接渲染。
+  - 同步把 `half_marathon_protocol` 与 `half_marathon_protocol_validation` 暴露为 structured report 顶层字段，减少前端/报告层重复解析 `structured_training_plan`。
+- `training_explanation_panel` 增加 `protocol_context`：
+  - 当 HMP 协议存在时，解释面板可读取画像与验证摘要，避免关键训练解释脱离半马核心协议。
+- `ui/legacy_ui.py` 新增 HMP 协议 Markdown 区块：
+  - 展示协议状态、选中画像、画像依据、输入周跑量、近期全马状态、验证摘要。
+  - 展示阶段目标、关键课表候选表格、验证问题与建议、基石资料来源。
+- `apps/chainlit/plan_ui.py` 在轻量计划摘要中增加 HMP 状态行：
+  - 用户在 Chainlit 计划入口即可看到半马画像与验证是否通过。
+  - 完整 HMP 细节仍放在“查看完整计划”的共享报告中，避免首屏过载。
+
+**边界**：
+
+- 本阶段不修改 `frontend/` CustomElement 组件，不新增独立 HMP 前端卡片。
+- 本阶段不改变每日训练安排逻辑，只展示第四阶段已经产出的协议与验证结果。
+- HMP 面板只在 `half_marathon_protocol.active=True` 时出现，非半马计划保持原报告结构。
+
+**验证**：
+
+- 新增 `tests/test_half_marathon_protocol_panel.py`：
+  - 覆盖 structured report 输出 `half_marathon_protocol_panel` 与 `training_explanation_panel.protocol_context`。
+  - 覆盖共享报告 Markdown 渲染 HMP 画像、阶段/课表候选、验证 issue 与基石资料。
+  - 覆盖 Chainlit 轻量计划摘要展示 HMP 验证状态。
+  - 覆盖非半马计划不渲染空 HMP 区块。
+
+### 16.9 第六阶段接入：HMP 约束感知生成器与自动修复
+
+**目标**：让半马计划不只是在生成后被验证，而是在生成时就按照基石文章的阶段逻辑主动排课，并在发现风险时提供可执行的降级替代方案。
+
+**实现方法**：
+
+- 新增 `core/half_marathon_schedule_composer.py`：
+  - 根据 `phase_id`、`archetype_id`、`recent_marathon`、`weekly_volume_km` 生成 HMP 周课表建议。
+  - 导入期自动屏蔽 95/100/105/107-110% HMP 硬课，优先输出法特莱克和坡跑导入。
+  - 基础期优先输出 `hm_base_threshold_progression`，补阈值、有氧功率和跑步经济性。
+  - 专项构建期优先输出 `hm_90_support_endurance`、`hm_95_long_fast_run`、`hm_105_specific_speed`、`hm_110_support_speed` 的组合，并按画像偏置不同课表。
+  - 比赛专项期按赛前约 6 周窗口推进 `hm_100_float_intervals` 的 1km -> 2km -> 3km 梯度。
+  - 输出 `repair_notes` 和 `build_hmp_repair_suggestions()`，把验证器发现的问题映射为可执行替代动作。
+- `training_plan_skeleton.py` 在半马计划生成时接入 composer：
+  - `_build_week_days()` 先生成常规骨架，再由 HMP composer 选择性覆盖半马主课、次课与专项长跑文案。
+  - 减量/调整阶段保留原始长距离分钟制逻辑，避免 HMP 生成器破坏 taper 结构。
+  - `half_marathon_protocol.weekly_decisions` 记录每周生成器决策轨迹，便于解释层和后续回放。
+  - `half_marathon_protocol_validation` 附带 `repair_suggestions`，将错误/提醒转成可执行修复建议。
+- `half_marathon_validator.py` 继续保留拦截逻辑，但同时返回修复建议，形成“生成 -> 校验 -> 自动修复建议”的闭环。
+
+**边界**：
+
+- 第六阶段只影响半马计划，不改变全马和通用计划的排课主逻辑。
+- 不新增新的前端组件，仍沿用既有 structured report / Chainlit 入口。
+- 仍然不对术语 OCR 缺口做自动推断，术语表仍需后续回源补齐。
+
+**验证**：
+
+- 新增 `tests/test_half_marathon_schedule_composer.py`：
+  - 覆盖导入期硬课屏蔽、100% HMP 赛前窗口进阶、验证问题到修复动作的映射。
+  - 覆盖 A/B/C/D 四类画像在半马生成器中的不同偏置。
+- 继续保留既有 `tests/test_half_marathon_validator.py` 与 `tests/test_training_plan_skeleton.py` 作为回归护栏。
+
+### 16.10 第七阶段接入：HMP 闭环修复执行器
+
+**目标**：将第六阶段产出的 `repair_suggestions` 从“建议文本”推进为“可执行修复”，让半马计划在最终输出前完成一轮 HMP 风险修正与复验。
+
+**实现方法**：
+
+- 新增 `core/half_marathon_repair_executor.py`：
+  - `apply_half_marathon_repairs(plan_dict, validation)` 接收原计划与 HMP 验证结果，返回修复后的计划副本。
+  - 修复器只做确定性文本级降级，不重算跑量，避免破坏已有周跑量分配器。
+  - 支持的修复动作包括：
+    - `marathon_recovery_intro`：刚比完全马导入期硬课降级为 `hm_intro_fartlek_hills`。
+    - `progress_long_fast_run`：过早长距离快速跑降级为 `hm_90_support_endurance`。
+    - `race_specific_timing`：过早核心专项课延后，替换为 90% HMP 支撑跑。
+    - `quality_recovery_gap`：恢复间隔不足的后一堂 HMP 质量课改为轻松跑。
+    - `dynamic_hmp_calibration`：给速度课补当前 5K/8K/10K 能力校准说明。
+    - `environment_or_fatigue_downgrade`：给环境/疲劳/伤痛风险课补显式降级方案。
+    - `no_sub70_volume_copy`：在协议与周执行提醒层写入跑量缩放要求。
+- `training_plan_skeleton.py` 的半马输出流程变为：
+  1. 生成半马计划。
+  2. 执行 HMP 验证器。
+  3. 若存在 issue，调用 repair executor。
+  4. 将修复后的计划再次验证。
+  5. 写入 `half_marathon_protocol_repair_log`、`half_marathon_protocol.repair_log` 与 `half_marathon_protocol_validation.repair_log`。
+- `nodes/output_nodes.py` 与 `ui/legacy_ui.py` 展示修复记录：
+  - HMP 协议面板新增 `repair_applied / repair_log / repair_suggestions`。
+  - 完整报告中新增“自动修复记录”或“修复建议”区块。
+
+**边界**：
+
+- 第七阶段不对跑量进行二次重分配；涉及 Sub-70 跑量照搬时先写入明确缩放要求，后续可升级为跑量重算。
+- 修复器会避免在修复后的可执行课表文本中保留会再次触发验证器的硬课关键词。
+- 当前只执行一轮修复与复验，不做多轮迭代，避免隐藏复杂错误。
+
+**验证**：
+
+- 新增 `tests/test_half_marathon_repair_executor.py`：
+  - 覆盖刚比完全马导入期硬课自动降级并复验通过。
+  - 覆盖过早 100% HMP 核心课自动替换为 90% HMP 支撑跑。
+  - 覆盖速度校准与环境/疲劳降级说明自动补齐。
+- 扩展 `tests/test_half_marathon_protocol_panel.py`：
+  - 覆盖共享报告渲染“自动修复记录”。
+
+### 16.11 第八阶段接入：画像补全与 HMP 配速校准闭环
+
+**目标**：
+
+- 将“目标 HMP”和“当前能力 HMP”拆开，避免把用户目标配速直接当作当前可承受训练配速。
+- 在半马计划生成前识别画像缺口，明确缺少目标半马成绩、当前 5K/10K、周跑量、可训练日、疲劳/伤病/恢复状态时的影响。
+- 当缺少当前 5K/10K 成绩时，105-110% HMP 速度课不再按目标配速硬推，而是自动降为体感 10K 强度或保守速度刺激。
+
+**实现**：
+
+- 新增 `marathon_qa_assistant/core/half_marathon_pace_calibration.py`：
+  - `detect_half_marathon_profile_gaps(profile)` 输出结构化 `profile_gaps`。
+  - `build_half_marathon_pace_calibration(profile)` 输出 `pace_calibration`，包含 `status`、`speed_calibration_available`、目标/当前 HMP、差值、HMP 区间配速表、来源估算与提示。
+  - 支持目标半马文本解析（如 `半马 90 分`、`半马130`）、5K/10K Riegel 半马能力估算、半马 PB 直接估算，以及缺少比赛成绩时的 `t_pace` 兜底。
+- `training_plan_skeleton.py` 在 `_build_hm_protocol_context()` 中写入：
+  - `half_marathon_protocol.profile_gaps`
+  - `half_marathon_protocol.pace_calibration`
+- `half_marathon_schedule_composer.py` 增加校准输入：
+  - `speed_calibration_available`
+  - `pace_calibration_status`
+  - 当短距离成绩缺失时，`hm_105_specific_speed` 与 `hm_110_support_speed` 的执行文本加入“体感10K强度”保守策略。
+  - 当目标明显快于当前能力估计时，周决策 `repair_notes` 写入按当前能力保守推进。
+- `nodes/output_nodes.py` 与 `ui/legacy_ui.py` 扩展 HMP 协议面板：
+  - 结构化报告透出 `profile_gaps` 与 `pace_calibration`。
+  - Markdown 报告新增“HMP 配速校准”“校准提示”“画像缺口”区块，并展示核心 HMP 区间配速表。
+
+**边界**：
+
+- 当前阶段只建立配速校准与保守降级闭环，不自动向用户追问缺口字段。
+- `t_pace` 仅作为兜底估算，不能等同于当前 5K/10K 速度课校准；因此 `speed_calibration_available` 仍保持 `False`。
+- 速度课是否投射到可执行日仍由周课编排器控制，校准器只提供风险状态和配速依据。
+
+**验证**：
+
+- 新增 `tests/test_half_marathon_pace_calibration.py`：
+  - 覆盖 `半马 90 分` 与 `半马130` 的目标 HMP 解析。
+  - 覆盖 10K/5K 当前能力估算、画像缺口、目标过激状态与 `t_pace` 兜底。
+- 扩展 `tests/test_half_marathon_schedule_composer.py`：
+  - 覆盖有当前短距离成绩时速度课保留“按当前能力校准”。
+  - 覆盖缺少当前 5K/10K 时速度课降为体感 10K 强度，并写入修复提示。
+  - 覆盖骨架计划输出 `pace_calibration` 与 `profile_gaps`。
+- 扩展 `tests/test_half_marathon_protocol_panel.py`：
+  - 覆盖 HMP 协议面板结构化透出配速校准与画像缺口。
+  - 覆盖共享报告渲染“HMP 配速校准”“目标 HMP”“当前能力 HMP”“画像缺口”。
+
+### 16.12 第九阶段接入：HMP 容量预算与跑量缩放闭环
+
+**目标**：
+
+- 将“不得照搬 Sub-70 跑量”从提示升级为确定性容量预算。
+- 让 95/100/105/107-110% HMP 关键课先经过周跑量、可训练日、恢复状态和速度校准状态缩放，再进入周课表生成。
+- 验证器可以识别实际课表超过当前画像预算，修复器可以把超额 HMP 课降级。
+
+**实现**：
+
+- 新增 `marathon_qa_assistant/core/half_marathon_capacity_budget.py`：
+  - `build_half_marathon_capacity_budget(...)` 输出 `quality_sessions_max`、`long_run_max_km`、`hmp_90_max_km`、`hmp_95_max_km`、`hmp_100_total_max_km`、`hmp_105_total_max_km`、`hmp_110_total_max_km` 与 `notes`。
+  - 按阶段区分导入期、基础期、专项构建期、比赛专项期。
+  - 低跑量、可训练日少、近期全马、疲劳/伤病和缺少短距离校准会自动下调容量。
+- `training_plan_skeleton.py`：
+  - 每周生成 HMP 课表前先构建 `capacity_budget`。
+  - `half_marathon_protocol.weekly_decisions[].capacity_budget` 记录每周预算。
+  - `half_marathon_protocol.capacity_budget` 暴露代表性预算，供报告面板展示。
+- `half_marathon_schedule_composer.py`：
+  - `compose_hmp_week_sessions()` 接收 `capacity_budget`。
+  - 100% HMP 巡航恢复课按预算选择 4/6/8/9km 级别。
+  - 105% HMP 速度课按预算选择 600m/800m/1200m/2km 级别。
+  - 107-110% HMP 辅助速度在预算较低时缩短为轻量 45 秒重复跑。
+  - 当预算只允许一堂质量课时，周决策写入压缩提示。
+- `half_marathon_validator.py`：
+  - 新增 `capacity_budget_exceeded` 检查。
+  - 对比每周 HMP 硬课数量与 `quality_sessions_max`。
+  - 解析常见 `x×km`、`km × 组数`、`累计HMP约Xkm` 文案，检查 95/100/105% HMP 实际容量是否超过预算。
+- `half_marathon_repair_executor.py`：
+  - 对 `capacity_budget_exceeded` 执行一轮确定性修复。
+  - 将超额 HMP 课降级为 `hm_90_support_endurance` 支撑跑，并写入修复日志。
+- `nodes/output_nodes.py` 与 `ui/legacy_ui.py`：
+  - HMP 协议面板透出并渲染 “HMP 容量预算”。
+
+**边界**：
+
+- 当前容量预算是确定性缩放规则，不引入外部训练负荷模型或机器学习估计。
+- 修复器对超预算课采用保守降级，而不是复杂重排整周结构。
+- 107-110% HMP 以时间型速度刺激为主时暂不做精确公里换算，主要由生成器预算和质量课数量约束控制。
+
+**验证**：
+
+- 新增 `tests/test_half_marathon_capacity_budget.py`：
+  - 覆盖低跑量缩放、高跑量比赛专项容量、近期全马导入期屏蔽硬课容量。
+- 扩展 `tests/test_half_marathon_schedule_composer.py`：
+  - 覆盖容量预算压缩 100% HMP 和 105% HMP 课表。
+  - 覆盖骨架计划输出每周 `capacity_budget`。
+- 扩展 `tests/test_half_marathon_validator.py`：
+  - 覆盖 HMP 硬课数量和 100/105% HMP 累计量超过预算时输出 `capacity_budget_exceeded`。
+- 扩展 `tests/test_half_marathon_repair_executor.py`：
+  - 覆盖容量超额课自动降级为 90% HMP 支撑跑，并复验不再出现容量超额问题。
+- 扩展 `tests/test_half_marathon_protocol_panel.py`：
+  - 覆盖报告面板结构化输出与 Markdown 渲染“HMP 容量预算”。
+
+### 16.13 第十阶段前置：RAG 高可用性与检索链路检查
+
+**目标**：
+
+- 在推进 HMP 术语表与证据解释层之前，先确认本地 RAG 检索链路具备高可用启动、回退和可观测能力。
+- 避免 Chainlit、API、知识库管理动作分别维护不同的知识库初始化逻辑，导致一个入口有证据、另一个入口空库。
+- 让健康检查能直接暴露当前 RAG 运行时状态，包括是否 ready、来源库、chunk 数和 FAISS 状态。
+
+**审计发现**：
+
+- `vector_store.py` 已具备较好的底层兜底：
+  - `probe_vector_kb_health()` 可探测 chunks、FAISS index、pickle 是否完整。
+  - `_load_faiss_store()` 已包含 Windows 中文路径、多路径加载和内存反序列化兜底。
+  - `retrieve()` 支持中文查询的英文术语变体和多 query 融合排序。
+- `chainlit_app.py` 已有懒加载、用户库优先和默认库回退逻辑。
+- `apps/chainlit/setup.py` 仍保留一套旧初始化逻辑，存在入口漂移风险。
+- `apps/api_app.py` 原本未显式初始化知识库，API 单独启动时可能出现 RAG 运行时为空的问题。
+- 测试桩原本只模拟了 `OllamaEmbeddings`，缺少 `ChatOllama` 和 `langchain_core.messages`，导致 RAG 评测/安全相关测试在收集阶段失败。
+
+**实现**：
+
+- 新增 `marathon_qa_assistant/core/kb_bootstrap.py`：
+  - `bootstrap_knowledge_base()` 统一执行 user KB -> default KB -> empty mode 的回退链。
+  - `ensure_knowledge_base_ready()` 用于入口层懒加载与 API 查询前自愈。
+  - `get_knowledge_base_health_snapshot()` 输出当前 RAG 运行时健康快照。
+  - `is_kb_runtime_ready()` 判断 chunks、FAISS matrix 与 retrieve 函数是否已就绪。
+- `apps/chainlit_app.py`：
+  - 改为调用共享 bootstrap。
+  - 继续保持模块导入阶段不加载 KB。
+  - 会话启动时仍懒加载，并同步 `global_state.kb_source / kb_chunks_len / kb_health_reason`。
+- `apps/chainlit/setup.py`：
+  - 知识库管理动作复用共享 bootstrap，避免旧逻辑绕过健康探测。
+- `apps/api_app.py`：
+  - FastAPI startup 阶段调用 `bootstrap_knowledge_base()`。
+  - `/query` 入口前调用 `ensure_knowledge_base_ready()`，防止未触发 startup 的运行环境进入空 RAG。
+  - `/health` 响应新增 `rag` 字段，暴露 `ready/source/chunks_count/faiss_ready/reason`。
+- `scripts/evaluate_rag_ragas.py`：
+  - `ragas.run_config.RunConfig` 改为可选导入，避免只测试纯检索指标函数时被额外评测依赖阻塞。
+- `tests/conftest.py`：
+  - 补齐 `ChatOllama`、`langchain_core.messages` 和 Chainlit 测试桩，保证 RAG/安全/启动契约测试能在无完整外部服务时收集并运行。
+
+**边界**：
+
+- 当前阶段不重建向量库、不下载模型、不运行真实 Ollama/Ragas 端到端评测。
+- 健康检查只报告 RAG 运行时可用性，不代表某个具体问题一定能召回正确证据；召回质量仍由 `scripts/evaluate_rag_ragas.py` 的评测集负责。
+- `empty mode` 是显式降级状态，后续计划型处方仍由 Evidence Gate 和 missing info handler 拦截，不能静默伪造证据。
+
+**验证**：
+
+- 新增 `tests/test_kb_bootstrap.py`：
+  - 覆盖用户库不健康时回退默认库。
+  - 覆盖所有候选库不健康时进入 empty mode。
+- 扩展 `tests/test_chainlit_startup_contract.py`：
+  - 验证 Chainlit 导入阶段不加载知识库。
+  - 验证会话懒加载与幂等。
+  - 验证 Chainlit 入口读取共享 bootstrap 的结果同步全局状态。
+- 扩展 `tests/test_api_cli_startup_contract.py`：
+  - `/health` 必须返回 RAG 健康快照字段。
+- 修复测试桩后，以下 RAG/启动/安全聚焦集通过：
+  - `tests/test_kb_bootstrap.py`
+  - `tests/test_chainlit_startup_contract.py`
+  - `tests/test_api_app.py`
+  - `tests/test_api_cli_startup_contract.py`
+  - `tests/test_vector_store_query_fusion.py`
+  - `tests/test_security_guards.py`
+  - `tests/test_evaluate_rag_ragas_metrics.py`
+
+### 16.14 第十阶段主体：HMP 术语表与证据解释层
+
+**目标**：
+
+- 把基石文章中的 HMP 百分比训练术语、关键课表和安全约束显式结构化，避免报告只给“结论”却不说明依据。
+- 让半马验证器的每条 issue 都能追溯到术语 ID、证据摘要和来源文档。
+- 让共享报告和旧版 Markdown UI 展示术语解释与验证依据，为后续 RAG 证据引用、前端卡片和用户可解释训练计划打基础。
+
+**实现**：
+
+- 新增 `marathon_qa_assistant/core/half_marathon_glossary.py`：
+  - 定义 `HMPGlossaryTerm` 与 `HMP_GLOSSARY_TERMS`。
+  - 覆盖 `HMP`、`90% HMP`、`95% HMP`、`100% HMP`、巡航恢复、`105% HMP`、`107-110% HMP`、导入期、容量预算、动态配速校准、Sub-70 跑量缩放。
+  - 提供 `term_ids_for_workout()`、`term_ids_for_constraint()`、`term_ids_for_phase()` 和 `evidence_basis_for_constraint()`，把课表、阶段和安全约束映射到术语与证据摘要。
+- `half_marathon_validator.py`：
+  - `HMPlanValidationIssue` 扩展 `term_ids` 与 `evidence_basis`。
+  - `_issue()` 自动根据 `constraint_id` 与 `workout_type` 合并术语 ID，并写入证据摘要与来源文档。
+- `nodes/output_nodes.py`：
+  - HMP 协议面板新增 `glossary_terms`。
+  - `issues[]` 保留 `term_ids` 与 `evidence_basis`。
+  - 对旧格式 validation issue 提供兼容：如果上游未携带 evidence，也会按 `constraint_id` 补齐解释依据。
+- `ui/legacy_ui.py`：
+  - HMP 协议 Markdown 面板新增“术语解释”区块。
+  - 验证问题下方新增“依据”行，直接展示该 issue 的证据口径。
+
+**边界**：
+
+- 本阶段不新增训练判断规则，不改变排课器、修复器和容量预算器的行为。
+- 术语表先覆盖已进入 HMP 协议的核心术语；基石 OCR 文档末尾缺失的完整“专业术语参考表”仍需要后续回源补齐。
+- 证据摘要目前是规则层可解释口径，不伪造页码、chunk id 或未召回到的 RAG 引文。
+
+**验证**：
+
+- 新增 `tests/test_half_marathon_glossary.py`：
+  - 覆盖核心术语查询。
+  - 覆盖 `hm_100_float_intervals` 映射到 `hmp / race_specific_100 / cruise_recovery`。
+  - 覆盖 `capacity_budget_exceeded` 映射到容量预算与 Sub-70 跑量缩放。
+  - 覆盖 evidence basis 输出来源文档与解释摘要。
+- 扩展 `tests/test_half_marathon_validator.py`：
+  - 验证 validator issue 携带 `term_ids` 与 `evidence_basis`。
+- 扩展 `tests/test_half_marathon_protocol_panel.py`：
+  - 验证结构化 HMP 面板输出 `glossary_terms`。
+  - 验证共享报告渲染“术语解释”和 issue “依据”。
+
+---
+
+## 17. 稳健 RAG 工作流基线：规则骨架 + 证据包 + 审计修复
+
+### 17.1 背景与动机
+
+当前主工作流已经具备 HMP 基石协议、容量预算、专项验证器、修复执行器、RAG 健康检查和证据展示层，但 agent 编排仍存在几个系统性风险：
+
+- 会话内上一轮 `mode / draft_plan / is_approved / structured_training_plan` 等运行态字段可能影响下一轮路由。
+- `research / adaptive` 等模式在 router 后没有形成权威分支，部分路径依赖入口旧 `mode` 短路。
+- 计划生成节点会提前写入 `is_approved=True`，审计节点容易变成分数记录器，而不是独立质量门。
+- RAG 命中、协议规则、动作库模板和 Wiki 概念补充混在同一条输出链路中，后续很难判断某个结论到底来自证据、规则还是 LLM 表达。
+
+因此后续主链路应收敛为“规则负责排课，RAG 负责证据，LLM 负责表达，审计负责放行”的工作流。
+
+### 17.2 推荐工作流
+
+```mermaid
+flowchart TD
+  A["用户请求"] --> B["request_state_builder"]
+  B --> C["security_gate"]
+  C --> D["intent_router"]
+  D --> E["profile_gate"]
+  E --> F["retrieval_planner"]
+  F --> G["hybrid_retriever"]
+  G --> H["evidence_ranker"]
+  H --> I{"evidence_gate"}
+  I -- "证据或规则不足" --> J["missing_info_or_refusal"]
+  I -- "可生成" --> K["protocol_composer"]
+  K --> L["plan_validator"]
+  L --> M["repair_executor"]
+  M --> N["plan_writer"]
+  N --> O["critic_auditor"]
+  O -- "失败且可修复" --> M
+  O -- "失败不可修复" --> J
+  O -- "通过" --> P["report_formatter"]
+```
+
+### 17.3 核心状态契约
+
+每轮请求必须由 `request_state_builder` 构造新的 `WorkingState`，只允许继承：
+
+- `query`
+- `user_profile`
+- `history` 的只读摘要
+- `adaptive_feedback` 中与本轮明确相关的反馈
+- 当前知识库健康快照
+
+每轮必须重置：
+
+- `mode`
+- `intent_type`
+- `category`
+- `subtasks`
+- `draft_plan`
+- `review_feedback`
+- `is_approved`
+- `iteration_count`
+- `final_report`
+- `structured_training_plan`
+- `structured_report`
+- `rag_sources`
+- `ranked_evidence`
+- `gate_hits`
+- `missing_info_status`
+
+`mode` 不再作为入口短路依据。router 只输出 `workflow_kind`，图边只根据 `workflow_kind` 决定下一节点。
+
+### 17.4 EvidenceBundle 契约
+
+RAG 检索结果必须先归一化为不可变证据包，后续 LLM、审计和 UI 都只能引用证据包中的编号。
+
+```python
+EvidenceBundle = {
+    "query": str,
+    "evidence_items": [
+        {
+            "evidence_id": str,
+            "citation_label": "[1]",
+            "tier": "protocol_rule | action_library | kb_fallback | graph | wiki_context | plan_only",
+            "source_file": str,
+            "source_path": str,
+            "page": int | None,
+            "chunk_id": str,
+            "snippet": str,
+            "text": str,
+            "score": float,
+            "trace": dict,
+        }
+    ],
+    "health": {
+        "kb_ready": bool,
+        "source": str,
+        "chunks_count": int,
+        "faiss_ready": bool,
+    },
+}
+```
+
+证据分层规则：
+
+- `protocol_rule`：来自 HMP 基石规则、术语表、容量预算和验证器，不伪造页码或 chunk。
+- `action_library`：来自动作库直接课表证据，可支持具体主课候选。
+- `kb_fallback`：来自普通知识库，可用于解释和参考，但不应覆盖 HMP 安全约束。
+- `graph`：来自知识图谱路径，必须保留边、节点和映射依据。
+- `wiki_context`：只用于概念解释，不作为处方依据，不允许编号引用。
+- `plan_only`：来自规则骨架或模板兜底，必须在 UI 中显式标注证据等级。
+
+### 17.5 节点职责
+
+- `intent_router`：只做意图分类，输出 `qa / plan / research / adaptive / profile_update` 与 `workflow_kind`，不读取旧 `mode`。
+- `profile_gate`：检查目标、周跑量、可训练日、当前 5K/10K、疲劳伤病、恢复状态和 HMP 配速校准缺口。
+- `retrieval_planner`：根据意图生成检索 query；半马计划必须追加 HMP 术语、关键课表 ID 和安全约束 query。
+- `hybrid_retriever`：统一调用向量库、动作库、图谱和必要的 Wiki 概念检索。
+- `evidence_ranker`：去重、分层、重排、注入扫描，生成 `EvidenceBundle`。
+- `evidence_gate`：判断证据或确定性规则是否足够支撑处方级输出。
+- `protocol_composer`：半马计划优先调用 HMP 协议、画像原型、配速校准和容量预算生成结构化骨架。
+- `plan_validator`：运行 HMP 验证、周结构验证、恢复间隔验证、容量验证和输出 schema 验证。
+- `repair_executor`：最多执行 1 到 2 轮确定性修复，修复后必须复验。
+- `plan_writer`：LLM 只负责把通过验证的结构化骨架写成用户可读文本，不允许新增未验证课表。
+- `critic_auditor`：独立检查引用、证据等级、HMP 约束、输出安全和结构完整性；生成节点不得自我批准。
+- `report_formatter`：输出 `structured_report / evidence_base / training_explanation_panel / half_marathon_protocol_panel`。
+
+### 17.6 放行规则
+
+计划型请求只有在满足以下条件之一时才可进入 `plan_writer`：
+
+- 存在 HMP 或通用周期化规则骨架，且通过容量预算与安全约束。
+- 存在动作库或知识库证据，且 evidence gate 判定可支撑当前训练处方。
+- 用户请求只是整理、解释或展示已有计划，不新增处方级训练负荷。
+
+必须拒答或转为补信息：
+
+- 画像缺少最小必要字段，且 query 本身无法补足。
+- 本地知识库为空，且没有确定性规则可支撑该处方。
+- RAG 召回与用户请求主题明显不相关。
+- 审计发现引用不存在、来源路径缺失、HMP 容量超额且无法修复。
+
+### 17.7 审计与重试
+
+`is_approved` 只能由 `critic_auditor` 写入。生成节点只能返回：
+
+- `draft_ready`
+- `validation_result`
+- `repair_suggestions`
+- `fallback_reason`
+
+审计失败时：
+
+1. 如果失败原因可映射到确定性修复动作，进入 `repair_executor`。
+2. 如果修复后仍失败，进入 `missing_info_or_refusal`。
+3. 如果失败原因是引用或证据缺失，不允许 LLM 自行补写来源。
+4. 最大修复轮数建议为 2，避免隐藏复杂错误。
+
+### 17.8 与基石文档的关系
+
+HMP 基石文档不应只是 RAG 召回文本，而应作为三层资产进入工作流：
+
+- 人可读协议：`docs/half_marathon_hmp_protocol.md`
+- 机器规则层：`half_marathon_protocol.py / half_marathon_capacity_budget.py / half_marathon_validator.py / half_marathon_repair_executor.py`
+- 证据解释层：`half_marathon_glossary.py` 与 `EvidenceBundle.tier=protocol_rule`
+
+RAG 对 HMP 的主要职责是：
+
+- 给用户解释“为什么这样安排”。
+- 给动作库卡片补充可追溯课表证据。
+- 给报告保留来源、路径、页码和 chunk。
+- 当规则层无法覆盖时，明确说明证据不足，而不是让 LLM 补空。
+
+### 17.9 最小落地顺序
+
+第一步：修正跨轮状态污染。
+
+- 新增或抽取 `build_working_state()`。
+- Chainlit 和 API 共用同一份初始状态构造函数。
+- 为上一轮 `adaptive/intercepted/research` 不污染下一轮普通问题补测试。
+
+第二步：重排 router 权威分支。
+
+- router 输出 `workflow_kind`。
+- `research/adaptive/profile_update/plan/qa` 都必须在图上有明确路径。
+- 删除或限制 `gate_decision()` 对旧 `mode` 的依赖。
+
+第三步：引入 `EvidenceBundle`。
+
+- 将 `rag_sources / ranked_evidence / wiki_context` 统一折叠成证据包。
+- UI 和 prompt 都只消费证据编号。
+- `wiki_context` 不进入编号证据。
+
+第四步：拆分生成和审批。
+
+- `executor_node` 不再写 `is_approved=True`。
+- `auditor_node` 改为独立检查器。
+- 审计失败必须消费 `review_feedback` 或进入拒答/补信息。
+
+第五步：把 HMP 规则链前置为 plan 主干。
+
+- 半马计划先走协议、容量预算、验证、修复，再进入 LLM 表达。
+- `structured_training_plan` 成为真源，Markdown 只是展示。
+
+### 17.10 验证矩阵
+
+- 路由测试：
+  - 研究类问题在 Coach 入口也进入 `research` 路径。
+  - 自适应请求在普通初始态进入 `adaptive` 路径。
+  - 上一轮 `intercepted/adaptive/research` 不污染下一轮。
+- RAG 测试：
+  - 空库进入显式降级。
+  - Wiki 只作为概念上下文。
+  - 证据编号、路径、页码和 chunk 稳定透出。
+- HMP 测试：
+  - 半马计划必须带协议上下文、容量预算和验证结果。
+  - 容量超额必须修复或拒绝输出。
+  - 缺少 5K/10K 校准时速度课降级。
+- 审计测试：
+  - 生成节点不能写 `is_approved=True`。
+  - 引用不存在时审计失败。
+  - 修复最多执行 2 轮。
+- UI 测试：
+  - `protocol_rule / action_library / kb_fallback / plan_only` 证据等级可见。
+  - 缺路径时证据预览显示异常态，而不是静默消失。
+
+### 17.11 当前边界
+
+本章是后续主工作流重排的基线规格，不代表当前代码已经全部实现。当前已有 HMP 协议、验证、修复、容量预算、术语解释和 RAG 健康检查能力，后续应优先解决跨轮状态、router 分支、证据包统一和审计独立性四个问题。

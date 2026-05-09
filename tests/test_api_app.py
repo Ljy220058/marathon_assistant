@@ -53,3 +53,42 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
         "weeks": [],
     }
     assert payload["structured_report"]["training_explanation_panel"] == payload["training_explanation_panel"]
+
+
+def test_delete_plan_removes_plan_and_events(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {
+                "goal": "delete me",
+                "requested_weeks": 1,
+                "actual_weeks": 1,
+                "plan_type": "single_week",
+            },
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "base",
+                    "load_level": "easy",
+                    "days": [
+                        {"day": "Mon", "training_type": "easy", "main_set": "30 min Z2"},
+                    ],
+                }
+            ],
+        },
+        source_query="test delete",
+    )
+
+    response = client.delete(f"/plans/{plan_id}")
+
+    assert response.status_code == 200
+    assert response.json()["deleted"] is True
+    assert db.get_plan(plan_id) is None
+    assert db.list_events(plan_id) == []
+
+    response = client.delete(f"/plans/{plan_id}")
+    assert response.status_code == 404

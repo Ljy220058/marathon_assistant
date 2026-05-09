@@ -385,6 +385,23 @@ class _Database:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def delete_training_plan(self, plan_id: str) -> bool:
+        conn = self._get_conn()
+        existing = conn.execute(
+            "SELECT id FROM training_plans WHERE id = ?",
+            (plan_id,),
+        ).fetchone()
+        if not existing:
+            return False
+
+        conn.execute("DELETE FROM training_event_feedback WHERE plan_id = ?", (plan_id,))
+        conn.execute("DELETE FROM training_event_exceptions WHERE plan_id = ?", (plan_id,))
+        conn.execute("DELETE FROM training_calendar_events WHERE plan_id = ?", (plan_id,))
+        conn.execute("UPDATE sync_state SET plan_id = NULL WHERE plan_id = ?", (plan_id,))
+        conn.execute("DELETE FROM training_plans WHERE id = ?", (plan_id,))
+        conn.commit()
+        return True
+
     def list_events(self, plan_id: str) -> list:
         rows = self._get_conn().execute(
             "SELECT * FROM training_calendar_events WHERE plan_id = ? ORDER BY week_no, day_no",

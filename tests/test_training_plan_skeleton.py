@@ -129,7 +129,10 @@ def test_half_marathon_plan_uses_hmp_protocol_archetype_and_candidates():
 
     assert protocol["active"] is True
     assert protocol["selected_archetype"]["archetype_id"] == "short_build_after_marathon"
+    assert protocol["input_weekly_mileage_km"] == 58
     assert protocol["phase_sequence"][0] == "introductory"
+    assert data["half_marathon_protocol_validation"]["active"] is True
+    assert data["half_marathon_protocol_validation"]["passed"] is True
     assert any("HMP协议阶段目标" in item["objective"] for item in data["phase_summary"])
     assert "C 型" in plan.week_plans[0].week_goal
     assert any("HMP协议" in item and "候选课表" in item for item in plan.week_plans[0].key_workouts)

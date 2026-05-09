@@ -366,6 +366,24 @@ HM_SAFETY_CONSTRAINTS: Dict[str, HMSafetyConstraint] = {
         rule="target HMP and current HMP estimates should be distinguished",
         rationale="长周期中运动员即时体能会变化，死守初始目标配速会失真。",
     ),
+    "race_specific_timing": HMSafetyConstraint(
+        id="race_specific_timing",
+        label="100% HMP 核心课需靠近比赛专项期",
+        rule="100% HMP float intervals should progress mainly inside the last 6 weeks",
+        rationale="100% HMP 巡航恢复课是比赛专项高消耗课，应由 1km 段逐步推进到 2-3km 段。",
+    ),
+    "environment_or_fatigue_downgrade": HMSafetyConstraint(
+        id="environment_or_fatigue_downgrade",
+        label="环境或疲劳异常时需降级",
+        rule="heat, wind, pain, soreness or fatigue should trigger downgrade or recovery adjustment",
+        rationale="高温、强风、疼痛或明显疲劳会改变同一课表的真实负荷，不能机械执行原始强度。",
+    ),
+    "capacity_budget_exceeded": HMSafetyConstraint(
+        id="capacity_budget_exceeded",
+        label="HMP关键课容量不得超过画像预算",
+        rule="95/100/105% HMP volume should fit weekly mileage, training frequency and recovery state",
+        rationale="Sub-70 理想课表容量必须按跑者当前周跑量、可训练日和恢复状态缩放。",
+    ),
 }
 
 

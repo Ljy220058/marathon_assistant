@@ -157,3 +157,9 @@ data/
 *.log
 outputs/
 temp/
+
+# Frontend generated files
+frontend/node_modules/
+frontend/.astro/
+frontend/.npm-cache/
+frontend/dist/

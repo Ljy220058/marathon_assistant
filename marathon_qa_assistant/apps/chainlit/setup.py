@@ -7,11 +7,10 @@ from datetime import datetime, date
 from marathon_qa_assistant.core.app_state import (
     BASE_DIR,
     UPLOAD_DOCS_DIR,
-    get_preferred_vector_dir,
     global_state
 )
-from marathon_qa_assistant.core.kb_provider import KB_CHUNKS, set_kb_data
-from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve
+from marathon_qa_assistant.core.kb_bootstrap import bootstrap_knowledge_base, get_knowledge_base_health_snapshot
+from marathon_qa_assistant.core.kb_provider import KB_CHUNKS, get_kb_runtime_state
 from marathon_qa_assistant.services.input_validator import (
     IMAGE_EXTENSIONS as VALIDATOR_IMAGE_EXTS,
     DOCUMENT_EXTENSIONS as VALIDATOR_DOC_EXTS,
@@ -242,21 +241,17 @@ class KBHelper:
 def init_knowledge_base():
     """初始化全局知识库"""
     cl.logger.info("正在加载本地全局知识库 (Hybrid: TF-IDF + BM25)...")
-    try:
-        active_vector_dir = get_preferred_vector_dir()
-        chunks, vectorizer, matrix, bm25 = load_vector_kb(active_vector_dir)
-        set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
-        global_state.chunks = chunks
-        global_state.kb_chunks_len = len(chunks)
-        
-        if matrix:
-            cl.logger.info(f"全局知识库加载成功！当前目录: {active_vector_dir}")
-        else:
-            cl.logger.warning(f"全局知识库以空库模式启动（未找到 FAISS 索引）。当前目录: {active_vector_dir}")
-    except Exception as e:
-        error_msg = str(e)
-        cl.logger.error(f"全局知识库加载失败: {error_msg}")
-        set_kb_data([], None, None, retrieve)
+    report = bootstrap_knowledge_base()
+    snapshot = get_knowledge_base_health_snapshot()
+    global_state.chunks = list(get_kb_runtime_state().get("chunks") or [])
+    global_state.kb_chunks_len = int(snapshot.get("chunks_count") or 0)
+    global_state.kb_source = str(snapshot.get("source") or "unknown")
+    global_state.kb_health_reason = str(snapshot.get("reason") or "")
+
+    if report.get("ok"):
+        cl.logger.info(f"全局知识库加载成功！当前目录: {report.get('vector_dir')}")
+    else:
+        cl.logger.warning(f"全局知识库以空库模式启动：{report.get('reason')}")
 
 def _format_t_pace_for_sidebar(value) -> str:
     text = str(value or "").strip()
