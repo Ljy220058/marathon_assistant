@@ -17,6 +17,36 @@ from marathon_qa_assistant.services.workout_template_retriever import (
 from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve
 from marathon_qa_assistant.core.app_state import get_preferred_vector_dir, has_vector_kb_artifacts
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
+from marathon_qa_assistant.services.training_load import (
+    build_training_load_summary,
+    calculate_plan_training_load,
+)
+
+HMP_WORKOUT_TYPES = {
+    "hm_90_support_endurance",
+    "hm_95_long_fast_run",
+    "hm_100_float_intervals",
+    "hm_105_specific_speed",
+    "hm_110_support_speed",
+}
+
+HMP_LONG_ENDURANCE_TYPES = {
+    "long_run",
+    "progression_run",
+    "marathon_pace",
+    "tempo_run",
+    "anaerobic_threshold",
+}
+
+HMP_SPEED_TYPES = {
+    "interval_run",
+    "vo2max_interval",
+    "anaerobic_threshold",
+    "tempo_run",
+    "fartlek",
+    "hill_repeats",
+    "strides",
+}
 
 
 @dataclass
@@ -42,6 +72,10 @@ class DailyScheduleItem:
     evidence_ids: List[int] = field(default_factory=list)
     is_rest: bool = False
     notes: str = ""
+    duration_min: int = 0
+    training_load: int = 0
+    training_load_method: str = ""
+    training_load_factors: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -57,6 +91,7 @@ class MonthlyTrainingCalendar:
     days: List[DailyScheduleItem] = field(default_factory=list)
     phases: List[Dict[str, Any]] = field(default_factory=list)
     evidence_summary: Dict[str, int] = field(default_factory=dict)
+    training_load_summary: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
@@ -146,6 +181,76 @@ def _try_generate_schedule_from_kb_llm(
     }
 
 
+def _hm_protocol_candidate_ids_for_week(
+    structured_training_plan: Dict[str, Any],
+    raw_week: Dict[str, Any],
+) -> List[str]:
+    protocol = structured_training_plan.get("half_marathon_protocol") or {}
+    if not isinstance(protocol, dict) or not protocol.get("active"):
+        return []
+
+    preferred = [
+        item
+        for item in (protocol.get("preferred_workouts") or [])
+        if isinstance(item, dict) and str(item.get("id") or "") in HMP_WORKOUT_TYPES
+    ]
+    if not preferred:
+        return []
+
+    week_text_parts = [
+        raw_week.get("week_goal"),
+        *(raw_week.get("key_workouts") or []),
+        *(raw_week.get("action_suggestions") or []),
+    ]
+    week_text = " ".join(str(item or "") for item in week_text_parts)
+
+    matched = []
+    for item in preferred:
+        workout_id = str(item.get("id") or "").strip()
+        label = str(item.get("label") or "").strip()
+        if workout_id and (workout_id in week_text or (label and label in week_text)):
+            matched.append(workout_id)
+    if matched:
+        return list(dict.fromkeys(matched))
+
+    if "HMP" in week_text:
+        return []
+    return [str(item.get("id")) for item in preferred]
+
+
+def _can_project_hmp_candidate_to_day(
+    candidate_id: str,
+    workout_type: str,
+    training_type: str,
+    main_set: str,
+) -> bool:
+    if not candidate_id or candidate_id not in HMP_WORKOUT_TYPES:
+        return False
+    if workout_type in HMP_WORKOUT_TYPES:
+        return False
+    if not workout_type or workout_type == "easy_run":
+        return False
+
+    combined = f"{training_type} {main_set}"
+    if "恢复" in combined or "轻松" in combined:
+        return False
+
+    if candidate_id in {"hm_90_support_endurance", "hm_95_long_fast_run"}:
+        return workout_type in HMP_LONG_ENDURANCE_TYPES
+    if candidate_id in {"hm_100_float_intervals", "hm_105_specific_speed", "hm_110_support_speed"}:
+        return workout_type in HMP_SPEED_TYPES
+    return False
+
+
+def _merge_objective_text(*values: str) -> str:
+    parts = []
+    for value in values:
+        text = str(value or "").strip()
+        if text and text not in parts:
+            parts.append(text)
+    return "；".join(parts)
+
+
 def generate_daily_schedule(
     structured_training_plan: Dict[str, Any],
 ) -> MonthlyTrainingCalendar:
@@ -179,6 +284,8 @@ def generate_daily_schedule(
         week_days = raw_week.get("days", []) or []
         if not isinstance(week_days, list):
             continue
+        hm_week_candidate_ids = _hm_protocol_candidate_ids_for_week(structured_training_plan, raw_week)
+        hm_week_candidate_cursor = 0
 
         for day in week_days:
             if not isinstance(day, dict):
@@ -213,6 +320,10 @@ def generate_daily_schedule(
                     evidence_tier_label=EVIDENCE_TIER_LABELS["plan_only"],
                     is_rest=True,
                     notes=str(day.get("notes") or "").strip(),
+                    duration_min=0,
+                    training_load=0,
+                    training_load_method="rest_day",
+                    training_load_factors={"source": "rest day"},
                 ))
                 continue
 
@@ -220,8 +331,23 @@ def generate_daily_schedule(
                 training_type=training_type_raw,
                 main_set=main_set_raw,
             )
+            if hm_week_candidate_ids:
+                for candidate_offset in range(len(hm_week_candidate_ids)):
+                    candidate_index = (hm_week_candidate_cursor + candidate_offset) % len(hm_week_candidate_ids)
+                    candidate_id = hm_week_candidate_ids[candidate_index]
+                    if _can_project_hmp_candidate_to_day(candidate_id, workout_type, training_type_raw, main_set_raw):
+                        workout_type = candidate_id
+                        hm_week_candidate_cursor = candidate_index + 1
+                        break
 
             if not workout_type and training_type_raw:
+                load_estimate = calculate_plan_training_load(
+                    day,
+                    workout_type="",
+                    zone_range="",
+                    zone_label="",
+                    intensity_target=training_type_raw,
+                )
                 days.append(DailyScheduleItem(
                     date=f"第{week_index}周{day_label}",
                     day_label=day_label,
@@ -241,6 +367,10 @@ def generate_daily_schedule(
                     evidence_tier="plan_only",
                     evidence_tier_label=EVIDENCE_TIER_LABELS["plan_only"],
                     notes=str(day.get("notes") or "").strip(),
+                    duration_min=load_estimate.duration_min,
+                    training_load=load_estimate.training_load,
+                    training_load_method=load_estimate.method,
+                    training_load_factors=load_estimate.factors,
                 ))
                 continue
 
@@ -259,7 +389,7 @@ def generate_daily_schedule(
             evidence_tier_label = EVIDENCE_TIER_LABELS.get(evidence_tier, "基础计划")
             source = card.get("source", [])
 
-            if evidence_tier in ("plan_only", "") and workout_type:
+            if evidence_tier in ("plan_only", "") and workout_type and workout_type not in HMP_WORKOUT_TYPES:
                 kb_hits, _ = _extract_kb_evidence_for_workout(workout_type)
                 filtered_hits = _filter_kb_evidence_hits(workout_type, kb_hits)
                 fallback = _try_generate_schedule_from_kb_llm(workout_type, filtered_hits)
@@ -293,6 +423,13 @@ def generate_daily_schedule(
                 cooldown_text = f"{cooldown_text} ({cooldown_km:.1f}km)"
 
             main_set_clean = sanitize_all_pace(main_set_raw or " / ".join(card.get("main_set_candidates", [])[:3]))
+            load_estimate = calculate_plan_training_load(
+                day,
+                workout_type=workout_type,
+                zone_range=zone_range,
+                zone_label=zone_label,
+                intensity_target=intensity_target,
+            )
             days.append(DailyScheduleItem(
                 date=f"第{week_index}周{day_label}",
                 day_label=day_label,
@@ -308,12 +445,19 @@ def generate_daily_schedule(
                 warmup=warmup_text,
                 cooldown=cooldown_text,
                 alternative=sanitize_all_pace(str(day.get("alternative") or card.get("alternative_workout") or "").strip()),
-                training_objective=str(day.get("notes") or card.get("training_objective") or "").strip(),
+                training_objective=_merge_objective_text(
+                    str(day.get("notes") or ""),
+                    str(card.get("training_objective") or ""),
+                ),
                 evidence_tier=evidence_tier,
                 evidence_tier_label=evidence_tier_label,
                 source=source,
                 evidence_ids=[int(i) for i in (card.get("evidence_ids") or []) if str(i).isdigit()],
                 notes=str(day.get("notes") or "").strip(),
+                duration_min=load_estimate.duration_min,
+                training_load=load_estimate.training_load,
+                training_load_method=load_estimate.method,
+                training_load_factors=load_estimate.factors,
             ))
 
     total_days = len(days)
@@ -342,4 +486,5 @@ def generate_daily_schedule(
         days=days,
         phases=normalized_phases,
         evidence_summary=evidence_summary,
+        training_load_summary=build_training_load_summary(days),
     )

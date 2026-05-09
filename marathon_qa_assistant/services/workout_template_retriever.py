@@ -179,6 +179,154 @@ WORKOUT_TEMPLATE_REGISTRY = {
     },
 }
 
+WORKOUT_TEMPLATE_REGISTRY.update({
+    "hm_90_support_endurance": {
+        "display_name": "半马90%HMP辅助耐力跑",
+        "training_type_label": "半马辅助耐力跑（90% HMP）",
+        "aliases": [
+            "hm_90_support_endurance",
+            "90% HMP",
+            "90%HMP",
+            "半马辅助耐力",
+            "辅助耐力跑",
+            "稳定长跑",
+            "分段递进跑",
+        ],
+        "title_template": "半马90%HMP辅助耐力课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z3-Z4",
+        "intensity_target": "Z3-Z4 / 90% HMP 辅助耐力区",
+        "intensity_keywords": ["90% HMP", "90%HMP", "辅助耐力"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "中等强度长跑，后段逐步接近90% HMP",
+            "分段递进跑：86%-88%-92% HMP",
+            "稳定长跑：以90% HMP附近完成主要连续段",
+        ],
+        "training_objective": "为95% HMP长距离快速跑提供耐力支撑，建立半马专项前的稳定输出能力。",
+        "warmup_suggestion": "15-20分钟轻松跑 + 动态拉伸 + 4组短加速",
+        "cooldown_suggestion": "10-15分钟慢跑 + 下肢放松",
+        "alternative_workout": "若疲劳较高，改为Z2-Z3长距离轻松跑并保留最后4-6组短加速。",
+        "applicable_phases": ["general", "race_supportive"],
+    },
+    "hm_95_long_fast_run": {
+        "display_name": "半马95%HMP专项耐力长距离快速跑",
+        "training_type_label": "半马专项耐力长距离快速跑（95% HMP）",
+        "aliases": [
+            "hm_95_long_fast_run",
+            "95% HMP",
+            "95%HMP",
+            "长距离快速跑",
+            "半马专项耐力",
+            "long fast run",
+        ],
+        "title_template": "半马95%HMP专项耐力课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z4-Z5",
+        "intensity_target": "Z4-Z5 / 95% HMP 专项耐力区",
+        "intensity_keywords": ["95% HMP", "95%HMP", "专项耐力"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "较短95% HMP快速跑，先控制总量再递增距离",
+            "90% HMP辅助耐力 + 短95% HMP收尾",
+            "长距离快速跑：主要段接近95% HMP",
+        ],
+        "training_objective": "建立半马后程抗疲劳和接近目标配速的持续能力。",
+        "warmup_suggestion": "20分钟轻松跑 + 动态拉伸 + 4-6组加速跑",
+        "cooldown_suggestion": "10-15分钟慢跑 + 补水放松",
+        "alternative_workout": "若刚比完全马或恢复不足，降级为90% HMP稳定跑或分段递进跑。",
+        "applicable_phases": ["race_supportive", "race_specific"],
+    },
+    "hm_100_float_intervals": {
+        "display_name": "半马100%HMP核心专项巡航恢复间歇",
+        "training_type_label": "半马核心专项巡航恢复间歇（100% HMP）",
+        "aliases": [
+            "hm_100_float_intervals",
+            "100% HMP",
+            "100%HMP",
+            "巡航恢复",
+            "浮动间歇",
+            "float intervals",
+            "半马核心专项",
+        ],
+        "title_template": "半马100%HMP核心专项课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z4-Z5",
+        "intensity_target": "Z4-Z5 / 100% HMP 比赛专项区",
+        "intensity_keywords": ["100% HMP", "100%HMP", "巡航恢复"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "1km@100% HMP / 1km巡航恢复交替",
+            "2km@100% HMP / 1km巡航恢复交替",
+            "3km-2km-1km组合，恢复段保持可控巡航",
+        ],
+        "training_objective": "提升目标半马配速下的代谢效率，并训练乳酸转运和恢复段再加速能力。",
+        "warmup_suggestion": "20分钟轻松跑 + 动态拉伸 + 4-6组加速跑",
+        "cooldown_suggestion": "10-15分钟慢跑 + 拉伸",
+        "alternative_workout": "若状态不稳，改为阈值巡航间歇或缩短100% HMP累计距离。",
+        "applicable_phases": ["race_specific"],
+    },
+    "hm_105_specific_speed": {
+        "display_name": "半马105%HMP专项速度间歇",
+        "training_type_label": "半马专项速度间歇（105% HMP）",
+        "aliases": [
+            "hm_105_specific_speed",
+            "105% HMP",
+            "105%HMP",
+            "专项速度",
+            "中长间歇",
+            "8K",
+            "10K",
+        ],
+        "title_template": "半马105%HMP专项速度课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z5-Z6",
+        "intensity_target": "Z5-Z6 / 105% HMP 专项速度区",
+        "intensity_keywords": ["105% HMP", "105%HMP", "专项速度"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "500-1000m重复跑，强度约105% HMP",
+            "1200m-2km中长间歇，控制恢复质量",
+            "6-8km快速持续跑或8K/10K测试赛",
+        ],
+        "training_objective": "建立8K/10K速度储备，让目标HMP感觉更轻松。",
+        "warmup_suggestion": "15-20分钟轻松跑 + 跑姿练习 + 4组加速跑",
+        "cooldown_suggestion": "10-15分钟慢跑",
+        "alternative_workout": "若速度课压力过大，改为短法特莱克或坡跑，保留神经肌肉刺激。",
+        "applicable_phases": ["race_supportive", "race_specific"],
+    },
+    "hm_110_support_speed": {
+        "display_name": "半马107-110%HMP辅助速度训练",
+        "training_type_label": "半马辅助速度训练（107-110% HMP）",
+        "aliases": [
+            "hm_110_support_speed",
+            "107% HMP",
+            "110% HMP",
+            "107-110% HMP",
+            "辅助速度",
+            "短法特莱克",
+            "短坡跑",
+            "5K",
+        ],
+        "title_template": "半马107-110%HMP辅助速度课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z6-Z7",
+        "intensity_target": "Z6-Z7 / 107-110% HMP 辅助速度区",
+        "intensity_keywords": ["107% HMP", "110% HMP", "辅助速度"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "35-45分钟混合法特莱克",
+            "400-1000m短间歇，累计6-7km以内",
+            "短坡冲或1-2分钟短法特莱克",
+        ],
+        "training_objective": "发展VO2max、速度上限、乳酸转运和乳酸氧化能力。",
+        "warmup_suggestion": "15-20分钟轻松跑 + 动态拉伸 + 技术跑 drills",
+        "cooldown_suggestion": "10-15分钟慢跑 + 小腿和髋部放松",
+        "alternative_workout": "若疲劳或5K能力不足，降低到105% HMP附近或改为坡冲。",
+        "applicable_phases": ["general", "race_supportive"],
+    },
+})
+
 _ACTION_LIBRARY_SOURCE = "动作库.pdf"
 
 EVIDENCE_TIER_LABELS = {
@@ -205,6 +353,14 @@ WORKOUT_TYPE_KEYWORD_MAP = {
     "hill_repeats": ["坡道跑", "坡道", "Hill"],
     "strides": ["短冲", "加速跑"],
 }
+
+WORKOUT_TYPE_KEYWORD_MAP.update({
+    "hm_90_support_endurance": ["hm_90_support_endurance", "90% HMP", "90%HMP", "半马辅助耐力", "辅助耐力跑"],
+    "hm_95_long_fast_run": ["hm_95_long_fast_run", "95% HMP", "95%HMP", "长距离快速跑", "半马专项耐力"],
+    "hm_100_float_intervals": ["hm_100_float_intervals", "100% HMP", "100%HMP", "巡航恢复", "浮动间歇"],
+    "hm_105_specific_speed": ["hm_105_specific_speed", "105% HMP", "105%HMP", "专项速度", "8K/10K"],
+    "hm_110_support_speed": ["hm_110_support_speed", "107-110% HMP", "110% HMP", "107% HMP", "辅助速度"],
+})
 
 
 def build_workout_template_query(workout_type: str) -> str:
@@ -244,6 +400,8 @@ def build_daily_workout_template_card_from_hits(
 
     relevant_hits = _select_relevant_action_library_hits(normalized_type, hits or [])
     if not relevant_hits:
+        if registry_entry.get("extractor") == "protocol":
+            return _build_protocol_template_card(normalized_type, day, registry_entry)
         return _empty_card(
             workout_type,
             day,
@@ -307,6 +465,43 @@ def build_daily_workout_template_card_from_hits(
             "alternative_workout": "direct" if alternative else "missing",
         },
         evidence=evidence,
+    )
+    return card.to_dict()
+
+
+def _build_protocol_template_card(
+    workout_type: str,
+    day: str,
+    registry_entry: Dict[str, Any],
+) -> Dict[str, Any]:
+    title_prefix = f"{day}｜" if str(day or "").strip() else ""
+    main_set_candidates = [
+        str(item)
+        for item in registry_entry.get("main_set_candidates", [])
+        if str(item or "").strip()
+    ][:6]
+    card = DailyWorkoutTemplateCard(
+        title=f"{title_prefix}{registry_entry.get('title_template', registry_entry.get('display_name', workout_type))}",
+        workout_type=workout_type,
+        training_type=registry_entry.get("training_type_label", ""),
+        source=["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        main_set_candidates=main_set_candidates,
+        intensity_target=registry_entry.get("intensity_target", ""),
+        zone_range=registry_entry.get("zone_range", ""),
+        training_objective=registry_entry.get("training_objective", ""),
+        warmup_suggestion=registry_entry.get("warmup_suggestion", ""),
+        cooldown_suggestion=registry_entry.get("cooldown_suggestion", ""),
+        alternative_workout=registry_entry.get("alternative_workout", ""),
+        evidence_tier="plan_only",
+        evidence_status={
+            "main_set_candidates": "protocol" if main_set_candidates else "missing",
+            "intensity_target": "protocol" if registry_entry.get("intensity_target") else "missing",
+            "training_objective": "protocol" if registry_entry.get("training_objective") else "missing",
+            "warmup_suggestion": "protocol" if registry_entry.get("warmup_suggestion") else "missing",
+            "cooldown": "protocol" if registry_entry.get("cooldown_suggestion") else "missing",
+            "alternative_workout": "protocol" if registry_entry.get("alternative_workout") else "missing",
+            "reason": "半马HMP协议确定性模板，等待后续知识库证据增强。",
+        },
     )
     return card.to_dict()
 

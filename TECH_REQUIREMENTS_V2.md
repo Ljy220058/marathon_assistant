@@ -697,3 +697,105 @@ Chainlit 端计划生成存在两个体验缺陷：
 - `apps/chainlit/logic.py` 中的 `_send_calendar_sync_actions` 替换为 `_send_saved_plan_browse_action`，Google Calendar 授权/同步按钮替换为本地"查看已保存计划"和"查看训练日历"按钮。
 - Google Calendar 回调代码（`authorize_google_calendar`、`sync_to_google_calendar`、`revoke_google_calendar`）保留在 `actions.py` 中，仅从 UI 入口移除；`google_calendar_provider.py` 保持完整，后续可重新激活。
 
+---
+
+## 16. 半马 HMP 百分比训练核心协议（第一阶段）
+
+### 16.1 背景与动机
+
+`Sub-70半程马拉松训练_图片OCR整理.md` 被确定为半马训练计划制定的核心资料。该资料的价值不在于让系统照搬 Sub-70 跑者的 70-90 英里/周跑量，而在于提供一套围绕目标半马配速（HMP）的百分比训练方法、阶段化构建逻辑、跑者画像个性化策略和关键课表进阶原则。
+
+为避免仅依赖 RAG 检索导致计划生成不稳定，本阶段先将该资料沉淀为“人可读协议 + 机器可读规则层”，暂不强制接入主训练计划生成链路。
+
+### 16.2 实现方法
+
+- **核心协议文档**：新增 `docs/half_marathon_hmp_protocol.md`，定义 HMP 百分比区间、阶段模型、跑者画像原型、关键课表库、进阶规则和安全约束。
+- **机器规则模块**：新增 `marathon_qa_assistant/core/half_marathon_protocol.py`，提供：
+  - `HMP_ZONES`：55%、60-70%、75-85%、90%、95%、100%、105%、107-110% HMP 区间定义。
+  - `HM_PHASE_RULES`：导入期、基础阶段、专项能力构建阶段、比赛专项阶段。
+  - `RUNNER_ARCHETYPE_RULES`：A/B/C/D 四类跑者原型及通用半马跑者兜底。
+  - `HM_WORKOUT_RULES`：95% 长距离快速跑、100% 巡航恢复间歇、105% 专项速度、110% 辅助速度等关键课表规则。
+  - `HM_SAFETY_CONSTRAINTS`：不得照搬 Sub-70 跑量、刚比完全马需导入、关键课恢复间隔、长距离快速跑进阶、HMP 动态校准等约束。
+  - 配速换算、跑者原型推荐、阶段序列选择和协议摘要导出函数。
+- **自动化测试**：新增 `tests/test_half_marathon_protocol.py`，覆盖 HMP 百分比配速换算、配速区间表、跑者画像识别、阶段序列选择和协议摘要完整性。
+
+### 16.3 组间实现方法说明
+
+- `docs/half_marathon_hmp_protocol.md` 作为训练规划产品与教练逻辑的“训练宪法”，供后续评审和迭代对齐。
+- `half_marathon_protocol.py` 作为确定性规则层，后续可被 `training_plan_skeleton.py`、`workout_template_retriever.py` 和计划校验器逐步调用。
+- RAG 证据层继续负责解释“为什么这样安排”，但半马关键约束不应只依赖召回文本，而应由规则层兜底。
+
+### 16.4 当前边界
+
+- 当前阶段尚未修改 `training_plan_skeleton.py` 主生成逻辑。
+- 当前阶段尚未将新增课表 ID 注册到 `WORKOUT_TEMPLATE_REGISTRY`。
+- 当前阶段尚未把半马专项校验接入 `validate_full_training_plan()`。
+- 后续接入应分阶段完成：先用协议层影响阶段目标和课表候选，再接入模板库，最后加入计划验证器。
+
+### 16.5 第二阶段接入：半马计划骨架读取 HMP 协议
+
+**目标**：当训练目标被识别为半马时，`training_plan_skeleton.py` 在生成周计划前先调用 `half_marathon_protocol.py`，完成跑者画像原型识别，再把 HMP 协议阶段目标和关键课表候选写入结构化输出。
+
+**实现方法**：
+
+- `training_plan_skeleton.py` 新增半马协议上下文构建：
+  - 根据 `goal` 识别半马目标后启用。
+  - 从 `profile` 中读取 `recent_marathon / training_background / race_history / strengths / weaknesses / injury_or_fatigue` 等字段。
+  - 调用 `recommend_archetypes()` 选择 A/B/C/D 或通用半马原型。
+  - 调用 `select_phase_sequence()` 和 `workout_rules_for_archetype()` 决定阶段序列与关键课表候选。
+- `phase_summary[].objective` 追加 `HMP协议阶段目标`，让阶段目标从普通周期化目标升级为半马专项目标。
+- `week_plans[].week_goal` 追加本周 HMP 协议说明，包括协议阶段、跑者画像和候选课表。
+- `week_plans[].key_workouts` 与 `action_suggestions` 增加 HMP 协议候选信息，后续 UI 或详细计划生成器可读取。
+- `plan_dict["half_marathon_protocol"]` 输出完整协议上下文，包含：
+  - `selected_archetype`
+  - `archetype_candidates`
+  - `phase_sequence`
+  - `preferred_workouts`
+
+**边界**：
+
+- 当前阶段仍不改变 `WORKOUT_TEMPLATE_REGISTRY`，候选课表先作为协议候选输出，不作为每日模板卡强制渲染。
+- 当前阶段不强行覆盖每日训练课主项，避免破坏基础期“不出高强度间歇/VO2/无氧阈”的安全约束。
+- 非半马计划不输出 `half_marathon_protocol`，全马和通用计划保持原逻辑。
+
+**验证**：
+
+- `tests/test_training_plan_skeleton.py` 新增半马协议接入测试，覆盖刚比完全马场景下识别为 C 型，并输出 HMP 协议候选。
+- 更新半马/全马差异测试：半马计划应输出 HMP 协议候选，全马计划不输出。
+- 本轮通过：
+  - `python -m py_compile marathon_qa_assistant\core\training_plan_skeleton.py marathon_qa_assistant\core\half_marathon_protocol.py tests\test_training_plan_skeleton.py`
+  - `python -m pytest tests/test_half_marathon_protocol.py tests/test_training_plan_skeleton.py tests/test_volume_allocation.py`
+
+### 16.6 第三阶段接入：HMP 协议课表进入模板注册表与每日课表层
+
+**目标**：让第二阶段输出的半马 HMP 候选课表不再停留在周计划说明中，而是进入 `WORKOUT_TEMPLATE_REGISTRY` 和 `daily_schedule_generator.py`，成为每日课表卡可以消费的结构化模板。
+
+**实现方法**：
+
+- `workout_template_retriever.py` 注册 5 类半马专项 HMP 模板：
+  - `hm_90_support_endurance`：90% HMP 辅助耐力。
+  - `hm_95_long_fast_run`：95% HMP 专项耐力长距离快速跑。
+  - `hm_100_float_intervals`：100% HMP 巡航恢复间歇。
+  - `hm_105_specific_speed`：105% HMP 专项速度。
+  - `hm_110_support_speed`：107-110% HMP 辅助速度。
+- 每个 HMP 模板补齐结构化字段：`zone_range`、`intensity_target`、`main_set_candidates`、`training_objective`、`warmup_suggestion`、`cooldown_suggestion`、`alternative_workout` 与适用阶段。
+- `normalize_workout_type_for_template()` 支持通过课表 ID、`90% HMP / 95% HMP / 100% HMP / 105% HMP / 107-110% HMP` 和中文关键词识别半马专项模板。
+- `build_daily_workout_template_card_from_hits()` 对 `extractor="protocol"` 的 HMP 模板提供确定性 `plan_only` 卡片；这些卡片来自 HMP 协议层，后续可再由 RAG 证据增强，但不依赖召回才能生成。
+- `daily_schedule_generator.py` 在 `half_marathon_protocol.active=True` 时读取每周 `key_workouts / action_suggestions / week_goal` 中的候选课表，只把匹配到的 HMP 候选温和投射到合适的质量训练日：
+  - 90/95% HMP 只投射到长距离、渐进、配速、阈值等耐力型质量日。
+  - 100/105/107-110% HMP 只投射到间歇、VO2、阈值、法特莱克、坡道、短冲等速度型质量日。
+  - 保留原始 `training_type` 与 `main_set`，只增强 `workout_type`、强度目标、训练目标和替代方案。
+
+**边界**：
+
+- 第三阶段仍不直接重写 `training_plan_skeleton.py` 的每日主课安排。
+- 若某周 HMP 说明处于导入期，且没有匹配到已注册的 HMP 专项模板，日历层不会把后期 95/100% HMP 课表提前投射进去。
+- HMP 协议模板默认保持 `plan_only` 证据等级，表示它来自确定性协议而非动作库直接证据；后续 RAG/UI 阶段再展示更细的证据链。
+
+**验证**：
+
+- `tests/test_daily_schedule_generator.py` 新增覆盖：
+  - HMP 模板注册与归一化识别。
+  - HMP 协议模板无检索命中时仍能生成结构化卡片。
+  - 半马协议候选能投射到合适质量训练日且保留原始主课。
+  - 导入期未匹配候选不会提前投射 95% HMP 高风险课表。

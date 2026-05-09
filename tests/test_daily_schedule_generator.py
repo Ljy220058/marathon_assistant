@@ -81,6 +81,26 @@ def test_normalize_workout_type_for_all_registry_types():
         assert result == expected, f"normalize_workout_type_for_template({training_type!r}, {main_set!r}) = {result!r}, expected {expected!r}"
 
 
+def test_hmp_protocol_templates_are_registered_and_normalized():
+    hmp_cases = [
+        ("hm_90_support_endurance", "90% HMP 辅助耐力跑"),
+        ("hm_95_long_fast_run", "95% HMP 长距离快速跑"),
+        ("hm_100_float_intervals", "100% HMP 巡航恢复间歇"),
+        ("hm_105_specific_speed", "105% HMP 专项速度"),
+        ("hm_110_support_speed", "107-110% HMP 辅助速度"),
+    ]
+    for workout_id, main_set in hmp_cases:
+        assert workout_id in WORKOUT_TEMPLATE_REGISTRY
+        assert normalize_workout_type_for_template("半马专项训练", main_set) == workout_id
+
+        card = build_daily_workout_template_card_from_hits(workout_id, day="周二", hits=[])
+        assert card["workout_type"] == workout_id
+        assert card["evidence_tier"] == "plan_only"
+        assert card["main_set_candidates"]
+        assert "HMP" in card["intensity_target"]
+        assert card["training_objective"]
+
+
 # ==================== 证据分层回退测试 ====================
 
 def test_kb_fallback_generates_partial_schedule_when_other_kb_has_evidence():
@@ -216,6 +236,73 @@ def test_monthly_calendar_handles_missing_workout_types():
     custom_day = calendar.days[1]
     assert custom_day.evidence_tier == "plan_only"
     assert custom_day.evidence_tier_label == "基础计划"
+
+
+def test_monthly_calendar_projects_hmp_candidate_to_quality_day():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "preferred_workouts": [
+                {
+                    "id": "hm_95_long_fast_run",
+                    "label": "半马95%HMP专项耐力长距离快速跑",
+                },
+            ],
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "week_goal": "HMP协议：比赛专项期",
+                "key_workouts": ["HMP协议：候选课表=半马95%HMP专项耐力长距离快速跑"],
+                "days": [
+                    {"day": "周一", "training_type": "休息", "main_set": ""},
+                    {"day": "周日", "training_type": "长距离", "main_set": "18km 渐进跑", "notes": "保留原始主课。"},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan)
+    quality_day = calendar.days[1]
+
+    assert quality_day.workout_type == "hm_95_long_fast_run"
+    assert quality_day.training_type == "长距离"
+    assert quality_day.main_set == "18km 渐进跑"
+    assert "95% HMP" in quality_day.intensity_target
+    assert "半马后程抗疲劳" in quality_day.training_objective
+
+
+def test_monthly_calendar_does_not_project_unmatched_intro_hmp_note():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "preferred_workouts": [
+                {
+                    "id": "hm_intro_fartlek_hills",
+                    "label": "导入期法特莱克/坡跑",
+                },
+                {
+                    "id": "hm_95_long_fast_run",
+                    "label": "半马95%HMP专项耐力长距离快速跑",
+                },
+            ],
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "week_goal": "HMP协议：导入期",
+                "key_workouts": ["HMP协议：候选课表=导入期法特莱克/坡跑"],
+                "days": [
+                    {"day": "周二", "training_type": "间歇跑", "main_set": "6x400m"},
+                    {"day": "周日", "training_type": "长距离", "main_set": "14km轻松跑"},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan)
+
+    assert all(day.workout_type != "hm_95_long_fast_run" for day in calendar.days)
 
 
 # ==================== 结构化报告包含新字段测试 ====================

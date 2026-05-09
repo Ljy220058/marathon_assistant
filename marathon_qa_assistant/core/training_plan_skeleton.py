@@ -11,6 +11,13 @@ from marathon_qa_assistant.core.periodization import (
     compute_week_volume_factor,
     resolve_4week_blocks,
 )
+from marathon_qa_assistant.core.half_marathon_protocol import (
+    HM_PHASE_RULES,
+    RunnerArchetypeInput,
+    recommend_archetypes,
+    select_phase_sequence,
+    workout_rules_for_archetype,
+)
 from marathon_qa_assistant.core.training_plan_context import align_plan_duration_context
 from marathon_qa_assistant.core.training_plan_models import (
     DayPlan,
@@ -444,6 +451,174 @@ def _goal_strategy_label(race_type: str) -> str:
     if race_type == "marathon":
         return "全马目标：首周以有氧耐力和渐进长距离为主，质量课避免过早堆高强度。"
     return "通用目标：首周以建立稳定训练节奏为主。"
+
+
+def _profile_text(profile: Dict[str, Any], *keys: str) -> str:
+    return " ".join(str(profile.get(key) or "") for key in keys)
+
+
+def _profile_flag(profile: Dict[str, Any], *keys: str) -> bool:
+    for key in keys:
+        value = profile.get(key)
+        if isinstance(value, bool):
+            if value:
+                return True
+            continue
+        if isinstance(value, (int, float)) and value:
+            return True
+        text = str(value or "").strip().lower()
+        if text in {"true", "yes", "y", "1", "是", "有", "刚比完", "刚完成"}:
+            return True
+    return False
+
+
+def _build_hm_archetype_input(profile: Dict[str, Any], total_weeks: int) -> RunnerArchetypeInput:
+    background = _profile_text(
+        profile,
+        "training_background",
+        "background",
+        "running_background",
+        "race_history",
+        "recent_race",
+        "strengths",
+        "weaknesses",
+    ).lower()
+    recent_text = _profile_text(profile, "recent_race", "last_race", "race_history")
+    strengths = _profile_text(profile, "strengths", "advantage", "runner_strength").lower()
+    weaknesses = _profile_text(profile, "weaknesses", "limitation", "runner_weakness").lower()
+
+    recent_marathon = (
+        _profile_flag(profile, "recent_marathon", "just_ran_marathon", "recent_full_marathon")
+        or ("全马" in recent_text and any(token in recent_text for token in ("刚", "最近", "完成", "赛后")))
+        or ("marathon" in recent_text.lower() and any(token in recent_text.lower() for token in ("recent", "just", "last")))
+    )
+    endurance_background = any(token in background for token in ("越野", "超马", "ultra", "trail"))
+    marathon_background = any(token in background for token in ("全马", "马拉松", "marathon"))
+    long_training_gap = (
+        _profile_flag(profile, "long_training_gap", "training_gap", "detrained")
+        or any(token in background for token in ("久疏", "停训", "中断", "无系统训练", "gap", "detrained"))
+    )
+    middle_distance_background = any(token in background for token in ("1500", "3000", "5000", "5k", "中距离"))
+    speed_strength = (
+        _profile_flag(profile, "speed_strength", "speed_based")
+        or any(token in strengths for token in ("速度", "短距离", "5k", "1500", "speed"))
+    )
+    half_marathon_experience_low = (
+        _profile_flag(profile, "half_marathon_experience_low", "first_half_marathon")
+        or any(token in weaknesses for token in ("半马经验少", "耐力不足", "长距离不足"))
+    )
+    injury_or_fatigue = (
+        _profile_flag(profile, "injury_or_fatigue", "injury", "fatigue")
+        or any(token in background for token in ("伤", "疲劳", "酸痛", "injury", "fatigue"))
+    )
+
+    return RunnerArchetypeInput(
+        recent_marathon=recent_marathon,
+        build_weeks=total_weeks,
+        endurance_background=endurance_background,
+        marathon_background=marathon_background,
+        long_training_gap=long_training_gap,
+        middle_distance_background=middle_distance_background,
+        speed_strength=speed_strength,
+        half_marathon_experience_low=half_marathon_experience_low,
+        weekly_mileage_km=float(profile.get("weekly_mileage") or 0) or None,
+        injury_or_fatigue=injury_or_fatigue,
+    )
+
+
+def _build_hm_protocol_context(profile: Dict[str, Any], total_weeks: int, race_type: str) -> Dict[str, Any]:
+    if race_type != "half_marathon":
+        return {"active": False}
+    archetype_input = _build_hm_archetype_input(profile, total_weeks)
+    decisions = recommend_archetypes(archetype_input)
+    primary = decisions[0]
+    preferred_rules = workout_rules_for_archetype(primary.archetype_id)
+    return {
+        "active": True,
+        "recent_marathon": archetype_input.recent_marathon,
+        "selected_archetype": primary.to_dict(),
+        "archetype_candidates": [decision.to_dict() for decision in decisions],
+        "phase_sequence": select_phase_sequence(total_weeks, recent_marathon=archetype_input.recent_marathon),
+        "preferred_workouts": [rule.to_dict() for rule in preferred_rules],
+    }
+
+
+def _hm_protocol_phase_id(
+    mesocycle: Mesocycle,
+    week_index: int,
+    total_weeks: int,
+    hm_protocol_context: Optional[Dict[str, Any]],
+) -> Optional[str]:
+    if not hm_protocol_context or not hm_protocol_context.get("active"):
+        return None
+    phase_family = _phase_family(mesocycle.name)
+    week_in_phase = week_index - mesocycle.start_week + 1
+    if hm_protocol_context.get("recent_marathon") and mesocycle.start_week == 1 and week_in_phase <= min(2, mesocycle.weeks):
+        return "introductory"
+    if phase_family in {"base", "base_1", "base_2"}:
+        return "general"
+    if phase_family in {"build", "build_1", "build_2"}:
+        return "race_supportive"
+    if phase_family in {"peak", "taper"}:
+        return "race_specific"
+    sequence = hm_protocol_context.get("phase_sequence") or []
+    return sequence[-1] if sequence else None
+
+
+def _hm_protocol_workout_candidates(
+    hm_protocol_context: Optional[Dict[str, Any]],
+    phase_id: Optional[str],
+) -> List[Dict[str, Any]]:
+    if not hm_protocol_context or not hm_protocol_context.get("active") or not phase_id:
+        return []
+    phase_rule = HM_PHASE_RULES.get(phase_id)
+    preferred = list(hm_protocol_context.get("preferred_workouts") or [])
+    if not phase_rule:
+        return preferred[:2]
+    phase_zones = set(phase_rule.preferred_zones)
+    matched = [
+        workout
+        for workout in preferred
+        if str(workout.get("primary_zone") or "") in phase_zones
+    ]
+    return (matched or preferred)[:2]
+
+
+def _hm_protocol_week_note(
+    mesocycle: Mesocycle,
+    week_index: int,
+    total_weeks: int,
+    hm_protocol_context: Optional[Dict[str, Any]],
+) -> str:
+    phase_id = _hm_protocol_phase_id(mesocycle, week_index, total_weeks, hm_protocol_context)
+    if not phase_id:
+        return ""
+    phase_rule = HM_PHASE_RULES.get(phase_id)
+    selected = (hm_protocol_context or {}).get("selected_archetype") or {}
+    candidates = _hm_protocol_workout_candidates(hm_protocol_context, phase_id)
+    candidate_labels = "、".join(str(item.get("label") or item.get("id")) for item in candidates)
+    parts = [
+        f"HMP协议：{phase_rule.label if phase_rule else phase_id}",
+        f"画像={selected.get('label')}",
+    ]
+    if candidate_labels:
+        parts.append(f"候选课表={candidate_labels}")
+    return "；".join(part for part in parts if part)
+
+
+def _build_phase_objective_with_hm_protocol(
+    mesocycle: Mesocycle,
+    base_objective: str,
+    total_weeks: int,
+    hm_protocol_context: Optional[Dict[str, Any]],
+) -> str:
+    phase_id = _hm_protocol_phase_id(mesocycle, mesocycle.start_week, total_weeks, hm_protocol_context)
+    if not phase_id:
+        return base_objective
+    phase_rule = HM_PHASE_RULES.get(phase_id)
+    if not phase_rule:
+        return base_objective
+    return f"{base_objective}；HMP协议阶段目标：{phase_rule.objective}"
 
 
 def _build_quality_session(
@@ -1136,13 +1311,20 @@ def build_structured_training_plan_skeleton(
     macrocycle = _resolve_macrocycle(aligned_profile, total_weeks)
     base_weekly_mileage = float(aligned_profile.get("weekly_mileage") or 40.0)
     blocks = resolve_4week_blocks(total_weeks, base_weekly_mileage)
+    race_type = _resolve_goal_race_type(aligned_profile.get("goal"))
+    hm_protocol_context = _build_hm_protocol_context(aligned_profile, total_weeks, race_type)
 
     phase_summary = [
         PhaseBlock(
             phase=mesocycle.name,
             start_week=mesocycle.start_week,
             end_week=mesocycle.end_week,
-            objective=mesocycle.goal,
+            objective=_build_phase_objective_with_hm_protocol(
+                mesocycle,
+                mesocycle.goal,
+                total_weeks,
+                hm_protocol_context,
+            ),
         )
         for mesocycle in macrocycle.mesocycles
     ]
@@ -1157,10 +1339,14 @@ def build_structured_training_plan_skeleton(
         phase_weeks = mesocycle.weeks
         key_workouts = _build_key_workouts(days)
         action_suggestions = _build_week_action_suggestions(week_index, mesocycle, available_days, days)
+        hm_week_note = _hm_protocol_week_note(mesocycle, week_index, total_weeks, hm_protocol_context)
+        if hm_week_note:
+            key_workouts.append(hm_week_note)
+            action_suggestions = [hm_week_note] + action_suggestions
         week_plan = WeekPlan(
             week_index=week_index,
             phase=mesocycle.name,
-            week_goal=f"第{week_index}周聚焦{mesocycle.goal}；{_goal_strategy_label(_resolve_goal_race_type(aligned_profile.get('goal')))}",
+            week_goal=f"第{week_index}周聚焦{mesocycle.goal}；{_goal_strategy_label(race_type)}" + (f"；{hm_week_note}" if hm_week_note else ""),
             load_level=_phase_to_load_level(mesocycle.name, week_in_phase, phase_weeks),
             load_progression_note=(
                 f"第{week_index}周位于{mesocycle.name}第{week_in_phase}/{phase_weeks}周，"
@@ -1190,6 +1376,8 @@ def build_structured_training_plan_skeleton(
         first_week_actions=_build_first_week_actions(week_plans[0]) if week_plans else [],
     )
     plan_dict = plan.to_dict()
+    if hm_protocol_context.get("active"):
+        plan_dict["half_marathon_protocol"] = hm_protocol_context
     if weekly_structure_constraints.get("required_workouts") or weekly_structure_constraints.get("forbidden_workouts") or weekly_structure_constraints.get("required_rest_days") or weekly_structure_constraints.get("weekly_frequency"):
         plan_dict["weekly_structure_constraints"] = weekly_structure_constraints
         plan_dict["weekly_structure_validation"] = _validate_weekly_structure_constraints(plan_dict, weekly_structure_constraints)

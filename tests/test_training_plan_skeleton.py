@@ -1,10 +1,46 @@
 import sys
+import types
 from pathlib import Path
 
 
 root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
+
+
+if "langchain_community.vectorstores" not in sys.modules:
+    fake_langchain_community = types.ModuleType("langchain_community")
+    fake_vectorstores = types.ModuleType("langchain_community.vectorstores")
+
+    class _FakeFAISS:
+        pass
+
+    fake_vectorstores.FAISS = _FakeFAISS
+    sys.modules["langchain_community"] = fake_langchain_community
+    sys.modules["langchain_community.vectorstores"] = fake_vectorstores
+
+if "langchain_ollama" not in sys.modules:
+    fake_langchain_ollama = types.ModuleType("langchain_ollama")
+
+    class _FakeOllamaEmbeddings:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    fake_langchain_ollama.OllamaEmbeddings = _FakeOllamaEmbeddings
+    sys.modules["langchain_ollama"] = fake_langchain_ollama
+
+if "langchain_core.documents" not in sys.modules:
+    fake_langchain_core = types.ModuleType("langchain_core")
+    fake_documents = types.ModuleType("langchain_core.documents")
+
+    class _FakeDocument:
+        def __init__(self, page_content="", metadata=None):
+            self.page_content = page_content
+            self.metadata = metadata or {}
+
+    fake_documents.Document = _FakeDocument
+    sys.modules["langchain_core"] = fake_langchain_core
+    sys.modules["langchain_core.documents"] = fake_documents
 
 
 from marathon_qa_assistant.core.training_plan_models import (
@@ -70,6 +106,37 @@ def test_build_structured_training_plan_skeleton_outputs_valid_four_week_plan():
     assert all(week.action_suggestions for week in plan.week_plans)
 
 
+def test_half_marathon_plan_uses_hmp_protocol_archetype_and_candidates():
+    data = build_structured_training_plan_skeleton(
+        query="请给我制定8周半马训练计划，我刚比完全马，想转入半马专项。",
+        profile={
+            "goal": "半马 90 分",
+            "experience_level": "进阶",
+            "weekly_mileage": 58,
+            "t_pace": "4:00/km",
+            "target_race_date": "8周后",
+            "plan_duration_weeks": 8,
+            "available_days": "周二,周四,周日",
+            "max_session_minutes": 100,
+            "recent_marathon": True,
+            "training_background": "全马背景，刚完成一场马拉松",
+        },
+        requested_weeks=8,
+    )
+
+    plan = _plan_from_dict(data)
+    protocol = data["half_marathon_protocol"]
+
+    assert protocol["active"] is True
+    assert protocol["selected_archetype"]["archetype_id"] == "short_build_after_marathon"
+    assert protocol["phase_sequence"][0] == "introductory"
+    assert any("HMP协议阶段目标" in item["objective"] for item in data["phase_summary"])
+    assert "C 型" in plan.week_plans[0].week_goal
+    assert any("HMP协议" in item and "候选课表" in item for item in plan.week_plans[0].key_workouts)
+    assert any("HMP协议" in item for item in plan.week_plans[0].action_suggestions)
+    assert validate_full_training_plan(plan) == []
+
+
 def test_build_structured_training_plan_skeleton_supports_twenty_four_weeks_without_adjacent_failures():
     data = build_structured_training_plan_skeleton(
         query="请给我制定24周全马训练计划。",
@@ -127,9 +194,9 @@ def test_goal_race_type_changes_first_week_structure_and_long_run_strategy():
 
     assert "半马目标" in half_week["week_goal"]
     assert "全马目标" in marathon_week["week_goal"]
-    assert half_week["key_workouts"][0] != marathon_week["key_workouts"][0]
-    assert "无氧阈跑" in half_week["key_workouts"][0]
-    assert "马拉松配速跑" in marathon_week["key_workouts"][0]
+    assert "half_marathon_protocol" in half_data
+    assert any("HMP协议" in item and "候选课表" in item for item in half_week["key_workouts"])
+    assert not any("HMP协议" in item for item in marathon_week["key_workouts"])
     assert "半马专项" in half_long_run["main_set"]
     assert "补给" in marathon_long_run["main_set"]
     assert half_long_run["main_set"] != marathon_long_run["main_set"]
