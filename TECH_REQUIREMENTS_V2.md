@@ -1383,3 +1383,286 @@ RAG 对 HMP 的主要职责是：
 ### 17.11 当前边界
 
 本章是后续主工作流重排的基线规格，不代表当前代码已经全部实现。当前已有 HMP 协议、验证、修复、容量预算、术语解释和 RAG 健康检查能力，后续应优先解决跨轮状态、router 分支、证据包统一和审计独立性四个问题。
+
+### 17.12 第十七阶段闭环修复记录
+
+本阶段实现目标是先闭合主工作流，而不是新增训练处方规则。实现边界如下：
+
+- `WorkingState`：通过 `build_working_state` 为每轮 API 请求构造干净状态，重置 `mode`、`workflow_kind`、草稿、审批标记、审计分数、证据包和修复计数，只继承用户画像、必要历史和自适应反馈。
+- `workflow_kind`：router 显式输出 `qa / plan / research / adaptive / profile_update`，图路由优先使用 `workflow_kind`，`mode` 仅保留为兼容字段。
+- `EvidenceBundle`：新增统一证据包，将 `ranked_evidence`、`rag_sources` 和 HMP `protocol_rule` 证据合并并统一编号；formatter 的 `evidence_base` 优先从证据包生成。
+- `critic_auditor`：主图节点统一改为 `critic_auditor`；`executor_node` 和 `security_gate_node` 不再写入 `is_approved`；审批只由独立审计节点决定。
+- 审计闭环：`executor -> critic_auditor -> formatter / executor`；非计划分支统一经 `therapist -> critic_auditor`，失败后按 `workflow_kind` 回到对应生成节点，最多修复 2 轮。
+- HMP 优先级：半马基石规则仍是机器规则层，证据包中的 `protocol_rule` 只用于解释和审计追踪，RAG 不得覆盖 HMP 安全约束。
+
+当前不把 Chainlit 作为现行前端入口改造对象；涉及前端渲染和交互联调时，需要先确认真实前端入口。
+
+### 17.13 Astro 计划生成重建
+
+当前真实前端入口是 Astro，不是 Chainlit。训练计划生成这条链路已经改为“骨架先返回、后端补全”的两段式工作流，目的是避免页面长时间停留在“正在请求后端生成训练建议...”。
+
+- 前端契约：Astro 在请求 `/query` 时显式携带 `llm_provider / llm_model / ds_api_key / timeout_sec / response_mode`，并提供取消按钮与超时状态提示。
+- 后端契约：`/query` 入口接受上述字段，并将 `llm_provider` 归一为 `ollama` 或 `ds`；`llm_model` 优先使用请求传入值，其次回退到环境默认模型。
+- 骨架模式：当 query 命中训练计划意图且 `response_mode=skeleton` 时，后端直接返回确定性的 `structured_training_plan` 骨架、`generation_status=skeleton_ready`、`generation_timings` 和可保存的 `training_plan_id`，不等待完整 LLM 工作流。
+- 轻响应边界：骨架模式不得调用 `formatter_node`，但必须同步返回轻量 `monthly_training_calendar / daily_schedule_cards`；这些日卡只消费结构化规则、HMP 基石协议和动作库注册表，不触发完整 LLM 解释链路。
+- 快路径约束：骨架模式不得被知识库冷启动、完整 RAG 检索或 LLM 补全阻塞；知识库健康只作为证据包健康快照读取，不能成为日历骨架返回的前置条件。
+- 日历增强约束：骨架模式下 `monthly_training_calendar` 不执行逐日知识库 fallback 检索，只消费结构化规则和 HMP 基石协议模板；完整模式可做 KB fallback，但同一 `workout_type` 在一次日历生成中最多检索一次。
+- 补全模式：Astro 在骨架返回后可继续发起 `response_mode=full` 的异步补全请求；若完整工作流超时或失败，后端回退为 `llm_timeout_skeleton` 或 `llm_error_skeleton`，前端仍可继续展示可用骨架。
+- LLM 透传：`ai_invoke()` 读取 LangGraph `configurable` 中的 `llm_provider / llm_model / ds_api_key / llm_timeout_sec`，从而支持 Ollama 和 DeepSeek 的按请求选择，而不是只依赖进程级全局变量。
+- 验证要求：计划查询必须至少覆盖三类测试场景，分别是普通问答完整返回、计划骨架快速返回、完整计划超时回退骨架。
+
+### 17.14 Astro 计划生成可视化
+
+计划生成页新增“计划生成轨迹”组件，用来显式展示训练日历生成到哪一步，避免用户只看到单一 loading 文案。
+
+- 组件位置：`frontend/src/pages/index.astro` 的 Plan Builder 区域，紧跟生成/取消工具栏。
+- 可视化形态：采用赛道式进度轨迹，包含 `识别目标 / 匹配画像 / 生成骨架 / 排布日历 / 绑定证据 / 补全解释` 六个阶段节点。
+- 状态来源：前端根据请求生命周期和后端 `generation_status` 驱动状态，不伪造模型内部 token 进度。
+- 日历优先：当 skeleton-first 响应返回并渲染出日历后，轨迹立即显示“日历骨架已生成/日历已就绪”；LLM 解释补全进入单独的异步阶段，不阻塞日历查看。
+- 超时重试：骨架请求使用长等待窗口，避免 24/26 周计划在临界时间被前端提前 abort；若长等待仍超时，Astro 会进入“骨架请求重试中”，用更长窗口重试一次，再决定是否显示失败。
+- 异常可见：取消、请求失败、LLM 超时/错误回退分别显示 `cancelled / error / fallback` 视觉状态，避免静默卡住。
+
+### 17.15 Astro 日历日卡片交互
+
+训练日历在骨架返回后应可直接点击某一天查看当天训练卡，不再只依赖页面右侧静态详情区。
+
+- 入口行为：点击 `.day-card` 时直接弹出 `dayModal` 当天训练卡；页面不再保留独立的 `Session Detail` 静态详情区，避免同一信息重复渲染。
+- 卡片内容：训练卡展示日期/训练类型、周期阶段、距离、时长、强度、训练负荷、热身、主课、冷身、训练目的、风险调整、场地备注和基石依据；半马 HMP 协议课表需要把内部 `hm_*` ID 转成可读课表名与主课说明。
+- 反馈闭环：卡片内提供 `标记完成 / 部分完成 / 不适或跳过` 三个快捷动作，并内嵌完成状态、疲劳、疼痛、睡眠、补充说明表单；用户可直接在弹窗内生成调整提示或提交反馈接口。
+- 可访问性与退出：弹窗使用 `role="dialog"`，支持关闭按钮、背景点击和 `Escape` 关闭；移动端网格折叠为单列，避免卡片文字溢出。
+
+### 17.16 Astro 训练计划生成器首轮产品化
+
+为修复“页面像开发迁移工作台、默认端口导致离线、用户不知道如何生成日历”的问题，Astro 前端先做连接止血和主入口产品化。
+
+- 默认端口：`frontend/src/pages/index.astro` 的 `API Base` 默认值调整为 `http://127.0.0.1:8010`，与当前推荐的 FastAPI 启动端口一致。
+- 自动探测：启动时先检查当前 `API Base`，失败后按 `8010 -> 8000` 顺序探测 `/health`；探测成功后同步写回输入框和本地缓存。
+- 离线诊断：健康检查失败不再只显示笼统“离线”，而是区分连接失败、健康检查超时和 HTTP 错误，并提示优先确认 8010 端口。
+- 主入口文案：首屏和主面板从 “Chainlit 迁移 / Command Center / 发送” 调整为训练日历生成器心智，主按钮固定为“生成训练日历”。
+- 画像字段：计划画像增加 `目标配速/成绩` 与 `伤病/疲劳限制`，并在提交 `/profile` 时同步为 `target_pace / injury / recovery_state / injury_or_fatigue`，供后端半马校准和风险降级规则消费。
+- 空输入生成：当补充说明为空但画像中存在任一字段时，点击“生成训练日历”会自动基于画像生成计划 prompt，避免用户以为必须先写一段聊天式问题。
+- 保存容错：画像保存接口使用短超时，后端不可用时先保存到浏览器本地，不阻塞本次计划生成。
+
+### 17.17 Astro 日历完整浏览、依据与反馈闭环
+
+在首轮产品化后，继续按“完整日历 -> 真实进度 -> 基石可信度 -> 反馈闭环 -> 交付稳定化”的顺序收口。
+
+- 完整日历：移除前端 `days.slice(0, 42)` 截断，训练日历现在按完整 `normalizeCalendarDays()` 结果渲染，避免 12/16/24 周计划只显示前 6 周。
+- 视图切换：日历增加 `按周 / 按月 / 按阶段 / 全部` 分段控件，并显示总天数、周数、休息日数和关键训练次数；月视图在无真实日期时按每 4 周分组。
+- 进度真实化：计划生成轨迹阶段调整为 `连接后端 / 解析画像 / 生成骨架 / 安全校验 / 排布日历 / 绑定依据 / 补全解释`；后端返回后展示 `generation_timings`、HMP 校验摘要和证据绑定状态，前端等待动画明确标注为等待状态。
+- 基石依据：每日训练卡不只显示来源文件名，而是显示依据来源、依据影响了什么（长距离上限、质量课间隔、恢复安排等）和 HMP 安全校验摘要；HMP 课表默认关联 `docs/half_marathon_hmp_protocol.md` 与 OCR 整理文档。
+- 反馈闭环：当天卡片内提交反馈后，弹窗直接展示明日调整、本周微调、替代训练、风险提醒和可能影响的后续训练，并提供“生成调整版计划”入口。
+- 稳定性测试：新增 Astro 前端契约测试，固定检查默认 8010、自动探测、日历视图控件、无 42 天截断、反馈结果卡和基石依据说明，防止后续回归。
+
+### 17.18 半马骨架污染修复与校验回归
+
+为修复“旧画像中的 `t_pace=3:15/km` 污染普通半马用户计划”和“HMP 修复后 warning 仍可能让前端误判为未解决风险”的问题，半马骨架链路增加了回归约束。
+
+- 配速校准：半马骨架优先从 `target_pace / goal` 中解析目标成绩或目标配速，按半马目标成绩反推出阈值配速；当旧画像 `t_pace` 明显快于目标能力时，不再直接把精英配速写入主课。
+- 前端清洗：骨架内部可继续使用 `hm_*` 作为规则识别 ID，但返回给 Astro 的 `day.main_set` 不应以 `hm_*` 开头；课表类型由 `workout_type` 保留，UI 展示使用可读主课文案。
+- 校验透出：`/query` 的 `QueryResponse` 顶层透出 `half_marathon_protocol_validation`，Astro 不需要从深层结构里重复解析 HMP 校验结果。
+- 修复复验：HMP 发现容量超额、恢复间隔不足等 issue 后，先执行确定性修复，再重新校验；最终返回给前端的 `warnings / issues` 应反映复验后的状态，修复日志通过 `repair_log / repair_applied` 保留审计痕迹。
+- 回归测试：`tests/test_training_plan_skeleton.py` 增加 12 周半马 1:45 场景，固定检查复验后无 warning/issue、无 `hm_*` 主课泄漏、无 `3:15/km / 3:20/km` 污染配速或 `配速3:xx/km` 精英配速泄漏。
+
+### 17.19 Astro 用户体验修复：周期、反馈、历史与证据
+
+基于真实网页生成计划体验，修复用户在“生成计划 -> 查看日卡 -> 反馈调整”链路中的五个可感知问题。
+
+- 计划周期可控：
+  - 画像表单新增 `计划周期` 字段，提交画像时写入 `plan_duration_weeks`。
+  - 画像生成 prompt 显式包含 `计划周期：X周`，避免用户想要 12 周却被比赛日期隐式推成其他周期。
+  - 结果摘要增加 `周期说明`，当用户填写周期与实际生成周期一致时确认“已按 X 周生成”，不一致时明确提示比赛日期/画像解析造成了周期差异。
+- 日卡反馈闭环：
+  - 日卡备注不再默认填入原主课内容，避免把计划内容误当作用户反馈。
+  - `不适/跳过` 快捷动作会同步设置 `未完成 / 高疲劳 / 疼痛风险 / 一般睡眠`，并写入保守调整备注。
+  - `生成调整建议` 与 `提交反馈并计算` 都在弹窗内调用 `/feedback`，直接展示明日调整、本周微调、替代训练、风险提醒和可能影响的后续训练。
+  - 前端提交 `/feedback` 时同时传递中文快捷字段 `completion / fatigue / pain / sleep`，确保后端归一化能识别疼痛风险和疲劳等级。
+- 历史计划降噪：
+  - 历史计划默认只展示最近 3 条。
+  - 超出部分显示“X 条历史已折叠”，通过 `展开全部历史 / 收起历史计划` 控制。
+- 证据空态修复：
+  - 当后端没有返回可编号 RAG 证据但计划包含 HMP 协议时，证据预览自动显示 `半马 HMP 基石协议` 与 `半马 OCR 训练资料整理` 两条 `protocol_rule` 依据。
+  - 非 HMP 且无证据时，空态明确说明“骨架模式下日卡会优先展示结构化规则依据”，避免“有基石依据但证据 0 条”的信任断层。
+- 回归测试：
+  - `tests/test_astro_frontend_contract.py` 覆盖计划周期字段、历史折叠、反馈字段映射、卡片内反馈结果与 HMP 协议证据兜底。
+
+### 17.20 半马课表去通用模板化
+
+用户体验审计发现：半马计划首周经常出现 `3×2000m`，虽然整体半马原则来自 HMP 基石协议，但这个具体主课来自 `training_plan_skeleton.py` 的通用基础期候选项，容易让用户感知为“套模板”。
+
+**修复原则**：
+
+- 半马计划的主质量课应优先由 HMP 基石协议生成器提供，不应在基础期回落到通用 `3×2000m` 模板。
+- 通用训练骨架仍可作为非半马计划和兜底路径使用。
+- 动作库可继续为日卡提供训练类型解释、强度区间、替代训练和证据增强，但半马专项课表的安全边界由 HMP 协议、容量预算和验证器决定。
+
+**实现**：
+
+- `training_plan_skeleton.py` 中 `_build_week_days()` 对 HMP `primary` session 不再排除 `phase_id == "general"`。
+- 这意味着基础期半马主课会从 HMP composer 接管，例如：
+  - `3×10分钟有氧阈值，组间3分钟慢跑，控制在75-85% HMP`
+  - `4×8分钟阈值巡航，整体不超过85% HMP`
+  - `50分钟渐进跑，从轻松跑逐步进到85% HMP`
+- `_clean_hmp_ids_for_frontend()` 继续把内部 `hm_*` ID 从 `main_set` 中剥离，保留到 `workout_type`，让前端可展示可读课表并追溯协议来源。
+
+**验证**：
+
+- `tests/test_training_plan_skeleton.py` 增加断言：12 周半马首周主课不得再出现 `3×2000m`，且应包含 HMP 基础期有氧阈值、阈值巡航或渐进跑内容。
+- 组合测试覆盖 HMP composer、validator、API skeleton 返回和测试桩互不污染。
+
+### 17.21 Skeleton 日卡片证据链重建
+
+为把项目从“能生成日历”推进到“可发表论文的方法系统”，快速计划返回链路必须展示每天训练的来源、目的和执行依据，而不是只暴露 `week_plans.days` 骨架。
+
+**核心原则**：
+
+- `基石协议` 决定半马专项排课、安全边界、容量预算和阶段逻辑。
+- `动作库注册表` 为训练单元提供执行细节，包括训练目标、热身、冷身、强度区间和替代方案。
+- `RAG/知识库` 用于证据增强和解释追踪，不覆盖 HMP 的安全约束。
+- Astro 首屏日历应优先使用 `daily_schedule_cards`，只有缺失时才回退到 `structured_training_plan.week_plans[].days[]`。
+
+**实现**：
+
+- `/query` 的 `response_mode=skeleton` 在生成 `structured_training_plan` 后，会立即调用 `generate_daily_schedule(..., enable_kb_fallback=False)`。
+- skeleton 响应现在同步返回：
+  - `monthly_training_calendar`
+  - `daily_schedule_cards`
+  - `generation_timings.calendar_enrich_sec`
+- HMP 协议课表不再标记为模糊的 `plan_only`，而是使用独立证据层 `protocol_rule = HMP 基石协议`。
+- HMP 课表类型识别先处理具体主课语义，再处理宽泛百分比；例如 `有氧阈值 + 75-85% HMP` 归入 `hm_base_threshold_progression`，不能因 `75-85% HMP` 被误判为导入期法特莱克。
+- `DailyScheduleItem` 增加 `phase` 字段，前端可按阶段分组并在弹窗中显示周期阶段。
+- `evidence_summary` 按 `EVIDENCE_TIER_LABELS` 动态统计，覆盖 `action_library / protocol_rule / kb_fallback / plan_only`。
+- Astro 的证据标签映射增加 `protocol_rule -> HMP 基石协议`，日卡弹窗继续展示协议文档来源、依据影响和安全校验摘要。
+
+**验证**：
+
+- API skeleton 测试固定检查快速返回中存在 `monthly_training_calendar.days` 和 `daily_schedule_cards`。
+- HMP 日卡必须包含 `workout_type=hm_*`、`evidence_tier=protocol_rule`、训练目标和协议来源文档。
+- 回归固定检查 `3×10分钟有氧阈值，控制在75-85% HMP` 的 `workout_type` 为 `hm_base_threshold_progression`。
+- 日历生成测试固定检查 HMP 基础期课表不会泄漏内部 `hm_*` ID，且证据层为 `HMP 基石协议`。
+
+### 17.22 论文级工作流验收测试
+
+为避免系统继续以“局部功能能跑”为目标漂移，新增 `tests/test_plan_workflow_expectations.py`，把当前推进方向固化为跨场景验收测试。
+
+**测试场景**：
+
+- 半马 PB 画像：
+  - HMP 协议必须激活且校验通过。
+  - 日卡必须包含 `protocol_rule`、协议来源、训练目标、热身、冷身和替代方案。
+  - 主课不得出现 `3×2000m` 通用模板、`hm_*` 内部 ID 泄漏或旧画像精英配速污染。
+- 半马短周期画像：
+  - `有氧阈值 / 阈值巡航 / 渐进跑 + 75-85% HMP` 必须识别为 `hm_base_threshold_progression`。
+  - 证据标签和主课语义必须一致，避免“主课是阈值、卡片却显示法特莱克”的错配。
+- 全马画像：
+  - 不应激活 HMP 协议层。
+  - 不应生成 `hm_*` 日卡或 `protocol_rule` 证据计数。
+- 低跑量/疲劳半马画像：
+  - HMP 校验必须通过。
+  - 每周质量课和 hard day 上限保持保守，避免把高水平模板迁移给低跑量用户。
+- API skeleton 前端契约：
+  - `response_mode=skeleton` 不调用完整 LLM workflow。
+  - 必须同步返回 `monthly_training_calendar.days`、`daily_schedule_cards` 和 `calendar_enrich_sec`。
+  - 返回日卡中必须存在可解释字段，供 Astro 首屏直接渲染。
+- 显式点名课型请求：
+  - 用户请求“今天安排有氧阈值 / 无氧阈跑 / 节奏跑 / 间歇跑 / 摄氧量训练”时，首个训练日必须保留对应 `workout_type`。
+  - 这类用户显式指定的通用课型不得被 HMP 候选课强行改写为 `hm_95_long_fast_run` 或 `hm_100_float_intervals`。
+  - 证据优先级为 `动作库 action_library -> 普通知识库 kb_fallback -> needs_evidence`。
+  - 若动作库没有直接证据，骨架模式允许轻量检索普通知识库；只有动作库与普通知识库都不能提供可绑定候选时，才标记 `needs_evidence = 证据不足待补全`。
+  - `WORKOUT_MAIN_SET_HINTS` 只能作为内部排课草稿或最终兜底计算信号，不得在缺证据时直接展示给用户。
+  - 通用课型的可见主课必须来自动作库或普通知识库候选；不得把内部草稿主课包装成用户建议。
+
+**定位**：
+
+这组测试不是替代单元测试，而是作为“方法系统是否还按论文逻辑运作”的验收层。后续每次修改排课、证据、日历或前端契约，都应优先保证这组测试通过。
+
+### 17.23 动作库基石化
+
+动作库不再只是解释补充层，而是通用训练课型的内部基石证据。HMP 协议负责半马专项排课与安全边界，动作库负责有氧阈值、无氧阈、节奏跑、间歇跑、摄氧量训练等通用动作单元的可见执行内容。
+
+**证据优先级**：
+
+1. `action_library`：优先使用 `动作库.pdf` 中已审计切块，返回 `source_file / page / chunk_id / text` 可追溯来源。
+2. `kb_fallback`：当动作库没有覆盖某个课型或缺少局部字段时，允许轻量检索普通知识库；只有从检索文本中抽到候选主课、热身或冷身字段时才补充展示。
+3. `needs_evidence`：动作库与普通知识库都不能提供可绑定候选时才进入缺证据状态。
+
+**实现边界**：
+
+- `workout_template_retriever.py` 内置 `ACTION_LIBRARY_FOUNDATION_HITS`，来自 `动作库.pdf` 已切块内容，保留页码与 chunk id。
+- Skeleton 日卡不再把 `WORKOUT_MAIN_SET_HINTS` 作为用户可见主课。
+- `daily_schedule_generator.py` 先把通用课型映射到动作库命中，再将动作库主课候选写入 `daily_schedule_cards[].main_set`。
+- 若动作库缺少冷身等字段，可尝试从其他知识库抽取；抽不到时只标记该字段待补，不用固定模板硬补。
+
+**当前真实请求结果**：
+
+- `有氧阈值训练 -> action_library -> 动作库.pdf，第 6/7 页`
+- `无氧阈跑 -> action_library -> 动作库.pdf，第 13 页`
+- `节奏跑 -> action_library -> 动作库.pdf，第 8 页`
+- `间歇跑 -> action_library -> 动作库.pdf，第 12 页`
+- `摄氧量训练 -> action_library -> 动作库.pdf，第 18 页`
+
+这些课型的主课来自动作库候选；冷身若未在动作库或普通知识库中抽到，继续显示字段级待补，而不是回落到模板。
+
+### 17.24 受控训练计划生成器审计契约
+
+本阶段把产品侧输出从“能展示训练卡”升级为“核心训练决策可追踪、可审计、可拒绝”。系统定位不是聊天式跑步教练，而是受控训练计划生成器。
+
+**字段级来源**
+- `daily_schedule_cards[].field_sources` 必须给关键字段保留来源标签，字段值至少包括 `source_type / source_id / page / chunk_id / confidence / note`。
+- 来源类型限定为 `protocol / action_library / kb_fallback / llm_expression / needs_evidence`。
+- 核心处方字段 `workout_type / main_set / intensity / duration / weekly_quality_count / long_run_cap / progression / risk_downgrade` 不允许由 LLM 自由生成；若缺少协议或动作库证据，必须标为 `needs_evidence`。
+
+**协议检查**
+- 每张训练日卡必须输出 `protocol_check`，包含 `allowed / phase / quality_sessions_this_week / quality_session_cap / long_run_cap_km / violations / decision_reason`。
+- HMP 计划优先消费 `half_marathon_protocol.capacity_budget` 或周级 `capacity_budget`；非 HMP 计划也保留同构协议检查，便于论文侧横向统计。
+
+**动作库匹配**
+- 动作库命中的训练日卡必须输出 `action_match`，包含 `workout_type / action_id / source / page / chunk_id / main_set / alternatives`。
+- 若动作库未命中，不允许让 LLM 或普通知识库编主课；卡片进入 `needs_evidence`，并在 trace 中保留缺证据原因。
+
+**KB fallback 边界**
+- 普通知识库只允许补 `warmup / cooldown / notes / alternative / terminology / recovery_advice` 等非核心字段。
+- 普通知识库检索到的主课候选只能进入 `kb_fallback.blocked_core_candidates`，用于人工审阅和失败案例分析，不能进入用户可见 `main_set`。
+
+**反馈风险门**
+- `/feedback` 必须先输出 `risk_gate`，再输出 `protocol_recheck`，最后才给 `adaptive_adjustment`。
+- 疲劳高、睡眠差、疼痛等反馈触发降级；胸痛、头晕/晕厥、中暑迹象进入阻断状态，`adjustment_action=deescalate_or_refuse`，`generation_status=medical_referral`。
+
+**Trace 与状态**
+- 每张训练卡必须保留 `trace.intent_parse / protocol_check / action_match / kb_fallback / risk_gate / final_card`。
+- 产品状态允许 `generated / partial_generated / needs_evidence / needs_user_info / risk_refused / medical_referral`，不得把所有分支硬塞成“已生成训练安排”。
+
+**训练负荷口径**
+- 当前日卡与负荷曲线使用 `planned_load_proxy`，即“计划代理负荷”：由计划时长与强度区权重估算，用于比较课表内部负荷，不等同于 COROS/Garmin 等设备基于心率、HRV、睡眠或个体恢复状态计算的真实生理负荷。
+- 后端必须保留 `training_load_method / training_load_factors`，前端展示时必须说明负荷来源；若前端因缺少后端字段进行兜底估算，必须标记为 `frontend_estimated_duration_type`，不得作为论文侧负荷证据。
+- `load_impact_7d` 的展示口径为“7日累计负荷”；`base_fitness_42d_weekly_equivalent` 的展示口径为“42日折算周负荷”，不得命名为真实“基础体能评分”。
+- 负荷计算不得把 `distance_km/total_km` 与 `warmup_km/main_km/cooldown_km` 重复相加；若同时存在总距离与分段距离，优先采用总距离。
+
+### 17.26 HMP 协议主课动作库化
+
+HMP 基石协议只决定阶段、训练意图、强度边界、容量预算和安全校验；用户可见 `main_set` 必须由 `动作库.pdf` 命中的动作库条目提供，不能直接展示协议候选或骨架模板文案。
+
+- `daily_schedule_generator.py` 对 `hm_*` 协议课型增加动作库执行映射，例如 `hm_base_threshold_progression + 有氧阈值训练 -> aerobic_threshold`，`hm_base_threshold_progression + 渐进跑 -> progression_run`。
+- 日卡保留 `evidence_tier=protocol_rule`，表示训练意图和安全约束来自 HMP 基石协议；但 `field_sources.main_set.source_type` 必须为 `action_library`。
+- `action_match` 增加 `protocol_workout_type` 与 `selection_reason=protocol_intent_projected_to_action_library`，用于论文侧追踪协议意图如何落到动作库动作。
+- 动作库候选只选择一个明确 `main_set` 展示给用户，其他候选进入 `action_match.alternatives`，不得用 `" / "` 拼成候选列表。
+- 若 `protocol_check.allowed=false`，日卡状态必须为 `needs_protocol_recheck`，前端显示为“待协议复核”，不得伪装成正常可执行训练。
+
+验证样例：协议候选 `3×10分钟有氧阈值，75-85% HMP` 不再直接展示，日卡主课改为 `动作库.pdf p.6` 的 `3-4 × 3000，组间 2min`；协议候选 `45分钟肯尼亚式渐进跑` 不再直接展示，日卡主课改为 `动作库.pdf p.16` 的 `45分钟从Z1渐进到Z4`。
+
+### 17.25 竞技跑者目标能力校准
+
+针对“半马 1:25 水平，目标突破 1:20”这类竞技跑者场景，计划生成前必须先把当前能力、目标成绩与目标 HMP 配速校准为结构化字段，避免页面只给通用训练日历而不解释差距。
+
+**后端契约**
+- `half_marathon_pace_calibration.py` 必须把半马成绩字段中的 `1:25 / 1:20` 解析为 `1小时25分 / 1小时20分`，不得误判为 85 秒或 80 秒；含 `/km` 或“配速”的文本仍按配速处理。
+- `target_pace` 若包含“半马/半程/half + 成绩”，可作为目标半马成绩来源；字段来源写入 `source_fields`。
+- `build_structured_training_plan_skeleton()` 在 `plan_meta.performance_calibration` 中透出校准结果，至少包括 `current_half_time_seconds / target_half_time_seconds / current_hmp_pace / target_hmp_pace / gap_seconds_per_km / time_gap_seconds / improvement_percent / status / decision_reason`。
+- `recent_four_week_mileage / recent_4_week_mileage` 进入 HMP 容量预算：当近4周平均周跑量低于计划周跑量时，`build_half_marathon_capacity_budget()` 使用近4周跑量作为 `effective_weekly_volume_km` 保守计算，并写入 `volume_basis=recent_four_week_mileage`。
+- `half_marathon_protocol` 透出 `input_recent_four_week_mileage_km`；周级 `capacity_budget` 透出 `weekly_volume_km / effective_weekly_volume_km / recent_four_week_mileage_km / volume_basis`，供论文 trace 和前端审计读取。
+
+**Astro 展示**
+- 画像表单新增 `当前半马 PB` 与 `近4周平均周跑量`，提交时映射为 `current_half_time / recent_four_week_mileage`。
+- 生成结果摘要新增“能力差距”卡，展示当前半马 PB、当前 HMP、目标半马、目标 HMP、秒/公里差距、总时间差距、提升幅度和校准状态。
+- 校准卡只展示后端结构化结果，不让前端自行推断训练处方；信息缺失时显示待校准，而不是伪造目标配速。
+- 训练日卡审计链路新增 `容量依据 / 有效预算跑量 / 近4周跑量`，让用户和审阅者能看到系统何时按近期跑量降级，而不是只看最终课表。

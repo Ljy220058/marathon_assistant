@@ -77,7 +77,7 @@ async def run_integration_test():
             name = event.get("name", "")
             
             if kind == "on_chain_start":
-                if name in ["security_gate", "router", "profiler", "entity_extraction", "coach", "auditor", "formatter"]:
+                if name in ["security_gate", "router", "profiler", "entity_extraction", "coach", "critic_auditor", "formatter"]:
                     print(f"[Node] 进入节点: {name}")
             
             elif kind == "on_chain_end":

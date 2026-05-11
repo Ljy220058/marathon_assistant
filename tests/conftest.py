@@ -1,5 +1,6 @@
 import sys
 import types
+import importlib.util
 from pathlib import Path
 
 
@@ -67,7 +68,10 @@ if "chainlit" not in sys.modules:
     sys.modules["chainlit"] = fake_chainlit
 
 
-if "langchain_community.vectorstores" not in sys.modules:
+if (
+    "langchain_community.vectorstores" not in sys.modules
+    and importlib.util.find_spec("langchain_community.vectorstores") is None
+):
     fake_langchain_community = types.ModuleType("langchain_community")
     fake_vectorstores = types.ModuleType("langchain_community.vectorstores")
 
@@ -79,7 +83,7 @@ if "langchain_community.vectorstores" not in sys.modules:
     sys.modules["langchain_community.vectorstores"] = fake_vectorstores
 
 
-if "langchain_ollama" not in sys.modules:
+if "langchain_ollama" not in sys.modules and importlib.util.find_spec("langchain_ollama") is None:
     fake_langchain_ollama = types.ModuleType("langchain_ollama")
 
     class _FakeOllamaEmbeddings:
@@ -98,7 +102,10 @@ if "langchain_ollama" not in sys.modules:
     sys.modules["langchain_ollama"] = fake_langchain_ollama
 
 
-if "langchain_core.documents" not in sys.modules:
+if (
+    "langchain_core.documents" not in sys.modules
+    and importlib.util.find_spec("langchain_core.documents") is None
+):
     fake_langchain_core = types.ModuleType("langchain_core")
     fake_documents = types.ModuleType("langchain_core.documents")
     fake_messages = types.ModuleType("langchain_core.messages")

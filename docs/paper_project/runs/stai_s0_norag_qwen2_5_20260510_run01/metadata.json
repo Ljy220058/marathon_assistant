@@ -1,0 +1,17 @@
+{
+  "run_id": "stai_s0_norag_qwen2_5_20260510_run01",
+  "system_id": "S0",
+  "system_name": "No-RAG LLM",
+  "date_utc": "20260509T171559Z",
+  "dataset": "docs\\paper_project\\stai2026_pilot_benchmark_v0.1.jsonl",
+  "sample_count": 15,
+  "model_provider": "ollama",
+  "model": "qwen2.5:latest",
+  "base_url": "http://localhost:11434",
+  "temperature": 0.2,
+  "top_p": 0.9,
+  "num_gpu": -1,
+  "timeout_sec": 120,
+  "elapsed_sec": 54.6,
+  "output_path": "docs\\paper_project\\runs\\stai_s0_norag_qwen2_5_20260510_run01\\outputs.jsonl"
+}

@@ -1,0 +1,44 @@
+{
+  "run_id": "stai_s3_gold_only_gate_norm_smoke01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "dataset": "docs\\paper_project\\stai_benchmark_v0.2_50_question_draft.jsonl",
+  "model": "qwen2.5:latest",
+  "evidence_mode": "gold_only",
+  "rows": 3,
+  "unique_qids": 3,
+  "duplicate_qids": [],
+  "missing_qid_rows": 0,
+  "status_counts": {
+    "partial_answer": 2,
+    "answered": 1
+  },
+  "category_x_status": {
+    "risk_safety": {
+      "partial_answer": 2,
+      "answered": 1
+    }
+  },
+  "gate_status_counts": {
+    "partial": 3
+  },
+  "audit_status_counts": {
+    "repair_required": 2,
+    "pass": 1
+  },
+  "repair_action_counts": {
+    "repaired_invalid_or_missing_citations": 2,
+    "none": 1
+  },
+  "designed_unanswerable_count": 0,
+  "designed_unanswerable_refused": 0,
+  "verified_or_answerable_count": 3,
+  "verified_or_answerable_refused": 0,
+  "citation_repair_count": 2,
+  "refused_qids": [],
+  "avg_latency_sec": 12.429,
+  "avg_evidence_contexts": 1,
+  "avg_gold_contexts": 1,
+  "avg_retrieved_contexts": 0,
+  "metadata_elapsed_sec": 37.286
+}

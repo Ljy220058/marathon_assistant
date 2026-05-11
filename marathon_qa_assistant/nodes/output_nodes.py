@@ -6,6 +6,7 @@ except ImportError:
     RunnableConfig = Any
 
 from marathon_qa_assistant.core.state_models import IntegratedState
+from marathon_qa_assistant.core.evidence_bundle import evidence_base_from_bundle
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
 from marathon_qa_assistant.nodes.common import ensure_usage, output_guard_obj
 from marathon_qa_assistant.services.workout_template_retriever import build_daily_workout_template_card_from_hits, normalize_workout_type_for_template
@@ -654,6 +655,7 @@ def _build_half_marathon_protocol_panel(structured_training_plan: Any) -> Dict[s
 
 def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[str, Any]:
     rag_sources = state.get("rag_sources", [])
+    evidence_bundle = state.get("evidence_bundle") if isinstance(state.get("evidence_bundle"), dict) else {}
     structured_training_plan = state.get("structured_training_plan")
     adaptive_adjustment = state.get("adaptive_adjustment") or {}
     phase_summary = _normalize_phase_summary(structured_training_plan)
@@ -682,40 +684,45 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             }
         )
 
-    evidence_base = []
-    for i, src in enumerate(rag_sources[:5], start=1):
-        evidence_base.append(
-            {
-                "id": i,
-                "document": src.get("source", "unknown"),
-                "source": src.get("source", "unknown"),
-                "path": src.get("source_path", "") or src.get("source_file", ""),
-                "source_path": src.get("source_path", ""),
-                "pages": [int(src.get("page", 1) or 1)],
-                "text": src.get("text", ""),
-                "chunk_id": src.get("chunk_id", ""),
-                "score": src.get("score", 0.0),
-            }
-        )
+    evidence_base = evidence_base_from_bundle(evidence_bundle, limit=5)
+    if not evidence_base:
+        for i, src in enumerate(rag_sources[:5], start=1):
+            evidence_base.append(
+                {
+                    "id": i,
+                    "document": src.get("source", "unknown"),
+                    "source": src.get("source", "unknown"),
+                    "path": src.get("source_path", "") or src.get("source_file", ""),
+                    "source_path": src.get("source_path", ""),
+                    "pages": [int(src.get("page", 1) or 1)],
+                    "text": src.get("text", ""),
+                    "chunk_id": src.get("chunk_id", ""),
+                    "score": src.get("score", 0.0),
+                }
+            )
 
-    daily_workout_evidence_base = list(evidence_base)
-    for i, src in enumerate(rag_sources[5:], start=6):
-        daily_workout_evidence_base.append(
-            {
-                "id": i,
-                "document": src.get("source", "unknown"),
-                "source": src.get("source", "unknown"),
-                "path": src.get("source_path", "") or src.get("source_file", ""),
-                "source_path": src.get("source_path", ""),
-                "pages": [int(src.get("page", 1) or 1)],
-                "text": src.get("text", ""),
-                "chunk_id": src.get("chunk_id", ""),
-                "score": src.get("score", 0.0),
-            }
-        )
+    daily_workout_evidence_base = evidence_base_from_bundle(evidence_bundle, limit=None) or list(evidence_base)
+    if len(daily_workout_evidence_base) <= len(evidence_base):
+        for i, src in enumerate(rag_sources[5:], start=6):
+            daily_workout_evidence_base.append(
+                {
+                    "id": i,
+                    "document": src.get("source", "unknown"),
+                    "source": src.get("source", "unknown"),
+                    "path": src.get("source_path", "") or src.get("source_file", ""),
+                    "source_path": src.get("source_path", ""),
+                    "pages": [int(src.get("page", 1) or 1)],
+                    "text": src.get("text", ""),
+                    "chunk_id": src.get("chunk_id", ""),
+                    "score": src.get("score", 0.0),
+                }
+            )
 
     daily_workout_cards = _build_daily_workout_cards(structured_training_plan, daily_workout_evidence_base)
-    monthly_training_calendar = generate_daily_schedule(structured_training_plan) if structured_training_plan else None
+    monthly_training_calendar = generate_daily_schedule(
+        structured_training_plan,
+        enable_kb_fallback=not bool(state.get("skip_calendar_kb_fallback")),
+    ) if structured_training_plan else None
     daily_schedule_cards = [
         item.to_dict() if hasattr(item, "to_dict") else item
         for item in (monthly_training_calendar.days if monthly_training_calendar else [])
@@ -836,6 +843,7 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             "review_feedback": state.get("review_feedback", ""),
             "risk_alert": risk_alert,
         },
+        "evidence_bundle": evidence_bundle,
         "evidence_base": evidence_base,
     }
 

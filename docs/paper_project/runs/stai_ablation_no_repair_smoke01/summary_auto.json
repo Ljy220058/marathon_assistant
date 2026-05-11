@@ -1,0 +1,50 @@
+{
+  "run_id": "stai_ablation_no_repair_smoke01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "dataset": "docs\\paper_project\\stai_benchmark_v0.2_50_question_draft.jsonl",
+  "model": "qwen2.5:latest",
+  "evidence_mode": "retrieval_plus_gold",
+  "ablation_mode": "no_repair",
+  "rows": 2,
+  "unique_qids": 2,
+  "duplicate_qids": [],
+  "missing_qid_rows": 0,
+  "status_counts": {
+    "answered": 1,
+    "refused": 1
+  },
+  "category_x_status": {
+    "evidence_insufficient": {
+      "refused": 1
+    },
+    "fact": {
+      "answered": 1
+    }
+  },
+  "gate_status_counts": {
+    "answerable": 1,
+    "unanswerable": 1
+  },
+  "audit_status_counts": {
+    "pass": 1,
+    "refuse_required": 1
+  },
+  "repair_action_counts": {
+    "none": 1,
+    "refused_due_to_insufficient_evidence": 1
+  },
+  "designed_unanswerable_count": 1,
+  "designed_unanswerable_refused": 1,
+  "verified_or_answerable_count": 1,
+  "verified_or_answerable_refused": 0,
+  "citation_repair_count": 0,
+  "refused_qids": [
+    "STAI-P046"
+  ],
+  "avg_latency_sec": 14.38,
+  "avg_evidence_contexts": 5.5,
+  "avg_gold_contexts": 0.5,
+  "avg_retrieved_contexts": 5,
+  "metadata_elapsed_sec": 28.761
+}

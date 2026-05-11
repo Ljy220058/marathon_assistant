@@ -4,6 +4,8 @@ import os
 import re
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+import httpx
+
 try:
     from dotenv import load_dotenv
 except ImportError:
@@ -68,6 +70,8 @@ else:
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", os.getenv("DS_MODEL", "deepseek-v4-pro"))
 
 llm = (
     ChatOllama(
@@ -132,10 +136,94 @@ async def ai_invoke(
     config: Optional[RunnableConfig],
     current_usage: Optional[Dict[str, int]],
 ) -> Tuple[str, Dict[str, int]]:
-    if llm is None:
+    llm_settings = _extract_llm_settings(config)
+    provider = llm_settings["provider"]
+    if provider in {"ds", "deepseek"}:
+        return await _invoke_deepseek(prompt, llm_settings, current_usage)
+
+    if ChatOllama is None:
         raise RuntimeError("langchain_ollama 不可用")
-    response = await llm.ainvoke([HumanMessage(content=prompt)], config=config)
+
+    model = llm_settings["model"] or OLLAMA_MODEL
+    base_url = llm_settings["ollama_base_url"] or OLLAMA_BASE_URL
+    active_llm = llm if model == OLLAMA_MODEL and base_url == OLLAMA_BASE_URL and llm is not None else ChatOllama(
+        model=model,
+        temperature=0.3,
+        base_url=base_url,
+    )
+    response = await active_llm.ainvoke([HumanMessage(content=prompt)], config=config)
     return str(getattr(response, "content", "") or "").strip(), update_token_usage(current_usage, response)
+
+
+def _extract_llm_settings(config: Optional[RunnableConfig]) -> Dict[str, Any]:
+    configurable: Dict[str, Any] = {}
+    if isinstance(config, dict):
+        raw = config.get("configurable") or {}
+        if isinstance(raw, dict):
+            configurable = raw
+
+    provider = str(configurable.get("llm_provider") or os.getenv("LLM_PROVIDER", "ollama")).strip().lower()
+    model = str(configurable.get("llm_model") or "").strip()
+    if not model:
+        model = DEEPSEEK_MODEL if provider in {"ds", "deepseek"} else OLLAMA_MODEL
+    return {
+        "provider": provider,
+        "model": model,
+        "ds_api_key": str(configurable.get("ds_api_key") or os.getenv("DEEPSEEK_API_KEY") or os.getenv("DS_API_KEY") or "").strip(),
+        "deepseek_base_url": str(configurable.get("deepseek_base_url") or DEEPSEEK_BASE_URL).strip(),
+        "ollama_base_url": str(configurable.get("ollama_base_url") or OLLAMA_BASE_URL).strip(),
+        "timeout_sec": float(configurable.get("llm_timeout_sec") or os.getenv("LLM_TIMEOUT_SEC", "60")),
+    }
+
+
+async def _invoke_deepseek(
+    prompt: str,
+    settings: Dict[str, Any],
+    current_usage: Optional[Dict[str, int]],
+) -> Tuple[str, Dict[str, int]]:
+    api_key = settings.get("ds_api_key")
+    if not api_key:
+        raise RuntimeError("DeepSeek API Key 未配置")
+
+    base_url = str(settings.get("deepseek_base_url") or DEEPSEEK_BASE_URL).rstrip("/")
+    url = f"{base_url}/chat/completions"
+    payload = {
+        "model": settings.get("model") or DEEPSEEK_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+    }
+    timeout = httpx.Timeout(float(settings.get("timeout_sec") or 60), connect=10.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+    choices = data.get("choices") or []
+    content = ""
+    if choices:
+        message = choices[0].get("message") or {}
+        content = str(message.get("content") or "").strip()
+
+    usage = ensure_usage(current_usage)
+    raw_usage = data.get("usage") or {}
+    prompt_tokens = int(raw_usage.get("prompt_tokens") or 0)
+    completion_tokens = int(raw_usage.get("completion_tokens") or 0)
+    if prompt_tokens == 0:
+        prompt_tokens = max(10, int(len(prompt) * 0.25))
+    if completion_tokens == 0:
+        completion_tokens = max(10, int(len(content) * 0.6))
+    return content, {
+        "prompt_tokens": usage["prompt_tokens"] + prompt_tokens,
+        "completion_tokens": usage["completion_tokens"] + completion_tokens,
+        "total_tokens": usage["total_tokens"] + prompt_tokens + completion_tokens,
+    }
 
 
 def scan_and_clean_context(text: str, input_type: str = "rag") -> str:
@@ -282,3 +370,12 @@ def format_evidence_lines(rag_sources: List[Dict[str, Any]], limit: int = 3) -> 
             f"- {src.get('snippet', '')[:120]}"
         )
     return "\n".join(lines)
+
+
+def format_state_evidence_lines(state: Dict[str, Any], limit: int = 3) -> str:
+    bundle = state.get("evidence_bundle") if isinstance(state, dict) else {}
+    if isinstance(bundle, dict) and bundle.get("evidence_items"):
+        from marathon_qa_assistant.core.evidence_bundle import format_evidence_bundle_lines
+
+        return format_evidence_bundle_lines(bundle, limit=limit)
+    return format_evidence_lines(state.get("rag_sources", []) if isinstance(state, dict) else [], limit=limit)

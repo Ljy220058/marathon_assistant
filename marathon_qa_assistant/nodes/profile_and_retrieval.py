@@ -8,6 +8,8 @@ except ImportError:
     RunnableConfig = Any
 
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
+from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
+from marathon_qa_assistant.core.kb_bootstrap import get_knowledge_base_health_snapshot
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
 from marathon_qa_assistant.core.training_plan_context import (
@@ -636,6 +638,12 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         entities=entities,
         top_k=5
     )
+    evidence_bundle = build_evidence_bundle(
+        query=query,
+        rag_sources=rag_sources,
+        ranked_evidence=ranked_evidence,
+        health=get_knowledge_base_health_snapshot(),
+    )
 
     evidence_gate = evaluate_plan_evidence(hits, query, state.get("intent_type", "qa"))
 
@@ -664,6 +672,7 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         "gate_hits": hits,
         "rag_sources": rag_sources,
         "ranked_evidence": ranked_evidence,
+        "evidence_bundle": evidence_bundle,
         "graph_context": graph_context,
         "mermaid_graph": mermaid_graph,
         "token_usage": ensure_usage(state.get("token_usage")),

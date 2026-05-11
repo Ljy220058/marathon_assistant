@@ -75,10 +75,6 @@ def evaluate_plan_evidence(gate_hits: List[Dict[str, Any]], query: str, intent_t
 def gate_decision(state: IntegratedState):
     if state.get("mode") == "intercepted":
         return "formatter"
-    if state.get("mode") == "research":
-        return "research_analyst"
-    if state.get("mode") == "adaptive":
-        return "adaptive_coach"
     return "router"
 
 
@@ -93,7 +89,12 @@ def entity_route_decision(state: IntegratedState):
     if is_plan_missing_evidence and state.get("mode") != "research":
         return "missing_info_handler"
 
-    if state.get("mode") == "subagent":
+    workflow_kind = state.get("workflow_kind") or state.get("intent_type")
+    if workflow_kind == "research":
+        return "research_analyst"
+    if workflow_kind == "adaptive":
+        return "adaptive_coach"
+    if workflow_kind == "plan":
         return "planner"
     return "coach"
 
@@ -105,13 +106,9 @@ def after_planner_route(state: IntegratedState):
 
 
 def after_therapist_route(state: IntegratedState):
-    if state.get("intent_type") == "qa":
-        return "auditor"
-    if state.get("is_approved"):
+    if state.get("category") == "nutritionist" and not state.get("nutritionist_done"):
         return "nutritionist"
-    if state.get("mode") == "adaptive":
-        return "adaptive_coach"
-    return "coach"
+    return "critic_auditor"
 
 
 def after_router_route(state: IntegratedState):
@@ -128,18 +125,18 @@ def after_profile_update_route(state: IntegratedState):
     return "profiler"
 
 
-def after_auditor_route(state: IntegratedState):
+def after_critic_auditor_route(state: IntegratedState):
     if state.get("is_approved"):
         return "formatter"
 
-    if state.get("iteration_count", 0) >= 3:
-        logger.warning(f"[auditor] 已达最大审计迭代次数 ({state['iteration_count']})，强制转入引导节点")
+    if state.get("iteration_count", 0) >= 2:
+        logger.warning(f"[critic_auditor] 已达最大审计迭代次数 ({state['iteration_count']})，强制转入引导节点")
         return "missing_info_handler"
 
-    if state.get("mode") == "subagent":
+    if (state.get("workflow_kind") or state.get("intent_type")) == "plan":
         return "executor"
-    if state.get("mode") == "research":
+    if (state.get("workflow_kind") or state.get("intent_type")) == "research":
         return "research_analyst"
-    if state.get("mode") == "adaptive":
+    if (state.get("workflow_kind") or state.get("intent_type")) == "adaptive":
         return "adaptive_coach"
     return "coach"

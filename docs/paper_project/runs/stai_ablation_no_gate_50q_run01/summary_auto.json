@@ -1,0 +1,56 @@
+{
+  "run_id": "stai_ablation_no_gate_50q_run01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "dataset": "docs\\paper_project\\stai_benchmark_v0.2_50_question_draft.jsonl",
+  "model": "qwen2.5:latest",
+  "evidence_mode": "retrieval_plus_gold",
+  "ablation_mode": "no_gate",
+  "rows": 50,
+  "unique_qids": 50,
+  "duplicate_qids": [],
+  "missing_qid_rows": 0,
+  "status_counts": {
+    "partial_answer": 47,
+    "answered": 3
+  },
+  "category_x_status": {
+    "applied_reasoning": {
+      "partial_answer": 14,
+      "answered": 1
+    },
+    "evidence_insufficient": {
+      "partial_answer": 5
+    },
+    "fact": {
+      "partial_answer": 14,
+      "answered": 1
+    },
+    "risk_safety": {
+      "partial_answer": 14,
+      "answered": 1
+    }
+  },
+  "gate_status_counts": {
+    "answerable": 50
+  },
+  "audit_status_counts": {
+    "repair_required": 47,
+    "pass": 3
+  },
+  "repair_action_counts": {
+    "repaired_invalid_or_missing_citations": 47,
+    "none": 3
+  },
+  "designed_unanswerable_count": 5,
+  "designed_unanswerable_refused": 0,
+  "verified_or_answerable_count": 45,
+  "verified_or_answerable_refused": 0,
+  "citation_repair_count": 47,
+  "refused_qids": [],
+  "avg_latency_sec": 30.888,
+  "avg_evidence_contexts": 5.9,
+  "avg_gold_contexts": 0.9,
+  "avg_retrieved_contexts": 5,
+  "metadata_elapsed_sec": 1544.409
+}

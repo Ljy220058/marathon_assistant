@@ -1,0 +1,91 @@
+{
+  "run_id": "stai_s3_retrieval_only_50q_v02_run01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "dataset": "docs\\paper_project\\stai_benchmark_v0.2_50_question_draft.jsonl",
+  "model": "qwen2.5:latest",
+  "evidence_mode": "retrieval_only",
+  "rows": 50,
+  "unique_qids": 50,
+  "duplicate_qids": [],
+  "missing_qid_rows": 0,
+  "status_counts": {
+    "partial_answer": 15,
+    "answered": 8,
+    "refused": 27
+  },
+  "category_x_status": {
+    "applied_reasoning": {
+      "partial_answer": 7,
+      "refused": 5,
+      "answered": 3
+    },
+    "evidence_insufficient": {
+      "refused": 5
+    },
+    "fact": {
+      "partial_answer": 7,
+      "answered": 3,
+      "refused": 5
+    },
+    "risk_safety": {
+      "refused": 12,
+      "answered": 2,
+      "partial_answer": 1
+    }
+  },
+  "gate_status_counts": {
+    "partial": 14,
+    "answerable": 9,
+    "unanswerable": 27
+  },
+  "audit_status_counts": {
+    "repair_required": 41,
+    "pass": 9
+  },
+  "repair_action_counts": {
+    "repaired_invalid_or_missing_citations": 15,
+    "none": 8,
+    "refused_due_to_insufficient_evidence": 14,
+    "refused_due_to_insufficient_evidence_with_safety_deescalation": 13
+  },
+  "designed_unanswerable_count": 5,
+  "designed_unanswerable_refused": 5,
+  "verified_or_answerable_count": 45,
+  "verified_or_answerable_refused": 22,
+  "citation_repair_count": 15,
+  "refused_qids": [
+    "STAI-P008",
+    "STAI-P010",
+    "STAI-P011",
+    "STAI-P012",
+    "STAI-P013",
+    "STAI-P014",
+    "STAI-P017",
+    "STAI-P019",
+    "STAI-P021",
+    "STAI-P027",
+    "STAI-P028",
+    "STAI-P029",
+    "STAI-P033",
+    "STAI-P034",
+    "STAI-P036",
+    "STAI-P038",
+    "STAI-P039",
+    "STAI-P040",
+    "STAI-P041",
+    "STAI-P042",
+    "STAI-P043",
+    "STAI-P045",
+    "STAI-P046",
+    "STAI-P047",
+    "STAI-P048",
+    "STAI-P049",
+    "STAI-P050"
+  ],
+  "avg_latency_sec": 30.321,
+  "avg_evidence_contexts": 5,
+  "avg_gold_contexts": 0,
+  "avg_retrieved_contexts": 5,
+  "metadata_elapsed_sec": 280.504
+}

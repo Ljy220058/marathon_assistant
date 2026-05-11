@@ -12,8 +12,8 @@ from marathon_qa_assistant.core.state_models import (
 from marathon_qa_assistant.core.workflow_graph import build_integrated_app
 from marathon_qa_assistant.nodes.expert_nodes import (
     adaptive_coach_node,
-    auditor_node,
     coach_node,
+    critic_auditor_node,
     nutritionist_node,
     research_analyst_node,
     therapist_node,
@@ -43,7 +43,7 @@ integrated_app = build_integrated_app(
         "coach": coach_node,
         "nutritionist": nutritionist_node,
         "therapist": therapist_node,
-        "auditor": auditor_node,
+        "critic_auditor": critic_auditor_node,
         "formatter": formatter_node,
         "guided_questions_generator": guided_questions_node,
         "research_analyst": research_analyst_node,

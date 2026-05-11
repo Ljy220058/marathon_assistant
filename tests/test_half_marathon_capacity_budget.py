@@ -31,6 +31,24 @@ def test_capacity_budget_allows_more_specific_volume_for_high_mileage_specific_p
     assert budget["hmp_105_total_max_km"] == 8
 
 
+def test_capacity_budget_uses_recent_four_week_mileage_as_conservative_base():
+    budget = build_half_marathon_capacity_budget(
+        weekly_volume_km=70,
+        phase_id="general",
+        available_days_count=4,
+        recent_four_week_mileage_km=38,
+        speed_calibration_available=True,
+    )
+
+    assert budget["weekly_volume_km"] == 70
+    assert budget["effective_weekly_volume_km"] == 38
+    assert budget["recent_four_week_mileage_km"] == 38
+    assert budget["volume_basis"] == "recent_four_week_mileage"
+    assert budget["quality_sessions_max"] == 1
+    assert budget["long_run_max_km"] <= 12.5
+    assert any("近4周平均周跑量" in note for note in budget["notes"])
+
+
 def test_introductory_budget_blocks_hard_hmp_capacity_after_recent_marathon():
     budget = build_half_marathon_capacity_budget(
         weekly_volume_km=60,

@@ -1,0 +1,15 @@
+{
+  "name": "s3_retrieval_only_50q",
+  "system_id": "S3",
+  "dataset": "docs/paper_project/stai_benchmark_v0.2_50_question_draft.jsonl",
+  "qids": "all",
+  "evidence_mode": "retrieval_only",
+  "model": "qwen2.5:latest",
+  "top_k": 5,
+  "context_max_chars": 500,
+  "gold_context_max_chars": 800,
+  "num_ctx": 4096,
+  "num_batch": 4,
+  "num_predict": 300,
+  "timeout_sec": 240
+}

@@ -1,0 +1,125 @@
+\section{Results}
+
+\subsection{Main 100-Question Result}
+
+On the 100-question pilot benchmark, the full S3 workflow with \texttt{qwen2.5:latest} produced 24 answered, 62 partial\_answer, and 14 refused outputs. All 10 designed-unanswerable controls were refused, while 4 of 90 evidence-backed questions were falsely refused. Citation repair was frequent: 62 outputs required repair for invalid or missing citations.
+
+\begin{table}[t]
+\centering
+\caption{Main 100-question pilot benchmark result for the full workflow using \texttt{qwen2.5:latest}. The workflow refused all designed-unanswerable controls while preserving answer or partial-answer outputs for most evidence-backed questions. False refusals are reported separately because refusal can be either intended or conservative.}
+\begin{tabular}{lr}
+\toprule
+Final status & Count \\
+\midrule
+answered & 24 \\
+partial\_answer & 62 \\
+refused & 14 \\
+total & 100 \\
+\bottomrule
+\end{tabular}
+\label{tab:main-result}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Diagnostics for the main 100-question run.}
+\begin{tabular}{lr}
+\toprule
+Diagnostic & Result \\
+\midrule
+designed-unanswerable refused & 10 / 10 \\
+verified-or-answerable false refusal & 4 / 90 \\
+citation repair count & 62 \\
+risk-safety answered or partial & 26 / 30 \\
+\bottomrule
+\end{tabular}
+\label{tab:main-diagnostics}
+\end{table}
+
+The false refusals occur in the risk-safety category, suggesting a conservative failure mode in which the workflow preserves safety boundaries but loses some answerability.
+
+\subsection{Safety Stress Result}
+
+On the 30-prompt safety-stress suite, the hardened request-level pre-gate and downstream gates refused all stress prompts for both \texttt{qwen2.5:latest} and \texttt{llama3:latest}.
+
+\begin{table}[t]
+\centering
+\caption{Targeted safety-stress result under deterministic request-level hardening. Both local models refused all constructed stress prompts. This result supports targeted hardening on the stress suite, not general adversarial robustness.}
+\begin{tabular}{lrrrrr}
+\toprule
+Model & Refused & Partial & Answered & Pre-gate & Ordinary gate \\
+\midrule
+\texttt{qwen2.5:latest} & 30 & 0 & 0 & 28 & 2 \\
+\texttt{llama3:latest} & 30 & 0 & 0 & 29 & 1 \\
+\bottomrule
+\end{tabular}
+\label{tab:stress-result}
+\end{table}
+
+Most refusals occurred before generation, with the remaining prompts refused by the ordinary evidence/risk gate. This result supports targeted request-level hardening on the constructed stress suite, not general prompt-injection robustness.
+
+\subsection{Supplementary Llama3 Main Subset}
+
+The supplementary 40-question llama3 subset refused all designed-unanswerable controls and produced no false refusals on the answerable subset (0 / 30). It produced 13 answered, 17 partial-answer, and 10 refused outputs.
+
+\begin{table}[t]
+\centering
+\caption{Supplementary 40-question llama3 main-benchmark subset. Because the subset is only 40 questions, this should be read as a sanity check, not as full multi-model evaluation.}
+\begin{tabular}{lr}
+\toprule
+Final status & Count \\
+\midrule
+answered & 13 \\
+partial\_answer & 17 \\
+refused & 10 \\
+total & 40 \\
+\bottomrule
+\end{tabular}
+\label{tab:llama3-subset}
+\end{table}
+
+\subsection{Case Studies}
+
+To make the workflow states more concrete, we examine four representative traces from the main benchmark and safety-stress suite. These cases illustrate correct refusal, citation repair, conservative false refusal, and request-level stress blocking.
+
+\begin{table}[t]
+\centering
+\caption{Representative traces illustrating intended refusal, citation repair, conservative false refusal, and request-level stress blocking. The cases show why the workflow reports \texttt{answered}, \texttt{partial\_answer}, and \texttt{refused} as separate diagnostic states.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lllll}
+\toprule
+Case & QID & Workflow signal & Decision & Lesson \\
+\midrule
+insufficient evidence & STAI-P046 & Evidence Gate marks a no-evidence control as unanswerable & refused & refusal can be an intended success state \\
+citation repair & STAI-P003 & Auditor finds a citation issue in a supported answer & partial\_answer & repair exposes grounding friction \\
+conservative false refusal & STAI-P036 & verified risk-safety evidence exists but the gate refuses & refused & safety conservatism can reduce utility \\
+prompt injection & STAI-S001 & pre-gate detects fabricated-citation pressure & refused & targeted stress prompts can be blocked before generation \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:cases}
+\end{table}
+
+\subsection{Ablation Results}
+
+The v0.3 40-question ablation subset shows distinct effects for the Evidence Gate, Auditor, and Repair stage.
+
+\begin{table}[t]
+\centering
+\caption{v0.3 40-question ablation subset for \texttt{qwen2.5:latest}. Removing the Evidence Gate eliminates designed-unanswerable refusal control, while removing audit or repair removes citation-repair observability. The ablation is a balanced 40-question subset, not a full 100-question ablation.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+System variant & Ans. & Partial & Refused & Designed-refusal & False refusal & Citation repair \\
+\midrule
+full workflow, 40-qid slice from 100q run & 8 & 19 & 13 & 10 / 10 & 3 / 30 & 19 \\
+\texttt{no\_gate} & 0 & 40 & 0 & 0 / 10 & 0 / 30 & 40 \\
+\texttt{no\_audit} & 26 & 0 & 14 & 10 / 10 & 4 / 30 & 0 \\
+\texttt{no\_repair} & 27 & 0 & 13 & 10 / 10 & 3 / 30 & 0 \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:ablation}
+\end{table}
+
+Removing the Evidence Gate destroys refusal control on designed-unanswerable items, converting all 10 no-evidence controls into non-refusal outputs. The \texttt{no\_audit} and \texttt{no\_repair} ablations preserve gate-based refusal, but remove the observability of citation repair. This supports the claim that the workflow's behavior comes from explicit control points rather than a single generation prompt.

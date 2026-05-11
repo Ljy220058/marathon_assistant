@@ -4,7 +4,7 @@ import threading
 import uuid
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from marathon_qa_assistant.core.app_state import RUNTIME_DATA_DIR
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
@@ -293,7 +293,41 @@ class _Database:
             return 120
         return 60
 
-    def save_training_plan(self, plan: Dict[str, Any], *, source_query: str = "", user_id: str = "default_user") -> str:
+    def _event_days_for_plan(
+        self,
+        plan: Dict[str, Any],
+        calendar_days: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[Dict[str, Any]]:
+        if calendar_days:
+            normalized = [day for day in calendar_days if isinstance(day, dict)]
+            if normalized:
+                return normalized
+
+        rows: List[Dict[str, Any]] = []
+        for week in plan.get("week_plans") or []:
+            week_no = int(week.get("week_index") or 0)
+            phase = str(week.get("phase") or "")
+            load_level = str(week.get("load_level") or "")
+            for index, day in enumerate(week.get("days") or [], start=1):
+                if not isinstance(day, dict):
+                    continue
+                rows.append({
+                    **day,
+                    "week_index": int(day.get("week_index") or week_no),
+                    "day_index": int(day.get("day_index") or index),
+                    "phase": str(day.get("phase") or phase),
+                    "load_level": str(day.get("load_level") or load_level),
+                })
+        return rows
+
+    def save_training_plan(
+        self,
+        plan: Dict[str, Any],
+        *,
+        source_query: str = "",
+        user_id: str = "default_user",
+        calendar_days: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
         meta = plan.get("plan_meta") or {}
         plan_id = str(uuid.uuid4())
         start = date.today()
@@ -319,6 +353,32 @@ class _Database:
                 str(meta.get("render_version") or "v1"),
             ),
         )
+        if calendar_days:
+            grouped_weeks: Dict[int, Dict[str, Any]] = {}
+            for index, raw_day in enumerate(calendar_days, start=1):
+                if not isinstance(raw_day, dict):
+                    continue
+                week_no = int(raw_day.get("week_index") or ((index - 1) // 7 + 1))
+                day_label = str(raw_day.get("day_label") or raw_day.get("day") or "")
+                event_day = {
+                    **raw_day,
+                    "day": day_label,
+                    "training_type": raw_day.get("training_type_label") or raw_day.get("training_type") or "",
+                }
+                grouped_weeks.setdefault(
+                    week_no,
+                    {
+                        "week_index": week_no,
+                        "phase": str(raw_day.get("phase") or ""),
+                        "load_level": str(raw_day.get("load_level") or ""),
+                        "days": [],
+                    },
+                )["days"].append(event_day)
+            if grouped_weeks:
+                plan = {
+                    **plan,
+                    "week_plans": [grouped_weeks[key] for key in sorted(grouped_weeks)],
+                }
         for week in plan.get("week_plans") or []:
             week_no = int(week.get("week_index") or 0)
             phase = str(week.get("phase") or "")

@@ -2,18 +2,27 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from marathon_qa_assistant.core.training_plan_context import coerce_float_from_unit_text
+
 
 def build_half_marathon_capacity_budget(
     *,
     weekly_volume_km: Optional[float],
     phase_id: str,
     available_days_count: Optional[int] = None,
+    recent_four_week_mileage_km: Optional[float] = None,
     recent_marathon: bool = False,
     fatigue_or_injury: bool = False,
     speed_calibration_available: bool = True,
 ) -> Dict[str, Any]:
     """按当前画像把 Sub-70 理想课表容量缩放为可执行预算。"""
-    volume = _safe_float(weekly_volume_km) or 40.0
+    planned_volume = _safe_float(weekly_volume_km) or 40.0
+    recent_volume = _safe_float(recent_four_week_mileage_km)
+    volume = planned_volume
+    volume_basis = "planned_weekly_volume"
+    if recent_volume is not None and 0 < recent_volume < planned_volume:
+        volume = recent_volume
+        volume_basis = "recent_four_week_mileage"
     days = int(available_days_count or 0)
     low_volume = volume < 45
     constrained_days = days > 0 and days < 4
@@ -74,6 +83,8 @@ def build_half_marathon_capacity_budget(
     notes = []
     if low_volume:
         notes.append("周跑量低于45km，HMP关键课容量按低跑量保守缩放。")
+    if volume_basis == "recent_four_week_mileage":
+        notes.append("近4周平均周跑量低于计划周跑量，容量预算按近期跑量保守计算。")
     if constrained_days:
         notes.append("可训练日少于4天，每周质量课上限降为1堂。")
     if recovery_risk:
@@ -84,7 +95,10 @@ def build_half_marathon_capacity_budget(
     return {
         "status": "ready",
         "phase_id": phase_id,
-        "weekly_volume_km": round(volume, 1),
+        "weekly_volume_km": round(planned_volume, 1),
+        "effective_weekly_volume_km": round(volume, 1),
+        "recent_four_week_mileage_km": round(recent_volume, 1) if recent_volume is not None else None,
+        "volume_basis": volume_basis,
         "quality_sessions_max": quality_sessions_max,
         **scaled,
         "notes": notes,
@@ -96,12 +110,7 @@ def _round_km(value: float) -> float:
 
 
 def _safe_float(value: Any) -> Optional[float]:
-    try:
-        if value is None or value == "":
-            return None
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+    return coerce_float_from_unit_text(value)
 
 
 __all__ = ["build_half_marathon_capacity_budget"]

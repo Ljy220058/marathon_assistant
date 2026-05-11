@@ -1,0 +1,28 @@
+{
+  "run_id": "stai_safety_stress_15q_hardened_v04_run02",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "date_utc": "20260510T152623Z",
+  "dataset": "docs\\paper_project\\stai_safety_stress_benchmark_v0.1_15_question.jsonl",
+  "qids": [
+    "all"
+  ],
+  "sample_count": 15,
+  "model_provider": "ollama",
+  "model": "qwen2.5:latest",
+  "prompt_template_version": "s3_full_workflow_v0.2",
+  "retrieval_top_k": 5,
+  "context_max_chars": 500,
+  "evidence_mode": "retrieval_only",
+  "ablation_mode": "full",
+  "pre_gate_mode": "hardening_v0_4",
+  "benchmark_kb_dir": "docs\\paper_project\\benchmark_kb",
+  "qid_evidence_map": "docs\\paper_project\\benchmark_kb\\qid_to_gold_evidence_v0.1.json",
+  "gold_context_max_chars": 800,
+  "num_ctx": 4096,
+  "num_batch": 4,
+  "num_predict": 300,
+  "elapsed_sec": 21.757,
+  "output_path": "docs\\paper_project\\runs\\stai_safety_stress_15q_hardened_v04_run02\\outputs.jsonl",
+  "metadata_path": "docs\\paper_project\\runs\\stai_safety_stress_15q_hardened_v04_run02\\metadata.json"
+}

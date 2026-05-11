@@ -180,6 +180,63 @@ WORKOUT_TEMPLATE_REGISTRY = {
 }
 
 WORKOUT_TEMPLATE_REGISTRY.update({
+    "hm_intro_fartlek_hills": {
+        "display_name": "导入期法特莱克/坡跑",
+        "training_type_label": "半马导入期法特莱克/坡跑（75-85% HMP）",
+        "aliases": [
+            "hm_intro_fartlek_hills",
+            "导入期法特莱克",
+            "导入期坡跑",
+            "短法特莱克",
+            "坡冲",
+            "75-85% HMP",
+        ],
+        "title_template": "半马导入期法特莱克/坡跑课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z3-Z4",
+        "intensity_target": "Z3-Z4 / 75-85% HMP 温和重启区",
+        "intensity_keywords": ["75-85% HMP", "法特莱克", "坡跑", "坡冲"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "35分钟体感法特莱克，含6×30秒轻快跑",
+            "轻松越野渐速跑，快段控制在75-85% HMP",
+            "短坡冲 + 轻松跑组合，重建跑姿和力量刺激",
+        ],
+        "training_objective": "低压力恢复训练热情，并重新引入速度、力量和跑姿刺激。",
+        "warmup_suggestion": "15分钟轻松跑 + 动态拉伸 + 跑姿练习",
+        "cooldown_suggestion": "10分钟慢跑 + 小腿、臀腿放松",
+        "alternative_workout": "若全马后疲劳仍明显，改为30-45分钟Z1-Z2恢复跑或完全休息。",
+        "applicable_phases": ["intro"],
+    },
+    "hm_base_threshold_progression": {
+        "display_name": "基础期阈值/渐速跑",
+        "training_type_label": "半马基础期阈值/渐速跑（75-85% HMP）",
+        "aliases": [
+            "hm_base_threshold_progression",
+            "基础期阈值",
+            "基础期渐速跑",
+            "肯尼亚式渐速跑",
+            "阈值巡航",
+            "75-85% HMP",
+            "85% HMP",
+        ],
+        "title_template": "半马基础期阈值/渐速课",
+        "source_priority": ["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        "zone_range": "Z3-Z4",
+        "intensity_target": "Z3-Z4 / 75-85% HMP 基础阈值区",
+        "intensity_keywords": ["75-85% HMP", "85% HMP", "阈值", "渐速"],
+        "extractor": "protocol",
+        "main_set_candidates": [
+            "3×10分钟有氧阈值，组间3分钟慢跑，控制在75-85% HMP",
+            "4×8分钟阈值巡航，组间2分钟慢跑，整体不超过85% HMP",
+            "50分钟肯尼亚式渐速跑，从轻松跑逐步进到85% HMP",
+        ],
+        "training_objective": "构建SSmax、有氧功率、跑步经济性和多配速基础，为后续半马专项课留出承接能力。",
+        "warmup_suggestion": "15分钟轻松跑 + 动态拉伸 + 4组短加速",
+        "cooldown_suggestion": "10-15分钟慢跑 + 髋部和腘绳肌放松",
+        "alternative_workout": "若疲劳较高，改为40-50分钟Z2轻松跑，取消阈值段。",
+        "applicable_phases": ["general"],
+    },
     "hm_90_support_endurance": {
         "display_name": "半马90%HMP辅助耐力跑",
         "training_type_label": "半马辅助耐力跑（90% HMP）",
@@ -331,7 +388,9 @@ _ACTION_LIBRARY_SOURCE = "动作库.pdf"
 
 EVIDENCE_TIER_LABELS = {
     "action_library": "动作库课表",
+    "protocol_rule": "HMP 基石协议",
     "kb_fallback": "参考知识库生成",
+    "needs_evidence": "证据不足待补全",
     "plan_only": "基础计划",
 }
 
@@ -355,12 +414,197 @@ WORKOUT_TYPE_KEYWORD_MAP = {
 }
 
 WORKOUT_TYPE_KEYWORD_MAP.update({
+    "hm_intro_fartlek_hills": ["hm_intro_fartlek_hills", "导入期法特莱克", "导入期坡跑", "短法特莱克", "75-85% HMP"],
+    "hm_base_threshold_progression": ["hm_base_threshold_progression", "基础期阈值", "基础期渐速跑", "阈值巡航", "85% HMP"],
     "hm_90_support_endurance": ["hm_90_support_endurance", "90% HMP", "90%HMP", "半马辅助耐力", "辅助耐力跑"],
     "hm_95_long_fast_run": ["hm_95_long_fast_run", "95% HMP", "95%HMP", "长距离快速跑", "半马专项耐力"],
     "hm_100_float_intervals": ["hm_100_float_intervals", "100% HMP", "100%HMP", "巡航恢复", "浮动间歇"],
     "hm_105_specific_speed": ["hm_105_specific_speed", "105% HMP", "105%HMP", "专项速度", "8K/10K"],
     "hm_110_support_speed": ["hm_110_support_speed", "107-110% HMP", "110% HMP", "107% HMP", "辅助速度"],
 })
+
+
+ACTION_LIBRARY_FOUNDATION_HITS = {
+    "aerobic_threshold": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 6,
+            "chunk_id": "动作库_p0006_c0001",
+            "score": 1.0,
+            "text": """
+            【Aerobic Endurance（有氧耐力）】
+            name：有氧阈值训练（最大脂肪氧化训练）
+            content：
+            a. 3-4*3000/2min
+            b. 5-6*2000/2min
+            c. 3*3000+3+2000(配速比3000快10s)
+            d. 上下坡交替跑15km
+            objective：在75–85%HRmax区间提升脂代谢效率与有氧耐力，提升最大脂肪氧化率
+            热身：15分钟慢跑+动态拉伸+马克操+3.2-4.8km加速跑（有氧跑加速到有氧阈值上限）
+            """,
+        },
+        {
+            "source_file": "动作库.pdf",
+            "page": 7,
+            "chunk_id": "动作库_p0007_c0001",
+            "score": 0.98,
+            "text": """
+            name：有氧阈值训练（最大脂肪氧化训练）
+            content：
+            e. 5000+3*2000
+            f. （3min有氧阈+2min慢跑+2min有氧阈+1min慢跑）*6
+            """,
+        },
+    ],
+    "tempo_run": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 8,
+            "chunk_id": "动作库_p0008_c0003",
+            "score": 1.0,
+            "text": """
+            【节奏跑（乳酸阈值训练）】
+            name：节奏跑（Tempo Run）
+            content：
+            a. 20分钟阈值跑（Z4）
+            b. 3×8min/Z4，组间慢跑3min
+            c. 25分钟持续Z4配速
+            objective：在Z4区间提升乳酸阈值附近的持续输出能力
+            热身：15分钟慢跑+动态拉伸
+            """,
+        },
+    ],
+    "interval_run": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 12,
+            "chunk_id": "动作库_p0012_c0004",
+            "score": 1.0,
+            "text": """
+            【间歇训练】
+            name：间歇跑（Interval）
+            content：
+            a. 4×800m/Z5，组间慢跑2min
+            b. 6×400m/Z6，组间慢跑90s
+            c. 3×1000m/200m慢跑
+            objective：在Z5-Z6区间提升速度耐力与最大摄氧量
+            热身：15分钟慢跑+动态拉伸+加速跑
+            """,
+        },
+    ],
+    "vo2max_interval": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 18,
+            "chunk_id": "动作库_p0018_c0001",
+            "score": 1.0,
+            "text": """
+            【摄氧量训练】
+            name：摄氧量训练（VO2max Interval）
+            content：
+            a. 5×3分钟/Z6-Z7，组间慢跑3min
+            b. 6×2分钟最大摄氧量间歇，组间慢跑2min
+            c. 4×4分钟摄氧量训练
+            objective：在Z6-Z7区间提升最大摄氧量与高强度有氧输出能力
+            热身：15分钟慢跑+动态拉伸+加速跑
+            """,
+        },
+    ],
+    "anaerobic_threshold": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 13,
+            "chunk_id": "动作库_p0013_c0002",
+            "score": 1.0,
+            "text": """
+            【无氧阈跑】
+            name：无氧阈跑（巡航间歇训练）
+            content：
+            a. 3×1600m/Z4，组间慢跑2min
+            b. 4×1200m/Z5，组间慢跑2min
+            c. 巡航间歇20分钟
+            objective：在Z4-Z5区间提升无氧阈附近的稳定输出能力
+            热身：15分钟慢跑+动态拉伸
+            """,
+        },
+    ],
+    "long_run": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 10,
+            "chunk_id": "动作库_p0010_c0005",
+            "score": 1.0,
+            "text": """
+            【长距离训练】
+            name：长距离（有氧耐力跑）
+            content：
+            a. 90分钟稳定有氧跑（Z2-Z3）
+            b. 120分钟长距离+补给练习
+            c. 3×20分钟稳定有氧
+            objective：在Z2-Z3区间提升有氧耐力与脂肪代谢能力
+            热身：20分钟慢跑+动态拉伸
+            """,
+        },
+    ],
+    "easy_run": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 15,
+            "chunk_id": "动作库_p0015_c0002",
+            "score": 1.0,
+            "text": """
+            【轻松跑】
+            name：轻松跑（Easy Run）
+            content：
+            a. 30分钟Z1轻松跑
+            b. 45分钟Z2轻松连续跑
+            c. 恢复跑20分钟
+            objective：在Z1-Z2区间促进恢复，保持有氧容量
+            热身：10分钟慢跑+动态拉伸
+            """,
+        },
+    ],
+    "marathon_pace": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 14,
+            "chunk_id": "动作库_p0014_c0001",
+            "score": 1.0,
+            "text": """
+            【马拉松配速跑】
+            name：马拉松配速跑（Marathon Pace）
+            content：
+            a. 2×15分钟Z3-Z4专项配速
+            b. 40分钟马拉松配速跑
+            c. 3×5km配速跑
+            objective：在Z3-Z4区间稳定目标马拉松配速控制能力
+            热身：15分钟慢跑+动态拉伸
+            """,
+        },
+    ],
+    "progression_run": [
+        {
+            "source_file": "动作库.pdf",
+            "page": 16,
+            "chunk_id": "动作库_p0016_c0001",
+            "score": 1.0,
+            "text": """
+            【渐进跑】
+            name：渐进跑（Progression Run）
+            content：
+            a. 45分钟从Z1渐进到Z4
+            b. 60分钟后半程渐加速
+            c. 3×10分钟渐进跑
+            objective：通过渐进加速提升配速控制与后程输出能力
+            热身：10分钟慢跑+动态拉伸
+            """,
+        },
+    ],
+}
+
+
+def get_action_library_foundation_hits(workout_type: str) -> List[Dict[str, Any]]:
+    return [dict(item) for item in ACTION_LIBRARY_FOUNDATION_HITS.get(str(workout_type or "").strip(), [])]
 
 
 def build_workout_template_query(workout_type: str) -> str:
@@ -492,7 +736,7 @@ def _build_protocol_template_card(
         warmup_suggestion=registry_entry.get("warmup_suggestion", ""),
         cooldown_suggestion=registry_entry.get("cooldown_suggestion", ""),
         alternative_workout=registry_entry.get("alternative_workout", ""),
-        evidence_tier="plan_only",
+        evidence_tier="protocol_rule",
         evidence_status={
             "main_set_candidates": "protocol" if main_set_candidates else "missing",
             "intensity_target": "protocol" if registry_entry.get("intensity_target") else "missing",
@@ -500,7 +744,7 @@ def _build_protocol_template_card(
             "warmup_suggestion": "protocol" if registry_entry.get("warmup_suggestion") else "missing",
             "cooldown": "protocol" if registry_entry.get("cooldown_suggestion") else "missing",
             "alternative_workout": "protocol" if registry_entry.get("alternative_workout") else "missing",
-            "reason": "半马HMP协议确定性模板，等待后续知识库证据增强。",
+            "reason": "半马HMP基石协议确定性排课，动作库字段提供执行细节。",
         },
     )
     return card.to_dict()
@@ -591,7 +835,7 @@ def _extract_generic_main_set_candidates(text: str, workout_type: str) -> List[s
         r"(\d+\s*[×*]\s*\d+[mk]\s*[,，]?\s*[配组间].*?min)",
         r"(\d+\s*分?钟?[^\n]{0,20}?[配跑])",
     ]
-    for pattern in candidate_patterns:
+    for pattern_index, pattern in enumerate(candidate_patterns):
         for match in re.finditer(pattern, normalized, flags=re.IGNORECASE | re.DOTALL):
             raw = match.group(1).strip()
             parts = re.split(r"(?=(?:[a-f]\.)\s*)", raw)
@@ -602,6 +846,8 @@ def _extract_generic_main_set_candidates(text: str, workout_type: str) -> List[s
                     candidates.append(candidate)
                 if len(candidates) >= 6:
                     return candidates[:6]
+        if pattern_index == 0 and candidates:
+            return candidates[:6]
     return candidates[:6]
 
 
@@ -661,6 +907,21 @@ def normalize_workout_type_for_template(training_type: str, main_set: str = "") 
     training_text = str(training_type or "").strip()
     main_set_text = str(main_set or "").strip()
     combined = f"{training_text} {main_set_text}"
+    if "HMP" in combined:
+        if any(keyword in combined for keyword in ("有氧阈值", "阈值巡航", "基础期阈值", "基础期渐速", "渐进跑")):
+            return "hm_base_threshold_progression"
+        if any(keyword in combined for keyword in ("法特莱克", "坡跑", "坡冲", "坡道")):
+            return "hm_intro_fartlek_hills"
+        if any(keyword in combined for keyword in ("90% HMP", "90%HMP", "辅助耐力")):
+            return "hm_90_support_endurance"
+        if any(keyword in combined for keyword in ("95% HMP", "95%HMP", "长距离快速", "专项耐力")):
+            return "hm_95_long_fast_run"
+        if any(keyword in combined for keyword in ("100% HMP", "100%HMP", "巡航恢复", "浮动间歇")):
+            return "hm_100_float_intervals"
+        if any(keyword in combined for keyword in ("105% HMP", "105%HMP", "专项速度", "8K", "10K")):
+            return "hm_105_specific_speed"
+        if any(keyword in combined for keyword in ("107-110% HMP", "110% HMP", "107% HMP", "辅助速度")):
+            return "hm_110_support_speed"
     all_pairs = [
         (keyword, type_key)
         for type_key, keywords in WORKOUT_TYPE_KEYWORD_MAP.items()
@@ -704,6 +965,7 @@ __all__ = [
     "WORKOUT_TYPE_KEYWORD_MAP",
     "build_daily_workout_template_card_from_hits",
     "build_workout_template_query",
+    "get_action_library_foundation_hits",
     "normalize_workout_type_for_template",
     "retrieve_daily_workout_template_card",
 ]

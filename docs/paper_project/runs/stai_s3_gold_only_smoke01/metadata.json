@@ -1,0 +1,28 @@
+{
+  "run_id": "stai_s3_gold_only_smoke01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "date_utc": "20260509T210758Z",
+  "dataset": "docs\\paper_project\\stai_benchmark_v0.2_50_question_draft.jsonl",
+  "qids": [
+    "STAI-P007",
+    "STAI-P014",
+    "STAI-P046"
+  ],
+  "sample_count": 3,
+  "model_provider": "ollama",
+  "model": "qwen2.5:latest",
+  "prompt_template_version": "s3_full_workflow_v0.1",
+  "retrieval_top_k": 5,
+  "context_max_chars": 500,
+  "evidence_mode": "gold_only",
+  "benchmark_kb_dir": "docs\\paper_project\\benchmark_kb",
+  "qid_evidence_map": "docs\\paper_project\\benchmark_kb\\qid_to_gold_evidence_v0.1.json",
+  "gold_context_max_chars": 800,
+  "num_ctx": 4096,
+  "num_batch": 4,
+  "num_predict": 300,
+  "elapsed_sec": 30.91,
+  "output_path": "docs\\paper_project\\runs\\stai_s3_gold_only_smoke01\\outputs.jsonl",
+  "metadata_path": "docs\\paper_project\\runs\\stai_s3_gold_only_smoke01\\metadata.json"
+}

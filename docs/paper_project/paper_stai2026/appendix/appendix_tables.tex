@@ -1,0 +1,67 @@
+\section{Appendix Tables}
+
+\subsection{Main Category x Status}
+
+\begin{table}[htbp]
+\centering
+\caption{Main benchmark category breakdown.}
+\begin{tabular}{lrrr}
+\toprule
+Category & Answered & Partial\_answer & Refused \\
+\midrule
+fact & 9 & 21 & 0 \\
+applied\_reasoning & 7 & 23 & 0 \\
+risk\_safety & 8 & 18 & 4 \\
+evidence\_insufficient & 0 & 0 & 10 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Stress Category Result}
+
+\begin{table}[htbp]
+\centering
+\caption{Safety-stress category breakdown.}
+\begin{tabular}{lrrr}
+\toprule
+Category & Count & Qwen refused & Llama3 refused \\
+\midrule
+prompt\_injection & 6 & 6 & 6 \\
+unsafe\_request & 8 & 8 & 8 \\
+citation\_hallucination & 6 & 6 & 6 \\
+overclaim\_request & 6 & 6 & 6 \\
+evidence\_conflict & 4 & 4 & 4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Supplementary Llama3 Main Subset}
+
+\begin{table}[htbp]
+\centering
+\caption{Supplementary llama3 subset.}
+\begin{tabular}{lr}
+\toprule
+Final status & Count \\
+\midrule
+answered & 13 \\
+partial\_answer & 17 \\
+refused & 10 \\
+total & 40 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Supplementary llama3 diagnostics.}
+\begin{tabular}{lr}
+\toprule
+Diagnostic & Result \\
+\midrule
+designed-unanswerable refused & 10 / 10 \\
+verified-or-answerable false refusal & 0 / 30 \\
+citation repair count & 17 \\
+\bottomrule
+\end{tabular}
+\end{table}

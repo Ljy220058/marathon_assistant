@@ -29,7 +29,11 @@ from marathon_qa_assistant.core.half_marathon_schedule_composer import (
     build_hmp_repair_suggestions,
     compose_hmp_week_sessions,
 )
-from marathon_qa_assistant.core.training_plan_context import align_plan_duration_context
+from marathon_qa_assistant.core.training_plan_context import (
+    align_plan_duration_context,
+    coerce_float_from_unit_text,
+    coerce_int_from_unit_text,
+)
 from marathon_qa_assistant.core.training_plan_models import (
     DayPlan,
     PhaseBlock,
@@ -63,7 +67,7 @@ CHINESE_COUNT_MAP = {
     "7": 7,
 }
 WORKOUT_MAIN_SET_HINTS = {
-    "aerobic_threshold": "有氧阈值主课",
+    "aerobic_threshold": "3×10分钟有氧阈值，组间3分钟慢跑，控制在Z3-Z4",
     "tempo_run": "25分钟阈值节奏跑",
     "vo2max_interval": "5×3分钟摄氧量间歇，组间慢跑3分钟",
     "interval_run": "5×800m间歇，组间慢跑200m",
@@ -137,6 +141,75 @@ def _parse_pace_seconds(pace: Any) -> int:
     if match:
         return int(match.group(1)) * 60 + int(match.group(2))
     return 270
+
+
+def _parse_duration_seconds(value: Any) -> Optional[int]:
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    match = re.search(r"(\d+)\s*小时\s*(\d+)\s*分?", text)
+    if match:
+        return int(match.group(1)) * 3600 + int(match.group(2)) * 60
+    match = re.search(r"(\d+)\s*h\s*(\d+)", text)
+    if match:
+        return int(match.group(1)) * 3600 + int(match.group(2)) * 60
+    match = re.search(r"\b([1-3])[:：](\d{2})(?::(\d{2}))?\b", text)
+    if match:
+        hours = int(match.group(1))
+        minutes = int(match.group(2))
+        seconds = int(match.group(3) or 0)
+        return hours * 3600 + minutes * 60 + seconds
+    return None
+
+
+def _parse_target_pace_seconds(value: Any) -> Optional[int]:
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    match = re.search(r"(\d+)[:：](\d{2})\s*/?\s*(?:km|公里|千米)?", text)
+    if match:
+        minutes = int(match.group(1))
+        seconds = int(match.group(2))
+        if 2 <= minutes <= 9:
+            return minutes * 60 + seconds
+    return None
+
+
+def _cap_fast_pace_by_profile(seconds: int, profile: Dict[str, Any]) -> int:
+    mileage = coerce_float_from_unit_text(profile.get("weekly_mileage"), default=0.0) or 0.0
+    goal_text = _profile_text(profile, "goal", "target_pace", "target_time", "target_half_time")
+    if any(token in goal_text for token in ("完赛", "轻松", "健康", "首")):
+        fastest = 330 if mileage < 45 else 300
+    elif mileage < 40:
+        fastest = 315
+    elif mileage < 55:
+        fastest = 285
+    elif mileage < 70:
+        fastest = 260
+    else:
+        fastest = 220
+    return max(int(seconds), fastest)
+
+
+def _resolve_threshold_pace_seconds(profile: Dict[str, Any], race_type: str) -> int:
+    target_text = _profile_text(profile, "target_pace", "target_time", "target_half_time", "goal")
+    target_pace = _parse_target_pace_seconds(target_text)
+    if target_pace:
+        return _cap_fast_pace_by_profile(target_pace - 10, profile)
+
+    target_duration = _parse_duration_seconds(target_text)
+    if target_duration and race_type == "half_marathon":
+        hmp_seconds = int(target_duration / 21.0975)
+        return _cap_fast_pace_by_profile(hmp_seconds - 10, profile)
+    if target_duration and race_type == "marathon":
+        mp_seconds = int(target_duration / 42.195)
+        return _cap_fast_pace_by_profile(mp_seconds - 20, profile)
+
+    parsed_t_pace = _parse_pace_seconds(profile.get("t_pace"))
+    if str(profile.get("t_pace") or "").strip():
+        return _cap_fast_pace_by_profile(parsed_t_pace, profile)
+
+    return _cap_fast_pace_by_profile(360, profile)
 
 
 def _format_pace(seconds: int) -> str:
@@ -483,6 +556,16 @@ def _profile_flag(profile: Dict[str, Any], *keys: str) -> bool:
     return False
 
 
+def _profile_float(profile: Dict[str, Any], *keys: str) -> Optional[float]:
+    for key in keys:
+        value = profile.get(key)
+        parsed = coerce_float_from_unit_text(value)
+        if parsed is None:
+            continue
+        return parsed
+    return None
+
+
 def _build_hm_archetype_input(profile: Dict[str, Any], total_weeks: int) -> RunnerArchetypeInput:
     background = _profile_text(
         profile,
@@ -532,7 +615,7 @@ def _build_hm_archetype_input(profile: Dict[str, Any], total_weeks: int) -> Runn
         middle_distance_background=middle_distance_background,
         speed_strength=speed_strength,
         half_marathon_experience_low=half_marathon_experience_low,
-        weekly_mileage_km=float(profile.get("weekly_mileage") or 0) or None,
+        weekly_mileage_km=_profile_float(profile, "weekly_mileage"),
         injury_or_fatigue=injury_or_fatigue,
     )
 
@@ -550,6 +633,12 @@ def _build_hm_protocol_context(profile: Dict[str, Any], total_weeks: int, race_t
         "active": True,
         "recent_marathon": archetype_input.recent_marathon,
         "input_weekly_mileage_km": archetype_input.weekly_mileage_km,
+        "input_recent_four_week_mileage_km": _profile_float(
+            profile,
+            "recent_four_week_mileage",
+            "recent_4_week_mileage",
+            "recent_four_weekly_mileage",
+        ),
         "profile_gaps": profile_gaps,
         "pace_calibration": pace_calibration,
         "selected_archetype": primary.to_dict(),
@@ -945,6 +1034,27 @@ def _easy_km_text(km: float, pace_range: str) -> str:
     return f"{km:.1f}km，配速{pace_range}/km"
 
 
+def _strip_hmp_workout_prefix(main_set: Any) -> Tuple[str, str]:
+    text = str(main_set or "").strip()
+    match = re.match(r"^(hm_[a-z0-9_]+)\s*[：:]\s*(.*)$", text, flags=re.IGNORECASE)
+    if not match:
+        return text, ""
+    return match.group(2).strip() or text, match.group(1)
+
+
+def _clean_hmp_ids_for_frontend(plan_dict: Dict[str, Any]) -> None:
+    for week in plan_dict.get("week_plans") or []:
+        if not isinstance(week, dict):
+            continue
+        for day in week.get("days") or []:
+            if not isinstance(day, dict):
+                continue
+            cleaned, workout_id = _strip_hmp_workout_prefix(day.get("main_set"))
+            if workout_id:
+                day["main_set"] = cleaned
+                day["workout_type"] = day.get("workout_type") or workout_id
+
+
 def _fixed_km_for_training_type(training_type: str, role: str) -> Tuple[float, float]:
     if role == "long_run":
         return 2.0, 1.5
@@ -1032,7 +1142,9 @@ def _allocate_weekly_volume(
     long_run_day: str,
     long_run_main_set: str,
     week_in_block: int,
+    easy_pace_range: str,
     is_taper_block: bool = False,
+    distance_based_long_run: bool = False,
 ) -> List[DayPlan]:
     available_set = set(available_days)
     if is_taper_block:
@@ -1124,10 +1236,13 @@ def _allocate_weekly_volume(
     for day in WEEKDAY_ORDER:
         if day == long_run_day:
             wu, cd = 2.0, 1.5
+            long_run_text = long_run_main_set
+            if distance_based_long_run and "分钟" in str(long_run_text):
+                long_run_text = f"{long_km:.1f}km轻松长距离，配速{easy_pace_range}/km"
             days.append(DayPlan(
                 day=day, training_type="长距离",
                 warmup="慢跑15分钟 + 动态拉伸",
-                main_set=long_run_main_set,
+                main_set=long_run_text,
                 cooldown="慢跑10分钟 + 静态拉伸",
                 venue="公路/绿道",
                 notes="长距离跑，板块跑量约束已分配距离。",
@@ -1173,7 +1288,7 @@ def _allocate_weekly_volume(
             days.append(DayPlan(
                 day=day, training_type="轻松跑",
                 warmup="慢跑10分钟",
-                main_set=_easy_km_text(easy_main_km, "5:05-5:25"),
+                main_set=_easy_km_text(easy_main_km, easy_pace_range),
                 cooldown="慢跑10分钟 + 拉伸",
                 venue="公园",
                 notes="衔接日维持跑量，强度保持轻松。",
@@ -1268,10 +1383,10 @@ def _build_week_days(
     total_weeks: int = 0,
     hm_protocol_context: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[DayPlan], float, Dict[str, Any]]:
-    threshold_pace_seconds = _parse_pace_seconds(profile.get("t_pace"))
     race_type = _resolve_goal_race_type(profile.get("goal"))
-    base_weekly_mileage = float(profile.get("weekly_mileage") or 40.0)
-    max_session_minutes = int(profile.get("max_session_minutes") or 90)
+    threshold_pace_seconds = _resolve_threshold_pace_seconds(profile, race_type)
+    base_weekly_mileage = coerce_float_from_unit_text(profile.get("weekly_mileage"), default=40.0) or 40.0
+    max_session_minutes = coerce_int_from_unit_text(profile.get("max_session_minutes"), default=90) or 90
     primary_quality_day, secondary_quality_day, long_run_day = _resolve_training_slots(available_days)
     week_in_phase = week_index - mesocycle.start_week + 1
     weekly_volume_km = _build_weekly_volume(base_weekly_mileage, week_index, blocks)
@@ -1295,6 +1410,7 @@ def _build_week_days(
         total_weeks,
     )
     hmp_week_decision: Dict[str, Any] = {}
+    distance_based_long_run = False
     if hm_protocol_context and hm_protocol_context.get("active") and race_type == "half_marathon":
         phase_id = _hm_protocol_phase_id(mesocycle, week_index, total_weeks, hm_protocol_context) or ""
         selected = hm_protocol_context.get("selected_archetype") or {}
@@ -1312,6 +1428,7 @@ def _build_week_days(
                 weekly_volume_km=weekly_volume_km,
                 phase_id=phase_id or "general",
                 available_days_count=len(available_days),
+                recent_four_week_mileage_km=hm_protocol_context.get("input_recent_four_week_mileage_km"),
                 recent_marathon=bool(hm_protocol_context.get("recent_marathon")),
                 fatigue_or_injury=bool(profile.get("injury_or_fatigue") or profile.get("fatigue") or profile.get("injury")),
                 speed_calibration_available=bool(pace_calibration.get("speed_calibration_available")),
@@ -1321,7 +1438,7 @@ def _build_week_days(
             if not isinstance(session, dict):
                 continue
             role = str(session.get("role") or "")
-            if role == "primary" and phase_id != "general":
+            if role == "primary":
                 primary_type = str(session.get("training_type") or primary_type)
                 primary_main_set = str(session.get("main_set") or primary_main_set)
                 primary_note = str(session.get("note") or primary_note)
@@ -1331,6 +1448,16 @@ def _build_week_days(
                 secondary_note = str(session.get("note") or secondary_note)
             elif role == "long_run" and _phase_family(mesocycle.name) != "taper":
                 long_run_main_set = str(session.get("main_set") or long_run_main_set)
+        capacity_budget = hmp_week_decision.get("capacity_budget") or {}
+        if capacity_budget.get("volume_basis") == "recent_four_week_mileage":
+            effective_volume = capacity_budget.get("effective_weekly_volume_km")
+            if effective_volume:
+                weekly_volume_km = min(float(weekly_volume_km), float(effective_volume))
+                distance_based_long_run = True
+        if capacity_budget.get("quality_sessions_max") == 1 and secondary_quality_day:
+            secondary_type = "轻松跑"
+            secondary_main_set = _easy_km_text(8.0, _format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65))
+            secondary_note = "近4周跑量或恢复约束触发容量预算，本次次课降级为轻松跑。"
 
     week_in_block = ((week_index - 1) % 4) + 1
     current_block = next((b for b in blocks if b.start_week <= week_index <= b.end_week), None)
@@ -1347,7 +1474,9 @@ def _build_week_days(
         long_run_day=long_run_day,
         long_run_main_set=long_run_main_set,
         week_in_block=week_in_block,
+        easy_pace_range=_format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65),
         is_taper_block=is_taper_block,
+        distance_based_long_run=distance_based_long_run,
     )
     return days, weekly_volume_km, hmp_week_decision
 
@@ -1363,7 +1492,7 @@ def build_structured_training_plan_skeleton(
     available_days = _normalize_available_days(aligned_profile.get("available_days"))
     weekly_structure_constraints = _parse_weekly_structure_constraints(query)
     macrocycle = _resolve_macrocycle(aligned_profile, total_weeks)
-    base_weekly_mileage = float(aligned_profile.get("weekly_mileage") or 40.0)
+    base_weekly_mileage = coerce_float_from_unit_text(aligned_profile.get("weekly_mileage"), default=40.0) or 40.0
     blocks = resolve_4week_blocks(total_weeks, base_weekly_mileage)
     race_type = _resolve_goal_race_type(aligned_profile.get("goal"))
     hm_protocol_context = _build_hm_protocol_context(aligned_profile, total_weeks, race_type)
@@ -1451,6 +1580,9 @@ def build_structured_training_plan_skeleton(
             target_race_date=str(aligned_profile.get("target_race_date") or ""),
             plan_type="single_week" if total_weeks == 1 else "multi_week",
             generated_at=date.today().isoformat(),
+            performance_calibration=(
+                hm_protocol_context.get("pace_calibration") if hm_protocol_context.get("active") else {}
+            ),
         ),
         phase_summary=phase_summary,
         week_plans=week_plans,
@@ -1478,6 +1610,7 @@ def build_structured_training_plan_skeleton(
             validation["repair_applied"] = False
         validation["repair_suggestions"] = build_hmp_repair_suggestions(validation)
         plan_dict["half_marathon_protocol_validation"] = validation
+        _clean_hmp_ids_for_frontend(plan_dict)
     if weekly_structure_constraints.get("required_workouts") or weekly_structure_constraints.get("forbidden_workouts") or weekly_structure_constraints.get("required_rest_days") or weekly_structure_constraints.get("weekly_frequency"):
         plan_dict["weekly_structure_constraints"] = weekly_structure_constraints
         plan_dict["weekly_structure_validation"] = _validate_weekly_structure_constraints(plan_dict, weekly_structure_constraints)

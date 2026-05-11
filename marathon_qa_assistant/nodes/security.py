@@ -16,7 +16,6 @@ async def security_gate_node(state: IntegratedState, config: RunnableConfig) -> 
     if not is_safe:
         return {
             "mode": "intercepted",
-            "is_approved": True,
             "final_report": (
                 "## 安全拦截\n"
                 f"当前请求被系统安全护栏拦截，原因：{reason}\n\n"
@@ -33,7 +32,6 @@ async def security_gate_node(state: IntegratedState, config: RunnableConfig) -> 
         if not history_safe:
             return {
                 "mode": "intercepted",
-                "is_approved": True,
                 "final_report": (
                     "## 会话已重置\n"
                     f"最近对话中检测到不安全内容：{history_reason}\n\n"

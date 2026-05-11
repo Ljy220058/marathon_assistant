@@ -1,0 +1,27 @@
+\section{Related Work}
+
+This paper sits at the intersection of retrieval-augmented generation, agentic workflow design, verification and repair, and risk-aware advisory systems. We use this literature to position the contribution narrowly: the paper does not claim that multi-agent orchestration, RAG, or self-critique is new. The contribution is the combination of explicit evidence gating, risk gating, independent auditing, bounded citation/grounding repair, and traceable refusal in a focused safety-sensitive endurance-training benchmark.
+
+\subsection{RAG, Verifiability, and Citation Grounding}
+
+Retrieval-augmented generation (RAG) connects parametric generation with non-parametric retrieved evidence for knowledge-intensive tasks \citep{lewis2020rag}. Later work has studied whether generated search or RAG-style answers are verifiable against cited sources \citep{liu2023verifiability}, how to generate answers with citations \citep{gao2023alce}, and how to annotate hallucinations in RAG outputs \citep{niu2023ragtruth}. These works motivate our focus on evidence traceability rather than answer fluency alone.
+
+Our setting differs from general open-domain RAG evaluation in two ways. First, endurance-training advice contains safety-sensitive requests where unsupported generation can be worse than refusal. Second, the relevant outcome is not only whether an answer is correct, but whether the system exposes why evidence is sufficient, insufficient, conflicting, or unsafe. For that reason, our benchmark distinguishes \texttt{answered}, \texttt{partial\_answer}, and \texttt{refused} rather than collapsing all non-answers into failure.
+
+\subsection{Agentic Retrieval, Critique, and Repair}
+
+Recent agentic RAG and verification methods make retrieval and critique more explicit. Self-RAG learns to retrieve, generate, and critique through self-reflection \citep{asai2023selfrag}, while Corrective RAG evaluates retrieved documents and adjusts generation when retrieval quality is low \citep{yan2024crag}. Chain-of-Verification reduces hallucination by generating and answering verification questions \citep{dhuliawala2023cove}. Reflexion and Self-Refine show that language agents can improve outputs through verbal feedback and iterative refinement \citep{shinn2023reflexion,madaan2023selfrefine}.
+
+Our workflow is aligned with this direction, but it avoids treating self-reflection as a hidden property of a single generator prompt. The Evidence Gate, Risk Gate, Independent Grounding Auditor, and Bounded Citation/Grounding Repair stage are separate control points with logged intermediate states. This design makes it possible to count false refusals, citation repairs, designed-unanswerable refusals, and pre-gate blocks directly from traces.
+
+\subsection{Tool-Using and Modular Agent Workflows}
+
+Tool-using and modular-agent systems show that LLM applications can be decomposed into explicit reasoning, action, memory, and tool-use components. ReAct interleaves reasoning and acting \citep{yao2022react}; MRKL routes LLMs to external knowledge and symbolic modules \citep{karpas2022mrkl}; Toolformer studies tool-use learning \citep{schick2023toolformer}; ReWOO decouples reasoning from observations \citep{xu2023rewoo}; LLM Compiler explores parallel function calling \citep{kim2023llmcompiler}; and MemGPT frames memory management as an operating-system-like concern for LLM agents \citep{packer2023memgpt}.
+
+These systems motivate the engineering shape of our method: retrieval, evidence validation, risk analysis, answer generation, auditing, and repair are represented as workflow stages rather than folded into a single prompt. However, we do not claim novelty from modularity alone. The specific contribution is applying modular control points to safety-sensitive advisory RAG and evaluating their refusal, repair, and grounding behavior.
+
+\subsection{Multi-Agent Coordination and High-Stakes Advisory Settings}
+
+Multi-agent frameworks such as AutoGen, CAMEL, ChatDev, MetaGPT, AgentVerse, and AutoAgents demonstrate that multiple LLM roles can coordinate complex tasks through conversation, role assignment, or generated agent structures \citep{wu2023autogen,li2023camel,qian2023chatdev,hong2023metagpt,chen2023agentverse,chen2023autoagents}. Multiagent Debate studies whether agent disagreement can improve factuality and reasoning \citep{du2023debate}. MDAgents further explores adaptive collaboration for medical decision-making \citep{kim2024mdagents}.
+
+These works are useful inspirations but also define the boundary of our claim. We do not present a general multi-agent framework or clinical decision system. Instead, we borrow the idea of explicit roles and risk-aware routing, then constrain it to a smaller and more auditable pipeline where unsafe requests, insufficient evidence, and unrepairable grounding failures can terminate in refusal.

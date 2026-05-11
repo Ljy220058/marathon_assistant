@@ -1,0 +1,82 @@
+{
+  "ok": true,
+  "results": [
+    {
+      "path": "docs\\paper_project\\stai2026_pilot_benchmark_v0.1.jsonl",
+      "rows": 15,
+      "scanned_rows": 15,
+      "total_strings": 135,
+      "total_chars": 2778,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    },
+    {
+      "path": "docs\\paper_project\\stai_benchmark_v0.2_50_question_draft.jsonl",
+      "rows": 50,
+      "scanned_rows": 50,
+      "total_strings": 550,
+      "total_chars": 10587,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    },
+    {
+      "path": "docs\\paper_project\\runs\\stai_s0_norag_qwen2_5_20260510_run01\\outputs.jsonl",
+      "rows": 15,
+      "scanned_rows": 15,
+      "total_strings": 165,
+      "total_chars": 6974,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    },
+    {
+      "path": "docs\\paper_project\\runs\\stai_s1_vanilla_rag_qwen2_5_after_reboot_full01\\outputs.jsonl",
+      "rows": 15,
+      "scanned_rows": 15,
+      "total_strings": 465,
+      "total_chars": 56220,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    },
+    {
+      "path": "docs\\paper_project\\runs\\stai_s3_gold_only_50q_v02_run01\\outputs.jsonl",
+      "rows": 50,
+      "scanned_rows": 50,
+      "total_strings": 2135,
+      "total_chars": 89937,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    },
+    {
+      "path": "docs\\paper_project\\runs\\stai_s3_retrieval_only_50q_v02_run01\\outputs.jsonl",
+      "rows": 50,
+      "scanned_rows": 50,
+      "total_strings": 3966,
+      "total_chars": 376259,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    },
+    {
+      "path": "docs\\paper_project\\runs\\stai_s3_retrieval_plus_gold_50q_v02_run01\\outputs.jsonl",
+      "rows": 50,
+      "scanned_rows": 50,
+      "total_strings": 4632,
+      "total_chars": 414684,
+      "suspicious_marker_count": 0,
+      "marker_counts": {},
+      "suspicious_examples": [],
+      "first_question": "优秀耐力运动员的训练强度分布通常有什么特点？"
+    }
+  ]
+}

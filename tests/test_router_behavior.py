@@ -9,7 +9,7 @@ if str(root) not in sys.path:
 
 from marathon_qa_assistant.nodes.router import router_node
 from marathon_qa_assistant.nodes.routing import (
-    after_auditor_route,
+    after_critic_auditor_route,
     after_planner_route,
     after_profile_update_route,
     after_router_route,
@@ -25,6 +25,7 @@ def test_router_node_routes_research_query_to_research_mode():
     result = asyncio.run(router_node(state, None))
 
     assert result["mode"] == "research"
+    assert result["workflow_kind"] == "research"
     assert result["intent_type"] == "qa"
     assert result["category"] == "research"
 
@@ -35,6 +36,7 @@ def test_router_node_routes_weekly_plan_query_to_subagent_mode():
     result = asyncio.run(router_node(state, None))
 
     assert result["mode"] == "subagent"
+    assert result["workflow_kind"] == "plan"
     assert result["intent_type"] == "plan"
     assert result["category"] == "coach"
 
@@ -45,6 +47,7 @@ def test_router_node_routes_profile_update_query_to_profile_update_intent():
     result = asyncio.run(router_node(state, None))
 
     assert result["mode"] == "team"
+    assert result["workflow_kind"] == "profile_update"
     assert result["intent_type"] == "profile_update"
     assert result["category"] == "coach"
 
@@ -55,6 +58,7 @@ def test_router_node_marks_nutrition_queries_with_nutritionist_category():
     result = asyncio.run(router_node(state, None))
 
     assert result["mode"] == "team"
+    assert result["workflow_kind"] == "qa"
     assert result["intent_type"] == "qa"
     assert result["category"] == "nutritionist"
 
@@ -113,19 +117,19 @@ def test_after_planner_route_requires_subtasks_before_executor():
     assert after_planner_route(state) == "missing_info_handler"
 
 
-def test_after_therapist_route_prioritizes_auditor_for_qa():
+def test_after_therapist_route_prioritizes_critic_auditor_for_qa():
     state = {"intent_type": "qa", "is_approved": False, "mode": "team"}
 
-    assert after_therapist_route(state) == "auditor"
+    assert after_therapist_route(state) == "critic_auditor"
 
 
-def test_after_auditor_route_returns_to_executor_for_subagent_retry():
-    state = {"is_approved": False, "iteration_count": 1, "mode": "subagent"}
+def test_after_critic_auditor_route_returns_to_executor_for_plan_retry():
+    state = {"is_approved": False, "iteration_count": 1, "mode": "subagent", "workflow_kind": "plan"}
 
-    assert after_auditor_route(state) == "executor"
+    assert after_critic_auditor_route(state) == "executor"
 
 
-def test_after_auditor_route_stops_after_max_iterations():
+def test_after_critic_auditor_route_stops_after_max_iterations():
     state = {"is_approved": False, "iteration_count": 3, "mode": "team"}
 
-    assert after_auditor_route(state) == "missing_info_handler"
+    assert after_critic_auditor_route(state) == "missing_info_handler"

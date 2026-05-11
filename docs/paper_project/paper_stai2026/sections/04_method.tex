@@ -1,0 +1,88 @@
+\section{Method}
+
+\subsection{Overview}
+
+We propose an evidence-gated audit-and-repair workflow for safety-sensitive endurance-training advice. The core design principle is that the language model should not be the only component deciding whether a request is answerable, safe, or sufficiently grounded. Instead, the system decomposes the advisory process into explicit control points: request-level filtering, evidence retrieval, evidence sufficiency checking, risk checking, evidence-constrained generation, independent auditing, and repair or refusal.
+
+The workflow is evaluated as S3, the full system. Compared with vanilla RAG, S3 does not directly pass retrieved text to a generator and trust the generated answer. Retrieved or curated evidence is first passed through an Evidence Gate. Safety-sensitive cases are additionally checked by a Risk Gate. Draft answers are then reviewed by an independent Auditor, which can approve the answer, request citation or grounding repair, or force refusal.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figure1_method_workflow.png}
+  \caption{Evidence-gated audit-and-repair workflow for safety-sensitive endurance-training advice. User requests first pass through request-level filtering and evidence retrieval. Evidence and risk gates determine whether generation is allowed, bounded, or refused. Draft answers must pass an independent grounding auditor; bounded citation/grounding repair can produce a partial answer or refusal when support remains insufficient. The figure highlights refusal as an explicit workflow state rather than a generic failure.}
+  \label{fig:workflow}
+\end{figure}
+
+The method is intentionally modular. Later experiments can replace individual modules, such as the deterministic pre-gate or retriever, while preserving the same trace schema and evaluation metrics.
+
+\subsection{Output States}
+
+Given a query \(q\), the system returns one of three output states:
+
+\begin{itemize}[leftmargin=*]
+  \item \texttt{answered}: supported answer passes audit;
+  \item \texttt{partial\_answer}: bounded answer after repair, usually because citation or support constraints required a conservative rewrite;
+  \item \texttt{refused}: evidence is insufficient, the request is unsafe, or the request asks for unsupported claims, fabricated evidence, or unsafe continuation.
+\end{itemize}
+
+This design treats refusal as a first-class result rather than a generic failure. In a safety-sensitive advisory setting, a correct refusal can be the desired behavior.
+
+\subsection{Pre-Gate Request Filter}
+
+The pre-gate is a deterministic request-level filter applied before retrieval and generation. It detects request patterns that should not be passed to the generator even if later retrieval returns superficially relevant text. The current policy registry covers:
+
+\begin{itemize}[leftmargin=*]
+  \item instruction injection or evidence fabrication pressure;
+  \item unsupported performance guarantees or precise individual predictions;
+  \item red-flag symptoms paired with requests to continue or prescribe training;
+  \item worsening or persistent pain paired with training-continuation pressure;
+  \item requests to suppress safety advice or cherry-pick risk evidence.
+\end{itemize}
+
+If the pre-gate fires, the workflow returns a refusal with a policy-level reason. This module should be interpreted as a targeted request-level hardening layer, not as a general prompt-injection defense.
+
+\subsection{Evidence Modes}
+
+The workflow supports three evidence modes:
+
+\begin{itemize}[leftmargin=*]
+  \item \texttt{retrieval\_only}: uses ordinary vector-retrieved contexts from the current knowledge base;
+  \item \texttt{gold\_only}: uses curated benchmark evidence spans;
+  \item \texttt{retrieval\_plus\_gold}: combines retrieved contexts with curated evidence.
+\end{itemize}
+
+These modes separate retrieval quality from downstream workflow behavior. \texttt{gold\_only} serves as a curated-evidence upper bound, while \texttt{retrieval\_only} exposes failures caused by retrieval noise or evidence misses. The main 100-question run uses \texttt{retrieval\_plus\_gold}, which is the most informative setting for testing the full workflow while retaining curated benchmark traceability.
+
+\subsection{Evidence Gate}
+
+The Evidence Gate decides whether the visible evidence is sufficient to answer the query. It outputs \texttt{answerable}, \texttt{partial}, or \texttt{unanswerable}. It also records required evidence chunks and missing evidence, making evidence insufficiency auditable. A user request for a precise VO\(_2\)max improvement, a guaranteed race result, or a nonexistent page citation should be rejected when the evidence does not support it.
+
+\subsection{Risk Gate}
+
+The Risk Gate identifies safety-sensitive cases and forbidden advice. It is activated for risk-related benchmark items and stress prompts. Risk examples include chest pain, syncope, palpitations, fever, suspected infection, exertional heat illness, persistent musculoskeletal pain, and high fatigue or overreaching signals.
+
+The Risk Gate records required safety actions such as stopping activity, lowering intensity, seeking professional evaluation, or refusing a high-intensity plan. It also records forbidden advice, such as continuing the original plan, increasing intensity, or providing diagnosis-like reassurance.
+
+\subsection{Evidence-Constrained Generation, Audit, and Repair}
+
+If the request is not blocked and the evidence gate does not require immediate refusal, an answer generator drafts a response under explicit evidence and risk constraints. The generator is instructed to use only allowed evidence and to avoid unsupported claims. It must cite available evidence identifiers rather than inventing sources, pages, or DOI-like references.
+
+The generator is not trusted as the final authority. Its output is a draft that must pass independent audit. The Auditor checks the draft answer for claim support, citation validity, and risk compliance. It can return \texttt{pass}, \texttt{repair\_required}, or \texttt{refuse\_required}.
+
+Repair performs bounded correction. It can remove unsupported claims, add safety de-escalation language, repair missing or invalid citations using available evidence, or convert the output into refusal when repair would require fabricating support. Repair is deliberately bounded: the system is not allowed to fill evidence gaps by model knowledge.
+
+\subsection{Trace Schema and Ablations}
+
+Each run stores a structured trace for every question, including query text, evidence mode, pre-gate result, retrieved contexts, gold evidence contexts, evidence gate result, risk gate result, draft generation, audit, repair, final answer, and final status. This trace design supports reproducibility and error analysis.
+
+The method supports direct ablations:
+
+\begin{itemize}[leftmargin=*]
+  \item \texttt{no\_gate}: bypasses the Evidence Gate;
+  \item \texttt{no\_audit}: bypasses the independent Auditor;
+  \item \texttt{no\_repair}: disables repair after audit;
+  \item \texttt{pre\_gate\_mode=off}: disables deterministic request hardening;
+  \item \texttt{pre\_gate\_mode=hardening\_v0\_4}: enables the current request-level hardening rules.
+\end{itemize}
+
+These ablations test whether the workflow behavior is caused by explicit control points rather than by a single prompt.

@@ -11,10 +11,12 @@ from marathon_qa_assistant.core.state_models import (
     derive_adaptive_reasons,
     normalize_workout_feedback,
 )
+from marathon_qa_assistant.core.evidence_bundle import find_invalid_citations
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     ensure_usage,
     format_evidence_lines,
+    format_state_evidence_lines,
     get_security_prompt_suffix,
 )
 
@@ -43,7 +45,6 @@ async def _run_expert_llm(
     config: RunnableConfig,
     fallback_title: str,
 ) -> Tuple[str, Dict[str, int]]:
-    rag_sources = state.get("rag_sources", [])
     profile = state.get("user_profile", {})
     prompt = f"""你是马拉松多智能体系统中的 {role_name}。
 
@@ -60,7 +61,7 @@ async def _run_expert_llm(
 {state.get("graph_context", "") or "暂无直接图谱路径"}
 
 本地知识库证据：
-{format_evidence_lines(rag_sources, limit=3)}
+{format_state_evidence_lines(state, limit=5)}
 
 Wiki 概念补充上下文：
 {_format_wiki_context(state.get("wiki_context", ""))}
@@ -81,7 +82,7 @@ Wiki 概念补充上下文：
             f"## {fallback_title}\n"
             f"- 问题：{state.get('query', '')}\n"
             f"- 画像摘要：{profile.get('goal', '未知目标')} / {profile.get('weekly_mileage', 0)} km\n"
-            f"- 证据摘要：\n{format_evidence_lines(rag_sources, limit=3)}"
+            f"- 证据摘要：\n{format_state_evidence_lines(state, limit=5)}"
         )
         return fallback, ensure_usage(state.get("token_usage"))
 
@@ -162,6 +163,7 @@ async def nutritionist_node(state: IntegratedState, config: RunnableConfig) -> d
     merged = (state.get("draft_plan", "") + "\n\n" + content).strip()
     return {
         "draft_plan": merged,
+        "nutritionist_done": True,
         "token_usage": usage,
         "reasoning_log": ["[nutritionist] 已补充营养支持建议"],
     }
@@ -171,60 +173,99 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
     del config
     draft = state.get("draft_plan", "") or state.get("final_report", "")
     review_feedback: List[str] = []
-    is_approved = True
+    passed = True
 
     risky_keywords = ["每日高强度", "无休息", "强忍疼痛", "all-out", "极限冲刺"]
     for keyword in risky_keywords:
         if keyword in draft:
-            is_approved = False
+            passed = False
             review_feedback.append(f"检测到潜在高风险表述：{keyword}")
 
     if state.get("intent_type") == "qa":
         review_feedback.append("QA 模式仅做安全检查，不做处方回写。")
-        is_approved = True
 
     feedback_text = "；".join(review_feedback) if review_feedback else "未发现明显风险表达。"
     risk_alert = ""
-    if not is_approved:
+    if not passed:
         risk_alert = f"<div class='github-flash-warn'><strong>治疗师审查：</strong>{feedback_text}</div>"
 
     return {
-        "is_approved": is_approved,
+        "therapist_passed": passed,
         "review_feedback": feedback_text,
         "risk_alert": risk_alert,
         "token_usage": ensure_usage(state.get("token_usage")),
-        "reasoning_log": [f"[therapist] 审查结果: {'通过' if is_approved else '需回退'}"],
+        "reasoning_log": [f"[therapist] 安全初筛: {'通过' if passed else '需审计处理'}"],
     }
 
 
-async def auditor_node(state: IntegratedState, config: RunnableConfig) -> dict:
+async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
     current_iteration = int(state.get("iteration_count", 0) or 0)
-    approved = bool(state.get("is_approved", False))
-    rag_sources = state.get("rag_sources", [])
-    has_evidence = bool(rag_sources)
+    draft = state.get("draft_plan", "") or state.get("final_report", "")
+    evidence_bundle = state.get("evidence_bundle") if isinstance(state.get("evidence_bundle"), dict) else {}
+    evidence_items = [item for item in (evidence_bundle.get("evidence_items") or []) if isinstance(item, dict)]
+    structured_plan = state.get("structured_training_plan") if isinstance(state.get("structured_training_plan"), dict) else {}
+    workflow_kind = state.get("workflow_kind") or state.get("intent_type") or "qa"
+    feedback: List[str] = []
 
-    consistency = 85 if approved else 60
-    safety = 90 if approved else 55
-    roi = min(100, 40 + len(rag_sources) * 10)
+    invalid_citations = find_invalid_citations(draft, evidence_bundle)
+    if invalid_citations:
+        feedback.append(f"引用编号不存在：{', '.join(invalid_citations)}")
 
-    if state.get("intent_type") == "plan" and not has_evidence:
-        approved = False
-        safety = 40
+    for item in evidence_items:
+        tier = str(item.get("tier") or "")
+        if tier in {"kb_fallback", "action_library"} and not str(item.get("source_path") or "").strip():
+            feedback.append(f"证据 {item.get('citation_label', '')} 缺少 source_path")
+            break
 
-    summary = "通过终审，可进入格式化输出。" if approved else "存在安全或证据缺口，需要补充或回退。"
+    hmp_validation = {}
+    if structured_plan:
+        hmp_validation = structured_plan.get("half_marathon_protocol_validation") or {}
+    hmp_errors = (hmp_validation.get("errors") or []) if isinstance(hmp_validation, dict) else []
+    if hmp_errors:
+        feedback.append(f"HMP 专项验证仍有 {len(hmp_errors)} 条错误，不能放行")
+
+    risky_keywords = ["每日高强度", "无休息", "强忍疼痛", "all-out", "极限冲刺"]
+    for keyword in risky_keywords:
+        if keyword in draft:
+            feedback.append(f"检测到潜在高风险表述：{keyword}")
+
+    has_rule_skeleton = bool(structured_plan)
+    has_evidence = bool(evidence_items)
+    if workflow_kind == "plan" and not (has_rule_skeleton or has_evidence):
+        feedback.append("计划型请求缺少规则骨架或证据包支撑")
+
+    therapist_passed = state.get("therapist_passed", True)
+    if therapist_passed is False and state.get("review_feedback"):
+        feedback.append(str(state.get("review_feedback")))
+
+    approved = not feedback
+    consistency = 88 if approved else 60
+    safety = 92 if approved else 45
+    roi = min(100, 40 + len(evidence_items) * 10)
+    if has_rule_skeleton:
+        roi = max(roi, 70)
+
+    summary = "通过独立审计，可进入格式化输出。" if approved else "独立审计未通过：" + "；".join(feedback[:4])
 
     return {
         "is_approved": approved,
         "iteration_count": current_iteration + (0 if approved else 1),
+        "review_feedback": summary,
         "audit_scores": {
             "consistency": consistency,
             "safety": safety,
             "roi": roi,
             "summary": summary,
+            "score_sources": {
+                "evidence_count": len(evidence_items),
+                "has_rule_skeleton": has_rule_skeleton,
+                "invalid_citations": invalid_citations,
+                "hmp_error_count": len(hmp_errors),
+            },
         },
         "token_usage": ensure_usage(state.get("token_usage")),
-        "reasoning_log": [f"[auditor] consistency={consistency}, safety={safety}, roi={roi}"],
+        "reasoning_log": [f"[critic_auditor] approved={approved}, consistency={consistency}, safety={safety}, roi={roi}"],
     }
 
 

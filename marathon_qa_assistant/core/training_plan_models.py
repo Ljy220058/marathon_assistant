@@ -27,6 +27,7 @@ class DayPlan:
     warmup_km: float = 0.0
     main_km: float = 0.0
     cooldown_km: float = 0.0
+    workout_type: str = ""
 
     @property
     def total_km(self) -> float:
@@ -77,6 +78,7 @@ class PlanMeta:
     target_race_date: str
     plan_type: PlanType
     generated_at: str
+    performance_calibration: Dict[str, Any] = field(default_factory=dict)
     render_version: str = "v1"
 
 

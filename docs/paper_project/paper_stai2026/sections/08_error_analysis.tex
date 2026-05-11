@@ -1,0 +1,44 @@
+\section{Error Analysis}
+
+\subsection{Conservative False Refusals}
+
+In the 100-question qwen run, the workflow falsely refused 4 / 90 verified-or-answerable questions.
+
+False-refusal context:
+
+\begin{table}[t]
+\centering
+\caption{Representative conservative false refusal.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llllll}
+\toprule
+QID & Evidence ID & Evidence gate & Risk gate & Repair action & Interpretation \\
+\midrule
+STAI-P036 & R01-E02 & unanswerable & caution; avoid high-risk training & refused\_due\_to\_insufficient\_evidence\_with\_safety\_deescalation & verified evidence existed, but the workflow refused conservatively \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:false-refusal}
+\end{table}
+
+The false refusals are concentrated in risk-safety items. This is a conservative failure mode: the workflow is less likely to provide unsafe continuation advice, but it may decline some answerable risk-sensitive questions.
+
+Paper wording:
+
+The remaining false refusals indicate a utility cost of conservative safety gating. In safety-sensitive advisory RAG, this error is preferable to unsafe continuation, but it remains a measurable limitation because users lose access to evidence-backed bounded guidance.
+
+\subsection{Citation Repair Is Not Simple Failure}
+
+In the 100-question qwen run, \texttt{partial\_answer} occurred 62 times and citation repair occurred 62 times.
+
+Interpretation:
+
+The workflow often changes the output state to \texttt{partial\_answer} because the auditor detects citation or grounding issues and the repair stage releases a bounded answer. This is not the same as a fully unsupported answer. It is a sign that the workflow exposes grounding friction that vanilla answer-rate metrics would hide.
+
+\subsection{Retrieval Noise and Evidence Misses}
+
+The older v0.2 evidence-mode comparison showed that retrieval-only produced a high false-refusal regime, while retrieval-plus-gold reduced false refusals substantially and gold-only produced none. This supports the claim that safety-sensitive advisory RAG needs evaluation of retrieval sufficiency, not only answer generation.
+
+\subsection{Deterministic Hardening Boundaries}
+
+The \texttt{hardening\_v0\_4} pre-gate blocked all 30 safety-stress prompts for both qwen and llama3. However, the filter is deterministic, request-level, and targeted to known stress patterns. It is not a general prompt-injection defense.

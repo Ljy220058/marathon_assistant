@@ -52,10 +52,14 @@ def test_all_workout_registry_has_chinese_intensity_labels():
 
 def test_evidence_tier_labels_are_complete():
     assert "action_library" in EVIDENCE_TIER_LABELS
+    assert "protocol_rule" in EVIDENCE_TIER_LABELS
     assert "kb_fallback" in EVIDENCE_TIER_LABELS
+    assert "needs_evidence" in EVIDENCE_TIER_LABELS
     assert "plan_only" in EVIDENCE_TIER_LABELS
     assert EVIDENCE_TIER_LABELS["action_library"] == "动作库课表"
+    assert EVIDENCE_TIER_LABELS["protocol_rule"] == "HMP 基石协议"
     assert EVIDENCE_TIER_LABELS["kb_fallback"] == "参考知识库生成"
+    assert EVIDENCE_TIER_LABELS["needs_evidence"] == "证据不足待补全"
     assert EVIDENCE_TIER_LABELS["plan_only"] == "基础计划"
 
 
@@ -83,6 +87,8 @@ def test_normalize_workout_type_for_all_registry_types():
 
 def test_hmp_protocol_templates_are_registered_and_normalized():
     hmp_cases = [
+        ("hm_intro_fartlek_hills", "导入期法特莱克/坡跑"),
+        ("hm_base_threshold_progression", "85% HMP 基础期阈值巡航"),
         ("hm_90_support_endurance", "90% HMP 辅助耐力跑"),
         ("hm_95_long_fast_run", "95% HMP 长距离快速跑"),
         ("hm_100_float_intervals", "100% HMP 巡航恢复间歇"),
@@ -95,10 +101,19 @@ def test_hmp_protocol_templates_are_registered_and_normalized():
 
         card = build_daily_workout_template_card_from_hits(workout_id, day="周二", hits=[])
         assert card["workout_type"] == workout_id
-        assert card["evidence_tier"] == "plan_only"
+        assert card["evidence_tier"] == "protocol_rule"
         assert card["main_set_candidates"]
         assert "HMP" in card["intensity_target"]
         assert card["training_objective"]
+
+
+def test_hmp_75_85_threshold_main_set_prefers_base_protocol_not_intro():
+    result = normalize_workout_type_for_template(
+        "有氧阈值训练",
+        "3×10分钟有氧阈值，组间3分钟慢跑，控制在75-85% HMP",
+    )
+
+    assert result == "hm_base_threshold_progression"
 
 
 # ==================== 证据分层回退测试 ====================
@@ -119,6 +134,8 @@ def test_kb_fallback_generates_partial_schedule_when_other_kb_has_evidence():
     assert result["evidence_tier_label"] == "参考知识库生成"
     assert len(result.get("source", [])) > 0
     assert result.get("intensity_target"), "应包含 Z1-Z2 强度信息"
+    assert result.get("main_set_candidates") == [], "普通知识库不能补主训练组，只能补非核心字段"
+    assert result.get("blocked_core_candidates", {}).get("main_set"), "被 KB 抽到的主课候选应保留在审计 trace 中"
     assert "轻松" in result.get("zone_label", "") or "Z" in result.get("zone_range", "")
 
 
@@ -214,6 +231,422 @@ def test_monthly_calendar_generates_from_valid_plan():
     assert "action_library" in calendar.evidence_summary or "plan_only" in calendar.evidence_summary
 
 
+def test_action_library_card_keeps_field_sources_action_match_and_trace():
+    structured_training_plan = {
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {"day": "周二", "training_type": "VO2max", "main_set": ""},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    card = calendar.days[0]
+    data = card.to_dict()
+
+    assert card.evidence_tier == "action_library"
+    assert data["field_sources"]["main_set"]["source_type"] == "action_library"
+    assert data["field_sources"]["workout_type"]["source_type"] == "action_library"
+    assert data["action_match"]["workout_type"] == "vo2max_interval"
+    assert data["action_match"]["main_set"]
+    assert data["action_match"]["alternatives"]
+    assert " / " not in data["main_set"]
+    assert data["protocol_check"]["allowed"] is True
+    assert data["card_status"] == "generated"
+    assert set(data["trace"]) == {"intent_parse", "protocol_check", "action_match", "kb_fallback", "risk_gate", "final_card"}
+
+
+def test_hmp_protocol_day_uses_action_library_main_set_not_protocol_template():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "preferred_workouts": [
+                {
+                    "id": "hm_base_threshold_progression",
+                    "label": "基础期阈值/渐速跑",
+                },
+            ],
+            "capacity_budget": {"quality_sessions_max": 2, "long_run_max_km": 18},
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "week_goal": "HMP协议：基础期",
+                "key_workouts": ["HMP协议：候选课表 基础期阈值/渐速跑"],
+                "days": [
+                    {
+                        "day": "周一",
+                        "training_type": "有氧阈值训练",
+                        "main_set": "hm_base_threshold_progression：3×10分钟有氧阈值，组间3分钟慢跑，控制在75-85% HMP",
+                    },
+                    {
+                        "day": "周二",
+                        "training_type": "渐进跑",
+                        "main_set": "hm_base_threshold_progression：45分钟肯尼亚式渐进跑，从轻松跑渐进至85% HMP",
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    days = [day.to_dict() for day in calendar.days]
+
+    assert days[0]["evidence_tier"] == "protocol_rule"
+    assert days[0]["field_sources"]["main_set"]["source_type"] == "action_library"
+    assert days[0]["field_sources"]["main_set"]["source_id"] == "动作库.pdf"
+    assert days[0]["action_match"]["workout_type"] == "aerobic_threshold"
+    assert days[0]["action_match"]["protocol_workout_type"] == "hm_base_threshold_progression"
+    assert days[0]["main_set"] != "3×10分钟有氧阈值，组间3分钟慢跑，控制在75-85% HMP"
+    assert " / " not in days[0]["main_set"]
+
+    assert days[1]["field_sources"]["main_set"]["source_type"] == "action_library"
+    assert days[1]["action_match"]["workout_type"] == "progression_run"
+    assert "肯尼亚式" not in days[1]["main_set"]
+    assert " / " not in days[1]["main_set"]
+    assert "10分钟慢跑" not in days[1]["action_match"]["alternatives"]
+
+
+def test_action_library_range_prescription_moves_with_week_load_bias(monkeypatch):
+    import marathon_qa_assistant.services.daily_schedule_generator as dsg
+
+    def fake_hits(_workout_type):
+        return []
+
+    def fake_card(*, workout_type, day, hits):
+        return {
+            "title": f"{day}｜动作库证据",
+            "workout_type": workout_type,
+            "main_set_candidates": ["4-6×2000m，组间2min"],
+            "training_objective": "动作库候选主课",
+            "warmup_suggestion": "15分钟轻松跑+动态拉伸",
+            "cooldown_suggestion": "10分钟慢跑",
+            "alternative_workout": "若疲劳较高则降低总量",
+            "evidence_tier": "action_library",
+            "source": [{"source_id": "动作库.pdf", "page": 6, "chunk_id": "动作库_p0006_c0001"}],
+            "evidence_status": {"main_set_candidates": "direct"},
+        }
+
+    monkeypatch.setattr(dsg, "get_action_library_foundation_hits", fake_hits)
+    monkeypatch.setattr(dsg, "build_daily_workout_template_card_from_hits", fake_card)
+
+    plan = {
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "load_level": "低",
+                "days": [{"day": "周二", "training_type": "有氧阈值训练", "main_set": ""}],
+            },
+            {
+                "week_index": 2,
+                "phase": "base",
+                "load_level": "中",
+                "days": [{"day": "周二", "training_type": "有氧阈值训练", "main_set": ""}],
+            },
+            {
+                "week_index": 3,
+                "phase": "base",
+                "load_level": "高",
+                "days": [{"day": "周二", "training_type": "有氧阈值训练", "main_set": ""}],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(plan, enable_kb_fallback=False)
+    mains = [day.main_set for day in calendar.days]
+    traces = [day.trace["action_match"]["prescription_selection"] for day in calendar.days]
+
+    assert mains == ["4×2000m，组间2min", "5×2000m，组间2min", "6×2000m，组间2min"]
+    assert traces[0]["load_bias"] == "low"
+    assert traces[1]["selected_repetition_count"] == 5
+    assert traces[2]["selected_repetition_count"] == 6
+    assert all(day.field_sources["main_set"]["source_type"] == "action_library" for day in calendar.days)
+
+
+def test_protocol_card_marks_core_fields_as_protocol_source():
+    structured_training_plan = {
+        "half_marathon_protocol": {"active": True, "capacity_budget": {"quality_sessions_max": 2, "long_run_max_km": 18}},
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {
+                        "day": "周二",
+                        "training_type": "半马专项",
+                        "main_set": "hm_base_threshold_progression HMP 40分钟渐进跑",
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+
+    assert data["evidence_tier"] == "protocol_rule"
+    assert data["field_sources"]["main_set"]["source_type"] == "action_library"
+    assert data["field_sources"]["main_set"]["source_id"] == "动作库.pdf"
+    assert data["field_sources"]["intensity"]["source_type"] == "protocol"
+    assert data["protocol_check"]["quality_session_cap"] == 2
+    assert data["trace"]["protocol_check"]["allowed"] is True
+
+
+def test_daily_card_protocol_check_exposes_recent_four_week_capacity_basis():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "weekly_decisions": [
+                {
+                    "week_index": 1,
+                    "capacity_budget": {
+                        "quality_sessions_max": 1,
+                        "long_run_max_km": 12,
+                        "weekly_volume_km": 70,
+                        "effective_weekly_volume_km": 38,
+                        "recent_four_week_mileage_km": 38,
+                        "volume_basis": "recent_four_week_mileage",
+                    },
+                }
+            ],
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "基础阶段",
+                "days": [
+                    {
+                        "day": "周二",
+                        "training_type": "半马专项",
+                        "main_set": "hm_base_threshold_progression HMP 40分钟渐进跑",
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+
+    assert data["protocol_check"]["volume_basis"] == "recent_four_week_mileage"
+    assert data["protocol_check"]["effective_weekly_volume_km"] == 38
+    assert data["protocol_check"]["recent_four_week_mileage_km"] == 38
+    assert data["protocol_check"]["quality_sessions_this_week"] == 1
+    assert data["protocol_check"]["allowed"] is True
+    assert data["field_sources"]["weekly_quality_count"]["source_id"] == "protocol_check"
+
+
+def test_protocol_violation_marks_card_as_needing_recheck():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "capacity_budget": {
+                "quality_sessions_max": 2,
+                "long_run_max_km": 12,
+            },
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {
+                        "day": "周日",
+                        "training_type": "长距离",
+                        "main_set": "20km 长距离",
+                        "main_km": 20,
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+
+    assert data["protocol_check"]["allowed"] is False
+    assert "long_run_exceed_cap" in data["protocol_check"]["violations"]
+    assert data["card_status"] == "needs_protocol_recheck"
+    assert data["trace"]["final_card"]["card_status"] == "needs_protocol_recheck"
+
+
+def test_final_action_main_set_duration_overrides_inconsistent_allocated_distance():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "capacity_budget": {
+                "quality_sessions_max": 2,
+                "long_run_max_km": 18,
+            },
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {
+                        "day": "周日",
+                        "training_type": "长距离",
+                        "main_set": "90分钟稳定有氧跑（Z2-Z3）",
+                        "main_km": 25,
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+
+    assert data["main_set"] == "90分钟稳定有氧跑（Z2-Z3）"
+    assert data["duration_min"] == 90
+    assert data["training_load_factors"]["raw_duration_min"] > data["duration_min"]
+    assert data["training_load_factors"]["duration_adjustment"] == "final_main_set_duration"
+    assert "duration_main_set_mismatch" in data["protocol_check"]["violations"]
+    assert "long_run_exceed_cap" in data["protocol_check"]["violations"]
+    assert data["protocol_check"]["allowed"] is False
+    assert data["card_status"] == "needs_protocol_recheck"
+
+
+def test_final_main_set_distance_exceeding_long_run_cap_is_blocked_even_without_raw_main_km(monkeypatch):
+    def fake_build_daily_workout_template_card_from_hits(*, workout_type, day, hits):
+        return {
+            "workout_type": workout_type,
+            "training_type_label": "长距离",
+            "zone_range": "Z2",
+            "intensity_target": "Z2 轻松有氧区",
+            "zone_label": "Z2 轻松有氧区",
+            "evidence_tier": "action_library",
+            "evidence_tier_label": "动作库课表",
+            "source": ["动作库.pdf，第 12 页"],
+            "main_set_candidates": ["22km 长距离"],
+            "training_objective": "动作库长距离课",
+            "warmup_suggestion": "",
+            "cooldown_suggestion": "",
+            "alternative_workout": "",
+            "evidence_ids": [],
+        }
+
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.daily_schedule_generator.build_daily_workout_template_card_from_hits",
+        fake_build_daily_workout_template_card_from_hits,
+    )
+
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "capacity_budget": {
+                "quality_sessions_max": 2,
+                "long_run_max_km": 18,
+            },
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {
+                        "day": "周日",
+                        "training_type": "长距离",
+                        "main_set": "22km 长距离",
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+
+    assert data["duration_min"] == 143
+    assert data["protocol_check"]["allowed"] is False
+    assert "long_run_exceed_cap" in data["protocol_check"]["violations"]
+    assert data["main_set"] == "22km 长距离"
+    assert data["card_status"] == "needs_protocol_recheck"
+
+
+def test_rest_day_never_inherits_week_protocol_violation_status():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "capacity_budget": {
+                "quality_sessions_max": 1,
+                "long_run_max_km": 12,
+            },
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {"day": "周一", "training_type": "休息", "main_set": ""},
+                    {"day": "周二", "training_type": "节奏跑", "main_set": "20分钟"},
+                    {"day": "周四", "training_type": "VO2max", "main_set": "5x3min"},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    rest_day = calendar.days[0].to_dict()
+    quality_days = [day.to_dict() for day in calendar.days if not day.is_rest]
+
+    assert rest_day["is_rest"] is True
+    assert rest_day["card_status"] == "generated"
+    assert rest_day["protocol_check"]["allowed"] is True
+    assert rest_day["trace"]["final_card"]["card_status"] == "generated"
+    assert any(day["card_status"] == "needs_protocol_recheck" for day in quality_days)
+
+
+def test_kb_fallback_does_not_source_core_main_set_in_calendar(monkeypatch):
+    def fake_extract(_workout_type):
+        return []
+
+    def fake_kb(_workout_type, _top_k=20):
+        return ([
+            {
+                "source_file": "general.pdf",
+                "page": 1,
+                "chunk_id": "g1",
+                "text": "轻松跑每次30-60分钟，热身：10分钟慢跑。冷身：5分钟慢跑。训练后注意补水和恢复，避免把参考知识库内容当成主训练组处方。",
+            }
+        ], "easy")
+
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.daily_schedule_generator.get_action_library_foundation_hits",
+        fake_extract,
+    )
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.daily_schedule_generator._extract_kb_evidence_for_workout",
+        fake_kb,
+    )
+    structured_training_plan = {
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {"day": "周二", "training_type": "VO2max", "main_set": "30分钟"},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=True)
+    data = calendar.days[0].to_dict()
+
+    assert data["evidence_tier"] == "needs_evidence"
+    assert data["card_status"] == "needs_evidence"
+    assert data["field_sources"]["main_set"]["source_type"] == "needs_evidence"
+    assert data["kb_fallback"]["blocked_core_candidates"]["main_set"]
+
+
 def test_monthly_calendar_handles_empty_input():
     calendar = generate_daily_schedule({})
     assert calendar.total_days == 0
@@ -267,9 +700,51 @@ def test_monthly_calendar_projects_hmp_candidate_to_quality_day():
 
     assert quality_day.workout_type == "hm_95_long_fast_run"
     assert quality_day.training_type == "长距离"
-    assert quality_day.main_set == "18km 渐进跑"
+    assert quality_day.field_sources["main_set"]["source_type"] == "action_library"
+    assert quality_day.action_match["workout_type"] == "long_run"
+    assert quality_day.action_match["protocol_workout_type"] == "hm_95_long_fast_run"
+    assert quality_day.main_set != "18km 渐进跑"
+    assert " / " not in quality_day.main_set
     assert "95% HMP" in quality_day.intensity_target
     assert "半马后程抗疲劳" in quality_day.training_objective
+
+
+def test_monthly_calendar_uses_base_hmp_protocol_without_leaking_internal_id():
+    structured_training_plan = {
+        "half_marathon_protocol": {
+            "active": True,
+            "preferred_workouts": [
+                {
+                    "id": "hm_base_threshold_progression",
+                    "label": "基础期阈值/渐速跑",
+                },
+            ],
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "week_goal": "HMP协议：基础期",
+                "key_workouts": ["HMP协议：候选课表=基础期阈值/渐速跑"],
+                "days": [
+                    {
+                        "day": "周二",
+                        "training_type": "渐进跑",
+                        "main_set": "hm_base_threshold_progression：50分钟渐进跑，从轻松跑逐步进到85% HMP",
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan)
+    day = calendar.days[0]
+
+    assert day.workout_type == "hm_base_threshold_progression"
+    assert "hm_base_threshold_progression" not in day.main_set
+    assert day.training_type_label.startswith("半马基础期阈值/渐速跑")
+    assert day.evidence_tier == "protocol_rule"
+    assert day.evidence_tier_label == "HMP 基石协议"
+    assert "Sub-70半程马拉松训练_图片OCR整理.md" in day.source
 
 
 def test_monthly_calendar_does_not_project_unmatched_intro_hmp_note():
@@ -454,6 +929,7 @@ def test_daily_schedule_item_to_dict():
         day_label="周二",
         week_index=1,
         day_index=2,
+        phase="基础期",
         training_type="轻松跑",
         training_type_label="轻松跑",
         workout_type="easy_run",
@@ -489,6 +965,7 @@ def test_monthly_training_calendar_to_dict():
             day_label="周一",
             week_index=1,
             day_index=1,
+            phase="基础期",
             training_type="休息",
             training_type_label="休息",
             workout_type="",

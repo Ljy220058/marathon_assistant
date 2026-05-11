@@ -1,0 +1,24 @@
+{
+  "run_id": "stai_s3_full_workflow_qwen2_5_smoke01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "date_utc": "20260509T200409Z",
+  "dataset": "docs\\paper_project\\stai2026_pilot_benchmark_v0.1.jsonl",
+  "qids": [
+    "STAI-P007",
+    "STAI-P014",
+    "STAI-P011"
+  ],
+  "sample_count": 3,
+  "model_provider": "ollama",
+  "model": "qwen2.5:latest",
+  "prompt_template_version": "s3_full_workflow_v0.1",
+  "retrieval_top_k": 5,
+  "context_max_chars": 500,
+  "num_ctx": 4096,
+  "num_batch": 4,
+  "num_predict": 500,
+  "elapsed_sec": 101.582,
+  "output_path": "docs\\paper_project\\runs\\stai_s3_full_workflow_qwen2_5_smoke01\\outputs.jsonl",
+  "metadata_path": "docs\\paper_project\\runs\\stai_s3_full_workflow_qwen2_5_smoke01\\metadata.json"
+}

@@ -62,6 +62,15 @@ class AdaptiveAdjustment(TypedDict, total=False):
     rationale: str
 
 
+class RiskGateResult(TypedDict, total=False):
+    status: str
+    risk_level: str
+    triggers: List[str]
+    adjustment_action: str
+    product_status: str
+    decision_reason: str
+
+
 def _normalize_text(value: Any) -> str:
     return str(value or "").strip()
 
@@ -141,6 +150,68 @@ def _build_adaptive_rationale(reason_codes: List[str], reasons: List[AdaptiveRea
     reason_summary = "、".join(labels) if labels else "当前反馈"
     principle_summary = "；".join(principles)
     return f"本次调整由{reason_summary}触发；处理原则是{principle_summary}"
+
+
+def build_feedback_risk_gate(feedback: Optional[Dict[str, Any]] = None, raw_text: str = "") -> RiskGateResult:
+    normalized = normalize_workout_feedback(feedback, raw_text=raw_text)
+    combined_text = f"{raw_text} {normalized.get('notes', '')}".lower()
+    triggers: List[str] = []
+
+    severe_keywords = {
+        "chest_pain": ["\u80f8\u75db", "\u80f8\u95f7", "chest pain", "chest tightness"],
+        "dizziness_or_syncope": ["\u5934\u6655", "\u7729\u6655", "\u6655\u53a5", "\u6655\u5012", "dizzy", "faint"],
+        "heat_illness": ["\u4e2d\u6691", "\u70ed\u5c04\u75c5", "\u9ad8\u6e29\u5f02\u5e38", "heat illness", "heatstroke"],
+    }
+    for code, keywords in severe_keywords.items():
+        if _contains_any(combined_text, keywords):
+            triggers.append(code)
+
+    if normalized.get("pain_status") == "risk":
+        triggers.append("pain_risk")
+    if normalized.get("subjective_fatigue") == "high":
+        triggers.append("high_fatigue")
+    if normalized.get("sleep_quality") == "poor":
+        triggers.append("poor_sleep")
+
+    triggers = list(dict.fromkeys(triggers))
+    severe = any(code in triggers for code in {"chest_pain", "dizziness_or_syncope", "heat_illness"})
+    if severe:
+        return {
+            "status": "blocked",
+            "risk_level": "medical",
+            "triggers": triggers,
+            "adjustment_action": "deescalate_or_refuse",
+            "product_status": "medical_referral",
+            "decision_reason": "出现胸痛、头晕/晕厥或中暑迹象时，系统不继续生成训练调整，先建议停止训练并寻求专业评估。",
+        }
+    if triggers:
+        return {
+            "status": "needs_protocol_recheck",
+            "risk_level": "high" if {"pain_risk", "high_fatigue"} & set(triggers) else "medium",
+            "triggers": triggers,
+            "adjustment_action": "deescalate_or_refuse" if "pain_risk" in triggers else "deescalate",
+            "product_status": "risk_refused" if "pain_risk" in triggers else "partial_generated",
+            "decision_reason": "反馈触发风险门，必须先降级并重查协议容量，再给训练调整建议。",
+        }
+    return {
+        "status": "passed",
+        "risk_level": "low",
+        "triggers": [],
+        "adjustment_action": "none",
+        "product_status": "generated",
+        "decision_reason": "未识别到需要阻断或降级的风险信号。",
+    }
+
+
+def build_feedback_protocol_recheck(risk_gate: RiskGateResult) -> Dict[str, Any]:
+    blocked = risk_gate.get("status") == "blocked"
+    return {
+        "allowed": not blocked,
+        "risk_gate_status": risk_gate.get("status", ""),
+        "adjustment_action": risk_gate.get("adjustment_action", "none"),
+        "violations": list(risk_gate.get("triggers") or []),
+        "decision_reason": "风险门阻断，拒绝继续生成训练负荷调整。" if blocked else "风险门通过或已要求降级，允许进入受控调整。",
+    }
 
 
 def normalize_workout_feedback(payload: Optional[Dict[str, Any]] = None, raw_text: str = "") -> WorkoutFeedback:
@@ -344,6 +415,26 @@ class Evidence(TypedDict):
     trace: Dict[str, Any]
 
 
+class EvidenceBundleItem(TypedDict, total=False):
+    evidence_id: str
+    citation_label: str
+    tier: str
+    source_file: str
+    source_path: str
+    page: Optional[int]
+    chunk_id: str
+    snippet: str
+    text: str
+    score: float
+    trace: Dict[str, Any]
+
+
+class EvidenceBundle(TypedDict, total=False):
+    query: str
+    evidence_items: List[EvidenceBundleItem]
+    health: Dict[str, Any]
+
+
 class ProfessionalReport(BaseModel):
     report_metadata: Dict[str, str] = Field(default_factory=lambda: {"version": "2.0", "mode": "SUBAGENT"})
     analysis_framework: Dict[str, Any]
@@ -360,6 +451,7 @@ class IntegratedState(TypedDict):
     query: str
     mode: str
     intent_type: str
+    workflow_kind: str
     selected_entities: List[str]
     category: str
     subtasks: List[Dict[str, Any]]
@@ -374,6 +466,7 @@ class IntegratedState(TypedDict):
     gate_hits: List[Dict[str, Any]]
     rag_sources: List[Dict[str, Any]]
     ranked_evidence: List[Evidence]
+    evidence_bundle: EvidenceBundle
     graph_context: str
     wiki_context: str
     mermaid_graph: str
@@ -393,3 +486,10 @@ class IntegratedState(TypedDict):
     history: List[Dict[str, str]]
     used_fallback: bool
     fallback_reason: str
+    draft_ready: bool
+    validation_result: Dict[str, Any]
+    repair_suggestions: List[Dict[str, Any]]
+    repair_attempts: int
+
+
+WorkingState = IntegratedState

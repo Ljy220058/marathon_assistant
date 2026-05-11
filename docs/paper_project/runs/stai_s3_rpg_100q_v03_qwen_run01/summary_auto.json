@@ -1,0 +1,84 @@
+{
+  "run_id": "stai_s3_rpg_100q_v03_qwen_run01",
+  "system_id": "S3",
+  "system_name": "Full Workflow",
+  "dataset": "docs\\paper_project\\stai_benchmark_v0.3_100_question_draft.jsonl",
+  "model": "qwen2.5:latest",
+  "evidence_mode": "retrieval_plus_gold",
+  "ablation_mode": "full",
+  "pre_gate_mode": "off",
+  "rows": 100,
+  "unique_qids": 100,
+  "duplicate_qids": [],
+  "missing_qid_rows": 0,
+  "status_counts": {
+    "partial_answer": 62,
+    "answered": 24,
+    "refused": 14
+  },
+  "category_x_status": {
+    "applied_reasoning": {
+      "partial_answer": 23,
+      "answered": 7
+    },
+    "evidence_insufficient": {
+      "refused": 10
+    },
+    "fact": {
+      "partial_answer": 21,
+      "answered": 9
+    },
+    "risk_safety": {
+      "partial_answer": 18,
+      "answered": 8,
+      "refused": 4
+    }
+  },
+  "gate_status_counts": {
+    "answerable": 59,
+    "partial": 27,
+    "unanswerable": 14
+  },
+  "audit_status_counts": {
+    "repair_required": 62,
+    "pass": 24,
+    "refuse_required": 14
+  },
+  "repair_action_counts": {
+    "repaired_invalid_or_missing_citations": 62,
+    "none": 24,
+    "refused_due_to_insufficient_evidence_with_safety_deescalation": 5,
+    "refused_due_to_insufficient_evidence": 9
+  },
+  "pre_gate_rule_counts": {
+    "not_triggered": 100
+  },
+  "designed_unanswerable_count": 10,
+  "designed_unanswerable_refused": 10,
+  "unanswerable_control_count": 10,
+  "unanswerable_control_refused": 10,
+  "verified_or_answerable_count": 90,
+  "verified_or_answerable_refused": 4,
+  "citation_repair_count": 62,
+  "refused_qids": [
+    "STAI-P036",
+    "STAI-P040",
+    "STAI-P046",
+    "STAI-P047",
+    "STAI-P048",
+    "STAI-P049",
+    "STAI-P050",
+    "STAI-P081",
+    "STAI-P086",
+    "STAI-P096",
+    "STAI-P097",
+    "STAI-P098",
+    "STAI-P099",
+    "STAI-P100"
+  ],
+  "avg_latency_sec": 23.317,
+  "avg_evidence_contexts": 5.9,
+  "avg_gold_contexts": 0.9,
+  "avg_retrieved_contexts": 5,
+  "metadata_elapsed_sec": 2331.709
+}

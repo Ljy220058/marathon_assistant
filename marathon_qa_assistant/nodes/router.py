@@ -37,45 +37,51 @@ async def router_node(state: IntegratedState, config: RunnableConfig) -> dict:
     query = state.get("query", "")
     lower_query = query.lower()
 
-    if state.get("mode") == "intercepted":
-        return {}
-
     if any(keyword in lower_query for keyword in [k.lower() for k in RESEARCH_KEYWORDS]):
-        mode = "research"
+        workflow_kind = "research"
         intent_type = "qa"
     elif any(keyword in lower_query for keyword in [k.lower() for k in ADAPTIVE_KEYWORDS]):
-        mode = "adaptive"
+        workflow_kind = "adaptive"
         intent_type = "plan"
     else:
         has_time = any(keyword in lower_query for keyword in [k.lower() for k in PLAN_TIME_KEYWORDS])
         has_action = any(keyword in lower_query for keyword in [k.lower() for k in PLAN_ACTION_KEYWORDS])
         if has_time and has_action:
-            mode = "subagent"
+            workflow_kind = "plan"
             intent_type = "plan"
         elif "计划" in query or "训练安排" in query:
-            mode = "subagent"
+            workflow_kind = "plan"
             intent_type = "plan"
         elif any(keyword in lower_query for keyword in [k.lower() for k in PROFILE_UPDATE_KEYWORDS]):
-            mode = "team"
+            workflow_kind = "profile_update"
             intent_type = "profile_update"
         else:
-            mode = "team"
+            workflow_kind = "qa"
             intent_type = "qa"
+
+    mode = {
+        "plan": "subagent",
+        "research": "research",
+        "adaptive": "adaptive",
+        "profile_update": "team",
+        "qa": "team",
+    }.get(workflow_kind, "team")
 
     category = "coach"
     if any(keyword in lower_query for keyword in [k.lower() for k in NUTRITION_KEYWORDS]):
         category = "nutritionist"
     elif any(keyword in lower_query for keyword in [k.lower() for k in THERAPY_KEYWORDS]):
         category = "therapist"
-    elif mode == "research":
+    elif workflow_kind == "research":
         category = "research"
 
     return {
         "mode": mode,
+        "workflow_kind": workflow_kind,
         "category": category,
         "intent_type": intent_type,
         "iteration_count": 0,
         "token_usage": ensure_usage(state.get("token_usage")),
-        "reasoning_log": [f"[router] mode={mode}, intent={intent_type}, category={category}"],
+        "reasoning_log": [f"[router] workflow_kind={workflow_kind}, intent={intent_type}, category={category}"],
         "rag_sources": [],
     }

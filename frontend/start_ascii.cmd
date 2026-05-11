@@ -12,10 +12,14 @@ if errorlevel 1 exit /b %ERRORLEVEL%
 
 pushd "%TARGET%"
 
-echo [2/3] Installing dependencies when needed...
-if not exist "node_modules" (
+echo [2/3] Checking dependencies...
+if exist ".deps-required" (
+  echo Dependencies changed or missing. Running npm install...
   call npm.cmd install --cache ".\.npm-cache"
   if errorlevel 1 exit /b %ERRORLEVEL%
+  move /Y ".deps-required" ".deps.hash" >nul
+) else (
+  echo Dependencies are cached. Skipping npm install.
 )
 
 echo [3/3] Starting Astro on http://127.0.0.1:4321

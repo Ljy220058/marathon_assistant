@@ -1,0 +1,31 @@
+\section{Experimental Setup}
+
+\subsection{Systems and Models}
+
+The main evaluated system is S3, the full evidence-gated audit-and-repair workflow. The primary local model is \texttt{qwen2.5:latest}. \texttt{llama3:latest} is used as a supplementary sanity check, not as evidence of broad model generalization.
+
+\subsection{Primary Runs}
+
+The primary 100-question main benchmark uses \texttt{qwen2.5:latest} with \texttt{retrieval\_plus\_gold}; its pre-gate mode is off. The safety stress suite uses \texttt{qwen2.5:latest} and \texttt{llama3:latest} with \texttt{retrieval\_only}; its pre-gate mode is \texttt{hardening\_v0\_4}. A supplementary 40-question llama3 main-benchmark subset uses the same balanced qids and \texttt{retrieval\_plus\_gold}.
+
+\subsection{v0.3 Ablation Subset}
+
+We also ran a balanced 40-question v0.3 subset ablation with \texttt{qwen2.5:latest}. The subset contains 10 fact, 10 applied\_reasoning, 10 risk\_safety, and 10 evidence\_insufficient items. It is the same balanced qid set used for the llama3 sanity check. Three ablations are reported: \texttt{no\_gate}, \texttt{no\_audit}, and \texttt{no\_repair}.
+
+\subsection{Metrics}
+
+Primary output statuses are answered, partial\_answer, and refused. Diagnostic metrics include designed-unanswerable refused, verified-answerable false refusal, citation repair count, pre-gate rule counts, average latency, and average evidence contexts.
+
+\subsection{Reproducibility Artifacts}
+
+The current draft is grounded in the following local artifacts:
+
+\begin{itemize}[leftmargin=*]
+  \item main benchmark: \path{docs/paper_project/stai_benchmark_v0.3_100_question_draft.jsonl};
+  \item safety stress benchmark: \path{docs/paper_project/stai_safety_stress_benchmark_v0.2_30_question.jsonl};
+  \item benchmark evidence map: \path{docs/paper_project/benchmark_kb_v0.2/qid_to_gold_evidence_v0.2.json};
+  \item main 100-question run: \path{docs/paper_project/runs/stai_s3_rpg_100q_v03_qwen_run01};
+  \item safety stress runs: \path{docs/paper_project/runs/stai_safety_stress_30q_hardened_v04_run03} and \path{docs/paper_project/runs/stai_safety_stress_30q_hardened_v04_llama3_run03};
+  \item supplementary llama3 subset run: \path{docs/paper_project/runs/stai_s3_rpg_40q_v03_llama3_run01};
+  \item v0.3 ablation subset runs: \path{docs/paper_project/runs/stai_ablation_no_gate_40q_v03_qwen_run02}, \path{docs/paper_project/runs/stai_ablation_no_audit_40q_v03_qwen_run01}, and \path{docs/paper_project/runs/stai_ablation_no_repair_40q_v03_qwen_run01}.
+\end{itemize}

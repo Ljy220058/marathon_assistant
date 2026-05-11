@@ -1,7 +1,7 @@
 {
-  "experience_level": "精英",
+  "experience_level": "进阶",
   "weekly_mileage": 50,
-  "goal": "半马69分",
+  "goal": "半马1:08:59",
   "injury_history": [
     "踝关节",
     "无"
@@ -25,10 +25,10 @@
   "pb_1500m": "4:10",
   "pb_5k": "15:42",
   "pb_10k": "33:30",
-  "pb_half": "1:11:12",
+  "pb_half": "1:12:00",
   "pb_full": "无",
   "lthr": 180,
-  "t_pace": "3:15",
+  "t_pace": "3:15/km",
   "hr_zones": {
     "Z1": "<130 bpm",
     "Z2": "130-140 bpm",
@@ -40,8 +40,8 @@
     "Z8": "182-189 bpm",
     "Z9": ">189 bpm"
   },
-  "target_race_date": "无比赛",
-  "plan_duration_weeks": 24,
+  "target_race_date": "2026-08-02",
+  "plan_duration_weeks": 12,
   "pace_zones": {
     "Z1": "4:14-3:44",
     "Z2": "3:44-3:31",
@@ -56,8 +56,14 @@
   "verified_facts": {},
   "training_types": "节奏跑,摄氧量,长距离,间歇跑,重复跑",
   "vo2max": 65,
-  "available_days": "周一 周三 周五 周六,周一,周三,周六",
-  "pace_preference": "慢跑530",
-  "max_session_minutes": 90,
-  "terrain_preference": "田径场,公园,公路"
+  "available_days": "周一,周二,周四,周六,周日",
+  "pace_preference": "1:08:59",
+  "max_session_minutes": 120,
+  "terrain_preference": "田径场,公园,公路",
+  "target_pace": "1:08:59",
+  "injury": "No injury, moderate fatigue, sleep average",
+  "recovery_state": "No injury, moderate fatigue, sleep average",
+  "injury_or_fatigue": true,
+  "current_half_time": "1:11:00",
+  "recent_four_week_mileage": "100 km"
 }

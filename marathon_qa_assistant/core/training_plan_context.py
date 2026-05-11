@@ -36,20 +36,37 @@ def _clamp_weeks(value: int) -> int:
     return max(1, min(int(value), 26))
 
 
-def _coerce_int(value: Any) -> Optional[int]:
+def coerce_float_from_unit_text(value: Any, default: Optional[float] = None) -> Optional[float]:
     if value is None:
-        return None
+        return default
     if isinstance(value, bool):
-        return None
+        return default
     if isinstance(value, (int, float)):
-        return _clamp_weeks(int(value))
+        return float(value)
     text = str(value).strip()
     if not text:
-        return None
+        return default
+    match = re.search(r"[-+]?\d+(?:\.\d+)?", text)
+    if not match:
+        return default
     try:
-        return _clamp_weeks(int(float(text)))
+        return float(match.group(0))
     except ValueError:
+        return default
+
+
+def coerce_int_from_unit_text(value: Any, default: Optional[int] = None) -> Optional[int]:
+    parsed = coerce_float_from_unit_text(value)
+    if parsed is None:
+        return default
+    return int(parsed)
+
+
+def _coerce_int(value: Any) -> Optional[int]:
+    parsed = coerce_int_from_unit_text(value)
+    if parsed is None:
         return None
+    return _clamp_weeks(parsed)
 
 
 def _parse_chinese_number(token: str) -> Optional[int]:
@@ -83,8 +100,20 @@ def parse_requested_weeks(query: str) -> Optional[int]:
         if keyword in text:
             return weeks
 
-    week_match = re.search(r"(?:第)?\s*([0-9一二两三四五六七八九十]+)\s*周", text)
-    if week_match:
+    labeled_week_match = re.search(
+        r"(?:计划周期|训练周期|备赛周期|周期)\s*[:：]?\s*([0-9一二两三四五六七八九十]+)(?!\s*(?:天|日|公里|km|千米|分钟|min))",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if labeled_week_match:
+        value = _parse_chinese_number(labeled_week_match.group(1))
+        if value is not None:
+            return _clamp_weeks(value)
+
+    for week_match in re.finditer(r"(?:第)?\s*([0-9一二两三四五六七八九十]+)\s*周", text):
+        prefix = text[max(0, week_match.start() - 3):week_match.start()]
+        if any(marker in prefix for marker in ("近", "最近", "过去")):
+            continue
         value = _parse_chinese_number(week_match.group(1))
         if value is not None:
             return _clamp_weeks(value)
@@ -94,6 +123,14 @@ def parse_requested_weeks(query: str) -> Optional[int]:
         value = _parse_chinese_number(month_match.group(1))
         if value is not None:
             return _clamp_weeks(value * 4)
+
+    english_week_match = re.search(
+        r"\b([0-9]+)\s*(?:week|weeks|wk|wks)\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if english_week_match:
+        return _clamp_weeks(int(english_week_match.group(1)))
 
     return None
 
@@ -137,12 +174,12 @@ def align_plan_duration_context(query: str, profile: Dict[str, Any]) -> Dict[str
     if requested_weeks is not None:
         resolved_plan_weeks = requested_weeks
         resolved_from = "query"
-    elif target_race_weeks is not None:
-        resolved_plan_weeks = target_race_weeks
-        resolved_from = "target_race_date"
     elif stored_plan_weeks is not None:
         resolved_plan_weeks = stored_plan_weeks
         resolved_from = "profile"
+    elif target_race_weeks is not None:
+        resolved_plan_weeks = target_race_weeks
+        resolved_from = "target_race_date"
     else:
         resolved_plan_weeks = 12
         resolved_from = "default"

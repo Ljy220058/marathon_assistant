@@ -9,7 +9,7 @@ except ImportError:
 
 from marathon_qa_assistant.core.state_models import IntegratedState
 from marathon_qa_assistant.nodes.routing import (
-    after_auditor_route,
+    after_critic_auditor_route,
     after_planner_route,
     after_profile_update_route,
     after_router_route,
@@ -49,7 +49,7 @@ class FallbackIntegratedApp:
         if current == "planner":
             return after_planner_route(state)
         if current == "executor":
-            return "auditor"
+            return "critic_auditor"
         if current == "coach":
             return "therapist"
         if current == "adaptive_coach":
@@ -57,11 +57,11 @@ class FallbackIntegratedApp:
         if current == "therapist":
             return after_therapist_route(state)
         if current == "nutritionist":
-            return "auditor"
+            return "critic_auditor"
         if current == "research_analyst":
             return "therapist"
-        if current == "auditor":
-            return after_auditor_route(state)
+        if current == "critic_auditor":
+            return after_critic_auditor_route(state)
         if current == "missing_info_handler":
             return "formatter"
         if current == "formatter":
@@ -116,8 +116,6 @@ def build_integrated_app(node_handlers):
         },
     )
 
-    workflow.add_edge("research_analyst", "therapist")
-    workflow.add_edge("adaptive_coach", "therapist")
     workflow.add_conditional_edges(
         "router",
         after_router_route,
@@ -142,6 +140,8 @@ def build_integrated_app(node_handlers):
         {
             "planner": "planner",
             "coach": "coach",
+            "research_analyst": "research_analyst",
+            "adaptive_coach": "adaptive_coach",
             "missing_info_handler": "missing_info_handler",
         },
     )
@@ -152,22 +152,22 @@ def build_integrated_app(node_handlers):
         after_planner_route,
         {"executor": "executor", "missing_info_handler": "missing_info_handler"},
     )
-    workflow.add_edge("executor", "auditor")
+    workflow.add_edge("executor", "critic_auditor")
     workflow.add_edge("coach", "therapist")
+    workflow.add_edge("research_analyst", "therapist")
+    workflow.add_edge("adaptive_coach", "therapist")
     workflow.add_conditional_edges(
         "therapist",
         after_therapist_route,
         {
             "nutritionist": "nutritionist",
-            "coach": "coach",
-            "adaptive_coach": "adaptive_coach",
-            "auditor": "auditor",
+            "critic_auditor": "critic_auditor",
         },
     )
-    workflow.add_edge("nutritionist", "auditor")
+    workflow.add_edge("nutritionist", "critic_auditor")
     workflow.add_conditional_edges(
-        "auditor",
-        after_auditor_route,
+        "critic_auditor",
+        after_critic_auditor_route,
         {
             "formatter": "formatter",
             "executor": "executor",

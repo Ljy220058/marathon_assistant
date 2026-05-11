@@ -8,6 +8,7 @@ except ImportError:
     RunnableConfig = Any
 
 from marathon_qa_assistant.core.periodization import Macrocycle
+from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.state_models import IntegratedState
 from marathon_qa_assistant.core.training_plan_context import align_plan_duration_context
 from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
@@ -15,6 +16,7 @@ from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     ensure_usage,
     format_evidence_lines,
+    format_state_evidence_lines,
     get_security_prompt_suffix,
 )
 
@@ -140,10 +142,9 @@ def _resolve_weeks_source_label(source: str) -> str:
 
 
 def _build_plan_prompt(state: IntegratedState) -> str:
-    rag_sources = state.get("rag_sources", [])
     plan_context = align_plan_duration_context(state.get("query", ""), state.get("user_profile", {}))
     profile = plan_context["aligned_profile"]
-    evidence_lines = format_evidence_lines(rag_sources, limit=3)
+    evidence_lines = format_state_evidence_lines(state, limit=5)
     graph_context = state.get("graph_context", "")
     requested_weeks = state.get("requested_weeks")
     if requested_weeks is None:
@@ -349,6 +350,14 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         profile=state.get("user_profile", {}),
         requested_weeks=state.get("requested_weeks"),
     )
+    validation_result = structured_training_plan.get("half_marathon_protocol_validation", {}) if isinstance(structured_training_plan, dict) else {}
+    evidence_bundle = build_evidence_bundle(
+        query=state.get("query", ""),
+        rag_sources=rag_sources,
+        ranked_evidence=state.get("ranked_evidence", []),
+        structured_training_plan=structured_training_plan,
+        health=(state.get("evidence_bundle") or {}).get("health") if isinstance(state.get("evidence_bundle"), dict) else None,
+    )
 
     try:
         content, usage = await ai_invoke(prompt, config, state.get("token_usage"))
@@ -369,8 +378,13 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
 
     return {
         "draft_plan": content,
+        "draft_ready": True,
         "structured_training_plan": structured_training_plan,
-        "is_approved": True,
+        "validation_result": validation_result,
+        "repair_suggestions": validation_result.get("repair_suggestions", []) if isinstance(validation_result, dict) else [],
+        "fallback_reason": fallback_reason,
+        "used_fallback": bool(fallback_reason),
+        "evidence_bundle": evidence_bundle,
         "rag_sources": rag_sources,
         "token_usage": usage,
         "reasoning_log": logs,

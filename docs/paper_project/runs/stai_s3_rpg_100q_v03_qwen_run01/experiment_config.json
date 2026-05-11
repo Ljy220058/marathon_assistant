@@ -1,0 +1,20 @@
+{
+  "name": "s3_retrieval_plus_gold_100q_v03",
+  "system_id": "S3",
+  "dataset": "docs/paper_project/stai_benchmark_v0.3_100_question_draft.jsonl",
+  "qids": "all",
+  "evidence_mode": "retrieval_plus_gold",
+  "ablation_mode": "full",
+  "pre_gate_mode": "off",
+  "benchmark_kb_dir": "docs/paper_project/benchmark_kb_v0.2",
+  "qid_evidence_map": "docs/paper_project/benchmark_kb_v0.2/qid_to_gold_evidence_v0.2.json",
+  "model": "qwen2.5:latest",
+  "top_k": 5,
+  "context_max_chars": 500,
+  "gold_context_max_chars": 800,
+  "num_ctx": 4096,
+  "num_batch": 4,
+  "num_predict": 300,
+  "timeout_sec": 240,
+  "notes": "Main 100-question v0.3 benchmark run for the S3 retrieval-plus-gold workflow."
+}
