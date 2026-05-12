@@ -5,7 +5,7 @@ const quickActions = [
   {
     label: "生成训练日历",
     meta: "画像 + 比赛日",
-    prompt: "请基于我的跑者画像、当前周跑量、可训练日和目标比赛日期，生成一份结构化训练日历。请优先快速返回可点击日历骨架，并标注每日强度区间、训练负荷、关键训练原因和基石依据。",
+    prompt: "请基于我的跑者画像、上个月月跑量、可训练日和目标比赛日期，生成一份结构化训练日历。请优先快速返回可点击日历骨架，并标注每日强度区间、训练负荷、关键训练原因和基石依据。",
   },
   {
     label: "复核训练负荷",
@@ -33,10 +33,8 @@ const planningCards = [
 const profileFields = [
   ["goal", "目标", "半马完赛 / 全马 PB / 健康跑"],
   ["experience", "经验", "新手 / 进阶 / 有比赛经验"],
-  ["weeklyMileage", "当前周跑量", "例如 35 km"],
+  ["lastMonthMileage", "上个月月跑量", "例如 300 km"],
   ["currentHalfTime", "当前半马 PB", "例如 1:25"],
-  ["recentFourWeekMileage", "近4周平均周跑量", "例如 70 km"],
-  ["planWeeks", "计划周期", "例如 12 周"],
   ["raceDate", "比赛日期", "例如 2026-10-18"],
   ["availableDays", "可训练日", "例如 周二、周四、周六、周日"],
   ["longRun", "最长训练", "例如 90 分钟或 16 km"],
@@ -65,22 +63,21 @@ const profileFields = [
       </a>
       <nav aria-label="主导航">
         <a href="#plan">训练计划</a>
-        <a href="#profile">画像</a>
-        <a href="#calendar-section">日历</a>
-        <a href="#evidence">证据</a>
-        <a href="#feedback">反馈</a>
+        <a href="#profile" data-open-drawer-section="profile">画像</a>
+        <a href="#calendar-section" data-open-drawer-section="calendar">日历</a>
+        <a href="#evidence" data-open-drawer-section="basis">依据</a>
       </nav>
       <div id="navHealth" class="nav-health">连接中</div>
     </header>
     <nav class="mobile-quick-nav" aria-label="移动端快捷导航">
-      <a href="#profile">画像</a>
+      <a href="#profile" data-open-drawer-section="profile">画像</a>
       <a href="#plan">生成</a>
-      <a href="#calendar-section">日历</a>
-      <a href="#evidence">证据</a>
+      <a href="#calendar-section" data-open-drawer-section="calendar">日历</a>
+      <a href="#evidence" data-open-drawer-section="basis">依据</a>
     </nav>
 
     <main id="workspace" class="workspace">
-      <section class="hero-panel">
+      <section class="hero-panel" hidden>
         <p class="eyebrow">Training Calendar Builder</p>
         <h1>输入目标赛事和当前能力，快速生成可点击的训练日历。</h1>
         <p class="hero-copy">
@@ -98,9 +95,62 @@ const profileFields = [
         </div>
       </section>
 
-      <div class="app-layout">
-        <aside class="side-rail" aria-label="快捷操作">
-          <section class="panel rail-panel">
+      <div class="app-layout focused-workspace">
+        <details class="side-rail side-drawer" data-side-drawer>
+          <summary class="side-drawer-toggle" aria-label="打开训练导航">
+            <span class="drawer-toggle-mark" aria-hidden="true">≡</span>
+            <span class="drawer-toggle-copy">
+              <strong>训练导航</strong>
+              <small>画像 / 日历 / 依据</small>
+            </span>
+            <span class="drawer-toggle-affordance" aria-hidden="true">打开</span>
+          </summary>
+          <aside class="side-drawer-content" aria-label="训练导航">
+          <section class="drawer-guide" data-drawer-guide aria-label="侧边栏引导">
+            <label class="drawer-search" for="drawerSearch">
+              <span>快速查找</span>
+              <input id="drawerSearch" type="search" placeholder="画像、日历、依据、历史" autocomplete="off" />
+            </label>
+            <div class="drawer-guide-block" data-drawer-stage="1">
+              <span class="section-kicker drawer-stage-label">1 准备</span>
+              <button class="drawer-action primary" type="button" data-drawer-action="profile" data-drawer-query="profile runner 画像 跑者资料 目标 能力 可训练日" aria-controls="profile">
+                <strong>完善跑者资料</strong>
+                <small>目标、能力、可训练日</small>
+              </button>
+              <button class="drawer-action" type="button" data-drawer-action="templates" data-drawer-query="templates prompt 模板 快捷 prompt 计划入口" aria-controls="drawerTemplatesPanel">
+                <strong>快捷模板</strong>
+                <small>把常用请求填入生成器</small>
+              </button>
+            </div>
+            <div class="drawer-guide-block" data-drawer-stage="2">
+              <span class="section-kicker drawer-stage-label">2 查看</span>
+              <button class="drawer-action" type="button" data-drawer-action="calendar" data-drawer-query="calendar training 日历 训练 周计划 单日训练" aria-controls="calendar-section">
+                <strong>查看训练日历</strong>
+                <small>生成后查看周计划和单日训练</small>
+              </button>
+              <button class="drawer-action" type="button" data-drawer-action="basis" data-drawer-query="basis evidence source 依据 解释 强度 来源 训练依据" aria-controls="evidence">
+                <strong>训练依据</strong>
+                <small>查看强度区间和安排来源</small>
+              </button>
+            </div>
+            <div class="drawer-guide-block" data-drawer-stage="3">
+              <span class="section-kicker drawer-stage-label">3 调整</span>
+              <button class="drawer-action" type="button" data-drawer-action="history" data-drawer-query="history saved 历史 保存 恢复 计划" aria-controls="drawerHistoryPanel">
+                <strong>历史计划</strong>
+                <small>保存或恢复已有计划</small>
+              </button>
+              <button class="drawer-action" type="button" data-drawer-action="settings" data-drawer-query="settings api model 设置 服务 接口 模型 高级" aria-controls="drawerSettingsPanel" hidden data-expert-only>
+                <strong>高级设置</strong>
+                <small>服务、模型与调试入口</small>
+              </button>
+            </div>
+            <p class="drawer-empty-state" data-drawer-empty hidden>没有匹配入口</p>
+          </section>
+          <section id="runnerIdentityCard" class="panel runner-identity-card" aria-label="RunnerIdentityCard" data-drawer-section="profile-summary" hidden>
+            <div class="identity-card-empty">正在载入跑者身份卡...</div>
+          </section>
+
+          <section id="drawerTemplatesPanel" class="panel rail-panel" data-drawer-section="templates" hidden>
             <div class="panel-heading">
               <p class="section-kicker">Plan Shortcuts</p>
               <h2>计划快捷入口</h2>
@@ -120,35 +170,17 @@ const profileFields = [
             </div>
           </section>
 
-          <section class="panel rail-panel">
+          <section id="drawerSettingsPanel" class="panel rail-panel" data-drawer-section="settings" hidden data-expert-only>
             <div class="panel-heading">
               <p class="section-kicker">Connection</p>
-              <h2>后端接口</h2>
+              <h2>服务设置</h2>
             </div>
-            <label class="field-label" for="apiBase">API Base</label>
+            <label class="field-label" for="apiBase">接口地址</label>
             <input id="apiBase" value="http://127.0.0.1:8010" />
             <div id="health" class="status-note">等待连接</div>
           </section>
 
-          <section id="feedback" class="panel rail-panel">
-            <div class="panel-heading">
-              <p class="section-kicker">Feedback</p>
-              <h2>反馈预设</h2>
-            </div>
-            <div class="feedback-stack">
-              <button class="ghost-button" data-feedback-preset data-completion="已完成" data-fatigue="轻微" data-pain="没有疼痛" data-sleep="良好" data-notes="训练完成度正常，主观疲劳轻微，没有疼痛。">
-                完成良好
-              </button>
-              <button class="ghost-button" data-feedback-preset data-completion="已完成" data-fatigue="明显" data-pain="轻微不适" data-sleep="一般" data-notes="训练完成，但疲劳明显，恢复一般，希望降低下一次训练负荷。">
-                今天偏累
-              </button>
-              <button class="ghost-button" data-feedback-preset data-completion="部分完成" data-fatigue="高疲劳" data-pain="疼痛风险" data-sleep="较差" data-notes="训练中出现不适或疼痛信号，请优先给出保守调整建议。">
-                疼痛预警
-              </button>
-            </div>
-          </section>
-
-          <section class="panel rail-panel">
+          <section id="drawerHistoryPanel" class="panel rail-panel" data-drawer-section="history" hidden>
             <div class="panel-heading">
               <p class="section-kicker">History</p>
               <h2>历史计划</h2>
@@ -162,22 +194,43 @@ const profileFields = [
               <div class="empty-state">暂无本地历史。</div>
             </div>
           </section>
-        </aside>
+          <div id="drawerWorkspaceSections" class="drawer-workspace-sections" aria-label="训练画像与日历"></div>
+          </aside>
+        </details>
 
         <section class="main-stack">
-          <section id="plan" class="panel composer-panel">
+          <section id="plan" class="panel composer-panel workspace-card" data-primary-workspace-card>
             <div class="panel-heading split">
               <div>
                 <p class="section-kicker">Plan Builder</p>
                 <h2>训练日历生成器</h2>
               </div>
-              <span class="pill">default_user</span>
+              <span class="pill muted-pill">普通模式</span>
             </div>
+            <div id="workspaceFlow" class="workspace-flow" data-workspace-state="profile" aria-label="训练计划主流程">
+              <button class="workspace-flow-step is-current" type="button" data-open-drawer-section="profile">
+                <span>1</span>
+                <strong>完善画像</strong>
+              </button>
+              <button class="workspace-flow-step" type="button" data-workspace-generate>
+                <span>2</span>
+                <strong>生成计划</strong>
+              </button>
+              <button class="workspace-flow-step" type="button" data-open-drawer-section="calendar">
+                <span>3</span>
+                <strong>查看日历</strong>
+              </button>
+              <button class="workspace-flow-step" type="button" data-open-drawer-section="history">
+                <span>4</span>
+                <strong>反馈调整</strong>
+              </button>
+            </div>
+            <p id="workspaceNextAction" class="workspace-next-action">先完善画像，或直接补充目标赛事后生成训练日历。</p>
             <textarea
               id="queryInput"
-              placeholder="补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用下方画像生成。"
+              placeholder="补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用侧栏画像生成。"
             ></textarea>
-            <div class="model-controls">
+            <div class="model-controls" hidden data-expert-only>
               <div class="model-switch">
                 <span class="field-label">模型来源</span>
                 <div class="model-toggle" role="group" aria-label="选择模型来源">
@@ -199,7 +252,7 @@ const profileFields = [
                 </select>
               </label>
             </div>
-            <div class="api-key-controls">
+            <div class="api-key-controls" hidden data-expert-only>
               <label>
                 <span class="field-label">DeepSeek API Key</span>
                 <input id="dsApiKey" type="password" placeholder="sk-..." autocomplete="off" />
@@ -214,7 +267,7 @@ const profileFields = [
               <div class="button-row">
                 <button id="runQuery" class="primary-button">生成训练日历</button>
                 <button id="cancelQuery" class="secondary-button" disabled>取消</button>
-                <button id="loadMeta" class="secondary-button">刷新区间与证据</button>
+                <button id="loadMeta" class="secondary-button" hidden data-expert-only>刷新区间与依据</button>
                 <button id="clearResult" class="secondary-button">清空</button>
               </div>
               <span id="queryHint" class="muted">Ctrl / ⌘ + Enter 可生成</span>
@@ -222,8 +275,8 @@ const profileFields = [
             <div id="planProgress" class="plan-progress" data-status="idle" aria-live="polite">
               <div class="plan-progress-head">
                 <div>
-                  <p class="section-kicker">Generation Trace</p>
-                  <h2>计划生成轨迹</h2>
+                  <p class="section-kicker">Plan Status</p>
+                  <h2>生成状态</h2>
                 </div>
                 <span id="planProgressPercent" class="pill muted-pill">0%</span>
               </div>
@@ -251,18 +304,18 @@ const profileFields = [
               <div id="report" class="empty-state">还没有结果。填写计划画像或补充说明后，可以生成训练日历。</div>
             </article>
 
-            <aside class="panel metrics-panel">
+            <aside class="panel metrics-panel" hidden data-expert-only>
               <div class="panel-heading">
                 <p class="section-kicker">Structured Signals</p>
                 <h2>结构化信息</h2>
               </div>
               <div class="metric-grid">
                 <div class="metric-card">
-                  <span>Token</span>
+                  <span>生成用量</span>
                   <strong id="tokenUsage">-</strong>
                 </div>
                 <div class="metric-card">
-                  <span>审计评分</span>
+                  <span>计划检查</span>
                   <strong id="auditScores">-</strong>
                 </div>
                 <div class="metric-card wide">
@@ -273,7 +326,7 @@ const profileFields = [
             </aside>
           </section>
 
-          <section id="profile" class="panel">
+          <section id="profile" class="panel" data-drawer-section="profile" hidden>
             <div class="panel-heading split">
               <div>
                 <p class="section-kicker">Runner Profile</p>
@@ -291,6 +344,16 @@ const profileFields = [
                 ))
               }
             </div>
+            <div id="profileDerivedMetrics" class="profile-derived-metrics" aria-live="polite">
+              <div>
+                <span>系统估算平均周跑量</span>
+                <strong data-derived-weekly-mileage>-</strong>
+              </div>
+              <div>
+                <span>系统倒推计划周期</span>
+                <strong data-derived-plan-weeks>-</strong>
+              </div>
+            </div>
             <div class="toolbar profile-toolbar">
               <div class="button-row">
                 <button id="saveProfileDraft" class="secondary-button">保存画像草稿</button>
@@ -301,7 +364,7 @@ const profileFields = [
             </div>
           </section>
 
-          <section id="calendar-section" class="panel">
+          <section id="calendar-section" class="panel" data-drawer-section="calendar" hidden>
             <div class="panel-heading split">
               <div>
                 <p class="section-kicker">Training Calendar</p>
@@ -312,6 +375,17 @@ const profileFields = [
             <div id="loadSummary" class="load-summary-panel empty-state">
               训练负荷会在生成计划后显示。
             </div>
+            <details class="calendar-settings" aria-label="日历训练时间设置">
+              <summary>时间设置</summary>
+              <label>
+                <span class="field-label">训练开始日期</span>
+                <input id="trainingStartDate" type="date" />
+              </label>
+              <label>
+                <span class="field-label">默认训练时间</span>
+                <input id="defaultStartTime" type="time" value="07:00" />
+              </label>
+            </details>
             <div class="calendar-toolbar" aria-label="日历视图切换">
               <div class="segmented-control" role="tablist" aria-label="训练日历视图">
                 <button type="button" class="segmented-control-button active" data-calendar-view="week">按周</button>
@@ -331,8 +405,14 @@ const profileFields = [
             </div>
           </section>
 
-          <section id="evidence" class="reference-grid">
-            <article class="panel">
+          <details id="evidence" class="panel training-basis" data-training-basis data-drawer-section="basis" hidden>
+            <summary>
+              <span class="section-kicker">Training Basis</span>
+              <h2>训练依据</h2>
+              <span id="evidenceCount" class="pill muted-pill">0 条</span>
+            </summary>
+            <div class="training-basis-grid">
+            <section>
               <div class="panel-heading">
                 <p class="section-kicker">Intensity</p>
                 <h2>强度区间</h2>
@@ -340,30 +420,22 @@ const profileFields = [
               <div id="zones" class="chip-grid">
                 <div class="empty-state">未加载</div>
               </div>
-            </article>
-            <article class="panel">
+            </section>
+            <section>
               <div class="panel-heading">
-                <p class="section-kicker">Evidence</p>
-                <h2>证据分层</h2>
+                <p class="section-kicker">Basis</p>
+                <h2>训练依据来源</h2>
               </div>
               <div id="tiers" class="chip-grid">
                 <div class="empty-state">未加载</div>
               </div>
-            </article>
-          </section>
+            </section>
+            </div>
 
-          <section class="panel">
-            <div class="panel-heading split">
-              <div>
-                <p class="section-kicker">Evidence Preview</p>
-                <h2>证据预览</h2>
-              </div>
-              <span id="evidenceCount" class="pill muted-pill">0 条</span>
-            </div>
             <div id="evidencePreview" class="evidence-list">
-              <div class="empty-state">生成计划后，会从返回结果中提取证据编号、证据层级和来源摘要。</div>
+              <div class="empty-state">生成计划后，这里会按需展示训练依据来源。</div>
             </div>
-          </section>
+          </details>
         </section>
       </div>
     </main>
@@ -375,6 +447,23 @@ const profileFields = [
         <div id="dayModalContent"></div>
       </article>
     </div>
+
+    <dialog id="profileEditorDialog" class="profile-editor-dialog" aria-labelledby="profileEditorTitle">
+      <form method="dialog" class="profile-editor-card">
+        <div class="profile-editor-head">
+          <div>
+            <p class="section-kicker">ProfileEditor</p>
+            <h2 id="profileEditorTitle">编辑训练画像</h2>
+          </div>
+          <button id="closeProfileEditor" class="modal-close-button" type="button" aria-label="关闭画像编辑器">×</button>
+        </div>
+        <div id="profileEditorGroups" class="profile-editor-groups"></div>
+        <div class="profile-editor-actions">
+          <button id="cancelProfileEditor" class="secondary-button" type="button">取消</button>
+          <button id="saveProfileEditor" class="primary-button" type="button">保存画像</button>
+        </div>
+      </form>
+    </dialog>
 
     <script is:inline>
       const DEFAULT_API_BASE = "http://127.0.0.1:8010";
@@ -391,8 +480,48 @@ const profileFields = [
         planProgressTimer: null,
         historyExpanded: false,
         lastPlanIntent: null,
+        latestProfile: {},
         weekCollapseState: {},
       };
+
+      const DRAWER_SECTIONS = [
+        { id: "profile", label: "完善跑者资料", query: "画像 跑者资料 目标 能力 可训练日" },
+        { id: "calendar", label: "查看训练日历", query: "日历 训练 周计划 单日训练" },
+        { id: "templates", label: "快捷模板", query: "模板 快捷 prompt 计划入口" },
+        { id: "basis", label: "训练依据", query: "依据 解释 强度 来源 训练依据" },
+        { id: "history", label: "历史计划", query: "历史 保存 恢复 计划" },
+        { id: "settings", label: "高级设置", query: "设置 服务 接口 模型 高级" },
+      ];
+
+      const PROFILE_EDITOR_GROUPS = [
+        {
+          title: "基础画像",
+          fields: [
+            { key: "goal", draftKey: "goal", label: "训练目标", type: "text", placeholder: "半马 sub90 / 全马 PB" },
+            { key: "experience_level", draftKey: "experience", label: "训练水平", type: "text", placeholder: "新手 / 中级 / 进阶 / 精英" },
+            { key: "recent_four_week_mileage", draftKey: "lastMonthMileage", label: "上个月月跑量", type: "text", placeholder: "300 km" },
+            { key: "available_days", draftKey: "availableDays", label: "可用训练日", type: "text", placeholder: "周二、周四、周六、周日" },
+          ],
+        },
+        {
+          title: "强度与能力",
+          fields: [
+            { key: "lthr", label: "LTHR", type: "number", placeholder: "168" },
+            { key: "t_pace", label: "T配速", type: "text", placeholder: "4:00/km" },
+            { key: "vo2max", label: "VO₂max", type: "number", placeholder: "52" },
+            { key: "max_session_minutes", draftKey: "longRun", label: "单次最长训练", type: "text", placeholder: "90 分钟" },
+          ],
+        },
+        {
+          title: "关键约束",
+          fields: [
+            { key: "target_race_date", draftKey: "raceDate", label: "比赛日期/倒计时", type: "text", placeholder: "2026-10-18" },
+            { key: "terrain_preference", label: "场地偏好", type: "text", placeholder: "公路、田径场" },
+            { key: "training_types", label: "训练类型偏好", type: "text", placeholder: "节奏跑、长距离" },
+            { key: "notes", label: "补充说明", type: "text", placeholder: "近期小腿紧，避免连续强度" },
+          ],
+        },
+      ];
 
       const $ = (id) => document.getElementById(id);
       const apiBaseInput = $("apiBase");
@@ -421,6 +550,8 @@ const profileFields = [
       const loadSummaryBox = $("loadSummary");
       const calendarCount = $("calendarCount");
       const calendarScopeHint = $("calendarScopeHint");
+      const trainingStartDateInput = $("trainingStartDate");
+      const defaultStartTimeInput = $("defaultStartTime");
       const calendarViewButtons = Array.from(document.querySelectorAll("[data-calendar-view]"));
       const tokenUsageBox = $("tokenUsage");
       const auditScoresBox = $("auditScores");
@@ -428,6 +559,12 @@ const profileFields = [
       const zonesBox = $("zones");
       const tiersBox = $("tiers");
       const profileStatus = $("profileStatus");
+      const runnerIdentityCard = $("runnerIdentityCard");
+      const profileEditorDialog = $("profileEditorDialog");
+      const profileEditorGroups = $("profileEditorGroups");
+      const closeProfileEditorButton = $("closeProfileEditor");
+      const cancelProfileEditorButton = $("cancelProfileEditor");
+      const saveProfileEditorButton = $("saveProfileEditor");
       const evidencePreview = $("evidencePreview");
       const evidenceCount = $("evidenceCount");
       const historyList = $("historyList");
@@ -437,6 +574,12 @@ const profileFields = [
       const dayModalClose = $("dayModalClose");
       const dayModalBackdrop = $("dayModalBackdrop");
       const calendarFilterButtons = Array.from(document.querySelectorAll("[data-calendar-filter]"));
+      const drawerSearchInput = $("drawerSearch");
+      const drawerActionButtons = Array.from(document.querySelectorAll("[data-drawer-action]"));
+      const drawerEmptyState = document.querySelector("[data-drawer-empty]");
+      const workspaceFlow = $("workspaceFlow");
+      const workspaceNextAction = $("workspaceNextAction");
+      const workspaceFlowSteps = Array.from(document.querySelectorAll("[data-workspace-state] [data-open-drawer-section], [data-workspace-generate]"));
 
       function getApiBase() {
         return (apiBaseInput.value || state.apiBase).replace(/\/$/, "");
@@ -485,13 +628,13 @@ const profileFields = [
       }
 
       const PLAN_PROGRESS_STEPS = [
-        { id: "connect", label: "连接后端", detail: "确认 FastAPI 和端口" },
-        { id: "profile", label: "解析画像", detail: "读取目标、周期与限制" },
+        { id: "connect", label: "准备请求", detail: "确认服务可用" },
+        { id: "profile", label: "读取画像", detail: "目标、周期与限制" },
         { id: "skeleton", label: "生成骨架", detail: "规则层先产出周计划" },
         { id: "validate", label: "安全校验", detail: "检查恢复、强度和容量" },
         { id: "calendar", label: "排布日历", detail: "转换为可点击训练日" },
-        { id: "evidence", label: "绑定依据", detail: "整理基石文档和来源" },
-        { id: "enrich", label: "补全解释", detail: "异步补充 LLM 说明" },
+        { id: "evidence", label: "整理依据", detail: "保留来源与替代方案" },
+        { id: "enrich", label: "补全说明", detail: "生成可读解释" },
       ];
 
       function clampProgress(value) {
@@ -640,6 +783,28 @@ const profileFields = [
         el.textContent = message;
       }
 
+      function updateWorkspaceFlow(stateName = "profile", message = "") {
+        const flowMessages = {
+          profile: "先完善画像，或直接补充目标赛事后生成训练日历。",
+          generating: "正在生成计划骨架，完成后会自动引导到训练日历。",
+          calendar: "计划已生成。下一步查看周重点，点击单日卡进入详情和反馈。",
+          feedback: "根据单日反馈调整后续训练，历史计划可随时恢复。",
+        };
+        if (workspaceFlow) {
+          workspaceFlow.dataset.workspaceState = stateName;
+        }
+        const stateOrder = { profile: 0, generating: 1, calendar: 2, feedback: 3 };
+        const activeIndex = stateOrder[stateName] ?? 0;
+        workspaceFlowSteps.forEach((step, index) => {
+          step.classList.toggle("is-current", index === activeIndex);
+          step.classList.toggle("is-complete", index < activeIndex);
+          step.setAttribute("aria-current", index === activeIndex ? "step" : "false");
+        });
+        if (workspaceNextAction) {
+          workspaceNextAction.textContent = message || flowMessages[stateName] || flowMessages.profile;
+        }
+      }
+
       function setBusy(message) {
         reportBox.className = "loading-state";
         reportBox.textContent = message;
@@ -725,13 +890,13 @@ const profileFields = [
           healthBox.className = "status-note error";
           navHealth.className = "nav-health error";
           healthBox.textContent = `离线：${explainApiError(error)}`;
-          navHealth.textContent = "API 离线";
+          navHealth.textContent = "服务离线";
           return;
         }
         healthBox.className = "status-note ok";
         navHealth.className = "nav-health ok";
-        healthBox.textContent = `在线：${getApiBase()} / ${status} / ${provider || "unknown"} / ${model || "unknown"}`;
-        navHealth.textContent = "API 在线";
+        healthBox.textContent = `在线：${status} / ${provider || "unknown"} / ${model || "unknown"}`;
+        navHealth.textContent = "服务在线";
       }
 
       async function loadLlmOptions() {
@@ -846,6 +1011,48 @@ const profileFields = [
       function formatDuration(value) {
         const parsed = numberValue(value, 0);
         return parsed > 0 ? `${Math.round(parsed)} min` : "-";
+      }
+
+      function getCalendarSettings() {
+        return {
+          training_start_date: (trainingStartDateInput?.value || "").trim(),
+          default_start_time: (defaultStartTimeInput?.value || "07:00").trim(),
+        };
+      }
+
+      function saveCalendarSettingsDraft() {
+        localStorage.setItem("marathon-calendar-settings", JSON.stringify(getCalendarSettings()));
+      }
+
+      function loadCalendarSettingsDraft() {
+        try {
+          const saved = JSON.parse(localStorage.getItem("marathon-calendar-settings") || "{}");
+          if (trainingStartDateInput && saved.training_start_date) {
+            trainingStartDateInput.value = saved.training_start_date;
+          }
+          if (defaultStartTimeInput && saved.default_start_time) {
+            defaultStartTimeInput.value = saved.default_start_time;
+          }
+        } catch {}
+      }
+
+      function dayDateLabel(day) {
+        return text(day?.scheduled_date || day?.date || day?.date_str, "");
+      }
+
+      function dayTimeLabel(day) {
+        return text(day?.start_time || day?.time || day?.planned_time, "");
+      }
+
+      function formatScheduleTime(day) {
+        const date = dayDateLabel(day);
+        const time = dayTimeLabel(day);
+        const duration = numberValue(day?.duration_min, 0);
+        return [
+          date,
+          time,
+          duration ? `${Math.round(duration)} min` : "",
+        ].filter(Boolean).join(" · ");
       }
 
       function isRestDay(day) {
@@ -1139,10 +1346,282 @@ const profileFields = [
         return text(value, fallback);
       }
 
+      function splitProfileList(value) {
+        if (Array.isArray(value)) return value.map((item) => text(item, "")).filter(Boolean);
+        return String(value || "")
+          .split(/[，、,；;|/]+/)
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function formatWeeklyMileage(value) {
+        const raw = text(value, "");
+        if (!raw) return "未设置";
+        return /km|公里/i.test(raw) ? raw : `${raw} km/周`;
+      }
+
+      function formatLthr(value) {
+        const raw = text(value, "");
+        if (!raw || raw === "0" || raw === "0.0") return "未设置";
+        return /bpm/i.test(raw) ? raw : `${raw} bpm`;
+      }
+
+      function formatTPace(value) {
+        const raw = text(value, "");
+        if (!raw) return "未设置";
+        return raw.includes("/") ? raw : `${raw}/km`;
+      }
+
+      function profileFieldValue(profile, field) {
+        if (profile[field.key] !== undefined && profile[field.key] !== null) {
+          return Array.isArray(profile[field.key]) ? profile[field.key].join("、") : String(profile[field.key]);
+        }
+        if (field.draftKey) {
+          const draft = getProfileDraft();
+          return draft[field.draftKey] || "";
+        }
+        return "";
+      }
+
+      function buildProfileConstraints(profile) {
+        const constraints = [];
+        const days = splitProfileList(profile.available_days);
+        if (days.length) constraints.push(["可用训练日", days.join("、")]);
+        const maxSession = text(profile.max_session_minutes || profile.long_run, "");
+        if (maxSession) constraints.push(["单次上限", /^\d+$/.test(maxSession) ? `${maxSession} 分钟` : maxSession]);
+        const terrain = splitProfileList(profile.terrain_preference);
+        if (terrain.length) constraints.push(["场地偏好", terrain.join("、")]);
+        const trainingTypes = splitProfileList(profile.training_types);
+        if (trainingTypes.length) constraints.push(["训练偏好", trainingTypes.join("、")]);
+        const injury = splitProfileList(profile.injury_history || profile.injury || profile.recovery_state || profile.fatigue);
+        const visibleInjury = injury.filter((item) => !["无", "无伤病", "未设置"].includes(item));
+        if (visibleInjury.length) constraints.push(["关键约束", visibleInjury.slice(0, 3).join("、")]);
+        return constraints;
+      }
+
+      function renderRunnerIdentityCard(profile = {}) {
+        state.latestProfile = profile || {};
+        const level = text(profile.experience_level || profile.experience, "未知水平");
+        const goal = text(profile.goal, "未设置目标");
+        const runnerType = goal === "未设置目标" ? `${level}跑者` : `${level}跑者 · ${goal}`;
+        const constraints = buildProfileConstraints(profile);
+        const hrZones = profile.hr_zones || {};
+        const paceZones = profile.pace_zones || {};
+        const zoneRows = Array.from({ length: 9 }, (_, index) => {
+          const key = `Z${index + 1}`;
+          return `
+            <tr>
+              <th>${key}</th>
+              <td>${escapeHtml(text(hrZones[key], "未设置"))}</td>
+              <td>${escapeHtml(text(paceZones[key], "未设置"))}</td>
+            </tr>
+          `;
+        }).join("");
+
+        runnerIdentityCard.innerHTML = `
+          <div class="identity-card-head">
+            <div>
+              <p class="section-kicker">RunnerIdentityCard</p>
+              <h2>${escapeHtml(runnerType)}</h2>
+            </div>
+            <button id="openProfileEditor" class="secondary-button compact-button" type="button">编辑</button>
+          </div>
+          <div class="identity-metrics" aria-label="核心画像指标">
+            <div><span>平均周跑量</span><strong>${escapeHtml(formatWeeklyMileage(profile.weekly_mileage))}</strong></div>
+            <div><span>LTHR</span><strong>${escapeHtml(formatLthr(profile.lthr))}</strong></div>
+            <div><span>T配速</span><strong>${escapeHtml(formatTPace(profile.t_pace))}</strong></div>
+          </div>
+          <div class="identity-goal">
+            <span>训练目标</span>
+            <strong>${escapeHtml(goal)}</strong>
+          </div>
+          <div class="identity-constraints">
+            ${
+              constraints.length
+                ? constraints.map(([label, value]) => `<span>${escapeHtml(label)}：${escapeHtml(value)}</span>`).join("")
+                : '<span>补充可用日、时长和约束后，计划会更贴合你的实际条件。</span>'
+            }
+          </div>
+          <details class="identity-zones">
+            <summary>查看强度区间 Z1-Z9</summary>
+            <table>
+              <thead><tr><th>区间</th><th>心率</th><th>配速</th></tr></thead>
+              <tbody>${zoneRows}</tbody>
+            </table>
+          </details>
+        `;
+        $("openProfileEditor")?.addEventListener("click", openProfileEditor);
+      }
+
+      function renderProfileEditor(profile = state.latestProfile || {}) {
+        profileEditorGroups.innerHTML = PROFILE_EDITOR_GROUPS.map((group) => `
+          <section class="profile-editor-group">
+            <h3>${escapeHtml(group.title)}</h3>
+            <div class="profile-editor-grid">
+              ${group.fields.map((field) => `
+                <label for="editor-${field.key}">
+                  <span>${escapeHtml(field.label)}</span>
+                  <input
+                    id="editor-${field.key}"
+                    data-profile-editor-field="${field.key}"
+                    type="${field.type === "number" ? "number" : "text"}"
+                    value="${escapeHtml(profileFieldValue(profile, field))}"
+                    placeholder="${escapeHtml(field.placeholder || "")}"
+                  />
+                </label>
+              `).join("")}
+            </div>
+          </section>
+        `).join("");
+      }
+
+      function openProfileEditor() {
+        renderProfileEditor(state.latestProfile || {});
+        if (typeof profileEditorDialog.showModal === "function") {
+          profileEditorDialog.showModal();
+        } else {
+          profileEditorDialog.setAttribute("open", "");
+        }
+      }
+
+      function closeProfileEditor() {
+        if (typeof profileEditorDialog.close === "function") {
+          profileEditorDialog.close();
+        } else {
+          profileEditorDialog.removeAttribute("open");
+        }
+      }
+
+      function refreshPlanStateAfterProfileSave(profile) {
+        renderRunnerIdentityCard(profile);
+        renderProfileEditor(profile);
+        profileStatus.textContent = "已同步";
+        if (state.lastResponse) {
+          queryHint.textContent = "画像已更新。当前日历不会自动改写；重新生成后会按最新画像计算。";
+          renderPlanProgress({
+            percent: 18,
+            activeStep: "profile",
+            status: "idle",
+            phase: "画像已刷新",
+            signal: "如需应用到当前计划，请重新生成训练日历",
+          });
+        }
+      }
+
+      async function saveProfileEditor() {
+        const inputs = Array.from(document.querySelectorAll("[data-profile-editor-field]"));
+        let latest = { ...(state.latestProfile || {}) };
+        saveProfileEditorButton.disabled = true;
+        saveProfileEditorButton.textContent = "保存中";
+        try {
+          for (const input of inputs) {
+            const field = PROFILE_EDITOR_GROUPS.flatMap((group) => group.fields).find((item) => item.key === input.dataset.profileEditorField);
+            const value = input.value.trim();
+            const payload = await apiFetch(`/profile/default_user/fields/${field.key}`, {
+              method: "PATCH",
+              body: JSON.stringify({ value }),
+              timeoutMs: 3000,
+            });
+            latest = payload.profile || latest;
+          }
+          fillProfileDraft(profileApiToDraft(latest));
+          localStorage.setItem("marathon-profile-draft", JSON.stringify(getProfileDraft()));
+          refreshPlanStateAfterProfileSave(latest);
+          closeProfileEditor();
+        } catch (error) {
+          profileStatus.textContent = "保存失败";
+          queryHint.textContent = `画像保存失败：${error.message}`;
+        } finally {
+          saveProfileEditorButton.disabled = false;
+          saveProfileEditorButton.textContent = "保存画像";
+        }
+      }
+
       function compactJson(value) {
         if (!value || typeof value !== "object") return "-";
         const keys = Object.keys(value).filter((key) => value[key] !== undefined && value[key] !== null);
         return keys.length ? keys.slice(0, 8).join("、") : "-";
+      }
+
+      function parseMileageKm(value) {
+        const match = String(value || "").replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+        if (!match) return "";
+        const km = Number.parseFloat(match[1]);
+        return Number.isFinite(km) && km > 0 ? km : "";
+      }
+
+      function formatMileageKm(km) {
+        if (!Number.isFinite(km) || km <= 0) return "";
+        const rounded = Math.round(km * 10) / 10;
+        return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} km`;
+      }
+
+      function monthlyMileageToWeeklyMileage(value) {
+        const monthlyKm = parseMileageKm(value);
+        if (!monthlyKm) return "";
+        return formatMileageKm(monthlyKm / 4.345);
+      }
+
+      function weeklyMileageToMonthlyMileage(value) {
+        const weeklyKm = parseMileageKm(value);
+        if (!weeklyKm) return "";
+        return formatMileageKm(weeklyKm * 4.345);
+      }
+
+      function normalizeMonthlyMileage(value) {
+        const monthlyKm = parseMileageKm(value);
+        return monthlyKm ? formatMileageKm(monthlyKm) : String(value || "").trim();
+      }
+
+      function normalizeProfileDraft(draft = {}) {
+        return {
+          ...draft,
+          lastMonthMileage:
+            draft.lastMonthMileage ||
+            draft.last_month_mileage ||
+            draft.recentFourWeekMileage ||
+            draft.recent_four_week_mileage ||
+            draft.recent_4_week_mileage ||
+            weeklyMileageToMonthlyMileage(draft.weeklyMileage || draft.weekly_mileage) ||
+            "",
+        };
+      }
+
+      function weeksUntilRace(value) {
+        const match = String(value || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return "";
+        const raceDate = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        if (
+          raceDate.getFullYear() !== Number(match[1]) ||
+          raceDate.getMonth() !== Number(match[2]) - 1 ||
+          raceDate.getDate() !== Number(match[3])
+        ) {
+          return "";
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        raceDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.ceil((raceDate.getTime() - today.getTime()) / 86400000);
+        if (diffDays <= 0) return "";
+        return String(Math.max(1, Math.ceil(diffDays / 7)));
+      }
+
+      function deriveProfileMetrics(draft = {}) {
+        return {
+          weeklyMileage: monthlyMileageToWeeklyMileage(draft.lastMonthMileage),
+          recentFourWeekMileage: normalizeMonthlyMileage(draft.lastMonthMileage),
+          planWeeks: weeksUntilRace(draft.raceDate),
+        };
+      }
+
+      function updateProfileDerivedMetrics(draft = getProfileDraft()) {
+        const metrics = deriveProfileMetrics(draft);
+        document.querySelectorAll("[data-derived-weekly-mileage]").forEach((node) => {
+          node.textContent = metrics.weeklyMileage || "-";
+        });
+        document.querySelectorAll("[data-derived-plan-weeks]").forEach((node) => {
+          node.textContent = metrics.planWeeks ? `${metrics.planWeeks} 周` : "-";
+        });
       }
 
       function getProfileDraft() {
@@ -1154,13 +1633,15 @@ const profileFields = [
       }
 
       function profileDraftToApi(draft) {
+        const metrics = deriveProfileMetrics(draft);
         return {
           goal: draft.goal || "",
           experience_level: draft.experience || "",
-          weekly_mileage: draft.weeklyMileage || "",
+          weekly_mileage: metrics.weeklyMileage || "",
           current_half_time: draft.currentHalfTime || "",
-          recent_four_week_mileage: draft.recentFourWeekMileage || "",
-          plan_duration_weeks: draft.planWeeks || "",
+          recent_four_week_mileage: metrics.recentFourWeekMileage || "",
+          last_month_mileage: metrics.recentFourWeekMileage || "",
+          plan_duration_weeks: metrics.planWeeks || "",
           target_race_date: draft.raceDate || "",
           available_days: draft.availableDays || "",
           max_session_minutes: draft.longRun || "",
@@ -1172,13 +1653,16 @@ const profileFields = [
       }
 
       function profileApiToDraft(profile) {
-        return {
+        return normalizeProfileDraft({
           goal: profile.goal || "",
           experience: profile.experience_level || profile.experience || "",
-          weeklyMileage: profile.weekly_mileage || "",
+          lastMonthMileage:
+            profile.last_month_mileage ||
+            profile.recent_four_week_mileage ||
+            profile.recent_4_week_mileage ||
+            weeklyMileageToMonthlyMileage(profile.weekly_mileage) ||
+            "",
           currentHalfTime: profile.current_half_time || profile.half_marathon_time || profile.half_pb || "",
-          recentFourWeekMileage: profile.recent_four_week_mileage || profile.recent_4_week_mileage || "",
-          planWeeks: profile.plan_duration_weeks || profile.requested_weeks || "",
           raceDate: profile.target_race_date || "",
           availableDays: Array.isArray(profile.available_days)
             ? profile.available_days.join("、")
@@ -1186,25 +1670,27 @@ const profileFields = [
           longRun: profile.max_session_minutes || profile.long_run || "",
           targetPace: profile.target_pace || profile.target_half_time || profile.target_time || "",
           limitations: profile.injury || profile.recovery_state || profile.fatigue || "",
-        };
+        });
       }
 
       function fillProfileDraft(draft) {
         document.querySelectorAll("[data-profile-field]").forEach((input) => {
           input.value = draft[input.dataset.profileField] || "";
         });
+        updateProfileDerivedMetrics(getProfileDraft());
       }
 
       function profileDraftToPrompt(draft) {
+        const metrics = deriveProfileMetrics(draft);
         const lines = [
           "请基于以下跑者画像生成训练计划，并明确说明关键训练安排的原因：",
           `- 目标：${draft.goal || "未填写"}`,
           `- 经验：${draft.experience || "未填写"}`,
-          `- 当前周跑量：${draft.weeklyMileage || "未填写"}`,
+          `- 上个月月跑量：${draft.lastMonthMileage || "未填写"}`,
+          `- 系统估算平均周跑量：${metrics.weeklyMileage || "未填写"}`,
           `- 当前半马 PB：${draft.currentHalfTime || "未填写"}`,
-          `- 近4周平均周跑量：${draft.recentFourWeekMileage || "未填写"}`,
-          `- 计划周期：${formatPlanWeeksForPrompt(draft.planWeeks)}`,
           `- 比赛日期：${draft.raceDate || "未填写"}`,
+          `- 系统倒推计划周期：${formatPlanWeeksForPrompt(metrics.planWeeks)}`,
           `- 可训练日：${draft.availableDays || "未填写"}`,
           `- 最长训练：${draft.longRun || "未填写"}`,
           `- 目标配速/成绩：${draft.targetPace || "未填写"}`,
@@ -1228,9 +1714,10 @@ const profileFields = [
 
       function capturePlanIntent(query = queryInput.value) {
         const draft = getProfileDraft();
+        const metrics = deriveProfileMetrics(draft);
         const queryWeeks = String(query || "").match(/(\d{1,2})\s*周/);
         state.lastPlanIntent = {
-          requestedWeeks: parsePlanWeeks(draft.planWeeks) || (queryWeeks ? queryWeeks[1] : ""),
+          requestedWeeks: metrics.planWeeks || (queryWeeks ? queryWeeks[1] : ""),
           raceDate: draft.raceDate || "",
           goal: draft.goal || "",
         };
@@ -1240,14 +1727,15 @@ const profileFields = [
         const draft = getProfileDraft();
         localStorage.setItem("marathon-profile-draft", JSON.stringify(draft));
         try {
-          await apiFetch("/profile", {
-            method: "POST",
+          const payload = await apiFetch("/profile/default_user", {
+            method: "PUT",
             body: JSON.stringify({
               user_id: "default_user",
               profile: profileDraftToApi(draft),
             }),
             timeoutMs: 3000,
           });
+          renderRunnerIdentityCard(payload.profile || {});
           profileStatus.textContent = "已同步";
         } catch {
           profileStatus.textContent = "已本地保存";
@@ -1256,8 +1744,9 @@ const profileFields = [
 
       async function loadProfileDraft() {
         try {
-          const payload = await apiFetch("/profile");
+          const payload = await apiFetch("/profile/default_user");
           fillProfileDraft(profileApiToDraft(payload.profile || {}));
+          renderRunnerIdentityCard(payload.profile || {});
           profileStatus.textContent = "来自 API";
           return;
         } catch {}
@@ -1265,8 +1754,9 @@ const profileFields = [
         const raw = localStorage.getItem("marathon-profile-draft");
         if (!raw) return;
         try {
-          const draft = JSON.parse(raw);
+          const draft = normalizeProfileDraft(JSON.parse(raw));
           fillProfileDraft(draft);
+          renderRunnerIdentityCard(profileDraftToApi(draft));
           profileStatus.textContent = "已载入";
         } catch {
           profileStatus.textContent = "草稿异常";
@@ -1425,6 +1915,9 @@ const profileFields = [
                   week_index: eventContent.week_index || event.week_no,
                   day_index: eventContent.day_index || event.day_no,
                   day_label: eventContent.day_label || event.day_label,
+                  scheduled_date: event.scheduled_date || eventContent.scheduled_date,
+                  start_time: event.start_time || eventContent.start_time,
+                  duration_min: event.duration_min || eventContent.duration_min,
                   training_type: eventContent.training_type || event.training_type || event.title || event.workout_type,
                   training_type_label: eventContent.training_type_label || event.training_type_label,
                   workout_type: eventContent.workout_type || event.workout_type,
@@ -1486,6 +1979,7 @@ const profileFields = [
                 user_id: "default_user",
                 source_query: queryInput.value || state.lastResponse.report || "",
                 structured_training_plan: structuredPlan,
+                calendar_settings: getCalendarSettings(),
               }),
             });
             await renderPlanHistory();
@@ -1799,6 +2293,91 @@ const profileFields = [
         };
       }
 
+      function normalizePhaseSummary(response) {
+        const plan = getStructuredPlan(response);
+        const report = getStructuredReport(response);
+        const rawPhases = Array.isArray(plan.phase_summary)
+          ? plan.phase_summary
+          : Array.isArray(report.phase_summary)
+            ? report.phase_summary
+            : [];
+        const weeks = Array.isArray(plan.week_plans) ? plan.week_plans : [];
+        if (rawPhases.length) {
+          return rawPhases
+            .map((phase, index) => {
+              const startWeek = numberValue(phase.start_week, index + 1);
+              const endWeek = numberValue(phase.end_week, startWeek);
+              return {
+                name: text(phase.phase || phase.name, `阶段 ${index + 1}`),
+                startWeek,
+                endWeek,
+                weekCount: numberValue(phase.week_count, Math.max(1, endWeek - startWeek + 1)),
+                objective: text(phase.objective || phase.goal || phase.description, ""),
+              };
+            })
+            .filter((phase) => phase.startWeek > 0 && phase.endWeek >= phase.startWeek);
+        }
+        const grouped = new Map();
+        weeks.forEach((week, index) => {
+          const phaseName = text(week.phase, "训练期");
+          const weekIndex = numberValue(week.week_index, index + 1);
+          if (!grouped.has(phaseName)) {
+            grouped.set(phaseName, {
+              name: phaseName,
+              startWeek: weekIndex,
+              endWeek: weekIndex,
+              weekCount: 0,
+              objective: text(week.week_goal, ""),
+            });
+          }
+          const item = grouped.get(phaseName);
+          item.endWeek = Math.max(item.endWeek, weekIndex);
+          item.weekCount += 1;
+          if (!item.objective && week.week_goal) item.objective = week.week_goal;
+        });
+        return Array.from(grouped.values());
+      }
+
+      function renderPhaseOverviewBar(response, summary) {
+        const phases = normalizePhaseSummary(response);
+        if (!phases.length) return "";
+        const plan = getStructuredPlan(response);
+        const meta = plan.plan_meta || {};
+        const totalWeeks = numberValue(meta.actual_weeks || meta.requested_weeks, numberValue(summary.weeks, phases.at(-1)?.endWeek || 1));
+        const currentWeek = 1;
+        const currentPhase = phases.find((phase) => currentWeek >= phase.startWeek && currentWeek <= phase.endWeek) || phases[0];
+        const progress = Math.max(0, Math.min(100, totalWeeks ? (currentWeek / totalWeeks) * 100 : 0));
+        return `
+          <section class="phase-overview-bar" data-phase-overview-bar data-interaction-mode="vertical_scroll" aria-label="阶段总览">
+            <div class="phase-overview-head">
+              <div>
+                <p class="section-kicker">PhaseOverviewBar</p>
+                <h3>阶段总览</h3>
+              </div>
+              <div class="phase-overview-meta">
+                <span>${escapeHtml(totalWeeks)} 周</span>
+                <span>当前：${escapeHtml(currentPhase.name)}</span>
+              </div>
+            </div>
+            <div class="phase-progress-track" aria-hidden="true">
+              <i style="width: ${progress}%"></i>
+            </div>
+            <div class="phase-step-list">
+              ${phases.map((phase) => {
+                const isCurrent = currentWeek >= phase.startWeek && currentWeek <= phase.endWeek;
+                return `
+                  <button class="phase-step ${isCurrent ? "current" : ""}" type="button" data-phase-start-week="${phase.startWeek}" title="跳转到第 ${phase.startWeek} 周">
+                    <strong>${escapeHtml(phase.name)}</strong>
+                    <span>W${escapeHtml(phase.startWeek)}-W${escapeHtml(phase.endWeek)} · ${escapeHtml(phase.weekCount)} 周</span>
+                    ${phase.objective ? `<small>${escapeHtml(phase.objective)}</small>` : ""}
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </section>
+        `;
+      }
+
       function formatPercentText(value) {
         const numeric = Number(value);
         if (!Number.isFinite(numeric)) return "-";
@@ -1970,6 +2549,7 @@ const profileFields = [
           return;
         }
         const sections = [
+          renderPhaseOverviewBar(response, summary),
           renderRacePrepOverview(response, summary),
           `<div class="report-summary">
             <div><span>目标</span><strong>${escapeHtml(summary.goal)}</strong></div>
@@ -1989,13 +2569,13 @@ const profileFields = [
 
         if (requestedWeeks && actualWeeks && actualWeeks !== "-" && requestedWeeks !== actualWeeks) {
           sections.splice(1, 0, `<div class="callout-card warning-card">
-            <span>周期说明</span>
-            <p>你填写的计划周期是 ${escapeHtml(requestedWeeks)} 周，本次后端按画像和比赛日期生成了 ${escapeHtml(actualWeeks)} 周。若要严格固定周期，请保留“计划周期”字段并清空冲突的比赛日期后重新生成。</p>
+            <span>系统倒推周期</span>
+            <p>页面根据比赛日期倒推出 ${escapeHtml(requestedWeeks)} 周，本次后端按画像生成了 ${escapeHtml(actualWeeks)} 周。若差异较大，请检查比赛日期是否正确后重新生成。</p>
           </div>`);
         } else if (requestedWeeks && actualWeeks && requestedWeeks === actualWeeks) {
           sections.splice(1, 0, `<div class="callout-card secondary">
-            <span>周期说明</span>
-            <p>已按你填写的 ${escapeHtml(requestedWeeks)} 周生成训练日历。</p>
+            <span>系统倒推周期</span>
+            <p>已按比赛日期倒推的 ${escapeHtml(requestedWeeks)} 周生成训练日历。</p>
           </div>`);
         }
 
@@ -2328,6 +2908,7 @@ const profileFields = [
         const needsRecheck = requiresProtocolRecheck(day);
         const title = displayTrainingTitle(day);
         const label = text(day.day_label || day.date || `第 ${day.day_index ?? index + 1} 天`);
+        const schedule = formatScheduleTime(day);
         const zone = text(day.zone_range || day.zone_label || day.zone, "轻松");
         const evidence = hasActionLibraryMainSet(day) ? "动作库主课" : describeDayBasis(day).badge;
         const load = numberValue(day.training_load, 0);
@@ -2339,20 +2920,23 @@ const profileFields = [
         const acuteRatio = acute7 > 0 ? (load / acute7) * 100 : 0;
         const chronicRatio = chronic42 > 0 ? (load / chronic42) * 100 : 0;
         const hoverTitle = `当日预估负荷比：占7日累计 ${percentLabel(acuteRatio)}，占42日折算周负荷 ${percentLabel(chronicRatio)}。当日计划负荷 ${formatLoad(load)}，${loadInfo.label}。`;
-        const mainText = needsRecheck
-          ? `待协议复核：${trustedMainSetText(day, "等待复核")}`
-          : trustedMainSetText(day, "等待详细安排");
         const actionGuidance = protocolRecheckActionText(day);
         const footerStatus = needsRecheck ? "待协议复核 · 查看详情" : `${statusLabel(day?.card_status || "generated")} · 查看详情`;
+        const riskText = needsRecheck ? "待复核" : isRest ? "恢复" : loadInfo.label;
         return `
           <button class="day-card ${isRest ? "rest" : ""} ${needsRecheck ? "needs-recheck" : ""} ${loadInfo.className}" data-day-index="${index}" type="button" title="${escapeHtml(hoverTitle)}">
             <div class="day-card-top">
               <strong>${escapeHtml(label)}</strong>
               <span>${escapeHtml(zone)}</span>
             </div>
+            ${schedule ? `<div class="day-schedule-line">训练时间 ${escapeHtml(schedule)}</div>` : ""}
             <h3>${escapeHtml(title)}</h3>
-            <p>${escapeHtml(mainText)}</p>
-            <div class="action-guidance">${escapeHtml(actionGuidance)}</div>
+            <div class="day-card-essentials" aria-label="日卡要点">
+              <span>${escapeHtml(formatDuration(duration))}</span>
+              <span>${escapeHtml(formatLoad(load))} 负荷</span>
+              <span>${escapeHtml(evidence)}</span>
+            </div>
+            <div class="day-risk-pill">${escapeHtml(riskText)}</div>
             <div class="day-load-row">
               <span>负荷 ${escapeHtml(formatLoad(load))}${load ? ` · ${escapeHtml(loadInfo.label)}` : ""}</span>
               <span>${escapeHtml(formatDuration(duration))}</span>
@@ -2371,7 +2955,7 @@ const profileFields = [
               <small>当日计划负荷 ${escapeHtml(formatLoad(load))} · ${escapeHtml(loadInfo.label)}</small>
             </div>
             <div class="day-card-footer">
-              <small>${escapeHtml(evidence)}</small>
+              <small>${escapeHtml(actionGuidance)}</small>
               <span>${escapeHtml(footerStatus)}</span>
             </div>
           </button>
@@ -2390,9 +2974,166 @@ const profileFields = [
         return group.firstIndex === 0;
       }
 
+      function weekGroupPanelId(group, view) {
+        return `week-card-panel-${view}-${group.firstIndex}`;
+      }
+
+      function normalizeWeekNavigationItems(groups, view) {
+        return groups.map((group) => {
+          const groupDays = group.days.map(({ day }) => day);
+          const firstDay = groupDays[0] || {};
+          const qualityCount = groupDays.filter(isQualityTraining).length;
+          const recheckCount = groupDays.filter(requiresProtocolRecheck).length;
+          return {
+            key: weekGroupStateKey(group, view),
+            label: group.key,
+            phase: text(firstDay.phase || firstDay.phase_label || firstDay.block || firstDay.load_level, "阶段待确认"),
+            qualityCount,
+            recheckCount,
+          };
+        });
+      }
+
+      function renderWeekNavigator(groups, view) {
+        const items = normalizeWeekNavigationItems(groups, view);
+        if (!items.length || view === "all") return "";
+        return `
+          <nav class="week-navigator" data-week-navigator aria-label="WeekNavigator">
+            <div class="week-navigator-head">
+              <span class="section-kicker">WeekNavigator</span>
+              <strong>周导航</strong>
+            </div>
+            <div class="week-nav-list">
+              ${items.map((item, index) => `
+                <button
+                  class="week-nav-button ${index === 0 ? "current" : ""}"
+                  type="button"
+                  data-week-nav-target="${escapeHtml(item.key)}"
+                  aria-current="${index === 0 ? "true" : "false"}"
+                >
+                  <span>${escapeHtml(item.label)}</span>
+                  <small>${escapeHtml(item.phase)} · ${item.qualityCount} 关键${item.recheckCount ? ` · ${item.recheckCount} 复核` : ""}</small>
+                </button>
+              `).join("")}
+            </div>
+          </nav>
+        `;
+      }
+
+      function syncWeekNavigatorActiveState(stateKey) {
+        calendarBox.querySelectorAll("[data-week-nav-target]").forEach((button) => {
+          const isCurrent = button.dataset.weekNavTarget === stateKey;
+          button.classList.toggle("current", isCurrent);
+          button.setAttribute("aria-current", isCurrent ? "true" : "false");
+        });
+      }
+
+      function collectGroupSummaryValues(group, fieldNames, limit = 4) {
+        const values = [];
+        const seen = new Set();
+        group.days.forEach(({ day }) => {
+          fieldNames.forEach((fieldName) => {
+            const rawValue = day?.[fieldName];
+            const rawItems = Array.isArray(rawValue) ? rawValue : [rawValue];
+            rawItems.forEach((item) => {
+              const value = text(item, "").trim();
+              if (!value || seen.has(value)) return;
+              seen.add(value);
+              values.push(value);
+            });
+          });
+        });
+        return values.slice(0, limit);
+      }
+
+      function weekExplanationCopyForView(view) {
+        const copy = {
+          week: {
+            title: "本周安排逻辑",
+            keySessionLabel: "本周关键课",
+            emptyKeySession: "暂无关键课",
+            defaultGoal: "本周以稳定完成计划和观察恢复状态为主。",
+          },
+          month: {
+            title: "本月安排逻辑",
+            keySessionLabel: "本组关键课",
+            emptyKeySession: "本月暂无关键课",
+            defaultGoal: "本月以连续性、负荷递进和恢复窗口平衡为主。",
+          },
+          phase: {
+            title: "本阶段安排逻辑",
+            keySessionLabel: "本阶段关键课",
+            emptyKeySession: "本阶段暂无关键课",
+            defaultGoal: "本阶段以训练目标、关键课分布和风险控制为主。",
+          },
+        };
+        return copy[view] || copy.week;
+      }
+
+      function renderWeekExplanationSummary(group, view) {
+        const copy = weekExplanationCopyForView(view);
+        const groupDays = group.days.map(({ day }) => day);
+        const explicitKeyWorkouts = collectGroupSummaryValues(group, ["key_workouts", "key_sessions"], 3);
+        const keyWorkouts = explicitKeyWorkouts.length
+          ? explicitKeyWorkouts
+          : groupDays.filter(isQualityTraining).slice(0, 3).map((day) => displayTrainingTitle(day));
+        const actions = collectGroupSummaryValues(group, ["action_suggestions", "execution_tips"], 2);
+        const groupGoals = collectGroupSummaryValues(group, ["week_goal", "weekly_goal", "group_goal", "phase_goal", "training_objective", "decision_summary"], 1);
+        const weekGoal = groupGoals[0] || copy.defaultGoal;
+        return `
+          <section class="week-explanation-summary" aria-label="WeekExplanationSummary">
+            <div>
+              <span class="section-kicker">WeekExplanationSummary</span>
+              <strong>${escapeHtml(copy.title)}</strong>
+            </div>
+            <p>${escapeHtml(weekGoal)}</p>
+            <dl>
+              <div>
+                <dt>${escapeHtml(copy.keySessionLabel)}</dt>
+                <dd>${escapeHtml(keyWorkouts.length ? keyWorkouts.join("、") : copy.emptyKeySession)}</dd>
+              </div>
+              <div>
+                <dt>执行提醒</dt>
+                <dd>${escapeHtml(actions.length ? actions.slice(0, 2).join("；") : "优先按日卡查看强度、证据和复核状态。")}</dd>
+              </div>
+            </dl>
+          </section>
+        `;
+      }
+
+      function renderLegacyWeekExplanationSummary(group) {
+        const groupDays = group.days.map(({ day }) => day);
+        const firstDay = groupDays[0] || {};
+        const explicitKeyWorkouts = Array.isArray(firstDay.key_workouts) ? firstDay.key_workouts : [];
+        const keyWorkouts = explicitKeyWorkouts.length
+          ? explicitKeyWorkouts
+          : groupDays.filter(isQualityTraining).slice(0, 3).map((day) => displayTrainingTitle(day));
+        const actions = Array.isArray(firstDay.action_suggestions) ? firstDay.action_suggestions : [];
+        const weekGoal = text(firstDay.week_goal || firstDay.training_objective || firstDay.decision_summary, "本周以稳定完成计划和观察恢复状态为主。");
+        return `
+          <section class="week-explanation-summary" aria-label="WeekExplanationSummary">
+            <div>
+              <span class="section-kicker">WeekExplanationSummary</span>
+              <strong>本周安排逻辑</strong>
+            </div>
+            <p>${escapeHtml(weekGoal)}</p>
+            <dl>
+              <div>
+                <dt>本周关键课</dt>
+                <dd>${escapeHtml(keyWorkouts.length ? keyWorkouts.join("、") : "暂无关键课")}</dd>
+              </div>
+              <div>
+                <dt>执行提醒</dt>
+                <dd>${escapeHtml(actions.length ? actions.slice(0, 2).join("；") : "优先按日卡查看强度、证据和复核状态。")}</dd>
+              </div>
+            </dl>
+          </section>
+        `;
+      }
+
       function renderCalendarGroup(group, loadPointMap, view) {
         const stateKey = weekGroupStateKey(group, view);
-        const panelId = `week-card-panel-${view}-${group.firstIndex}`;
+        const panelId = weekGroupPanelId(group, view);
         const expanded = isWeekGroupExpanded(group, view);
         const groupDays = group.days.map(({ day }) => day);
         const restCount = groupDays.filter(isRestDay).length;
@@ -2429,6 +3170,7 @@ const profileFields = [
               <span class="week-card-chevron" aria-hidden="true"></span>
             </button>
             <div id="${escapeHtml(panelId)}" class="week-card-body" ${expanded ? "" : "hidden"}>
+              ${renderWeekExplanationSummary(group, view)}
               <div class="calendar-grid">
                 ${group.days.map(({ day, index }) => renderDayCard(day, index, loadPointMap.get(index))).join("")}
               </div>
@@ -2437,7 +3179,7 @@ const profileFields = [
         `;
       }
 
-      function toggleWeekGroup(stateKey) {
+      function toggleWeekGroup(stateKey, { syncNavigator = true } = {}) {
         const group = Array.from(calendarBox.querySelectorAll("[data-week-group]"))
           .find((item) => item.dataset.weekGroup === stateKey);
         if (!group) return;
@@ -2450,6 +3192,21 @@ const profileFields = [
         if (body) {
           body.hidden = !expanded;
         }
+        if (syncNavigator) {
+          syncWeekNavigatorActiveState(stateKey);
+        }
+      }
+
+      function jumpToWeekGroup(stateKey) {
+        const group = Array.from(calendarBox.querySelectorAll("[data-week-group]"))
+          .find((item) => item.dataset.weekGroup === stateKey);
+        if (!group) return;
+        const button = group.querySelector("[data-week-toggle]");
+        if (button?.getAttribute("aria-expanded") !== "true") {
+          toggleWeekGroup(stateKey, { syncNavigator: false });
+        }
+        syncWeekNavigatorActiveState(stateKey);
+        group.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       function renderCalendar(response) {
@@ -2476,7 +3233,15 @@ const profileFields = [
         calendarBox.className = state.calendarView === "all" ? "calendar-grid" : "calendar-groups";
         calendarBox.innerHTML = state.calendarView === "all"
           ? visibleEntries.map(({ day, index }) => renderDayCard(day, index, loadPointMap.get(index))).join("")
-          : groups.map((group) => renderCalendarGroup(group, loadPointMap, state.calendarView)).join("");
+          : [
+              renderWeekNavigator(groups, state.calendarView),
+              groups.map((group) => renderCalendarGroup(group, loadPointMap, state.calendarView)).join(""),
+            ].join("");
+        calendarBox.querySelectorAll("[data-week-nav-target]").forEach((button) => {
+          button.addEventListener("click", () => {
+            jumpToWeekGroup(button.dataset.weekNavTarget || "");
+          });
+        });
         calendarBox.querySelectorAll("[data-week-toggle]").forEach((button) => {
           button.addEventListener("click", () => {
             toggleWeekGroup(button.dataset.weekToggle || "");
@@ -2550,7 +3315,7 @@ const profileFields = [
           : "-";
         const traceKeys = compactJson(trace);
         return `
-          <details class="audit-panel" data-audit-trace open>
+          <details class="audit-panel" data-audit-trace hidden data-expert-only>
             <summary>
               <span>审计链路</span>
               <strong>${escapeHtml(sourceTypeLabel(sourceType))}</strong>
@@ -2617,6 +3382,7 @@ const profileFields = [
         const needsRecheck = requiresProtocolRecheck(day);
         const title = displayTrainingTitle(day);
         const dayLabel = text(day.day_label || day.date || day.day, "训练日");
+        const schedule = formatScheduleTime(day);
         const week = numberValue(day.week_index, 0);
         const phase = text(day.phase || day.phase_label || day.block || day.load_level, "阶段待确认");
         const warmup = text(day.warmup || day.warmup_text, isRest ? "无需热身，保持轻松活动即可。" : "按计划轻松热身。");
@@ -2646,12 +3412,14 @@ const profileFields = [
               <p class="section-kicker">Daily Coach Card</p>
               <h2 id="dayModalTitle">${escapeHtml(dayLabel)} · ${escapeHtml(title)}</h2>
               <span>${escapeHtml(week ? `第 ${week} 周` : "当前计划")} / ${escapeHtml(phase)}</span>
+              ${schedule ? `<small class="modal-schedule-line">训练时间 ${escapeHtml(schedule)}</small>` : ""}
             </div>
             <strong>${escapeHtml(isRest ? "恢复日" : needsRecheck ? "待协议复核" : "执行日")}</strong>
           </header>
           ${buildTrustStatusHtml(day)}
           <div class="modal-metric-grid">
             ${modalMetric("距离", distance ? `${distance.toFixed(1)} km` : "-")}
+            ${modalMetric("训练时间", schedule || "-")}
             ${modalMetric("时长", formatDuration(duration))}
             ${modalMetric("强度", intensity)}
             ${modalMetric("计划负荷", `${formatLoad(load)} · ${loadInfo.label}`)}
@@ -2854,7 +3622,7 @@ const profileFields = [
             apiFetch("/evidence-tier-reference"),
           ]);
           renderReferences(zonesBox, zones, "zones", "zones_detail", "没有强度区间数据");
-          renderReferences(tiersBox, tiers, "evidence_tiers", "descriptions", "没有证据分层数据");
+          renderReferences(tiersBox, tiers, "evidence_tiers", "descriptions", "没有训练依据数据");
         } catch (error) {
           setEmpty(zonesBox, `区间加载失败：${error.message}`);
           setEmpty(tiersBox, "请确认 FastAPI 后端已启动。");
@@ -2924,6 +3692,8 @@ const profileFields = [
         renderReport(payload);
         renderCalendar(payload);
         renderEvidencePreview(payload);
+        updateWorkspaceFlow("calendar", "训练日历已生成。优先查看周重点，再点开单日卡片反馈调整。");
+        setActiveDrawerSection("calendar");
         syncPlanProgressFromPayload(payload);
         tokenUsageBox.textContent = formatTokenUsage(payload.token_usage);
         auditScoresBox.textContent = formatAuditScores(payload.audit_scores);
@@ -2992,7 +3762,7 @@ const profileFields = [
               activeStep: "profile",
               status: "error",
               phase: "缺少计划画像",
-              signal: "至少需要目标、周跑量、比赛日期或可训练日中的一项，才能开始生成训练日历",
+              signal: "至少需要目标、上个月月跑量、比赛日期或可训练日中的一项，才能开始生成训练日历",
             });
             return;
           }
@@ -3015,6 +3785,7 @@ const profileFields = [
         }
 
         setBusy("正在请求后端生成训练日历...");
+        updateWorkspaceFlow("generating", "正在生成训练日历骨架，完成后会自动打开日历。");
         calendarBox.innerHTML = '<div class="loading-state">正在等待结构化日历</div>';
         if (planLike) {
           startPlanProgressDrift();
@@ -3111,6 +3882,7 @@ const profileFields = [
         state.lastResponse = null;
         setEmpty(reportBox, "还没有结果。填写计划画像或补充说明后，可以生成训练日历。");
         setEmpty(calendarBox, "计划生成后会在这里展示日历卡片。");
+        updateWorkspaceFlow("profile");
         calendarScopeHint.textContent = "生成后可按周、按月或按阶段浏览完整计划";
         setEmpty(evidencePreview, "生成计划后，会从返回结果中提取证据编号、证据层级和来源摘要。");
         resultBadge.textContent = "等待请求";
@@ -3121,6 +3893,60 @@ const profileFields = [
         guidedQuestionsBox.textContent = "-";
         queryHint.textContent = "Ctrl / ⌘ + Enter 可生成";
         resetPlanProgress();
+      }
+
+      function moveWorkspaceSectionsToDrawer() {
+        const drawerSections = $("drawerWorkspaceSections");
+        if (!drawerSections) return;
+        ["profile", "calendar-section", "evidence"].forEach((id) => {
+          const section = $(id);
+          if (section && section.parentElement !== drawerSections) {
+            drawerSections.appendChild(section);
+          }
+        });
+      }
+
+      function setActiveDrawerSection(sectionId) {
+        const drawerSectionNodes = Array.from(document.querySelectorAll("[data-drawer-section]"));
+        const targetSection = drawerSectionNodes.find((section) => section.dataset.drawerSection === sectionId);
+        if (targetSection?.hasAttribute("data-expert-only")) return;
+        const drawer = document.querySelector("[data-side-drawer]");
+        if (drawer) drawer.open = true;
+        drawerSectionNodes.forEach((section) => {
+          const isActive = section.dataset.drawerSection === sectionId;
+          section.hidden = !isActive;
+          section.classList.toggle("is-active", isActive);
+        });
+        drawerActionButtons.forEach((button) => {
+          const isActive = button.dataset.drawerAction === sectionId;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-current", isActive ? "true" : "false");
+        });
+      }
+
+      function filterDrawerActions(query) {
+        const normalizedQuery = String(query || "").trim().toLowerCase();
+        const directMatches = new Set();
+        if (normalizedQuery.includes("profile") || normalizedQuery.includes("画像") || normalizedQuery.includes("资料")) directMatches.add("profile");
+        if (normalizedQuery.includes("calendar") || normalizedQuery.includes("日历") || normalizedQuery.includes("训练")) directMatches.add("calendar");
+        if (normalizedQuery.includes("basis") || normalizedQuery.includes("evidence") || normalizedQuery.includes("依据") || normalizedQuery.includes("证据") || normalizedQuery.includes("解释")) directMatches.add("basis");
+        if (normalizedQuery.includes("history") || normalizedQuery.includes("历史")) directMatches.add("history");
+        if (normalizedQuery.includes("settings") || normalizedQuery.includes("api") || normalizedQuery.includes("设置") || normalizedQuery.includes("模型") || normalizedQuery.includes("接口")) directMatches.add("settings");
+        if (normalizedQuery.includes("template") || normalizedQuery.includes("prompt") || normalizedQuery.includes("模板") || normalizedQuery.includes("快捷")) directMatches.add("templates");
+        let visibleActions = 0;
+        drawerActionButtons.forEach((button) => {
+          if (button.hasAttribute("data-expert-only")) {
+            button.hidden = true;
+            return;
+          }
+          const haystack = `${button.textContent || ""} ${button.dataset.drawerQuery || ""}`.toLowerCase();
+          const directMatch = directMatches.has(button.dataset.drawerAction || "");
+          button.hidden = Boolean(normalizedQuery) && !directMatch && !haystack.includes(normalizedQuery);
+          if (!button.hidden) visibleActions += 1;
+        });
+        if (drawerEmptyState) {
+          drawerEmptyState.hidden = !normalizedQuery || visibleActions > 0;
+        }
       }
 
       apiBaseInput.addEventListener("change", () => {
@@ -3173,21 +3999,34 @@ const profileFields = [
         });
       });
 
-      document.querySelectorAll("[data-feedback-preset]").forEach((button) => {
+      drawerActionButtons.forEach((button) => {
         button.addEventListener("click", () => {
-          const preset = {
-            completion: button.dataset.completion || "已完成",
-            fatigue: button.dataset.fatigue || "轻微",
-            pain: button.dataset.pain || "没有疼痛",
-            sleep: button.dataset.sleep || "良好",
-            notes: button.dataset.notes || "",
-          };
-          if (state.selectedDay) {
-            openDayModal(state.selectedDay, preset);
-          } else {
-            composeFeedbackPromptFromPayload(preset);
-          }
+          setActiveDrawerSection(button.dataset.drawerAction || "");
         });
+      });
+
+      drawerSearchInput?.addEventListener("input", () => {
+        filterDrawerActions(drawerSearchInput.value);
+      });
+
+      drawerSearchInput?.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        const firstVisibleAction = drawerActionButtons.find((button) => !button.hidden);
+        if (firstVisibleAction) {
+          event.preventDefault();
+          firstVisibleAction.click();
+        }
+      });
+
+      document.querySelectorAll("[data-open-drawer-section]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          setActiveDrawerSection(link.dataset.openDrawerSection || "");
+        });
+      });
+
+      document.querySelectorAll("[data-workspace-generate]").forEach((button) => {
+        button.addEventListener("click", () => runQuery());
       });
 
       calendarViewButtons.forEach((button) => {
@@ -3234,6 +4073,14 @@ const profileFields = [
       });
       dayModalClose.addEventListener("click", closeDayModal);
       dayModalBackdrop.addEventListener("click", closeDayModal);
+      closeProfileEditorButton.addEventListener("click", closeProfileEditor);
+      cancelProfileEditorButton.addEventListener("click", closeProfileEditor);
+      saveProfileEditorButton.addEventListener("click", saveProfileEditor);
+      profileEditorDialog.addEventListener("click", (event) => {
+        if (event.target === profileEditorDialog) {
+          closeProfileEditor();
+        }
+      });
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && dayModal.classList.contains("open")) {
           closeDayModal();
@@ -3246,6 +4093,9 @@ const profileFields = [
       $("runProfilePlan").addEventListener("click", async () => {
         await buildProfilePrompt();
         await runQuery();
+      });
+      document.querySelectorAll("[data-profile-field]").forEach((input) => {
+        input.addEventListener("input", () => updateProfileDerivedMetrics());
       });
       $("savePlanDraft").addEventListener("click", saveCurrentPlanSnapshot);
       $("loadPlanDrafts").addEventListener("click", renderPlanHistory);
@@ -3271,6 +4121,7 @@ const profileFields = [
       }
 
       async function bootstrap() {
+        moveWorkspaceSectionsToDrawer();
         resetPlanProgress();
         await ping({ autoDetect: true });
         await Promise.allSettled([

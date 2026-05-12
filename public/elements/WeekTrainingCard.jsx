@@ -34,8 +34,8 @@ function getBadgeClass(trainingType) {
     return TRAINING_BADGES[trainingType] || "bg-primary/10 text-primary border-primary/20"
 }
 
-function DayRow({ day, index }) {
-    const [expanded, setExpanded] = useState(false)
+function DayRow({ day, index, defaultExpanded = false }) {
+    const [expanded, setExpanded] = useState(Boolean(defaultExpanded))
     if (!day) return null
 
     const dayLabel = day.day || `Day ${index + 1}`
@@ -161,11 +161,12 @@ export default function WeekTrainingCard() {
     const actionSuggestions = Array.isArray(p.action_suggestions) ? p.action_suggestions : []
     const executionReminder = p.execution_reminder || ""
     const otherWeeks = Array.isArray(p.other_weeks) ? p.other_weeks : []
+    const defaultExpandedDayIndexes = Array.isArray(p.default_expanded_day_indexes) ? p.default_expanded_day_indexes : []
 
     const loadBadgeColor = LOAD_COLORS[loadLevel] || "bg-gray-400"
 
     return (
-        <Card className="p-4 sm:p-5 mb-4 rounded-lg shadow-sm">
+        <Card id={`week-${weekIndex}`} className="p-4 sm:p-5 mb-4 rounded-lg shadow-sm scroll-mt-4">
             <div className="flex items-start justify-between mb-3 flex-wrap gap-3">
                 <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-primary" />
@@ -202,7 +203,12 @@ export default function WeekTrainingCard() {
             <div className="space-y-0">
                 <p className="text-xs font-medium text-muted-foreground mb-2 px-1">7 天缩略行</p>
                 {days.map((day, idx) => (
-                    <DayRow key={idx} day={day} index={idx} />
+                    <DayRow
+                        key={idx}
+                        day={day}
+                        index={idx}
+                        defaultExpanded={defaultExpandedDayIndexes.includes(idx + 1)}
+                    />
                 ))}
             </div>
 

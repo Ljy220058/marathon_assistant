@@ -37,7 +37,7 @@ GOOGLE_CREDENTIALS_PATH = RUNTIME_DATA_DIR / "google_credentials.json"
 
 def _seed_runtime_dir(legacy_dir: Path, runtime_dir: Path) -> None:
     """
-    将运行期可变数据迁移到项目根目录外，避免 Chainlit `-w` 监听到写盘后自触发重载。
+    将运行期可变数据迁移到项目根目录外，避免 开发服务器 监听到写盘后自触发重载。
     首次迁移时保留旧目录内容，后续统一使用新目录。
     """
     runtime_dir.parent.mkdir(parents=True, exist_ok=True)

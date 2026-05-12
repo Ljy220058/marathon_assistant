@@ -36,29 +36,37 @@ const TRAINING_BADGES = {
 }
 
 const EVIDENCE_TIER_BADGES = {
-    "action_library": "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
-    "kb_fallback": "bg-amber-500/10 text-amber-500 border-amber-500/30",
-    "plan_only": "bg-gray-400/10 text-gray-400 border-gray-400/30",
+    action_library: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30",
+    kb_fallback: "bg-amber-500/10 text-amber-500 border-amber-500/30",
+    plan_only: "bg-gray-400/10 text-gray-400 border-gray-400/30",
+    needs_evidence: "bg-rose-500/10 text-rose-500 border-rose-500/30",
+}
+
+const DEFAULT_EVIDENCE_TIER_LABELS = {
+    action_library: "动作库课表",
+    kb_fallback: "参考知识库生成",
+    plan_only: "基础计划",
+    needs_evidence: "待补证据",
 }
 
 const ZONE_COLORS = {
-    "Z1": "bg-blue-200/10 text-blue-600",
-    "Z2": "bg-green-200/10 text-green-600",
-    "Z3": "bg-green-400/10 text-green-700",
-    "Z4": "bg-yellow-300/10 text-yellow-700",
-    "Z5": "bg-orange-300/10 text-orange-700",
-    "Z6": "bg-orange-500/10 text-orange-600",
-    "Z7": "bg-red-400/10 text-red-600",
-    "Z8": "bg-red-500/10 text-red-700",
-    "Z9": "bg-purple-500/10 text-purple-700",
+    Z1: "bg-blue-200/10 text-blue-600",
+    Z2: "bg-green-200/10 text-green-600",
+    Z3: "bg-green-400/10 text-green-700",
+    Z4: "bg-yellow-300/10 text-yellow-700",
+    Z5: "bg-orange-300/10 text-orange-700",
+    Z6: "bg-orange-500/10 text-orange-600",
+    Z7: "bg-red-400/10 text-red-600",
+    Z8: "bg-red-500/10 text-red-700",
+    Z9: "bg-purple-500/10 text-purple-700",
 }
 
 function getZoneColor(zoneRange) {
     if (!zoneRange) return "bg-muted/10 text-muted-foreground"
-    const zones = zoneRange.replace(/→/g, "-").split("-")
-    for (const z of zones) {
-        const zNum = z.trim()
-        if (ZONE_COLORS[zNum]) return ZONE_COLORS[zNum]
+    const zones = String(zoneRange).replace(/→/g, "-").split("-")
+    for (const zone of zones) {
+        const zoneName = zone.trim()
+        if (ZONE_COLORS[zoneName]) return ZONE_COLORS[zoneName]
     }
     return "bg-muted/10 text-muted-foreground"
 }
@@ -67,51 +75,82 @@ function getTrainingBadge(trainingType) {
     return TRAINING_BADGES[trainingType] || "bg-primary/10 text-primary border-primary/20"
 }
 
-function CalendarDayCell({ day, onClick }) {
-    if (!day) return <div className="min-h-24" />
+function getEvidenceTierLabel(day, evidenceTierMap) {
+    const tier = day?.evidence_tier || "plan_only"
+    return day?.evidence_tier_label || evidenceTierMap[tier] || DEFAULT_EVIDENCE_TIER_LABELS[tier] || "基础计划"
+}
 
-    const isRest = day.is_rest
-    const trainingBadge = isRest
-        ? getTrainingBadge("休息")
-        : getTrainingBadge(day.training_type)
-    const zoneLabel = day.zone_range || ""
+function getMonthKey(year, month) {
+    return `${year}-${String(month).padStart(2, "0")}`
+}
+
+function getDayNumber(day) {
+    if (day?.date_str) {
+        const parsed = Number(String(day.date_str).slice(8, 10))
+        if (Number.isFinite(parsed) && parsed > 0) return parsed
+    }
+    return day?.day_index || 0
+}
+
+function getMondayFirstOffset(dateString) {
+    if (!dateString) return 0
+    const date = new Date(`${dateString}T00:00:00`)
+    if (Number.isNaN(date.getTime())) return 0
+    return (date.getDay() + 6) % 7
+}
+
+function CalendarDayCell({ day, onClick }) {
+    if (!day) return <div className="min-h-24 rounded-md border border-transparent" />
+
+    const isRest = Boolean(day.is_rest)
+    const trainingBadge = isRest ? getTrainingBadge("休息") : getTrainingBadge(day.training_type)
+    const zoneLabel = day.zone_range || day.zone_label || ""
+    const dayNumber = getDayNumber(day)
     const trainingLabel = day.training_type_label || day.training_type || (isRest ? "休息" : "未安排")
 
     return (
-        <div
-            className={`min-h-24 p-2 border rounded-md cursor-pointer hover:bg-muted/30 transition-colors flex flex-col gap-1 ${isRest ? 'opacity-60' : ''}`}
+        <button
+            type="button"
+            className={`min-h-24 w-full rounded-md border p-2 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${isRest ? "opacity-70" : ""}`}
             onClick={() => onClick(day)}
         >
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{day.day_label}</span>
-                <span className={`w-1.5 h-1.5 rounded-full ${day.evidence_tier === 'action_library' ? 'bg-emerald-400' : day.evidence_tier === 'kb_fallback' ? 'bg-amber-400' : 'bg-gray-300'}`} />
-            </div>
-            <div className="min-h-0 flex-1 flex flex-col justify-center">
-                <Badge variant="outline" className={`max-w-full truncate text-[10px] px-1 py-0 leading-tight ${trainingBadge}`}>
-                    {trainingLabel}
-                </Badge>
-            </div>
-            {!isRest && zoneLabel && (
-                <div className="flex min-w-0 items-center gap-1">
-                    <Heart className="w-2.5 h-2.5 text-red-400 shrink-0" />
-                    <span className="truncate text-[10px] text-muted-foreground">{zoneLabel}</span>
+            <div className="flex h-full min-w-0 flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                        {dayNumber ? `${dayNumber}日` : day.day_label}
+                    </span>
+                    <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${day.evidence_tier === "action_library" ? "bg-emerald-400" : day.evidence_tier === "kb_fallback" ? "bg-amber-400" : day.evidence_tier === "needs_evidence" ? "bg-rose-400" : "bg-gray-300"}`}
+                    />
                 </div>
-            )}
-            {isRest && (
-                <span className="text-[10px] text-muted-foreground">恢复日</span>
-            )}
-        </div>
+                <div className="flex min-h-0 flex-1 flex-col justify-center">
+                    <Badge variant="outline" className={`max-w-full truncate px-1 py-0 text-[10px] leading-tight ${trainingBadge}`}>
+                        {trainingLabel}
+                    </Badge>
+                </div>
+                {!isRest && zoneLabel && (
+                    <div className="flex min-w-0 items-center gap-1">
+                        <Heart className="h-2.5 w-2.5 shrink-0 text-red-400" />
+                        <span className="truncate text-[10px] text-muted-foreground">{zoneLabel}</span>
+                    </div>
+                )}
+                {isRest && (
+                    <span className="text-[10px] text-muted-foreground">恢复日</span>
+                )}
+            </div>
+        </button>
     )
 }
 
-function DayDetailSheet({ day, open, onClose }) {
+function DayDetailSheet({ day, open, onOpenChange, evidenceTierMap }) {
     if (!day) return null
 
-    const isRest = day.is_rest
+    const isRest = Boolean(day.is_rest)
+    const evidenceLabel = getEvidenceTierLabel(day, evidenceTierMap)
 
     return (
-        <Sheet open={open} onOpenChange={onClose}>
-            <SheetContent side="right" className="w-[90vw] max-w-[540px] sm:w-[540px] overflow-y-auto">
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent side="right" className="w-[90vw] max-w-[540px] overflow-y-auto sm:w-[540px]">
                 <SheetHeader>
                     <SheetTitle>{day.date_str || `${day.day_label} 课表详情`}</SheetTitle>
                     <SheetDescription>
@@ -120,24 +159,24 @@ function DayDetailSheet({ day, open, onClose }) {
                 </SheetHeader>
 
                 <div className="mt-6 space-y-4">
-                    <div className="flex gap-2 flex-wrap">
-                        <Badge variant="outline" className={`text-xs ${getTrainingBadge(day.training_type)}`}>
-                            {day.training_type_label || day.training_type || (isRest ? "休息" : "")}
+                    <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className={`text-xs ${getTrainingBadge(isRest ? "休息" : day.training_type)}`}>
+                            {day.training_type_label || day.training_type || (isRest ? "休息" : "未安排")}
                         </Badge>
-                        {!isRest && day.zone_range && (
+                        {!isRest && (day.intensity_target || day.zone_range) && (
                             <Badge variant="outline" className={`text-xs ${getZoneColor(day.zone_range)}`}>
                                 强度：{day.intensity_target || day.zone_range}
                             </Badge>
                         )}
-                        <Badge variant="outline" className={`text-xs ${EVIDENCE_TIER_BADGES[day.evidence_tier] || ''}`}>
-                            {day.evidence_tier_label || "基础计划"}
+                        <Badge variant="outline" className={`text-xs ${EVIDENCE_TIER_BADGES[day.evidence_tier] || ""}`}>
+                            {evidenceLabel}
                         </Badge>
                     </div>
 
                     {isRest && (
-                        <Card className="p-3 bg-muted/20">
+                        <Card className="bg-muted/20 p-3">
                             <div className="flex items-start gap-2">
-                                <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                                 <p className="text-sm text-muted-foreground">
                                     {day.training_objective || "休息日，建议充分恢复。可进行轻度交叉训练或拉伸。"}
                                 </p>
@@ -148,9 +187,9 @@ function DayDetailSheet({ day, open, onClose }) {
                     {!isRest && (
                         <>
                             {day.training_objective && (
-                                <Card className="p-3 bg-muted/20">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Lightbulb className="w-4 h-4 text-amber-500" />
+                                <Card className="bg-muted/20 p-3">
+                                    <div className="mb-1 flex items-center gap-2">
+                                        <Lightbulb className="h-4 w-4 text-amber-500" />
                                         <span className="text-sm font-medium">训练目标</span>
                                     </div>
                                     <p className="text-xs text-muted-foreground">{day.training_objective}</p>
@@ -159,7 +198,7 @@ function DayDetailSheet({ day, open, onClose }) {
 
                             {day.warmup && (
                                 <div className="flex items-start gap-2">
-                                    <Zap className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                                    <Zap className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                                     <div className="text-sm">
                                         <span className="font-medium">热身：</span>
                                         {day.warmup}
@@ -169,7 +208,7 @@ function DayDetailSheet({ day, open, onClose }) {
 
                             {day.main_set && (
                                 <div className="flex items-start gap-2">
-                                    <Flame className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                                    <Flame className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
                                     <div className="text-sm">
                                         <span className="font-medium">主课：</span>
                                         {day.main_set}
@@ -179,7 +218,7 @@ function DayDetailSheet({ day, open, onClose }) {
 
                             {day.cooldown && (
                                 <div className="flex items-start gap-2">
-                                    <Timer className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                                    <Timer className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
                                     <div className="text-sm">
                                         <span className="font-medium">放松：</span>
                                         {day.cooldown}
@@ -189,7 +228,7 @@ function DayDetailSheet({ day, open, onClose }) {
 
                             {day.alternative && (
                                 <div className="flex items-start gap-2">
-                                    <Shield className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+                                    <Shield className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
                                     <div className="text-sm">
                                         <span className="font-medium">替代训练：</span>
                                         {day.alternative}
@@ -197,12 +236,12 @@ function DayDetailSheet({ day, open, onClose }) {
                                 </div>
                             )}
 
-                            {!day.intensity_target && day.zone_label && (
+                            {!day.intensity_target && (day.zone_label || day.zone_range) && (
                                 <div className="flex items-start gap-2">
-                                    <Heart className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                                    <Heart className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                                     <div className="text-sm">
                                         <span className="font-medium">建议区间：</span>
-                                        {day.zone_label}
+                                        {day.zone_label || day.zone_range}
                                     </div>
                                 </div>
                             )}
@@ -212,34 +251,39 @@ function DayDetailSheet({ day, open, onClose }) {
                     <Separator />
 
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Bookmark className="w-4 h-4 text-primary" />
+                        <div className="mb-2 flex items-center gap-2">
+                            <Bookmark className="h-4 w-4 text-primary" />
                             <span className="text-sm font-medium">证据状态</span>
                         </div>
-                        <Card className="p-3 bg-muted/20">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className={`text-xs ${EVIDENCE_TIER_BADGES[day.evidence_tier] || ''}`}>
-                                    {day.evidence_tier_label || "基础计划"}
+                        <Card className="bg-muted/20 p-3">
+                            <div className="mb-1 flex items-center gap-2">
+                                <Badge variant="outline" className={`text-xs ${EVIDENCE_TIER_BADGES[day.evidence_tier] || ""}`}>
+                                    {evidenceLabel}
                                 </Badge>
                             </div>
                             {day.evidence_tier === "action_library" && (
                                 <p className="text-xs text-muted-foreground">
-                                    课表数据来自动作库直接证据，训练方案经过验证。
+                                    课表数据来自动作库直接证据，训练方案已通过动作库规则匹配。
                                 </p>
                             )}
                             {day.evidence_tier === "kb_fallback" && (
                                 <p className="text-xs text-muted-foreground">
-                                    动作库中未找到该训练类型的直接证据，已基于其他知识库内容生成参考课表。训练方案为通用原则推导，建议结合个人体感调整。
+                                    动作库中未找到该训练类型的直接证据，已基于知识库内容生成参考课表。建议结合个人体感调整。
                                 </p>
                             )}
                             {day.evidence_tier === "plan_only" && (
                                 <p className="text-xs text-muted-foreground">
-                                    当前训练类型在知识库中暂无充分证据支撑。训练安排基于训练计划骨架，建议后续补充动作库或训练数据以获得更精准的课表。
+                                    当前训练安排来自训练计划骨架，后续可补充动作库或训练数据以获得更精确的课表。
                                 </p>
                             )}
-                            {day.source && day.source.length > 0 && (
+                            {day.evidence_tier === "needs_evidence" && (
+                                <p className="text-xs text-muted-foreground">
+                                    当前训练类型仍需补充证据，请谨慎执行并优先参考教练或可靠训练资料。
+                                </p>
+                            )}
+                            {Array.isArray(day.source) && day.source.length > 0 && (
                                 <div className="mt-2">
-                                    <p className="text-xs font-medium text-muted-foreground mb-1">信息来源：</p>
+                                    <p className="mb-1 text-xs font-medium text-muted-foreground">信息来源：</p>
                                     {day.source.map((src, idx) => (
                                         <p key={idx} className="text-xs text-muted-foreground">· {src}</p>
                                     ))}
@@ -253,9 +297,9 @@ function DayDetailSheet({ day, open, onClose }) {
                     )}
 
                     {!day.explanation && !isRest && day.training_type !== "休息" && (
-                        <Card className="p-3 bg-muted/10">
+                        <Card className="bg-muted/10 p-3">
                             <div className="flex items-start gap-2">
-                                <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                                 <p className="text-xs text-muted-foreground">
                                     该训练日暂无详细训练解释。
                                 </p>
@@ -265,7 +309,7 @@ function DayDetailSheet({ day, open, onClose }) {
 
                     {day.notes && (
                         <div className="flex items-start gap-2">
-                            <StickyNote className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                             <p className="text-xs text-muted-foreground">{day.notes}</p>
                         </div>
                     )}
@@ -280,6 +324,8 @@ function ExplanationSection({ explanation }) {
 
     if (!explanation) return null
 
+    const hasValue = (value) => value && value !== "—" && value !== "-"
+
     return (
         <div>
             <Separator />
@@ -290,70 +336,70 @@ function ExplanationSection({ explanation }) {
                     className="w-full justify-start gap-2 text-sm font-medium"
                     onClick={() => setExpanded(!expanded)}
                 >
-                    <Bookmark className="w-4 h-4" />
-                    📖 查看训练解释
+                    <Bookmark className="h-4 w-4" />
+                    查看训练解释
                     <span className="ml-auto text-xs text-muted-foreground">
                         {expanded ? "收起 ▲" : "展开 ▼"}
                     </span>
                 </Button>
 
                 {expanded && (
-                    <Card className="mt-2 p-4 bg-muted/10 space-y-3">
-                        {explanation.why_scheduled && explanation.why_scheduled !== "—" && (
+                    <Card className="mt-2 space-y-3 bg-muted/10 p-4">
+                        {hasValue(explanation.why_scheduled) && (
                             <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-                                    <span className="text-xs font-semibold">为什么安排</span>
+                                <div className="mb-1 flex items-center gap-1.5">
+                                    <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                                    <span className="text-xs font-semibold">为什么这样安排</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-xs leading-relaxed text-muted-foreground">
                                     {explanation.why_scheduled}
-                                    {explanation.evidence_ids && explanation.evidence_ids.length > 0 && (
+                                    {Array.isArray(explanation.evidence_ids) && explanation.evidence_ids.length > 0 && (
                                         <span className="ml-1 text-blue-500">
-                                            {explanation.evidence_ids.map(id => `\`[${id}]\``).join(" ")}
+                                            {explanation.evidence_ids.map(id => `[${id}]`).join(" ")}
                                         </span>
                                     )}
                                 </p>
                             </div>
                         )}
 
-                        {explanation.primary_target && explanation.primary_target !== "—" && (
+                        {hasValue(explanation.primary_target) && (
                             <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Flame className="w-3.5 h-3.5 text-orange-500" />
+                                <div className="mb-1 flex items-center gap-1.5">
+                                    <Flame className="h-3.5 w-3.5 text-orange-500" />
                                     <span className="text-xs font-semibold">主要训练目标</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-xs leading-relaxed text-muted-foreground">
                                     {explanation.primary_target}
                                 </p>
                             </div>
                         )}
 
-                        {explanation.risk_alert && explanation.risk_alert !== "—" && (
+                        {hasValue(explanation.risk_alert) && (
                             <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                                <div className="mb-1 flex items-center gap-1.5">
+                                    <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
                                     <span className="text-xs font-semibold">风险提醒</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-xs leading-relaxed text-muted-foreground">
                                     {explanation.risk_alert}
                                 </p>
                             </div>
                         )}
 
-                        {explanation.alternative_workout && explanation.alternative_workout !== "—" && (
+                        {hasValue(explanation.alternative_workout) && (
                             <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Shield className="w-3.5 h-3.5 text-indigo-500" />
+                                <div className="mb-1 flex items-center gap-1.5">
+                                    <Shield className="h-3.5 w-3.5 text-indigo-500" />
                                     <span className="text-xs font-semibold">状态不佳时替代</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-xs leading-relaxed text-muted-foreground">
                                     {explanation.alternative_workout}
                                 </p>
                             </div>
                         )}
 
-                        {explanation.target_labels && explanation.target_labels.length > 0 && (
-                            <div className="flex items-center gap-2 flex-wrap">
+                        {Array.isArray(explanation.target_labels) && explanation.target_labels.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-xs text-muted-foreground">目标标签：</span>
                                 {explanation.target_labels.map((label, idx) => (
                                     <Badge key={idx} variant="secondary" className="text-[10px]">
@@ -363,21 +409,21 @@ function ExplanationSection({ explanation }) {
                             </div>
                         )}
 
-                        {explanation.decision_summary && explanation.decision_summary !== "—" && (
+                        {hasValue(explanation.decision_summary) && (
                             <div>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                                <div className="mb-1 flex items-center gap-1.5">
+                                    <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                                     <span className="text-xs font-semibold">决策摘要</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-xs leading-relaxed text-muted-foreground">
                                     {explanation.decision_summary}
                                 </p>
                             </div>
                         )}
 
-                        {explanation.explanation_source && explanation.explanation_source !== "—" && (
+                        {hasValue(explanation.explanation_source) && (
                             <div className="flex items-center gap-1.5">
-                                <Info className="w-3 h-3 text-muted-foreground" />
+                                <Info className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-[10px] text-muted-foreground">
                                     解释来源：{explanation.explanation_source}
                                 </span>
@@ -394,39 +440,39 @@ function YearlyOverview({ monthSummaries, onSelectMonth }) {
     if (!monthSummaries || monthSummaries.length === 0) {
         return (
             <Card className="p-4">
-                <p className="text-xs text-muted-foreground text-center">暂无年度训练数据</p>
+                <p className="text-center text-xs text-muted-foreground">暂无年度训练数据</p>
             </Card>
         )
     }
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {monthSummaries.map((ms, idx) => {
-                const hasDays = ms.total_days > 0
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            {monthSummaries.map((summary, idx) => {
+                const hasDays = Number(summary.total_days || 0) > 0
                 return (
                     <Card
-                        key={idx}
-                        className={`p-3 cursor-pointer hover:bg-muted/30 transition-colors ${!hasDays ? 'opacity-40' : ''}`}
-                        onClick={() => hasDays && onSelectMonth(ms.year, ms.month)}
+                        key={`${summary.year || "year"}-${summary.month || idx}`}
+                        className={`cursor-pointer p-3 transition-colors hover:bg-muted/30 ${!hasDays ? "opacity-40" : ""}`}
+                        onClick={() => hasDays && onSelectMonth(summary.year, summary.month)}
                     >
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">
-                                {ms.year}年{MONTH_NAMES[ms.month - 1]}
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-medium">
+                                {summary.year}年{MONTH_NAMES[(summary.month || 1) - 1]}
                             </span>
-                            <Badge variant="secondary" className="text-[10px]">
-                                {ms.total_days}天
+                            <Badge variant="secondary" className="shrink-0 text-[10px]">
+                                {summary.total_days || 0}天
                             </Badge>
                         </div>
                         {hasDays && (
-                            <div className="flex gap-0.5 mt-1">
-                                {ms.action_library > 0 && (
-                                    <div className="flex-1 h-1 bg-emerald-400 rounded" title={`动作库：${ms.action_library}天`} />
+                            <div className="mt-1 flex gap-0.5">
+                                {summary.action_library > 0 && (
+                                    <div className="h-1 flex-1 rounded bg-emerald-400" title={`动作库：${summary.action_library}天`} />
                                 )}
-                                {ms.kb_fallback > 0 && (
-                                    <div className="flex-1 h-1 bg-amber-400 rounded" title={`参考生成：${ms.kb_fallback}天`} />
+                                {summary.kb_fallback > 0 && (
+                                    <div className="h-1 flex-1 rounded bg-amber-400" title={`参考生成：${summary.kb_fallback}天`} />
                                 )}
-                                {ms.plan_only > 0 && (
-                                    <div className="flex-1 h-1 bg-gray-300 rounded" title={`基础计划：${ms.plan_only}天`} />
+                                {summary.plan_only > 0 && (
+                                    <div className="h-1 flex-1 rounded bg-gray-300" title={`基础计划：${summary.plan_only}天`} />
                                 )}
                             </div>
                         )}
@@ -441,7 +487,7 @@ function YearlyOverview({ monthSummaries, onSelectMonth }) {
 }
 
 export default function MonthlyTrainingCalendar() {
-    const p = props || {}
+    const p = typeof props !== "undefined" ? props : {}
     const allDays = Array.isArray(p.days) ? p.days : []
     const phases = Array.isArray(p.phases) ? p.phases : []
     const evidenceSummary = p.evidence_summary || {}
@@ -455,127 +501,150 @@ export default function MonthlyTrainingCalendar() {
     const [selectedDay, setSelectedDay] = useState(null)
     const [sheetOpen, setSheetOpen] = useState(false)
 
+    const availableMonthKeys = useMemo(
+        () => new Set(
+            availableMonths
+                .filter(item => item && item.year && item.month)
+                .map(item => getMonthKey(item.year, item.month))
+        ),
+        [availableMonths]
+    )
+
     const handleDayClick = (day) => {
         setSelectedDay(day)
         setSheetOpen(true)
     }
 
     const handleMonthSelect = (year, month) => {
-        setViewYear(year)
-        setViewMonth(month)
+        setViewYear(Number(year))
+        setViewMonth(Number(month))
         setShowYearlyOverview(false)
     }
 
-    const handlePrevMonth = () => {
-        if (viewMonth === 1) {
-            setViewYear(viewYear - 1)
-            setViewMonth(12)
-        } else {
-            setViewMonth(viewMonth - 1)
-        }
-    }
+    const shiftMonth = (direction) => {
+        const sorted = availableMonths
+            .filter(item => item && item.year && item.month)
+            .map(item => ({ year: Number(item.year), month: Number(item.month) }))
+            .sort((a, b) => (a.year - b.year) || (a.month - b.month))
 
-    const handleNextMonth = () => {
-        if (viewMonth === 12) {
-            setViewYear(viewYear + 1)
-            setViewMonth(1)
+        if (sorted.length > 0) {
+            const currentIndex = sorted.findIndex(item => item.year === viewYear && item.month === viewMonth)
+            if (currentIndex >= 0) {
+                const next = sorted[currentIndex + direction]
+                if (next) {
+                    handleMonthSelect(next.year, next.month)
+                    return
+                }
+            }
+        }
+
+        const nextMonth = viewMonth + direction
+        if (nextMonth < 1) {
+            handleMonthSelect(viewYear - 1, 12)
+        } else if (nextMonth > 12) {
+            handleMonthSelect(viewYear + 1, 1)
         } else {
-            setViewMonth(viewMonth + 1)
+            handleMonthSelect(viewYear, nextMonth)
         }
     }
 
     const visibleDays = useMemo(() => {
-        return allDays.filter(
-            d => d && d.year_num === viewYear && d.month_num === viewMonth
-        )
+        return allDays
+            .filter(day => day && day.year_num === viewYear && day.month_num === viewMonth)
+            .sort((a, b) => getDayNumber(a) - getDayNumber(b))
     }, [allDays, viewYear, viewMonth])
 
-    const visibleTrainingDays = visibleDays.filter(d => d && !d.is_rest).length
-
-    const totalActionLib = useMemo(() => {
-        let count = 0
-        for (const d of visibleDays) {
-            if (d && d.evidence_tier === "action_library") count++
-        }
-        return count
+    const monthCells = useMemo(() => {
+        const firstDay = visibleDays[0]
+        const leadingBlankCount = getMondayFirstOffset(firstDay?.date_str)
+        return [...Array.from({ length: leadingBlankCount }, () => null), ...visibleDays]
     }, [visibleDays])
 
-    const totalKbFallback = useMemo(() => {
-        let count = 0
-        for (const d of visibleDays) {
-            if (d && d.evidence_tier === "kb_fallback") count++
-        }
-        return count
-    }, [visibleDays])
+    const visibleTrainingDays = visibleDays.filter(day => day && !day.is_rest).length
 
-    const totalPlanOnly = useMemo(() => {
-        let count = 0
-        for (const d of visibleDays) {
-            if (d && d.evidence_tier === "plan_only") count++
+    const tierCounts = useMemo(() => {
+        const counts = {
+            action_library: 0,
+            kb_fallback: 0,
+            plan_only: 0,
+            needs_evidence: 0,
         }
-        return count
-    }, [visibleDays])
+        for (const key of Object.keys(counts)) {
+            counts[key] = visibleDays.filter(day => day?.evidence_tier === key).length
+        }
+        if (visibleDays.length === 0) {
+            for (const key of Object.keys(counts)) {
+                counts[key] = Number(evidenceSummary[key] || 0)
+            }
+        }
+        return counts
+    }, [evidenceSummary, visibleDays])
 
     const startWeek = p.start_week_index ?? 1
     const endWeek = p.end_week_index ?? 1
+    const currentMonthAvailable = availableMonthKeys.size === 0 || availableMonthKeys.has(getMonthKey(viewYear, viewMonth))
 
     const yearOptions = useMemo(() => {
-        const minYear = Math.min(viewYear, p.year || 2026) - 3
-        const maxYear = Math.max(viewYear, p.year || 2026) + 3
+        const yearsFromAvailable = availableMonths.map(item => Number(item.year)).filter(Boolean)
+        const baseYears = yearsFromAvailable.length > 0 ? yearsFromAvailable : [Number(p.year || viewYear || 2026)]
+        const minYear = Math.min(...baseYears, viewYear) - 1
+        const maxYear = Math.max(...baseYears, viewYear) + 1
         const years = []
-        for (let y = minYear; y <= maxYear; y++) years.push(y)
+        for (let year = minYear; year <= maxYear; year++) years.push(year)
         return years
-    }, [viewYear, p.year])
+    }, [availableMonths, p.year, viewYear])
 
     return (
-        <Card className="p-4 sm:p-5 mb-4 rounded-lg shadow-sm">
-            {/* ---- 导航栏 ---- */}
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
-                <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="h-7 w-7 p-0">
-                        <ChevronLeft className="w-4 h-4" />
+        <Card className="mb-4 rounded-lg p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => shiftMonth(-1)} className="h-7 w-7 p-0" aria-label="上个月">
+                        <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <Calendar className="w-4 h-4 text-primary ml-1" />
+                    <Calendar className="ml-1 h-4 w-4 text-primary" />
                     <select
                         value={viewYear}
-                        onChange={(e) => setViewYear(Number(e.target.value))}
-                        className="text-sm font-medium bg-transparent border border-border rounded px-1 py-0.5 cursor-pointer"
+                        onChange={(event) => setViewYear(Number(event.target.value))}
+                        className="cursor-pointer rounded border border-border bg-transparent px-1 py-0.5 text-sm font-medium"
                     >
-                        {yearOptions.map(y => (
-                            <option key={y} value={y}>{y}年</option>
+                        {yearOptions.map(year => (
+                            <option key={year} value={year}>{year}年</option>
                         ))}
                     </select>
                     <select
                         value={viewMonth}
-                        onChange={(e) => setViewMonth(Number(e.target.value))}
-                        className="text-sm font-medium bg-transparent border border-border rounded px-1 py-0.5 cursor-pointer"
+                        onChange={(event) => setViewMonth(Number(event.target.value))}
+                        className="cursor-pointer rounded border border-border bg-transparent px-1 py-0.5 text-sm font-medium"
                     >
-                        {MONTH_NAMES.map((name, idx) => (
-                            <option key={idx} value={idx + 1}>{name}</option>
-                        ))}
+                        {MONTH_NAMES.map((name, idx) => {
+                            const month = idx + 1
+                            const disabled = availableMonthKeys.size > 0 && !availableMonthKeys.has(getMonthKey(viewYear, month))
+                            return (
+                                <option key={month} value={month} disabled={disabled}>{name}</option>
+                            )
+                        })}
                     </select>
-                    <Button variant="ghost" size="sm" onClick={handleNextMonth} className="h-7 w-7 p-0">
-                        <ChevronRight className="w-4 h-4" />
+                    <Button variant="ghost" size="sm" onClick={() => shiftMonth(1)} className="h-7 w-7 p-0" aria-label="下个月">
+                        <ChevronRight className="h-4 w-4" />
                     </Button>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 flex-wrap">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         className="gap-1 text-xs"
                         onClick={() => setShowYearlyOverview(!showYearlyOverview)}
                     >
-                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <LayoutGrid className="h-3.5 w-3.5" />
                         {showYearlyOverview ? "收起概览" : "年度概览"}
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                        第{startWeek}-{endWeek}周
+                        第 {startWeek}-{endWeek} 周
                     </span>
                 </div>
             </div>
 
-            {/* ---- 年度概览 ---- */}
             {showYearlyOverview && (
                 <div className="mb-4">
                     <YearlyOverview
@@ -585,45 +654,50 @@ export default function MonthlyTrainingCalendar() {
                 </div>
             )}
 
-            {/* ---- 证据分层 ---- */}
             {phases.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="mb-3 flex flex-wrap gap-2">
                     {phases.map((phase, idx) => (
                         <Badge key={idx} variant="secondary" className="text-xs">
-                            {phase.phase}：第{phase.start_week}-{phase.end_week}周
+                            {phase.phase}：第 {phase.start_week}-{phase.end_week} 周
                         </Badge>
                     ))}
                 </div>
             )}
 
-            <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground flex-wrap">
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" /> 动作库课表
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" /> 动作库课表 {tierCounts.action_library || ""}
                 </span>
                 <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" /> 参考生成
+                    <span className="h-2 w-2 rounded-full bg-amber-400" /> 参考生成 {tierCounts.kb_fallback || ""}
                 </span>
                 <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-gray-300" /> 基础计划
+                    <span className="h-2 w-2 rounded-full bg-gray-300" /> 基础计划 {tierCounts.plan_only || ""}
                 </span>
-                <span className="w-full sm:w-auto sm:ml-auto">{viewYear}年{viewMonth}月 · 共 {visibleTrainingDays} 个训练日</span>
+                {tierCounts.needs_evidence > 0 && (
+                    <span className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-rose-400" /> 待补证据 {tierCounts.needs_evidence}
+                    </span>
+                )}
+                <span className="w-full sm:ml-auto sm:w-auto">
+                    {viewYear}年{viewMonth}月 · 共 {visibleTrainingDays} 个训练日
+                </span>
             </div>
 
-            {/* ---- 日历网格 ---- */}
             <div className="w-full overflow-x-auto">
-                <div className="min-w-[640px]">
-                    <div className="mb-1" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: "0.25rem" }}>
+                <div className="min-w-[620px]">
+                    <div className="mb-1 grid grid-cols-7 gap-1">
                         {DAY_NAMES.map(dayName => (
-                            <div key={dayName} className="text-xs font-medium text-muted-foreground text-center py-1">
+                            <div key={dayName} className="py-1 text-center text-xs font-medium text-muted-foreground">
                                 {dayName}
                             </div>
                         ))}
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: "0.25rem" }}>
-                        {visibleDays.map((day, idx) => (
+                    <div className="grid grid-cols-7 gap-1">
+                        {monthCells.map((day, idx) => (
                             <CalendarDayCell
-                                key={`${day.year_num || ""}-${day.month_num || ""}-${day.day_label || ""}-${idx}`}
+                                key={day ? `${day.year_num || ""}-${day.month_num || ""}-${day.date_str || day.day_label || idx}` : `blank-${idx}`}
                                 day={day}
                                 onClick={handleDayClick}
                             />
@@ -633,19 +707,22 @@ export default function MonthlyTrainingCalendar() {
             </div>
 
             {visibleDays.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-3 text-center">
-                    {viewYear}年{viewMonth}月暂无训练安排。请切换月份查看。
+                <p className="mt-3 text-center text-xs text-muted-foreground">
+                    {currentMonthAvailable
+                        ? `${viewYear}年${viewMonth}月暂无训练安排。`
+                        : `${viewYear}年${viewMonth}月不在当前计划范围内，请切换可用月份查看。`}
                 </p>
             )}
 
-            <p className="text-xs text-muted-foreground mt-3 text-center">
-                点击日期查看课表；强度按 Z1-Z9 执行。
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+                点击日期查看课表详情；强度按 Z1-Z9 执行。
             </p>
 
             <DayDetailSheet
                 day={selectedDay}
                 open={sheetOpen}
-                onClose={(open) => setSheetOpen(open)}
+                onOpenChange={setSheetOpen}
+                evidenceTierMap={evidenceTierMap}
             />
         </Card>
     )

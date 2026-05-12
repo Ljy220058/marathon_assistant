@@ -1,4 +1,4 @@
-from marathon_qa_assistant.apps.chainlit.plan_ui import render_minimal_plan_summary_md
+from marathon_qa_assistant.ui.plan_ui import render_minimal_plan_summary_md
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
 from marathon_qa_assistant.ui.legacy_ui import UIHelper
 

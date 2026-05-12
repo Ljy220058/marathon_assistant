@@ -66,6 +66,50 @@ def test_save_training_plan_creates_plan_and_calendar_events(tmp_path):
     assert events[1]["sync_status"] == "not_synced"
 
 
+def test_save_training_plan_respects_calendar_start_date_and_default_time(tmp_path):
+    db = _Database(tmp_path / "calendar.db")
+
+    plan_id = db.save_training_plan(
+        _sample_plan(),
+        source_query="生成1周计划",
+        training_start_date="2026-06-01",
+        default_start_time="18:30",
+    )
+
+    plan = db.get_plan(plan_id)
+    events = db.list_events(plan_id)
+
+    assert plan["start_date"] == "2026-06-01"
+    assert [event["scheduled_date"] for event in events] == ["2026-06-01", "2026-06-02"]
+    assert [event["start_time"] for event in events] == ["18:30", "18:30"]
+
+
+def test_update_event_schedule_marks_event_unsynced(tmp_path):
+    db = _Database(tmp_path / "calendar.db")
+    plan_id = db.save_training_plan(
+        _sample_plan(),
+        source_query="生成1周计划",
+        training_start_date="2026-06-01",
+        default_start_time="07:00",
+    )
+    event_id = db.list_events(plan_id)[1]["id"]
+
+    updated = db.update_event_schedule(
+        event_id,
+        scheduled_date="2026-06-05",
+        start_time="19:15",
+        duration_min=45,
+    )
+
+    events = db.list_events(plan_id)
+    event = next(item for item in events if item["id"] == event_id)
+    assert updated is True
+    assert event["scheduled_date"] == "2026-06-05"
+    assert event["start_time"] == "19:15"
+    assert event["duration_min"] == 45
+    assert event["sync_status"] == "not_synced"
+
+
 def test_update_event_sync_status_marks_event_synced(tmp_path):
     db = _Database(tmp_path / "calendar.db")
     plan_id = db.save_training_plan(_sample_plan(), source_query="生成1周计划")
@@ -91,7 +135,7 @@ def test_list_training_plans_returns_saved_plans(tmp_path):
 
 def test_build_calendar_props_from_db(tmp_path, monkeypatch):
     from marathon_qa_assistant.services.database import get_db as _get_db
-    from marathon_qa_assistant.apps.chainlit.plan_ui import build_calendar_props_from_db
+    from marathon_qa_assistant.ui.plan_ui import build_calendar_props_from_db
 
     db = _Database(tmp_path / "calendar.db")
     monkeypatch.setattr("marathon_qa_assistant.services.database._db_instance", db, raising=False)

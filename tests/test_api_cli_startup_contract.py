@@ -13,7 +13,6 @@ if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
 API_SCRIPT = root / "marathon_qa_assistant" / "apps" / "api_app.py"
-CHAINLIT_WRAPPER = root / "app_chainlit.py"
 
 client = TestClient(api_app.app)
 
@@ -59,29 +58,3 @@ def test_api_app_main_starts_uvicorn_with_expected_contract(monkeypatch):
     assert calls[0]["app"] is namespace["app"]
     assert calls[0]["host"] == "0.0.0.0"
     assert calls[0]["port"] == 8000
-
-
-def test_app_chainlit_wrapper_reexports_chainlit_symbols(monkeypatch):
-    fake_chainlit_app = types.ModuleType("marathon_qa_assistant.apps.chainlit_app")
-    fake_chainlit_app.EXPORTED_MARKER = "ok"
-    fake_chainlit_app.__all__ = ["EXPORTED_MARKER"]
-
-    monkeypatch.setitem(sys.modules, "marathon_qa_assistant.apps.chainlit_app", fake_chainlit_app)
-
-    namespace = runpy.run_path(str(CHAINLIT_WRAPPER), run_name="app_chainlit_contract")
-
-    assert namespace["EXPORTED_MARKER"] == "ok"
-    assert namespace["root"] == root
-
-
-def test_app_chainlit_main_prints_supported_start_command(monkeypatch, capsys):
-    fake_chainlit_app = types.ModuleType("marathon_qa_assistant.apps.chainlit_app")
-    fake_chainlit_app.__all__ = []
-
-    monkeypatch.setitem(sys.modules, "marathon_qa_assistant.apps.chainlit_app", fake_chainlit_app)
-
-    runpy.run_path(str(CHAINLIT_WRAPPER), run_name="__main__")
-    captured = capsys.readouterr()
-
-    assert "请使用以下命令启动应用：" in captured.out
-    assert "chainlit run app_chainlit.py -w" in captured.out

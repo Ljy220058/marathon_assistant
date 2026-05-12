@@ -20,7 +20,7 @@ from marathon_qa_assistant.core.workflow import (
     integrated_app,
     IntegratedState,
 )
-from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
+from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile, sync_user_zones
 from marathon_qa_assistant.core.working_state import build_working_state
 from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
@@ -92,15 +92,27 @@ class ProfileRequest(BaseModel):
     user_id: str = DEFAULT_API_USER_ID
     profile: Dict[str, Any]
 
+class ProfileFieldRequest(BaseModel):
+    value: Any
+
+class NluExtractRequest(BaseModel):
+    text: str = ""
+
 class SavePlanRequest(BaseModel):
     user_id: str = DEFAULT_API_USER_ID
     source_query: str = ""
     structured_training_plan: Dict[str, Any]
+    calendar_settings: Dict[str, Any] = Field(default_factory=dict)
 
 class FeedbackRequest(BaseModel):
     user_id: str = DEFAULT_API_USER_ID
     raw_text: str = ""
     feedback: Dict[str, Any] = Field(default_factory=dict)
+
+class EventScheduleRequest(BaseModel):
+    scheduled_date: str
+    start_time: str
+    duration_min: int = Field(default=60, ge=0, le=600)
 
 class TrainingCalendarResponse(BaseModel):
     year: int
@@ -151,6 +163,49 @@ def _normalize_frontend_feedback(payload: Dict[str, Any]) -> Dict[str, Any]:
         "sleep_quality": sleep_map.get(str(payload.get("sleep") or "").strip(), payload.get("sleep_quality", "")),
         "notes": payload.get("notes", ""),
     }
+
+
+def _save_profile_patch(patch: Dict[str, Any]) -> Dict[str, Any]:
+    profile = load_user_profile()
+    profile.update(patch or {})
+    sync_user_zones(profile)
+    save_user_profile(profile)
+    return profile
+
+
+def _profile_zones(profile: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+    working = dict(profile or {})
+    sync_user_zones(working)
+    return {
+        "hr_zones": working.get("hr_zones", {}) or {},
+        "pace_zones": working.get("pace_zones", {}) or {},
+    }
+
+
+def _extract_profile_suggestions(text: str) -> Dict[str, Any]:
+    """从明确表达中提取画像变更建议；只返回建议，不写盘。"""
+    import re
+
+    content = str(text or "")
+    suggestions: Dict[str, Any] = {}
+
+    mileage_match = re.search(r"(?:周跑量|跑量)[^\d]{0,8}(\d{1,3}(?:\.\d+)?)\s*(?:km|公里)?", content, re.I)
+    if mileage_match:
+        suggestions["weekly_mileage"] = mileage_match.group(1)
+
+    lthr_match = re.search(r"(?:LTHR|乳酸阈心率|阈心率)[^\d]{0,8}(\d{2,3})", content, re.I)
+    if lthr_match:
+        suggestions["lthr"] = lthr_match.group(1)
+
+    t_pace_match = re.search(r"(?:T配速|T-Pace|阈值配速)[^\d]{0,8}(\d[:：]\d{2})(?:\s*/?\s*km|/公里)?", content, re.I)
+    if t_pace_match:
+        suggestions["t_pace"] = t_pace_match.group(1).replace("：", ":") + "/km"
+
+    goal_match = re.search(r"(?:目标|冲|想|准备)[^，。；\n]{0,12}((?:半马|全马|10K|5K)\s*(?:sub\s*)?\d{2,3})", content, re.I)
+    if goal_match:
+        suggestions["goal"] = goal_match.group(1).strip()
+
+    return suggestions
 
 
 PLAN_QUERY_KEYWORDS = (
@@ -483,10 +538,54 @@ async def get_profile(user_id: str = DEFAULT_API_USER_ID):
 async def save_profile(request: ProfileRequest):
     """保存 Astro 工作台提交的跑者画像草稿。"""
     _require_default_user(request.user_id)
-    profile = load_user_profile()
-    profile.update(request.profile or {})
-    save_user_profile(profile)
+    profile = _save_profile_patch(request.profile or {})
     return {"user_id": request.user_id, "profile": profile}
+
+
+@app.get("/profile/{user_id}")
+async def get_profile_by_user(user_id: str):
+    """按设计文档路径返回完整用户画像。"""
+    _require_default_user(user_id)
+    return {"user_id": user_id, "profile": load_user_profile()}
+
+
+@app.put("/profile/{user_id}")
+async def put_profile_by_user(user_id: str, request: ProfileRequest):
+    """按设计文档路径更新用户画像；当前单用户模式下采用合并写入。"""
+    _require_default_user(user_id)
+    _require_default_user(request.user_id)
+    profile = _save_profile_patch(request.profile or {})
+    return {"user_id": user_id, "profile": profile}
+
+
+@app.patch("/profile/{user_id}/fields/{field_key}")
+async def patch_profile_field(user_id: str, field_key: str, request: ProfileFieldRequest):
+    """更新单个画像字段，并同步由画像衍生的强度区间。"""
+    _require_default_user(user_id)
+    if not field_key or field_key.startswith("_"):
+        raise HTTPException(status_code=400, detail="画像字段名无效。")
+    profile = _save_profile_patch({field_key: request.value})
+    return {"user_id": user_id, "field_key": field_key, "profile": profile}
+
+
+@app.get("/profile/{user_id}/zones")
+async def get_profile_zones(user_id: str):
+    """从当前画像实时衍生 LTHR 九区和配速区间。"""
+    _require_default_user(user_id)
+    zones = _profile_zones(load_user_profile())
+    return {"user_id": user_id, **zones}
+
+
+@app.post("/profile/{user_id}/nlu-extract")
+async def preview_profile_nlu_extract(user_id: str, request: NluExtractRequest):
+    """从自然语言中提取画像变更建议；需要用户确认后才写入。"""
+    _require_default_user(user_id)
+    suggestions = _extract_profile_suggestions(request.text)
+    return {
+        "user_id": user_id,
+        "suggested_changes": suggestions,
+        "requires_confirmation": True,
+    }
 
 
 @app.get("/llm-options")
@@ -531,10 +630,13 @@ async def save_plan(request: SavePlanRequest):
     _require_default_user(request.user_id)
     if not request.structured_training_plan:
         raise HTTPException(status_code=400, detail="structured_training_plan 不能为空。")
+    calendar_settings = request.calendar_settings or {}
     plan_id = get_db().save_training_plan(
         request.structured_training_plan,
         source_query=request.source_query,
         user_id=request.user_id,
+        training_start_date=str(calendar_settings.get("training_start_date") or ""),
+        default_start_time=str(calendar_settings.get("default_start_time") or "07:00"),
     )
     return {"plan_id": plan_id, "saved": True}
 
@@ -590,6 +692,30 @@ async def get_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
         "structured_training_plan": _load_structured_plan(plan),
         "events": [_event_with_content_trace(event) for event in get_db().list_events(plan_id)],
     }
+
+
+@app.patch("/plans/{plan_id}/events/{event_id}")
+async def update_plan_event_schedule(
+    plan_id: str,
+    event_id: str,
+    request: EventScheduleRequest,
+    user_id: str = DEFAULT_API_USER_ID,
+):
+    """更新已保存训练日历事件的日期、开始时间和时长。"""
+    _require_default_user(user_id)
+    plan = get_db().get_plan(plan_id)
+    if not plan or plan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="训练计划不存在。")
+    events = get_db().list_events(plan_id)
+    if not any(event.get("id") == event_id for event in events):
+        raise HTTPException(status_code=404, detail="训练日历事件不存在。")
+    updated = get_db().update_event_schedule(
+        event_id,
+        scheduled_date=request.scheduled_date,
+        start_time=request.start_time,
+        duration_min=request.duration_min,
+    )
+    return {"updated": updated}
 
 
 @app.post("/query", response_model=QueryResponse)

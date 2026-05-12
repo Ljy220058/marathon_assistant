@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 import threading
 import uuid
@@ -282,7 +283,6 @@ class _Database:
 
     @staticmethod
     def _infer_duration_min(main_set: str, workout_type: str) -> int:
-        import re
         text = str(main_set or "")
         match = re.search(r"(\d+)\s*分钟", text)
         if match:
@@ -292,6 +292,18 @@ class _Database:
         if workout_type == "long_run":
             return 120
         return 60
+
+    @staticmethod
+    def _normalize_start_date(value: str = "") -> date:
+        try:
+            return date.fromisoformat(str(value or "").strip())
+        except ValueError:
+            return date.today()
+
+    @staticmethod
+    def _normalize_start_time(value: str = "") -> str:
+        text = str(value or "").strip()
+        return text if re.fullmatch(r"\d{2}:\d{2}", text) else "07:00"
 
     def _event_days_for_plan(
         self,
@@ -327,10 +339,13 @@ class _Database:
         source_query: str = "",
         user_id: str = "default_user",
         calendar_days: Optional[List[Dict[str, Any]]] = None,
+        training_start_date: str = "",
+        default_start_time: str = "07:00",
     ) -> str:
         meta = plan.get("plan_meta") or {}
         plan_id = str(uuid.uuid4())
-        start = date.today()
+        start = self._normalize_start_date(training_start_date or str(meta.get("training_start_date") or ""))
+        default_time = self._normalize_start_time(default_start_time or str(meta.get("default_start_time") or ""))
         conn = self._get_conn()
         conn.execute(
             """INSERT INTO training_plans
@@ -393,6 +408,7 @@ class _Database:
                 duration_min = self._infer_duration_min(main_set, workout_type)
                 event_id = str(uuid.uuid4())
                 total_km = float(day.get("warmup_km") or 0) + float(day.get("main_km") or 0) + float(day.get("cooldown_km") or 0)
+                event_start_time = self._normalize_start_time(str(day.get("start_time") or default_time))
                 conn.execute(
                     """INSERT INTO training_calendar_events
                         (id, plan_id, user_id, week_no, day_no, day_label, scheduled_date,
@@ -408,7 +424,7 @@ class _Database:
                         day_no,
                         day_label,
                         event_date.isoformat(),
-                        "07:00",
+                        event_start_time,
                         duration_min,
                         f"第{week_no}周{day_label}｜{training_type}",
                         workout_type,
@@ -494,6 +510,37 @@ class _Database:
             (external_event_id, provider, sync_status, event_id),
         )
         conn.commit()
+
+    def update_event_schedule(
+        self,
+        event_id: str,
+        *,
+        scheduled_date: str,
+        start_time: str,
+        duration_min: int,
+    ) -> bool:
+        conn = self._get_conn()
+        existing = conn.execute(
+            "SELECT id FROM training_calendar_events WHERE id = ?",
+            (event_id,),
+        ).fetchone()
+        if not existing:
+            return False
+
+        conn.execute(
+            """UPDATE training_calendar_events SET
+                scheduled_date = ?, start_time = ?, duration_min = ?,
+                sync_status = 'not_synced', updated_at = datetime('now')
+            WHERE id = ?""",
+            (
+                self._normalize_start_date(scheduled_date).isoformat(),
+                self._normalize_start_time(start_time),
+                int(duration_min or 0),
+                event_id,
+            ),
+        )
+        conn.commit()
+        return True
 
 
 _db_instance: Optional[_Database] = None

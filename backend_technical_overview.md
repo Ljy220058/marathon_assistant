@@ -2,10 +2,12 @@
 
 ## 1 技术栈概览
 
+> 当前状态：Chainlit 可运行开发线已移除；`marathon_qa_assistant/ui/plan_ui.py`、`ui/coach_state.py`、`ui/ui_config.py` 保留原先可复用的纯展示/状态辅助，供 FastAPI、Astro 和测试继续使用。
+
 | 层次 | 技术选型 |
 |------|---------|
 | 编程语言 | Python |
-| UI / 本地服务承载 | Chainlit（主交互 UI） + FastAPI（本地 API） |
+| UI / 本地服务承载 | Astro（当前主交互 UI） + FastAPI（本地 API） |
 | Agent 编排 | LangGraph（`StateGraph`，含 conditional routing / loop / astream 流式事件 / HITL checkpoint） |
 | LLM 接入（两条线） | LangChain `ChatOllama`（直连 `http://localhost:11434`）；OpenAI 兼容 SDK `openai`（`base_url="http://localhost:11434/v1"`） |
 | RAG（向量检索） | TF‑IDF（scikit‑learn）+ 稀疏矩阵（scipy）+ 本地文件落盘（jsonl / pkl / npz） |
@@ -17,7 +19,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `app_chainlit.py` / `run.bat` | **当前主入口**：Windows 下推荐通过 `run.bat` 启动，它会切换到项目根目录后执行 `chainlit run app_chainlit.py -w`；`marathon_qa_assistant/apps/chainlit_app.py` 现仅承担壳入口与会话初始化，具体 Chainlit 逻辑已拆分到 `apps/chainlit/setup.py`、`apps/chainlit/logic.py`、`apps/chainlit/actions.py`。 |
+| `frontend/` / `marathon_qa_assistant/apps/api_app.py` | **当前主入口**：Astro 前端调用 FastAPI 本地 API；Chainlit 可运行入口、启动脚本与专属应用包已移除。 |
 | `marathon_qa_assistant/apps/api_app.py` | **当前 API 入口**：提供 `/health` 与 `/query`；`__main__` 通过 `uvicorn.run(app, host="0.0.0.0", port=8000)` 启动。 |
 | `scripts/evaluate_rag_ragas.py` | **当前 RAG 评测入口**：读取项目根 `vector_kb`，执行 Ragas 指标和传统检索指标评测，输出 `rag_eval_report.md`。 |
 | `scripts/generate_eval_dataset.py` | **评测集生成脚本**：为 RAG 评测生成或整理 `eval_dataset.json`。 |

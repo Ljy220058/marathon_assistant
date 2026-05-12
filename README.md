@@ -70,17 +70,16 @@ py -3 tests/integration_workflow_test.py
    pip install -r requirements.txt
    ```
 
-### 启动前端 (Chainlit)
+### 启动前端 (Astro)
 
-这是本项目的主交互界面：
+当前主交互界面是 `frontend/` 下的 Astro 前端。请先启动 FastAPI 后端，再启动前端：
 
 ```bash
-chainlit run marathon_qa_assistant/apps/chainlit_app.py
+cd frontend
+npm run dev
 ```
 
-Windows 下也可直接双击或执行项目根目录的 `run.bat`，它会自动切换到当前目录并启动 `chainlit run app_chainlit.py -w`。
-当前 `chainlit_app.py` 已改为在 `@cl.on_chat_start` 会话启动时再加载知识库，不再在模块导入阶段触发 `load_vector_kb()`，以避免导入测试和热重载场景被启动副作用拖慢。
-当前知识库启动策略为：优先探测运行期 `vector_kb_user` 是否可健康加载；若用户库产物缺失、`chunks.jsonl` 为空或 FAISS 索引不可用，则自动回退到默认库 `vector_kb`；只有当候选库都不健康时，才以空库模式启动，并在运行时状态中记录 `kb_source` 与失败原因，便于排查“上传文档未生效”或“为何退回默认库”等问题。
+中文路径下建议使用 `frontend/start_ascii.cmd`，脚本会把前端同步到临时英文路径后启动，避免 Vite/esbuild 解析路径失败。
 
 ### 启动后端 API (FastAPI)
 
@@ -108,5 +107,5 @@ python scripts/evaluate_rag_ragas.py
 ## 8. 最近更新 (2026-04-29)
 
 - **Git 仓库初始化**: 已完成项目根目录 Git 初始化。
-- **依赖收口**: 统一 `requirements_api.txt` 为根目录 `requirements.txt`，补全了 Chainlit 与 FAISS 等核心依赖。
+- **依赖收口**: 统一 `requirements_api.txt` 为根目录 `requirements.txt`，保留 FastAPI、FAISS 等核心依赖；Chainlit 运行入口已移除。
 - **Gradio 废弃**: 已移除 `legacy_ui.py` 中的 Gradio 锁屏逻辑，准备清理冗余 entry points。

@@ -89,7 +89,7 @@ GITHUB_STYLE = """
 }
 """
 
-# Gradio JS 锁屏逻辑已移除，项目已全面迁移至 Chainlit
+# Gradio JS 锁屏逻辑已移除，项目已全面迁移至 前端
 
 GITHUB_STYLE += """
 /* PDF.js Viewer 样式扩展 */
@@ -376,7 +376,7 @@ def _resolve_cited_evidence_items(evidence_base, cited_ids):
     if items:
         return items
 
-    # 当正文没有稳定引用时，退回到证据基底中的前几条，保证 Chainlit 仍可预览。
+    # 当正文没有稳定引用时，退回到证据基底中的前几条，保证 前端 仍可预览。
     fallback_items = []
     for idx, item in enumerate(evidence_base, start=1):
         if not isinstance(item, dict):
@@ -1035,7 +1035,7 @@ def _render_daily_workout_cards_md(structured_data):
 
     if missing_cards and not valid_cards:
         lines.append("> ⚠️ 本次未生成完整每日课表卡：动作库证据不足，已保留基础训练计划。")
-        lines.append("> 请在 Chainlit 页面中查看「训练日历」了解完整的月历课表视图（支持点击日期展开详情）。")
+        lines.append("> 请在 前端 页面中查看「训练日历」了解完整的月历课表视图（支持点击日期展开详情）。")
         lines.append("")
 
     return "\n".join(lines).strip()
@@ -1318,7 +1318,7 @@ class UIHelper:
         summary = re.sub(r'^```[a-zA-Z]*\s*', '', summary.strip())
         summary = re.sub(r'\s*```$', '', summary)
         
-        # 引用 [n] 保持纯文本，点击预览由 Chainlit 显式 Action 按钮提供
+        # 引用 [n] 保持纯文本，点击预览由 前端 显式 Action 按钮提供
 
         md = f"### 🏃‍♂️ {structured_data.get('title', '马拉松专业分析报告')}\n\n"
         md += f"**Generated on**: {date.today().isoformat()} | Marathon QA Assistant\n\n"
@@ -1409,7 +1409,7 @@ class UIHelper:
         return md
 
     @staticmethod
-    def render_chainlit_wiki_context_md(structured_data):
+    def render_wiki_context_md(structured_data):
         if not isinstance(structured_data, dict):
             return ""
 

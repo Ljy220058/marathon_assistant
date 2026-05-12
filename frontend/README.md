@@ -1,6 +1,6 @@
 # Astro 前端壳
 
-这是马拉松助手的新前端入口，保留现有 FastAPI / Chainlit 后端，只把页面层换成 Astro。
+这是马拉松助手的当前前端入口，页面层使用 Astro，并通过 FastAPI 后端获取训练计划数据。
 
 ## 启动后端 API
 

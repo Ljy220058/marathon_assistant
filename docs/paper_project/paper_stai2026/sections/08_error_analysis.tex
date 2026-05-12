@@ -2,42 +2,34 @@
 
 \subsection{Conservative False Refusals}
 
-In the 100-question qwen run, the workflow falsely refused 4 / 90 verified-or-answerable questions.
-
-False-refusal context:
+In the 100-question qwen run, the workflow produced 4 / 90 \texttt{false refusal} cases on verified-or-answerable questions.
 
 \begin{table}[t]
 \centering
-\caption{Representative conservative false refusal.}
+\caption{Representative \texttt{false refusal}.}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{llllll}
 \toprule
 QID & Evidence ID & Evidence gate & Risk gate & Repair action & Interpretation \\
 \midrule
-STAI-P036 & R01-E02 & unanswerable & caution; avoid high-risk training & refused\_due\_to\_insufficient\_evidence\_with\_safety\_deescalation & verified evidence existed, but the workflow refused conservatively \\
+STAI-P036 & R01-E02 & unanswerable & caution; avoid high-risk training & refused\_due\_to\_insufficient\_evidence\_with\_safety\_deescalation & verified evidence existed, but the workflow produced a \texttt{false refusal} \\
 \bottomrule
 \end{tabular}
 }
 \label{tab:false-refusal}
 \end{table}
 
-The false refusals are concentrated in risk-safety items. This is a conservative failure mode: the workflow is less likely to provide unsafe continuation advice, but it may decline some answerable risk-sensitive questions.
-
-Paper wording:
-
-The remaining false refusals indicate a utility cost of conservative safety gating. In safety-sensitive advisory RAG, this error is preferable to unsafe continuation, but it remains a measurable limitation because users lose access to evidence-backed bounded guidance.
+The \texttt{false refusal} cases are concentrated in risk-safety items. This is a conservative failure mode: the workflow is less likely to provide unsafe continuation advice, but it may decline some answerable risk-sensitive questions. In safety-sensitive advisory RAG, this error is preferable to unsafe continuation, but it remains a measurable utility cost because users lose access to evidence-backed bounded guidance.
 
 \subsection{Citation Repair Is Not Simple Failure}
 
-In the 100-question qwen run, \texttt{partial\_answer} occurred 62 times and citation repair occurred 62 times.
+In the 100-question qwen run, \texttt{partial\_answer} occurred 62 times and \texttt{citation repair} occurred 62 times.
 
-Interpretation:
-
-The workflow often changes the output state to \texttt{partial\_answer} because the auditor detects citation or grounding issues and the repair stage releases a bounded answer. This is not the same as a fully unsupported answer. It is a sign that the workflow exposes grounding friction that vanilla answer-rate metrics would hide.
+The workflow often changes the output state to \texttt{partial\_answer} because the auditor detects citation-support issues and the Bounded Citation/Grounding Repair stage releases a bounded answer. This is not the same as a fully unsupported answer, nor is it evidence of coaching quality. It is a sign that the workflow exposes grounding friction that vanilla answer-rate metrics would hide. A supplementary 20-question evidence-boundary pack and 15-item manual adjudication further found 12 / 15 reasonable output states, but also exposed boundary costs: \texttt{STAI-X045} still sketched a broad 12-week phase plan from limited evidence, and \texttt{STAI-X038} received an overly strong \texttt{answered} state under \texttt{llama3:latest}.
 
 \subsection{Retrieval Noise and Evidence Misses}
 
-The older v0.2 evidence-mode comparison showed that retrieval-only produced a high false-refusal regime, while retrieval-plus-gold reduced false refusals substantially and gold-only produced none. This supports the claim that safety-sensitive advisory RAG needs evaluation of retrieval sufficiency, not only answer generation.
+The older v0.2 evidence-mode comparison showed that retrieval-only produced a high \texttt{false refusal} regime, while retrieval-plus-gold reduced \texttt{false refusal} cases substantially and gold-only produced none. We treat this as supporting diagnostic evidence rather than a main result because it uses an earlier benchmark version. It nevertheless suggests that safety-sensitive advisory RAG should evaluate retrieval sufficiency, not only answer generation.
 
 \subsection{Deterministic Hardening Boundaries}
 

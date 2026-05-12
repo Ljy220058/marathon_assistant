@@ -58,8 +58,8 @@
 - **组间实现方法**:
   - `marathon_qa_assistant/nodes/expert_nodes.py`: `auditor_node` 基于 `is_approved`、`iteration_count`、`ranked_evidence[:5].hybrid_score`、`entities` 计算动态分数，并补充 `score_sources` 说明字段。
   - `marathon_qa_assistant/nodes/output_nodes.py`: 将 `audit_scores`、`score_sources` 与 `evidence_base` 装配到统一的 `structured_report.audit_block`，作为前端唯一消费入口。
-  - `marathon_qa_assistant/ui/legacy_ui.py`: 在共享渲染器中新增“质量与安全审计”面板，统一输出“分数 + 评分依据 + 关联证据”，同时兼容 Chainlit 和 Gradio。
-  - `marathon_qa_assistant/apps/chainlit_app.py`: 在侧边栏 `update_sidebar()` 中增加多日期格式解析，支持 `YYYY-MM-DD`、`YYYY/MM/DD`、`YYYY年MM月DD日`、`DD/MM/YYYY`。
+  - `marathon_qa_assistant/ui/legacy_ui.py`: 在共享渲染器中新增“质量与安全审计”面板，统一输出“分数 + 评分依据 + 关联证据”，供当前 Astro/FastAPI 链路复用。
+  - `marathon_qa_assistant/ui/plan_ui.py`: 保留可复用展示 props 构造逻辑，作为已移除 Chainlit 入口后的中立 UI 辅助层。
   - `marathon_qa_assistant/services/vector_store.py`: 在用户知识库构建前显式创建 `faiss_db/`，避免倒计时与审计修复期间被索引构建异常阻断联调。
 - **验收标准**:
   - 相同问答在证据列表变化时，ROI 不再长期固定在 `80%`。

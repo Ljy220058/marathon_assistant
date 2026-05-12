@@ -1468,10 +1468,10 @@ RAG 对 HMP 的主要职责是：
 
 基于真实网页生成计划体验，修复用户在“生成计划 -> 查看日卡 -> 反馈调整”链路中的五个可感知问题。
 
-- 计划周期可控：
-  - 画像表单新增 `计划周期` 字段，提交画像时写入 `plan_duration_weeks`。
-  - 画像生成 prompt 显式包含 `计划周期：X周`，避免用户想要 12 周却被比赛日期隐式推成其他周期。
-  - 结果摘要增加 `周期说明`，当用户填写周期与实际生成周期一致时确认“已按 X 周生成”，不一致时明确提示比赛日期/画像解析造成了周期差异。
+- 计划周期自动倒推：
+  - 画像表单不再要求用户手填 `当前周跑量` 与 `计划周期`，改为填写 `上个月月跑量` 与 `比赛日期`。
+  - 前端根据 `比赛日期` 自动倒推 `plan_duration_weeks`，根据 `上个月月跑量 / 4.345` 估算平均周跑量并写入 `weekly_mileage`。
+  - `recent_four_week_mileage / last_month_mileage` 保留上个月月跑量，画像生成 prompt 显式包含“系统估算平均周跑量”和“系统倒推计划周期”。
 - 日卡反馈闭环：
   - 日卡备注不再默认填入原主课内容，避免把计划内容误当作用户反馈。
   - `不适/跳过` 快捷动作会同步设置 `未完成 / 高疲劳 / 疼痛风险 / 一般睡眠`，并写入保守调整备注。
@@ -1484,7 +1484,7 @@ RAG 对 HMP 的主要职责是：
   - 当后端没有返回可编号 RAG 证据但计划包含 HMP 协议时，证据预览自动显示 `半马 HMP 基石协议` 与 `半马 OCR 训练资料整理` 两条 `protocol_rule` 依据。
   - 非 HMP 且无证据时，空态明确说明“骨架模式下日卡会优先展示结构化规则依据”，避免“有基石依据但证据 0 条”的信任断层。
 - 回归测试：
-  - `tests/test_astro_frontend_contract.py` 覆盖计划周期字段、历史折叠、反馈字段映射、卡片内反馈结果与 HMP 协议证据兜底。
+  - `tests/test_astro_frontend_contract.py` 覆盖比赛日期倒推周期、上个月月跑量估算平均周跑量、历史折叠、反馈字段映射、卡片内反馈结果与 HMP 协议证据兜底。
 
 ### 17.20 半马课表去通用模板化
 
@@ -1662,7 +1662,12 @@ HMP 基石协议只决定阶段、训练意图、强度边界、容量预算和�
 - `half_marathon_protocol` 透出 `input_recent_four_week_mileage_km`；周级 `capacity_budget` 透出 `weekly_volume_km / effective_weekly_volume_km / recent_four_week_mileage_km / volume_basis`，供论文 trace 和前端审计读取。
 
 **Astro 展示**
-- 画像表单新增 `当前半马 PB` 与 `近4周平均周跑量`，提交时映射为 `current_half_time / recent_four_week_mileage`。
+- 画像表单保留 `当前半马 PB`，跑量输入改为 `上个月月跑量`；提交时将估算平均周跑量映射为 `weekly_mileage`，将上个月月跑量映射为 `recent_four_week_mileage / last_month_mileage`。
 - 生成结果摘要新增“能力差距”卡，展示当前半马 PB、当前 HMP、目标半马、目标 HMP、秒/公里差距、总时间差距、提升幅度和校准状态。
 - 校准卡只展示后端结构化结果，不让前端自行推断训练处方；信息缺失时显示待校准，而不是伪造目标配速。
 - 训练日卡审计链路新增 `容量依据 / 有效预算跑量 / 近4周跑量`，让用户和审阅者能看到系统何时按近期跑量降级，而不是只看最终课表。
+
+
+### 2026-05-12 Chainlit 开发线移除状态
+
+当前已删除 Chainlit 可运行入口、启动脚本、依赖和专属应用包；原 `apps/chainlit/plan_ui.py` 等可复用纯辅助迁移到 `marathon_qa_assistant/ui/`。后续前端验收与产品开发以 Astro + FastAPI 为准。

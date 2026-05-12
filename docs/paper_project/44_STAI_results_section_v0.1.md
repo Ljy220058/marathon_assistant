@@ -2,7 +2,7 @@
 
 This draft converts current run artifacts into paper-facing results. All reported values are taken from existing local summaries.
 
-## 1. Main 100-Question Benchmark Result
+## 1. Main Pilot Benchmark Result
 
 The primary experiment evaluates the full S3 workflow on the 100-question v0.3 benchmark using `qwen2.5:latest` with `retrieval_plus_gold` evidence.
 
@@ -30,7 +30,7 @@ Diagnostic counts:
 
 Paper interpretation:
 
-> The full workflow refused all designed-unanswerable controls while preserving non-refusal paths for most evidence-backed questions. The remaining 4 / 90 false refusals show a conservative failure mode rather than complete answerability.
+> The full workflow refused all designed-unanswerable controls while preserving non-refusal paths for most evidence-backed questions. The remaining 4 / 90 false refusals show a safety-conservative failure mode with a measurable utility cost rather than complete answerability.
 
 ### 1.2 Gate, Audit, and Repair
 
@@ -48,7 +48,7 @@ Paper interpretation:
 
 Interpretation:
 
-The large `repair_required` count indicates that citation and grounding repair is a major observable state in the workflow. This supports reporting `partial_answer` as a diagnostic category rather than collapsing it into success or failure.
+The large `repair_required` count indicates that citation and grounding repair is a major observable state in the workflow. This supports reporting `partial_answer` as a diagnostic category rather than collapsing it into success or failure. We treat the 62 repair cases as audit-exposed grounding friction, not as a simple answer-level failure rate.
 
 ### 1.3 Category x Status
 
@@ -63,9 +63,9 @@ Interpretation:
 
 The designed-unanswerable controls are cleanly separated from answerable categories. The false refusals occur in `risk_safety`, which is consistent with a conservative safety-oriented workflow but still represents utility loss.
 
-## 2. Safety Stress Suite
+## 2. Targeted Constructed Safety-Stress Suite
 
-The safety stress suite evaluates targeted request-level pressure under `hardening_v0_4`. Both qwen and llama3 runs used `retrieval_only` evidence mode.
+The targeted constructed stress suite evaluates request-level pressure under `hardening_v0_4`. Both qwen and llama3 runs used `retrieval_only` evidence mode.
 
 ### 2.1 Cross-Model Stress Results
 
@@ -83,11 +83,11 @@ Pre-gate and ordinary-gate split:
 
 Interpretation:
 
-> Under the deterministic request-level hardening layer, both models refused all 30 targeted safety-stress prompts. Most refusals occurred before generation, with the remaining prompts refused by the ordinary evidence/risk gate.
+> Under the deterministic request-level hardening layer, both models refused all 30 targeted constructed stress prompts. Most refusals occurred before generation, with the remaining prompts refused by the ordinary evidence/risk gate.
 
 Boundary:
 
-This result supports targeted request-level hardening on the constructed stress suite. It does not establish general prompt-injection robustness.
+This result supports targeted request-level hardening on the constructed stress suite. It does not establish broader adversarial-security robustness.
 
 ### 2.2 Stress Category Results
 
@@ -103,7 +103,7 @@ Both models refused every prompt in each stress category:
 
 This table is best used as a stress-suite diagnostic rather than as a broad security benchmark result.
 
-## 3. Supplementary Llama3 Main-Benchmark Subset
+## 3. Supplementary Llama3 Sanity Check
 
 The supplementary 40-question llama3 run checks whether the main workflow behavior is obviously model-specific.
 
@@ -139,7 +139,7 @@ Category x status:
 
 Interpretation:
 
-The llama3 subset preserves the intended refusal behavior on designed-unanswerable controls and shows no false refusal on the 30 answerable subset questions. Because the subset is only 40 questions, this should be reported as a sanity check, not as a full multi-model evaluation.
+The llama3 subset preserves the intended refusal behavior on designed-unanswerable controls and shows no false refusal on the 30 answerable subset questions. Because the subset is only 40 questions, this should be reported as a sanity check rather than a model-generalization study.
 
 ## 4. Supporting Evidence-Mode Comparison
 
@@ -159,9 +159,9 @@ Version caveat:
 
 This table uses the v0.2 50-question benchmark and should be labeled as supporting evidence unless rerun on v0.3.
 
-## 5. Ablation Comparison
+## 5. Diagnostic Ablation Subset
 
-We ran a balanced 40-question v0.3 ablation subset using the same qids as the llama3 main-benchmark sanity check. The subset contains 10 fact, 10 applied-reasoning, 10 risk-safety, and 10 evidence-insufficient items.
+We ran a balanced 40-question v0.3 diagnostic ablation subset using the same qids as the llama3 main-benchmark sanity check. The subset contains 10 fact, 10 applied-reasoning, 10 risk-safety, and 10 evidence-insufficient items.
 
 | system variant | answered | partial_answer | refused | designed-unanswerable refused | verified-or-answerable false refusal | citation repair |
 |---|---:|---:|---:|---:|---:|---:|
@@ -172,29 +172,23 @@ We ran a balanced 40-question v0.3 ablation subset using the same qids as the ll
 
 Interpretation:
 
-The `no_gate` ablation is the clearest diagnostic: removing the Evidence Gate destroys refusal control on designed-unanswerable items, converting all 10 no-evidence controls into non-refusal outputs. The `no_audit` and `no_repair` ablations preserve gate-based refusal, but remove the observability of citation repair. This supports the claim that the workflow's behavior comes from explicit control points rather than a single generation prompt.
+The `no_gate` diagnostic ablation is the clearest diagnostic: removing the Evidence Gate destroys refusal control on designed-unanswerable items, converting all 10 no-evidence controls into non-refusal outputs. The `no_audit` and `no_repair` variants preserve gate-based refusal, but remove the observability of citation repair. This supports the claim that the workflow's behavior comes from explicit control points rather than a single generation prompt.
 
 Run caveat:
 
-These are 40-question v0.3 subset ablations, not full 100-question ablations. The detailed ablation note is in `docs/paper_project/50_STAI_v03_ablation_results_v0.1.md`.
+These are 40-question v0.3 diagnostic subset ablations, not comprehensive component studies. The detailed ablation note is in `docs/paper_project/50_STAI_v03_ablation_results_v0.1.md`.
 
-## 6. Result Claims Supported by Current Evidence
+## 6. Result-to-Claim Map
 
-Supported:
-
-- S3 refused 10 / 10 designed-unanswerable controls in the 100-question qwen run.
-- S3 had 4 / 90 false refusals on verified-or-answerable questions in the 100-question qwen run.
-- The 30-prompt safety-stress suite was refused 30 / 30 by both qwen and llama3 under `hardening_v0_4`.
-- The llama3 40-question subset refused 10 / 10 designed-unanswerable controls and had 0 / 30 false refusals.
-- Citation repair is frequent and should be treated as a first-class diagnostic state.
-
-Not supported:
-
-- broad prompt-injection robustness;
-- clinical safety validation;
-- coaching efficacy;
-- general superiority over all RAG baselines;
-- full multi-model generalization.
+| result block | supported claim | boundary |
+|---|---|---|
+| 100-question pilot benchmark | S3 makes refusal, partial answers, citation repair, and false refusal measurable on a focused advisory benchmark | pilot-scale, author-authored benchmark; not external validation |
+| 10 / 10 designed-unanswerable controls refused | Evidence gating can turn missing support into an intended refusal state | does not prove all insufficient-evidence cases will be detected |
+| citation repair count = 62 | Auditing exposes grounding friction that answer-rate metrics would hide | not a simple failure rate and not proof of final factual correctness |
+| false refusal = 4 / 90 | Conservative safety gating has a measurable utility cost | safer than unsafe continuation, but still a limitation for users seeking bounded advice |
+| 30-prompt targeted constructed stress suite | deterministic hardening blocks the constructed stress patterns tested here | not a broad adversarial-security or deployment-safety claim |
+| 40-question llama3 sanity check | the main refusal pattern is not obviously unique to one local model in this subset | not evidence of broad model generalization |
+| 40-question diagnostic ablation subset | explicit gates, audit, and repair contribute different observable control effects | not a comprehensive component study |
 
 ## 7. Case Study Integration
 
@@ -222,4 +216,4 @@ These cases make the quantitative results more interpretable. They show that `re
 
 ## 8. Candidate Results Paragraph
 
-On the 100-question pilot benchmark, the full S3 workflow with `qwen2.5:latest` produced 24 answered, 62 partial-answer, and 14 refused outputs. All 10 designed-unanswerable controls were refused, while 4 of 90 evidence-backed questions were falsely refused. The false refusals occurred in the risk-safety category, suggesting a conservative failure mode in which the workflow preserves safety boundaries but loses some answerability. Citation repair was frequent: 62 outputs required repair for invalid or missing citations, motivating the use of `partial_answer` as a diagnostic state rather than a binary failure label. On the 30-prompt safety-stress suite, the hardened request-level pre-gate and downstream gates refused all stress prompts for both qwen2.5 and llama3. These results support the workflow as a diagnostic control structure for safety-sensitive advisory RAG, while leaving open broader questions about scale, expert validation, and model generality.
+On the 100-question pilot benchmark, the full S3 workflow with `qwen2.5:latest` produced 24 answered, 62 partial-answer, and 14 refused outputs. All 10 designed-unanswerable controls were refused, while 4 of 90 evidence-backed questions were falsely refused. The false refusals occurred in the risk-safety category, indicating a safety-conservative failure mode with a measurable utility cost. Citation repair was frequent: 62 outputs required repair for invalid or missing citations, motivating the use of `partial_answer` as a grounding-friction diagnostic state rather than a binary failure label. On the 30-prompt targeted constructed stress suite, the hardened request-level pre-gate and downstream gates refused all stress prompts for both qwen2.5 and llama3. These results support the workflow as a diagnostic control structure for safety-sensitive advisory RAG, while leaving open broader questions about scale, expert validation, and model generality.

@@ -1,10 +1,12 @@
-from marathon_qa_assistant.apps.chainlit.plan_ui import (
+from marathon_qa_assistant.ui.plan_ui import (
     build_calendar_props_with_explanations,
     build_entry_status_bar_props,
+    build_phase_overview_bar_props,
     build_training_explanation_card,
     build_explanation_drawer_props,
     build_week_training_card_props,
     extract_entry_status_context,
+    extract_phase_overview_context,
     extract_training_explanation_context,
     extract_current_week_context,
 )
@@ -21,6 +23,10 @@ def _sample_state():
                     "plan_type": "base",
                     "start_date": "2026-05-04",
                 },
+                "phase_summary": [
+                    {"phase": "基础期", "start_week": 1, "end_week": 1, "objective": "建立稳定跑量"},
+                    {"phase": "巩固期", "start_week": 2, "end_week": 2, "objective": "继续累积"},
+                ],
                 "week_plans": [
                     {
                         "week_index": 1,
@@ -154,18 +160,25 @@ def test_entry_status_week_and_explanation_props_align_with_current_week():
     state = _sample_state()
 
     entry_context = extract_entry_status_context(state)
+    phase_context = extract_phase_overview_context(state)
     week_context = extract_current_week_context(state)
     explanation_context = extract_training_explanation_context(state)
     calendar_props = build_calendar_props_with_explanations(state)
 
     entry_props = build_entry_status_bar_props(entry_context)
+    phase_props = build_phase_overview_bar_props(phase_context)
     week_props = build_week_training_card_props(week_context)
     explanation_props = build_explanation_drawer_props(build_training_explanation_card(explanation_context))
 
+    assert phase_props["plan_meta"]["actual_weeks"] == 2
+    assert phase_props["phase_summary"][0]["phase"] == "基础期"
+    assert phase_props["current_week"] == 1
+    assert phase_props["interaction_mode"] == "vertical_scroll"
     assert entry_props["week_index"] == 1
     assert entry_props["training_type"] == "轻松跑"
     assert week_props["week_index"] == 1
     assert week_props["days"][1]["training_type"] == "轻松跑"
+    assert week_props["default_expanded_day_indexes"] == [2]
     assert explanation_props["coverage_ratio"] == 75
     assert explanation_props["evidence_ids"] == [1, 2]
     assert calendar_props["days"][1]["explanation"]["primary_target"] == "建立有氧基础。"

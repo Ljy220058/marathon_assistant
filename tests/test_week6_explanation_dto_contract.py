@@ -6,7 +6,7 @@ root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
-from marathon_qa_assistant.apps.chainlit.plan_ui import (
+from marathon_qa_assistant.ui.plan_ui import (
     build_training_explanation_card,
     extract_training_explanation_context,
     render_training_explanation_card_md,

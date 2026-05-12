@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).absolute().parents[1]
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from marathon_qa_assistant.apps.chainlit.coach_state import (  # noqa: E402
+from marathon_qa_assistant.ui.coach_state import (  # noqa: E402
     apply_session_defaults,
     build_coach_ui_snapshot,
     render_coach_ui_status_md,

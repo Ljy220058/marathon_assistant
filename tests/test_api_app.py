@@ -351,6 +351,50 @@ def test_profile_get_and_post_support_frontend_bootstrap(monkeypatch):
     assert saved_profiles[-1]["weekly_mileage"] == "42"
 
 
+def test_profile_user_endpoints_patch_zones_and_nlu_preview(monkeypatch):
+    stored_profile = {"goal": "维持健康", "weekly_mileage": 30, "lthr": 0, "t_pace": ""}
+    saved_profiles = []
+
+    def fake_load():
+        return stored_profile.copy()
+
+    def fake_save(profile):
+        stored_profile.clear()
+        stored_profile.update(profile)
+        saved_profiles.append(profile.copy())
+
+    monkeypatch.setattr(api_app, "load_user_profile", fake_load)
+    monkeypatch.setattr(api_app, "save_user_profile", fake_save)
+
+    response = client.get("/profile/default_user")
+    assert response.status_code == 200
+    assert response.json()["profile"]["goal"] == "维持健康"
+
+    response = client.patch(
+        "/profile/default_user/fields/lthr",
+        json={"value": "168"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["profile"]["lthr"] == "168"
+    assert len(payload["profile"]["hr_zones"]) == 9
+    assert saved_profiles[-1]["lthr"] == "168"
+
+    response = client.get("/profile/default_user/zones")
+    assert response.status_code == 200
+    assert len(response.json()["hr_zones"]) == 9
+
+    response = client.post(
+        "/profile/default_user/nlu-extract",
+        json={"text": "我最近周跑量提升到 50km，目标半马 sub90。"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["requires_confirmation"] is True
+    assert payload["suggested_changes"]["weekly_mileage"] == "50"
+    assert stored_profile["weekly_mileage"] == 30
+
+
 def test_llm_options_support_frontend_model_controls(monkeypatch):
     monkeypatch.setenv("OLLAMA_MODEL", "qwen2.5:latest")
     monkeypatch.setenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
@@ -411,6 +455,70 @@ def test_plan_history_endpoints_support_frontend_persistence(tmp_path, monkeypat
     detail = response.json()
     assert detail["structured_training_plan"]["plan_meta"]["goal"] == "半马 PB"
     assert detail["events"][0]["plan_id"] == plan_id
+
+
+def test_plan_save_accepts_calendar_settings_and_event_schedule_patch(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan = {
+        "plan_meta": {
+            "goal": "半马 PB",
+            "requested_weeks": 1,
+            "actual_weeks": 1,
+            "plan_type": "single_week",
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "load_level": "easy",
+                "days": [
+                    {"day": "周一", "training_type": "轻松跑", "main_set": "30 分钟 Z2"},
+                    {"day": "周二", "training_type": "休息", "main_set": "休息"},
+                ],
+            }
+        ],
+    }
+
+    response = client.post(
+        "/plans",
+        json={
+            "user_id": "default_user",
+            "source_query": "生成1周计划",
+            "structured_training_plan": plan,
+            "calendar_settings": {
+                "training_start_date": "2026-06-01",
+                "default_start_time": "18:30",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    plan_id = response.json()["plan_id"]
+    detail = client.get(f"/plans/{plan_id}").json()
+    assert detail["plan"]["start_date"] == "2026-06-01"
+    assert detail["events"][0]["scheduled_date"] == "2026-06-01"
+    assert detail["events"][0]["start_time"] == "18:30"
+
+    event_id = detail["events"][0]["id"]
+    patch_response = client.patch(
+        f"/plans/{plan_id}/events/{event_id}",
+        json={
+            "scheduled_date": "2026-06-03",
+            "start_time": "19:15",
+            "duration_min": 45,
+        },
+    )
+
+    assert patch_response.status_code == 200
+    assert patch_response.json()["updated"] is True
+    updated_detail = client.get(f"/plans/{plan_id}").json()
+    updated_event = updated_detail["events"][0]
+    assert updated_event["scheduled_date"] == "2026-06-03"
+    assert updated_event["start_time"] == "19:15"
+    assert updated_event["duration_min"] == 45
 
 
 def test_feedback_endpoint_returns_adaptive_adjustment():

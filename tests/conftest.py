@@ -8,69 +8,17 @@ root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
-if "chainlit" not in sys.modules:
-    fake_chainlit = types.ModuleType("chainlit")
 
-    class _FakeLogger:
-        def info(self, *args, **kwargs): pass
-        def warning(self, *args, **kwargs): pass
-        def error(self, *args, **kwargs): pass
-        def debug(self, *args, **kwargs): pass
-
-    class _FakeUserSession:
-        def __init__(self):
-            self._data = {}
-        def get(self, key, default=None):
-            return self._data.get(key, default)
-        def set(self, key, value):
-            self._data[key] = value
-
-    class _FakeElement:
-        def __init__(self, *args, **kwargs):
-            self.args = args
-            self.__dict__.update(kwargs)
-            if "id" not in self.__dict__:
-                self.id = "fake-id"
-        async def send(self, *args, **kwargs):
-            return self
-        async def update(self, *args, **kwargs):
-            return self
-
-    def _identity_decorator(*args, **kwargs):
-        if args and callable(args[0]) and len(args) == 1 and not kwargs:
-            return args[0]
-        def wrapper(func):
-            return func
-        return wrapper
-
-    async def _make_async_call(func, *args, **kwargs):
-        return func(*args, **kwargs)
-
-    def _make_async(func):
-        async def wrapped(*args, **kwargs):
-            return func(*args, **kwargs)
-        return wrapped
-
-    fake_chainlit.logger = _FakeLogger()
-    fake_chainlit.user_session = _FakeUserSession()
-    fake_chainlit.Message = _FakeElement
-    fake_chainlit.Action = _FakeElement
-    fake_chainlit.Image = _FakeElement
-    fake_chainlit.File = _FakeElement
-    fake_chainlit.CustomElement = _FakeElement
-    fake_chainlit.Text = _FakeElement
-    fake_chainlit.ChatProfile = _FakeElement
-    fake_chainlit.set_chat_profiles = _identity_decorator
-    fake_chainlit.on_chat_start = _identity_decorator
-    fake_chainlit.on_message = _identity_decorator
-    fake_chainlit.action_callback = _identity_decorator
-    fake_chainlit.make_async = _make_async
-    sys.modules["chainlit"] = fake_chainlit
+def _has_module(module_name: str) -> bool:
+    try:
+        return importlib.util.find_spec(module_name) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 if (
     "langchain_community.vectorstores" not in sys.modules
-    and importlib.util.find_spec("langchain_community.vectorstores") is None
+    and not _has_module("langchain_community.vectorstores")
 ):
     fake_langchain_community = types.ModuleType("langchain_community")
     fake_vectorstores = types.ModuleType("langchain_community.vectorstores")
@@ -83,7 +31,7 @@ if (
     sys.modules["langchain_community.vectorstores"] = fake_vectorstores
 
 
-if "langchain_ollama" not in sys.modules and importlib.util.find_spec("langchain_ollama") is None:
+if "langchain_ollama" not in sys.modules and not _has_module("langchain_ollama"):
     fake_langchain_ollama = types.ModuleType("langchain_ollama")
 
     class _FakeOllamaEmbeddings:
@@ -104,7 +52,7 @@ if "langchain_ollama" not in sys.modules and importlib.util.find_spec("langchain
 
 if (
     "langchain_core.documents" not in sys.modules
-    and importlib.util.find_spec("langchain_core.documents") is None
+    and not _has_module("langchain_core.documents")
 ):
     fake_langchain_core = types.ModuleType("langchain_core")
     fake_documents = types.ModuleType("langchain_core.documents")

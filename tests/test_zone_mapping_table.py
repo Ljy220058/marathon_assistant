@@ -1,4 +1,4 @@
-from marathon_qa_assistant.apps.chainlit.ui_config import build_zone_mapping_table
+from marathon_qa_assistant.ui.ui_config import build_zone_mapping_table
 
 
 def test_build_zone_mapping_table_renders_all_nine_zones():

@@ -77,7 +77,7 @@ def test_week7_track_event_writes_jsonl(tmp_path):
     assert stored["properties"]["completion_status"] == "completed"
 
 
-def test_week7_session_id_is_reused_in_chainlit_like_session():
+def test_week7_session_id_is_reused_in_ui_session():
     session = FakeSession()
 
     first = get_or_create_session_id(session.get, session.set)

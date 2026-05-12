@@ -1,4 +1,3 @@
-import asyncio
 import sys
 from pathlib import Path
 
@@ -175,74 +174,3 @@ def test_build_structured_report_contains_required_contract_fields():
     assert report["evidence_base"][0]["source_path"] == r"C:\docs\训练指南.pdf"
     assert report["evidence_base"][0]["path"] == r"C:\docs\训练指南.pdf"
     assert any("风险提示" in item for item in report["recommendations"])
-
-
-def test_update_sidebar_renders_medium_lightweight_training_profile(monkeypatch):
-    from marathon_qa_assistant.apps import chainlit_app
-
-    class _FakeSession:
-        def __init__(self):
-            self._data = {
-                "chat_profile": "Coach Mode",
-                "sidebar_visible": True,
-                "sidebar_msg": type("SidebarRef", (), {"id": "sidebar-1"})(),
-            }
-
-        def get(self, key, default=None):
-            return self._data.get(key, default)
-
-        def set(self, key, value):
-            self._data[key] = value
-
-    class _FakeText:
-        sent_payloads = []
-
-        def __init__(self, name, content, display, for_id):
-            self.name = name
-            self.content = content
-            self.display = display
-            self.for_id = for_id
-
-        async def send(self, for_id=None):
-            self.__class__.sent_payloads.append(
-                {
-                    "name": self.name,
-                    "content": self.content,
-                    "display": self.display,
-                    "for_id": for_id,
-                }
-            )
-            return self
-
-    monkeypatch.setattr(chainlit_app.cl, "user_session", _FakeSession())
-    monkeypatch.setattr(chainlit_app.cl, "Text", _FakeText)
-
-    profile = {
-        "weekly_mileage": 80,
-        "lthr": 168,
-        "t_pace": "3:50/km",
-        "goal": "半马 80 分",
-        "target_race_date": "",
-        "hr_zones": {f"Z{i}": f"{110 + i} bpm" for i in range(1, 10)},
-        "pace_zones": {f"Z{i}": f"{i}:00/km" for i in range(1, 10)},
-    }
-
-    asyncio.run(chainlit_app.update_sidebar(profile_override=profile))
-
-    payload = _FakeText.sent_payloads[-1]
-    assert payload["name"] == "马拉松助手 · 统一面板"
-    assert payload["display"] == "side"
-    assert payload["for_id"] == "sidebar-1"
-    assert "### 🏃‍♂️ 核心画像" in payload["content"]
-    assert "**强度模型**" in payload["content"]
-    assert "LTHR 九区 Z1-Z9" in payload["content"]
-    assert "**阈值配速**" in payload["content"]
-    assert "3:50/km" in payload["content"]
-    assert "Z1-Z9 为主，配速仅参考" in payload["content"]
-    assert "**强度速查**" in payload["content"]
-    assert "| **Z9** | 冲刺神经肌肉区 | 119 bpm | 9:00/km |" in payload["content"]
-    assert "### 📚 证据库" in payload["content"]
-    assert "篇资料" in payload["content"]
-    assert "**心率区间与配速（Z1-Z9）**" not in payload["content"]
-    assert "Z9 (Z9 冲刺神经肌肉区" not in payload["content"]
-    assert "核心实体" not in payload["content"]

@@ -43,7 +43,7 @@ def _compute_pace_zones(profile: dict) -> dict:
     
     优先级：profile['pace_zones'] > T-Pace > 目标成绩。
     """
-    from marathon_qa_assistant.apps.chainlit.ui_config import ZONE_LABELS
+    from marathon_qa_assistant.core.zone_constants import ZONE_LABELS
     from marathon_qa_assistant.core.physiology import calculate_pace_zones
 
     zones = {}

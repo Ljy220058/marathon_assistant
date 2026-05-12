@@ -29,6 +29,7 @@ PROMPT_TEMPLATE_VERSION = "s3_full_workflow_v0.2"
 DEFAULT_SMOKE_QIDS = ["STAI-P007", "STAI-P014", "STAI-P011"]
 ABLATION_MODES = ["full", "no_gate", "no_audit", "no_repair"]
 PRE_GATE_MODES = ["off", "hardening_v0_3", "hardening_v0_4"]
+MODEL_PROVIDERS = ["ollama", "deepseek"]
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -135,6 +136,86 @@ def call_ollama(
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Ollama request failed: HTTP {exc.code}: {detail}") from exc
+
+
+def call_deepseek(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+    timeout_sec: int,
+    num_predict: int,
+    temperature: float = 0.0,
+    thinking: str = "disabled",
+) -> Dict[str, Any]:
+    if not api_key:
+        raise RuntimeError("DEEPSEEK_API_KEY is required when --provider deepseek is used.")
+    url = base_url.rstrip("/") + "/chat/completions"
+    payload: Dict[str, Any] = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "temperature": temperature,
+        "top_p": 0.9,
+        "max_tokens": num_predict,
+    }
+    if thinking in {"enabled", "disabled"}:
+        payload["thinking"] = {"type": thinking}
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_sec) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"DeepSeek request failed: HTTP {exc.code}: {detail}") from exc
+
+
+def call_llm(
+    *,
+    provider: str,
+    base_url: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+    timeout_sec: int,
+    num_ctx: int,
+    num_batch: int,
+    num_predict: int,
+    temperature: float = 0.0,
+    deepseek_thinking: str = "disabled",
+) -> Dict[str, Any]:
+    if provider == "ollama":
+        return call_ollama(
+            base_url=base_url,
+            model=model,
+            prompt=prompt,
+            timeout_sec=timeout_sec,
+            num_ctx=num_ctx,
+            num_batch=num_batch,
+            num_predict=num_predict,
+            temperature=temperature,
+        )
+    if provider == "deepseek":
+        return call_deepseek(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            prompt=prompt,
+            timeout_sec=timeout_sec,
+            num_predict=num_predict,
+            temperature=temperature,
+            thinking=deepseek_thinking,
+        )
+    raise ValueError(f"Unsupported provider: {provider}")
 
 
 def parse_json_object(text: str) -> Dict[str, Any]:
@@ -506,7 +587,13 @@ def build_pre_gate_refusal(sample: Dict[str, Any], pre_gate: Dict[str, Any], ris
 
 
 def response_content(response: Dict[str, Any]) -> str:
-    return str((response.get("message") or {}).get("content") or "").strip()
+    if "message" in response:
+        return str((response.get("message") or {}).get("content") or "").strip()
+    choices = response.get("choices") or []
+    if choices:
+        message = choices[0].get("message") or {}
+        return str(message.get("content") or "").strip()
+    return ""
 
 
 def build_evidence_gate_prompt(sample: Dict[str, Any], contexts: List[Dict[str, Any]]) -> str:
@@ -786,8 +873,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--context-max-chars", type=int, default=500)
     parser.add_argument("--gold-context-max-chars", type=int, default=800)
+    parser.add_argument("--provider", choices=MODEL_PROVIDERS, default=os.getenv("STAI_MODEL_PROVIDER", "ollama"))
     parser.add_argument("--model", default=os.getenv("OLLAMA_MODEL", "qwen2.5:latest"))
     parser.add_argument("--base-url", default=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"))
+    parser.add_argument("--api-key-env", default="DEEPSEEK_API_KEY")
+    parser.add_argument("--deepseek-thinking", choices=["enabled", "disabled", "omit"], default="disabled")
     parser.add_argument("--num-ctx", type=int, default=4096)
     parser.add_argument("--num-batch", type=int, default=4)
     parser.add_argument("--num-predict", type=int, default=500)
@@ -799,6 +889,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.provider == "deepseek" and args.base_url == os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"):
+        args.base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    api_key = os.getenv(args.api_key_env, "")
     dataset_path = args.dataset if args.dataset.is_absolute() else PROJECT_ROOT / args.dataset
     output_root = args.output_root if args.output_root.is_absolute() else PROJECT_ROOT / args.output_root
     vector_dir = args.vector_dir if args.vector_dir.is_absolute() else PROJECT_ROOT / args.vector_dir
@@ -972,14 +1065,17 @@ def main() -> None:
             evidence_gate = build_no_gate_evidence_gate(contexts)
         else:
             try:
-                eg_response = call_ollama(
+                eg_response = call_llm(
+                    provider=args.provider,
                     base_url=args.base_url,
+                    api_key=api_key,
                     model=args.model,
                     prompt=build_evidence_gate_prompt(sample, contexts),
                     timeout_sec=args.timeout_sec,
                     num_ctx=args.num_ctx,
                     num_batch=args.num_batch,
                     num_predict=args.num_predict,
+                    deepseek_thinking=args.deepseek_thinking,
                 )
                 eg_content = response_content(eg_response)
             except Exception as exc:
@@ -1049,8 +1145,10 @@ def main() -> None:
             )
             continue
 
-        draft_response = call_ollama(
+        draft_response = call_llm(
+            provider=args.provider,
             base_url=args.base_url,
+            api_key=api_key,
             model=args.model,
             prompt=build_answer_prompt(sample, contexts, evidence_gate, risk_gate),
             timeout_sec=args.timeout_sec,
@@ -1058,6 +1156,7 @@ def main() -> None:
             num_batch=args.num_batch,
             num_predict=args.num_predict,
             temperature=0.2,
+            deepseek_thinking=args.deepseek_thinking,
         )
         draft_answer = response_content(draft_response)
 
@@ -1077,14 +1176,17 @@ def main() -> None:
                 "final_status": "answered",
             }
         else:
-            audit_response = call_ollama(
+            audit_response = call_llm(
+                provider=args.provider,
                 base_url=args.base_url,
+                api_key=api_key,
                 model=args.model,
                 prompt=build_audit_prompt(sample, contexts, evidence_gate, risk_gate, draft_answer),
                 timeout_sec=args.timeout_sec,
                 num_ctx=args.num_ctx,
                 num_batch=args.num_batch,
                 num_predict=args.num_predict,
+                deepseek_thinking=args.deepseek_thinking,
             )
             try:
                 audit = parse_json_object(response_content(audit_response))
@@ -1159,8 +1261,9 @@ def main() -> None:
         "dataset": str(dataset_path.relative_to(PROJECT_ROOT)),
         "qids": qids,
         "sample_count": len(samples),
-        "model_provider": "ollama",
+        "model_provider": args.provider,
         "model": args.model,
+        "base_url": args.base_url,
         "prompt_template_version": PROMPT_TEMPLATE_VERSION,
         "retrieval_top_k": args.top_k,
         "context_max_chars": args.context_max_chars,
@@ -1178,7 +1281,7 @@ def main() -> None:
         "metadata_path": str(metadata_path.relative_to(PROJECT_ROOT)),
     }
     metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
-    if not args.keep_models:
+    if args.provider == "ollama" and not args.keep_models:
         unload_ollama_model(args.model, 30)
         unload_ollama_model(vector_store.EMBEDDING_MODEL, 30)
     print(json.dumps(metadata, ensure_ascii=False, indent=2), flush=True)

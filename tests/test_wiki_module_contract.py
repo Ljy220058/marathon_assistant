@@ -128,7 +128,7 @@ def test_structured_report_keeps_wiki_context_for_audit():
     assert any(item["key"] == "Wiki补充" for item in report["findings"])
 
 
-def test_chainlit_wiki_panel_renders_only_when_context_exists():
+def test_wiki_panel_renders_only_when_context_exists():
     report = _build_structured_report(
         {
             "query": "什么是 VO2max？",
@@ -142,12 +142,12 @@ def test_chainlit_wiki_panel_renders_only_when_context_exists():
         "VO2max 是衡量有氧能力的指标。",
     )
 
-    wiki_md = UIHelper.render_chainlit_wiki_context_md(report)
+    wiki_md = UIHelper.render_wiki_context_md(report)
 
     assert "Wiki补充" in wiki_md
     assert "概念背景解释" in wiki_md
     assert "最大摄氧量用于描述有氧能力" in wiki_md
-    assert UIHelper.render_chainlit_wiki_context_md({"analysis_framework": {"wiki_context": ""}}) == ""
+    assert UIHelper.render_wiki_context_md({"analysis_framework": {"wiki_context": ""}}) == ""
 
 
 def test_format_wiki_context_has_empty_fallback():

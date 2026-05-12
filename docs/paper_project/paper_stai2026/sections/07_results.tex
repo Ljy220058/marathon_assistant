@@ -1,50 +1,42 @@
 \section{Results}
 
-\subsection{Main 100-Question Result}
+\subsection{Main Pilot Benchmark Result}
 
-On the 100-question pilot benchmark, the full S3 workflow with \texttt{qwen2.5:latest} produced 24 answered, 62 partial\_answer, and 14 refused outputs. All 10 designed-unanswerable controls were refused, while 4 of 90 evidence-backed questions were falsely refused. Citation repair was frequent: 62 outputs required repair for invalid or missing citations.
+On the 100-question pilot benchmark, the full S3 workflow with \texttt{qwen2.5:latest} produced 24 \texttt{answered}, 62 \texttt{partial\_answer}, and 14 \texttt{refused} outputs. All 10 designed-unanswerable controls were refused, while 4 of 90 evidence-backed questions became \texttt{false refusal} cases. \texttt{citation repair} was frequent: 62 outputs required repair for invalid or missing citations; we interpret this count as an audit-exposed grounding-friction signal, not as a simple answer-level failure rate.
 
 \begin{table}[t]
 \centering
-\caption{Main 100-question pilot benchmark result for the full workflow using \texttt{qwen2.5:latest}. The workflow refused all designed-unanswerable controls while preserving answer or partial-answer outputs for most evidence-backed questions. False refusals are reported separately because refusal can be either intended or conservative.}
-\begin{tabular}{lr}
+\caption{Main 100-question pilot benchmark result and diagnostics for the full workflow using \texttt{qwen2.5:latest}. The workflow refused all designed-unanswerable controls while preserving \texttt{answered} or \texttt{partial\_answer} outputs for most evidence-backed questions. \texttt{False refusal} cases are reported separately because refusal can be either intended or conservative.}
+\begin{tabular}{@{}lr@{}}
 \toprule
-Final status & Count \\
+\multicolumn{2}{@{}l}{\textit{Final status}} \\
 \midrule
-answered & 24 \\
-partial\_answer & 62 \\
-refused & 14 \\
+\texttt{answered} & 24 \\
+\texttt{partial\_answer} & 62 \\
+\texttt{refused} & 14 \\
 total & 100 \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{Diagnostics}} \\
+\midrule
+designed-unanswerable refused & 10 / 10 \\
+verified-or-answerable \texttt{false refusal} & 4 / 90 \\
+\texttt{citation repair} count & 62 \\
+risk-safety \texttt{answered} or \texttt{partial\_answer} & 26 / 30 \\
 \bottomrule
 \end{tabular}
 \label{tab:main-result}
-\end{table}
-
-\begin{table}[t]
-\centering
-\caption{Diagnostics for the main 100-question run.}
-\begin{tabular}{lr}
-\toprule
-Diagnostic & Result \\
-\midrule
-designed-unanswerable refused & 10 / 10 \\
-verified-or-answerable false refusal & 4 / 90 \\
-citation repair count & 62 \\
-risk-safety answered or partial & 26 / 30 \\
-\bottomrule
-\end{tabular}
 \label{tab:main-diagnostics}
 \end{table}
 
-The false refusals occur in the risk-safety category, suggesting a conservative failure mode in which the workflow preserves safety boundaries but loses some answerability.
+The \texttt{false refusal} cases occur in the risk-safety category. We therefore interpret the 4 / 90 count as a safety-conservative failure mode: the workflow preserves safety boundaries, but the conservatism creates a measurable utility cost by declining some evidence-backed bounded guidance.
 
-\subsection{Safety Stress Result}
+\subsection{Targeted Constructed Safety-Stress Suite}
 
-On the 30-prompt safety-stress suite, the hardened request-level pre-gate and downstream gates refused all stress prompts for both \texttt{qwen2.5:latest} and \texttt{llama3:latest}.
+On the 30-prompt targeted constructed stress suite, the hardened request-level pre-gate and downstream gates refused all stress prompts for both \texttt{qwen2.5:latest} and \texttt{llama3:latest}.
 
 \begin{table}[t]
 \centering
-\caption{Targeted safety-stress result under deterministic request-level hardening. Both local models refused all constructed stress prompts. This result supports targeted hardening on the stress suite, not general adversarial robustness.}
+\caption{Targeted constructed safety-stress result under deterministic request-level hardening. Both local models refused all constructed stress prompts. This result is consistent with targeted hardening on this stress suite; it should not be read as a broader adversarial-security claim.}
 \begin{tabular}{lrrrrr}
 \toprule
 Model & Refused & Partial & Answered & Pre-gate & Ordinary gate \\
@@ -56,61 +48,61 @@ Model & Refused & Partial & Answered & Pre-gate & Ordinary gate \\
 \label{tab:stress-result}
 \end{table}
 
-Most refusals occurred before generation, with the remaining prompts refused by the ordinary evidence/risk gate. This result supports targeted request-level hardening on the constructed stress suite, not general prompt-injection robustness.
+Most refusals occurred before generation, with the remaining prompts refused by the ordinary evidence/risk gate. This result is consistent with targeted request-level hardening on the constructed stress suite, not open-ended prompt-injection resilience.
 
-\subsection{Supplementary Llama3 Main Subset}
+\subsection{Supplementary Model Sanity Checks}
 
-The supplementary 40-question llama3 subset refused all designed-unanswerable controls and produced no false refusals on the answerable subset (0 / 30). It produced 13 answered, 17 partial-answer, and 10 refused outputs.
+The supplementary 40-question \texttt{llama3:latest} and \texttt{deepseek-v4-pro} subsets both refused all 10 designed-unanswerable controls. They are sanity checks of workflow-state observability under additional models, not a model-generalization study.
 
 \begin{table}[t]
 \centering
-\caption{Supplementary 40-question llama3 main-benchmark subset. Because the subset is only 40 questions, this should be read as a sanity check, not as full multi-model evaluation.}
-\begin{tabular}{lr}
+\caption{Supplementary 40-question main-benchmark subset checks. Differences in \texttt{false refusal} are diagnostic observations on a small subset.}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrr}
 \toprule
-Final status & Count \\
+Model & \texttt{answered} & \texttt{partial\_answer} & \texttt{refused} & Designed-refusal & \texttt{false refusal} \\
 \midrule
-answered & 13 \\
-partial\_answer & 17 \\
-refused & 10 \\
-total & 40 \\
+\texttt{llama3:latest} & 13 & 17 & 10 & 10 / 10 & 0 / 30 \\
+\texttt{deepseek-v4-pro} & 13 & 13 & 14 & 10 / 10 & 4 / 30 \\
 \bottomrule
 \end{tabular}
+}
 \label{tab:llama3-subset}
 \end{table}
 
 \subsection{Case Studies}
 
-To make the workflow states more concrete, we examine four representative traces from the main benchmark and safety-stress suite. These cases illustrate correct refusal, citation repair, conservative false refusal, and request-level stress blocking.
+We examine four representative traces from the main benchmark and safety-stress suite. The cases are not presented as additional performance wins: they include one conservative failure mode and are used to show how the workflow records intended refusal, \texttt{citation repair}, \texttt{false refusal}, and targeted request-level stress blocking.
 
 \begin{table}[t]
 \centering
-\caption{Representative traces illustrating intended refusal, citation repair, conservative false refusal, and request-level stress blocking. The cases show why the workflow reports \texttt{answered}, \texttt{partial\_answer}, and \texttt{refused} as separate diagnostic states.}
+\caption{Representative traces illustrating intended refusal, \texttt{citation repair}, \texttt{false refusal}, and request-level stress blocking.}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lllll}
+\begin{tabular}{llllll}
 \toprule
-Case & QID & Workflow signal & Decision & Lesson \\
+QID & Question type & Gate decision & Audit/repair signal & Final status & Lesson \\
 \midrule
-insufficient evidence & STAI-P046 & Evidence Gate marks a no-evidence control as unanswerable & refused & refusal can be an intended success state \\
-citation repair & STAI-P003 & Auditor finds a citation issue in a supported answer & partial\_answer & repair exposes grounding friction \\
-conservative false refusal & STAI-P036 & verified risk-safety evidence exists but the gate refuses & refused & safety conservatism can reduce utility \\
-prompt injection & STAI-S001 & pre-gate detects fabricated-citation pressure & refused & targeted stress prompts can be blocked before generation \\
+STAI-P046 & no-evidence control & Evidence Gate: unanswerable & refusal required & \texttt{refused} & refusal is an intended success state \\
+STAI-P003 & evidence-backed query & Evidence Gate: answerable & citation repair required & \texttt{partial\_answer} & audit/repair exposes grounding friction \\
+STAI-P036 & risk-safety query & Evidence Gate: unanswerable & safety de-escalation refusal & \texttt{refused} & conservative gating creates utility cost \\
+STAI-S001 & stress prompt & Pre-Gate: blocked & generation skipped & \texttt{refused} & targeted stress blocking occurs before generation \\
 \bottomrule
 \end{tabular}
 }
 \label{tab:cases}
 \end{table}
 
-\subsection{Ablation Results}
+\subsection{Diagnostic Ablation Subset}
 
-The v0.3 40-question ablation subset shows distinct effects for the Evidence Gate, Auditor, and Repair stage.
+The v0.3 40-question diagnostic ablation subset shows distinct effects for the Evidence Gate, Auditor, and Repair stage.
 
 \begin{table}[t]
 \centering
-\caption{v0.3 40-question ablation subset for \texttt{qwen2.5:latest}. Removing the Evidence Gate eliminates designed-unanswerable refusal control, while removing audit or repair removes citation-repair observability. The ablation is a balanced 40-question subset, not a full 100-question ablation.}
+\caption{v0.3 40-question diagnostic ablation subset for \texttt{qwen2.5:latest}. Removing the Evidence Gate eliminates designed-unanswerable refusal control, while removing audit or repair removes \texttt{citation repair} observability. The ablation is a balanced diagnostic subset, not a comprehensive component study.}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-System variant & Ans. & Partial & Refused & Designed-refusal & False refusal & Citation repair \\
+System variant & \texttt{answered} & \texttt{partial\_answer} & \texttt{refused} & Designed-refusal & \texttt{false refusal} & \texttt{citation repair} \\
 \midrule
 full workflow, 40-qid slice from 100q run & 8 & 19 & 13 & 10 / 10 & 3 / 30 & 19 \\
 \texttt{no\_gate} & 0 & 40 & 0 & 0 / 10 & 0 / 30 & 40 \\
@@ -122,4 +114,4 @@ full workflow, 40-qid slice from 100q run & 8 & 19 & 13 & 10 / 10 & 3 / 30 & 19 
 \label{tab:ablation}
 \end{table}
 
-Removing the Evidence Gate destroys refusal control on designed-unanswerable items, converting all 10 no-evidence controls into non-refusal outputs. The \texttt{no\_audit} and \texttt{no\_repair} ablations preserve gate-based refusal, but remove the observability of citation repair. This supports the claim that the workflow's behavior comes from explicit control points rather than a single generation prompt.
+Removing the Evidence Gate removes refusal control on designed-unanswerable items in this subset, converting all 10 no-evidence controls into non-refusal outputs. The \texttt{no\_audit} and \texttt{no\_repair} ablations preserve gate-based refusal, but remove the observability of \texttt{citation repair}. These patterns suggest that the workflow's behavior is shaped by explicit control points rather than a single generation prompt.
