@@ -1,8 +1,0 @@
-﻿Archived at: 2026-04-30
-Source project: 
-C:\Users\26318\documents\trae_projects\ollama_pro\马拉松助手
-Moved items:
-.files
-pdf_extracted_content
-.tmp_plan_week_validate.py
-course_report_test.docx
