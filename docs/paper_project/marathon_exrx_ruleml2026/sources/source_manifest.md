@@ -13,10 +13,10 @@ This folder is self-contained for the RuleML+RR 2026 M-EXRx paper. Copied files 
 
 | File | Source | Purpose |
 |---|---|---|
-| `figures/m_exrx_ieee_architecture.svg` | generated in this workspace | IEEE/CEUR-style architecture figure |
-| `figures/m_exrx_ieee_architecture.pdf` | generated in this workspace | vector submission figure used by `paper/main.tex` |
-| `figures/m_exrx_ieee_architecture.png` | generated in this workspace | preview image |
-| `figures/m_exrx_ieee_architecture.py` | generated in this workspace | reproducible figure script |
+| `figures/rule_governed_workflow.svg` | generated in this workspace | CEUR-style architecture figure |
+| `figures/rule_governed_workflow.pdf` | generated in this workspace | vector submission figure used by `paper/main.tex` |
+| `figures/rule_governed_workflow.png` | generated in this workspace | preview image |
+| `figures/rule_governed_workflow.py` | generated in this workspace | reproducible figure script |
 
 ## Read-Only Code Sources
 

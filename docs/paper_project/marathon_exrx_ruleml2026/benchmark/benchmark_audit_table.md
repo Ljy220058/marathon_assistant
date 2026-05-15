@@ -58,6 +58,6 @@
 - [x] 50 cases per category.
 - [x] At least 20 safety-adversarial cases.
 - [x] At least 90 R3 or medical-boundary risk cases.
-- [x] Prompt-injection cases include direct instruction injection, developer-message injection, evidence/action fabrication pressure, retrieval injection, and trace suppression.
+- [x] Prompt-injection cases include direct instruction injection, priority-override injection, evidence/action fabrication pressure, retrieval injection, and trace suppression.
 - [x] `system_visible_cases.jsonl` excludes `expected_behavior`, `gold_risk_level`, `required_rules`, `forbidden_outputs`, `rationale`, `notes`, `case_family`, `variation_type`, `source_seed_id`, and `annotation_notes`.
 - [x] `gold_labels.jsonl` is keyed by `case_id` and contains evaluator-only labels.

@@ -1,51 +1,141 @@
-\subsection{Rule formalization}
+\subsection{Rule Facts and Predicates}
 
-M-EXRx treats the rule layer as the component that records the binding decision.
-Each rule has the form
+M-EXRx records the binding decision in the rule layer. Each rule is represented as
 \[
 r=\langle id, layer, priority, body, decision, obligations, prohibitions,
 evidence, trace\rangle .
 \]
-The body follows the shape of a RuleML implication, and the consequent emits
+The body uses a RuleML-style implication shape, and the consequent emits
 decision, obligation, prohibition, and trace atoms. The decision vocabulary is
 \texttt{allow}, \texttt{downgrade}, \texttt{ask\_clarification},
 \texttt{repair\_required}, and \texttt{refuse}.
+An output is valid only when its status, evidence identifiers, action
+identifiers, prohibitions, trace fields, and highest-priority fired rule are
+mutually consistent.
+Decision atoms are mapped to benchmark statuses as follows:
+\texttt{allow} emits \texttt{answered}; \texttt{downgrade} or
+\texttt{repair\_required} emits \texttt{partial\_answer};
+\texttt{ask\_clarification} emits \texttt{ask\_clarification}; and
+\texttt{refuse} emits \texttt{refused}.
 
-Conflicts are resolved by strict priority:
+Table~\ref{tab:core-predicates} gives the core fact and predicate signatures
+used by the interface. Some atoms are observed from the case record, while
+others are derived by gates or emitted by the auditor.
+
+\begin{table}[tbp]
+\centering
+\caption{Core predicates and facts in the rule interface.}
+\label{tab:core-predicates}
+\scriptsize
+\begin{tabular}{@{}Z{0.28\linewidth}Z{0.12\linewidth}Z{0.17\linewidth}Z{0.33\linewidth}@{}}
+\toprule
+Atom & Kind & Source & Meaning \\
+\midrule
+\texttt{load\_spike(C)} & observed & Case/profile & Records a load increase signal for case \(C\). \\
+\texttt{requested\_hard\_session(C)} & observed & Query parser & Records that the user asks for high intensity. \\
+\texttt{risk\_level(C,R)} & derived & RiskGate & Assigns \(C\) to R0--R3 risk. \\
+\texttt{eligible\_evidence(C,E)} & derived & EvidenceGate & Marks evidence \(E\) as prescribing authority for \(C\). \\
+\texttt{allowed\_action(C,A)} & derived & Action library & Allows action \(A\) under \(C\)'s contract. \\
+\texttt{forbidden\_action(C,A)} & derived & Contract/audit & Blocks action \(A\) under higher-priority rules. \\
+\texttt{requires\_repair(C)} & derived & Rule Auditor & Requires bounded repair before output. \\
+\texttt{final\_status(C,S)} & emitted & Auditor trace & Records the evaluated status \(S\). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:canonical-rules} lists four decision patterns used by the
+challenge interface.
+
+\begin{table}[tbp]
+\centering
+\caption{Canonical rule patterns for the M-EXRxBench interface.}
+\label{tab:canonical-rules}
+\scriptsize
+\begin{tabular}{@{}Z{0.14\linewidth}Z{0.39\linewidth}Z{0.20\linewidth}Z{0.17\linewidth}@{}}
+\toprule
+Rule & Body & Decision & Governance role \\
+\midrule
+\texttt{R\_allow} &
+\makecell[l]{\texttt{risk\_level(C,R1)} \(\wedge\)\\ \texttt{allowed\_action(C,A)} \(\wedge\)\\ \texttt{eligible\_evidence(C,E)}} &
+\(\Rightarrow\ \texttt{allow}\) &
+Permits a contract-bounded prescription. \\
+\texttt{R\_downgrade} &
+\makecell[l]{\texttt{fatigue\_signal(C)} \(\wedge\)\\ \texttt{requested\_hard\_session(C)}} &
+\(\Rightarrow\ \texttt{downgrade}\) &
+Restricts intensity or scope under overload. \\
+\texttt{R\_refuse} &
+\makecell[l]{\texttt{medical\_red\_flag(C)} \(\wedge\)\\ \texttt{asks\_for\_workout(C)}} &
+\(\Rightarrow\ \texttt{refuse}\) &
+\textbf{Fails closed} for red-flag requests. \\
+\texttt{R\_clarify} &
+\makecell[l]{\texttt{missing\_profile(C)} \(\wedge\)\\ \texttt{individualized\_plan(C)}} &
+\(\Rightarrow\ \texttt{ask\_clarification}\) &
+Blocks prescription until required fields are known. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Priority and Conflict Resolution}
+
+Let \(\mathcal{R}\) be the rule set and \(>\subseteq \mathcal{R}\times
+\mathcal{R}\) be a strict priority relation. If \(r_i > r_j\) and the
+consequents of \(r_i\) and \(r_j\) conflict, the consequent of \(r_i\) is
+selected. The rule-level relation is induced by the layer order below:
+\(r_i > r_j\) when \(layer(r_i)\) outranks \(layer(r_j)\). If no applicable
+priority relation resolves the conflict, unresolved safety or prohibition
+conflicts fail closed to \texttt{refused}, while missing or contradictory
+profile information fails closed to \texttt{ask\_clarification}.
+
+The domain priority order is:
 \[
 \begin{array}{l}
 red\_flags > injury/fatigue/environment > scope > evidence\\
 > protocol > capacity > progression > user\_preference .
 \end{array}
 \]
-Thus a preference for intervals cannot override chest pain, heat illness,
+Thus, a preference for intervals cannot override chest pain, heat illness,
 acute injury escalation, or missing prescription evidence.
 
-For a candidate plan \(P\) and contract \(C\), an \texttt{answered} output is
-legal only when \(P\) uses allowed actions, avoids forbidden actions, respects
-volume and intensity budgets, supports prescriptive claims with eligible
-evidence, and emits the required trace. Otherwise the system must downgrade,
-ask for clarification, return a partial answer, or refuse. Evidence eligibility
-is narrower than retrieval relevance: protocol rules and active action-library
-entries may authorize prescription, while ordinary retrieved literature remains
+Any valid solver output must expose the same permission objects: selected
+status, applicable evidence identifiers, permitted action identifiers, fired
+rules, and required trace fields. Evidence eligibility is narrower than
+retrieval relevance: protocol rules and active action-library entries may
+authorize prescription, while ordinary retrieved literature remains
 explanation-only unless promoted into an approved rule or action.
 
-\paragraph{Canonical decisions.}
-Four rule patterns cover the benchmark interface:
-\[
-\begin{array}{ll}
-\mathrm{Allow:} &
-R1 \wedge allowed\_action \wedge eligible\_evidence
-  \Rightarrow \texttt{allow}.\\
-\mathrm{Downgrade:} &
-fatigue\_signal \wedge requested\_hard\_session
-  \Rightarrow \texttt{downgrade}.\\
-\mathrm{Refuse:} &
-medical\_red\_flag \wedge asks\_for\_workout
-  \Rightarrow \texttt{refuse}.\\
-\mathrm{Clarify:} &
-missing\_profile \wedge individualized\_plan
-  \Rightarrow \texttt{ask\_clarification}.
-\end{array}
-\]
+Table~\ref{tab:single-case-derivation} shows one operational derivation. It
+does not prove clinical safety; it makes the rule-to-status path auditable for
+a single benchmark case.
+
+\begin{table}[tbp]
+\centering
+\caption{Single-case derivation for \texttt{mexrx-011}.}
+\label{tab:single-case-derivation}
+\scriptsize
+\begin{tabular}{@{}Z{0.18\linewidth}Z{0.43\linewidth}Z{0.29\linewidth}@{}}
+\toprule
+Step & Derived or emitted atoms & Consequence \\
+\midrule
+Observed facts &
+\makecell[l]{\texttt{load\_spike(C)}, \texttt{poor\_sleep(C)},\\ \texttt{requested\_hard\_session(C)}} &
+The query asks for intensity under fatigue pressure. \\
+Risk rule &
+\texttt{risk\_level(C,R2)} &
+The request is repairable but cannot receive a full hard workout. \\
+Audit rule &
+\texttt{requires\_repair(C)} &
+The overload conflict requires bounded repair before output. \\
+Prohibition &
+\texttt{forbidden\_action(C,hard\_intervals)} &
+Hard intervals are removed from the contract. \\
+Repair &
+\makecell[l]{\texttt{allowed\_action(C,rest\_day)},\\ \texttt{allowed\_action(C,easy\_run)}} &
+The output may offer recovery or easy alternatives only. \\
+Final trace &
+\makecell[l]{\texttt{final\_status(C,partial\_answer)},\\ \texttt{audit\_result(C,pass)}} &
+The repaired answer is accepted after re-audit. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 The full rule listing is part of the supplementary artifact.

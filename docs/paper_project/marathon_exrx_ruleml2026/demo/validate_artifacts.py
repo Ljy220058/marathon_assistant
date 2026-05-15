@@ -43,7 +43,8 @@ RELEASE_REQUIRED_FILES = [
     "requirements.txt",
     ".gitignore",
     "paper/main.tex",
-    "paper/main.pdf",
+    "submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf",
+    "submission_upload/paper/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf",
     "benchmark/system_visible_cases.jsonl",
     "benchmark/gold_labels.jsonl",
     "benchmark/m_exrxbench_v0.4_500_cases.jsonl",
@@ -239,7 +240,7 @@ def validate_eval_summary(summary: dict[str, Any], label: str) -> None:
 def validate_manifest() -> None:
     manifest = load_json(ROOT / "artifacts" / "artifact_manifest.json")
     require_keys(manifest, ["artifact", "version", "repository", "license_policy", "release_files"], "manifest")
-    if "Ljy220058/marathon_assistant" not in manifest["repository"]:
+    if "Ljy220058/m-exrxbench" not in manifest["repository"]:
         raise ValueError("manifest repository does not point to the public GitHub target")
     if manifest["license_policy"].get("code") != "MIT":
         raise ValueError("manifest code license must be MIT")

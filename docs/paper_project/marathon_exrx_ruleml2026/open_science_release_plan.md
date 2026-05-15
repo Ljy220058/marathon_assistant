@@ -4,15 +4,15 @@
 
 Provide enough material for Rule Challenge reviewers to inspect, run, and extend the challenge without relying on private files.
 
-Public repository: https://github.com/Ljy220058/marathon_assistant
+Public artifact repository: https://github.com/Ljy220058/m-exrxbench
 
-Artifact path: this directory in the public repository.
+Artifact path: branch root.
 
 ## Public Resources
 
 | Resource | Path | Release Status |
 |---|---|---|
-| CEURART paper | `paper/main.tex`, `paper/main.pdf` | ready for final polish |
+| CEURART paper | `paper/main.tex`, `submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf` | ready for final polish |
 | Benchmark schema | `benchmark/m_exrxbench_schema.json` | present |
 | Default 500-case benchmark | `benchmark/m_exrxbench_v0.4_500_cases.jsonl` | present |
 | System-visible cases | `benchmark/system_visible_cases.jsonl` | present |

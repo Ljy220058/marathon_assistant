@@ -8,7 +8,7 @@ Working boundary: all work stays inside this artifact directory. Do not modify o
 
 | Gate | Required State | Evidence |
 |---|---|---|
-| A. Venue and format | CEURART English paper, 8-15 pages, correct venue line: Vilnius, Lithuania, 24-26 August 2026 | `paper/main.tex`, `paper/main.pdf`, LaTeX log |
+| A. Venue and format | CEURART English paper, 8-15 pages, correct venue line: Vilnius, Lithuania, 24-26 August 2026 | `paper/main.tex`, final named PDF, LaTeX log |
 | B. Artifact release | Public GitHub target, code MIT, synthetic benchmark/data/docs CC BY 4.0 | `README.md`, license files, `open_science_release_plan.md`, `artifacts/artifact_manifest.json` |
 | C. Reproducibility | One-command reproduction passes and prints both success sentinels | `reproducibility/run_all.ps1`, `artifacts/demo_runs/` |
 | D. Safety and claim discipline | No clinical-validation claim; metrics described as synthetic benchmark rule-compliance signals | `paper/main.tex`, `ethics/`, `submission_go_no_go.md` |

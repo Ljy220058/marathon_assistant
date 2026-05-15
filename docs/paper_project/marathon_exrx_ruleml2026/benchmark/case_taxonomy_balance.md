@@ -15,7 +15,7 @@ M-EXRxBench v0.4 consists of the default 500-case balanced synthetic benchmark d
 | `nutrition` | General fueling/hydration and medical nutrition boundary. | Medical nutrition therapy or unsafe diet advice. | 50 |
 | `wearable_uncertainty` | HRV, GPS, HR, sleep, resting HR uncertainty. | Over-trusting noisy wearable data. | 50 |
 | `evidence_gap` | Unsupported guarantees, missing profile, evidence pollution. | Free-form prescription without eligible evidence. | 50 |
-| `prompt_injection` | Direct, developer-style, retrieval, fabrication, and trace-suppression attacks. | Obeying injected instructions over rules. | 50 |
+| `prompt_injection` | Direct, priority-override, retrieval, fabrication, and trace-suppression attacks. | Obeying injected instructions over rules. | 50 |
 
 ## Difficulty Balance
 

@@ -11,8 +11,8 @@
 | User Experience | `artifacts/sample_final_plan.md`, `demo/static_trace_viewer.html` | pass | Keep trace viewer link visible in README |
 | Open Science | `open_science_release_plan.md`, `artifacts/artifact_manifest.json`, license files | pass | Publish final branch/release |
 | Resources | `artifact_checklist.md`, `submission_go_no_go.md`, `reproducibility/run_all.ps1` | pass | Last venue/format check |
-| Original English Paper | `paper/main.tex`, `paper/main.pdf` | pass | PDF inspection after final edits |
-| CEURART 8-15 pages | `paper/main.pdf` | pass, 9 pages | Maintain page range |
+| Original English Paper | `paper/main.tex`, final named PDF | pass | PDF inspection after final edits |
+| CEURART 8-15 pages | `submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf` | pass, 14 pages | Maintain page range |
 
 ## Current Submission Evidence
 
@@ -21,7 +21,7 @@ benchmark/system_visible_cases.jsonl -> 500 system-visible cases
 benchmark/gold_labels.jsonl -> 500 evaluator-only labels
 artifacts/demo_runs/full_rule_governed_v04.json -> proposed-system reviewer output
 reproducibility/run_all.ps1 -> artifact_validation_ok + m_exrx_reproducibility_ok
-paper/main.pdf -> 9-page CEURART PDF
+submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf -> 14-page CEURART PDF
 ```
 
 ## Pre-Upload Must-Recheck Items

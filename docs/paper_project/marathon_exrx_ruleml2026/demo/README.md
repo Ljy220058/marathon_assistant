@@ -24,7 +24,14 @@ powershell -ExecutionPolicy Bypass -File reproducibility\run_all.ps1
 - Final plan or refusal text.
 - JSON trace with risk level, rules fired, evidence IDs, action IDs, audit result, and repair log.
 - Baseline comparison outputs using the same result schema.
+- Fine-grained component ablations for `no_risk_gate`, `no_evidence_gate`,
+  `no_contract`, `no_repair`, and `no_auditor`.
 - Static trace viewer: `demo/static_trace_viewer.html`.
+
+Open the static viewer from a cloned or downloaded copy of the artifact. The
+GitHub web preview shows the HTML source; it does not execute the viewer.
+The viewer can render a single JSON result, a full benchmark output containing
+a `results` array, or a JSON file selected from disk.
 
 The demo is a rule-compliance artifact over a synthetic benchmark. It does not call an external LLM and does not provide clinical validation, real-world safety evidence, generalization evidence, or athlete-outcome proof.
 

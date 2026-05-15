@@ -6,9 +6,9 @@ Core claim:
 
 > The LLM is not the reasoner of record. Exercise prescription is generated only within a rule-governed, evidence-bounded, auditable contract.
 
-Public repository: https://github.com/Ljy220058/marathon_assistant
+Public artifact repository: https://github.com/Ljy220058/m-exrxbench
 
-Artifact path in the repository: this directory.
+Artifact path in the repository: branch root.
 
 ## 5-Minute Reviewer Path
 
@@ -20,6 +20,14 @@ powershell -ExecutionPolicy Bypass -File reproducibility\run_all.ps1
 powershell -ExecutionPolicy Bypass -File reproducibility\run_hard100.ps1
 ```
 
+The default reproduction script is the main verification path. It regenerates
+the 500-case reference output, all baseline outputs, evaluator summaries, and
+then runs artifact validation. A successful default run ends with:
+
+```text
+m_exrx_reproducibility_ok
+```
+
 Inspect the main outputs from the current v0.4/500 synthetic benchmark run:
 
 ```text
@@ -29,13 +37,21 @@ artifacts/demo_runs/full_rule_governed_eval_summary.md
 artifacts/demo_runs/hard100_full_rule_governed_eval_summary.md
 artifacts/baseline_runs/
 demo/static_trace_viewer.html
-paper/main.pdf
+submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf
 ```
 
 Open the static trace viewer directly in a browser:
 
 ```text
 demo/static_trace_viewer.html
+```
+
+When browsing the repository on GitHub, download or clone the repository first.
+GitHub's file preview displays the HTML source instead of running it as an
+interactive page. On Windows, after cloning, run:
+
+```powershell
+start demo\static_trace_viewer.html
 ```
 
 ## What This Artifact Contains
@@ -47,6 +63,20 @@ demo/static_trace_viewer.html
 - RiskGate, EvidenceGate, PrescriptionContract, Rule Auditor, and bounded repair specifications.
 - Deterministic demo runner, benchmark runner, baselines, evaluator, schema validator, and trace viewer.
 - CEURART manuscript source and compiled PDF.
+
+## Reproducibility Contract
+
+- Runtime dependency: Python standard library only; see `requirements.txt`.
+- Tested command prefix: `conda run -n torch2.5.1 python`.
+- One-command default reproduction: `reproducibility\run_all.ps1`.
+- Supplemental hard-set reproduction: `reproducibility\run_hard100.ps1`.
+- Independent evaluator: `demo\evaluate_results.py`.
+- System-visible inputs: `benchmark\system_visible_cases.jsonl`.
+- Evaluator-only labels: `benchmark\gold_labels.jsonl`.
+- Precomputed outputs: `artifacts\demo_runs\` and `artifacts\baseline_runs\`.
+- Runtime randomness: none. The scripts do not sample, shuffle, call stochastic
+  models, or use randomized search. Dataset fields such as `source_seed_id` are
+  synthetic-case provenance labels, not runtime random seeds.
 
 ## Scope Boundary
 

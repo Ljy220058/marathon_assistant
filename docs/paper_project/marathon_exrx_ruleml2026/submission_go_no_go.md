@@ -14,7 +14,7 @@ The package now has the expected Rule Challenge shape: CEURART manuscript, M-EXR
 
 - Track locked to Rule Challenge as a hybrid Challenge Proposal + Challenge Solution.
 - Venue/date corrected to RuleML+RR 2026, Vilnius, Lithuania, 24-26 August 2026.
-- Public release target recorded: https://github.com/Ljy220058/marathon_assistant
+- Public release target recorded: https://github.com/Ljy220058/m-exrxbench
 - License policy recorded: code MIT; synthetic benchmark data and documentation CC BY 4.0.
 - License files, requirements note, release `.gitignore`, manifest, and reviewer quick path are present.
 - Default M-EXRxBench v0.4 / 500 synthetic benchmark and evaluator-only gold split are present.

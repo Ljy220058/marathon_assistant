@@ -1,6 +1,6 @@
 # Related Work Matrix
 
-本矩阵服务于 RuleML+RR 2026 Rule Challenge 论文《M-EXRxBench: A Trace-Governed Rule Challenge for Evidence-Bounded Exercise Prescription Agents》。选择文献的原则不是泛泛覆盖全部运动科学或 RAG 文献，而是横向比较四个与本文直接相关的领域：
+本矩阵服务于 RuleML+RR 2026 Rule Challenge 论文《A Trace-Governed Rule Challenge for Evidence-Bounded Exercise Prescription》。选择文献的原则不是泛泛覆盖全部运动科学或 RAG 文献，而是横向比较四个与本文直接相关的领域：
 
 1. 运动处方、康复与临床决策支持系统。
 2. 规则推理、RuleML、合规与符号治理。

@@ -11,6 +11,23 @@ paper/*.xmpi
 paper/*.xdv
 paper/*.synctex.gz
 paper/*.toc
+paper/main.pdf
+paper/M-EXRxBench_*.pdf
+
+# Submission-package LaTeX build products
+submission_package/paper/*.aux
+submission_package/paper/*.abs
+submission_package/paper/*.bbl
+submission_package/paper/*.blg
+submission_package/paper/*.fdb_latexmk
+submission_package/paper/*.fls
+submission_package/paper/*.log
+submission_package/paper/*.out
+submission_package/paper/*.xmpi
+submission_package/paper/*.xdv
+submission_package/paper/*.synctex.gz
+submission_package/paper/*.toc
+submission_package/paper/main.pdf
 
 # Python caches
 **/__pycache__/

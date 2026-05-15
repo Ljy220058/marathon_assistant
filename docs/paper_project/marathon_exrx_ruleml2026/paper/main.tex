@@ -17,18 +17,17 @@
 
 \conference{RuleML+RR 2026 Rule Challenge, 24--26 August 2026, Vilnius, Lithuania}
 
-\title{M-EXRxBench: A Trace-Governed Rule Challenge for Evidence-Bounded Exercise Prescription Agents}
+\title{A Trace-Governed Rule Challenge for Evidence-Bounded Exercise Prescription}
 
-\author[1]{Jinyuan Luo}
-\address[1]{Shenzhen Technology University, Shenzhen, China\\
-\texttt{2631874487@qq.com}}
+\author[1]{Jinyuan Luo}[orcid=0009-0004-0613-7179, email=2631874487@qq.com]
+\address[1]{Shenzhen Technology University, Shenzhen, China}
 
 \begin{abstract}
 Large language models can draft fluent endurance-training plans, but fluency is not a safety boundary for exercise prescription. We cast evidence-bounded exercise prescription as a RuleML+RR Rule Challenge task and introduce M-EXRxBench, a 500-case synthetic benchmark that tests whether an agentic system should answer, downgrade, ask for clarification, or refuse. The cases cover half-marathon planning, fatigue and overload, pain and injury, medical red flags, environmental risk, nutrition scope, wearable uncertainty, evidence gaps, and prompt injection. We also provide a rule-governed reference solution in which prescription authority is assigned to RiskGate, EvidenceGate, PrescriptionContract, rule priority, Rule Auditor, and bounded repair, while the language model is not the reasoner of record. The deterministic prototype emits auditable traces over profile version, risk level, fired rules, evidence identifiers, action identifiers, audit result, repair log, and final status. In the current reference run, the rule-governed system reaches 1.000 rule-compliance scores on the synthetic v0.4 benchmark with zero unsafe or unsupported prescriptions under the deterministic evaluator. These numbers are artifact-level checks, not evidence of real-world clinical safety.
 \end{abstract}
 
 \begin{keywords}
-Rule Challenge \sep exercise prescription \sep multi-agent systems \sep retrieval-augmented generation \sep safety rules \sep benchmark
+Rule Challenge \sep trace-governed systems \sep evidence-bounded reasoning \sep exercise prescription \sep safety rules \sep benchmark
 \end{keywords}
 
 \maketitle
@@ -37,7 +36,7 @@ Rule Challenge \sep exercise prescription \sep multi-agent systems \sep retrieva
 
 Large language models (LLMs), retrieval-augmented generation (RAG), and agentic tool use can produce plausible endurance-training advice \cite{lewis2020rag,asai2024selfrag,yao2023react,schick2023toolformer}. Plausibility, however, does not decide whether a recommendation is eligible to become an individualized exercise prescription. When a user reports red flags, pain, abnormal fatigue, missing profile information, or insufficient evidence, the system needs enforceable workflow and safety boundaries \cite{sutton2020cdss}.
 
-We define \emph{evidence-bounded exercise prescription} as a RuleML+RR Rule Challenge task. Given a user query, profile summary, goal, constraints, risk signals, evidence bundle, and action library, a system must return one of four statuses: \texttt{answered}, \texttt{partial\_answer}, \texttt{ask\_clarification}, or \texttt{refused}. A valid output must include an auditable trace: profile version, risk level, rules fired, evidence identifiers, action identifiers, expert calls, audit result, repair log, and final status. The aim is not to build a more talkative running coach. It is to make prescription eligibility inspectable through a trace-governed permission structure.
+We define \emph{evidence-bounded exercise prescription} as a RuleML+RR Rule Challenge task. The accompanying repository is publicly available.\footnote{\url{https://github.com/Ljy220058/m-exrxbench}} Given a user query, profile summary, goal, constraints, risk signals, evidence bundle, and action library, a system must return one of four statuses: \texttt{answered}, \texttt{partial\_answer}, \texttt{ask\_clarification}, or \texttt{refused}. A valid output must include an auditable trace: profile version, risk level, rules fired, evidence identifiers, action identifiers, expert calls, audit result, repair log, and final status. The aim is not to build a more talkative running coach. It is to make prescription eligibility inspectable through a trace-governed permission structure.
 
 The motivating case study is half-marathon training: rich enough to involve periodization, volume, intensity, recovery, fueling, injury signals, environment, and wearable uncertainty, but narrow enough for controlled rules and benchmark cases. Public exercise-prescription guidance supplies the vocabulary for frequency, intensity, time, type, volume, and progression \cite{garber2011exercise,acsm2021guidelines,who2020physicalactivity}. The design follows one rule: the LLM may draft, but the rule layer is the reasoner of record.
 
@@ -83,7 +82,7 @@ The reference workflow has three permanent agents: the Evidence Steward retrieve
 
 \begin{figure}[tbp]
   \centering
-  \includegraphics[width=\linewidth]{../figures/m_exrx_ieee_architecture.pdf}
+  \includegraphics[width=\linewidth]{../figures/rule_governed_workflow.pdf}
   \caption{Rule-governed M-EXRx workflow. The LLM may draft a candidate plan, but RiskGate, EvidenceGate, PrescriptionContract, Rule Auditor, and bounded repair decide whether the output is allowed.}
   \label{fig:architecture}
 \end{figure}
@@ -231,6 +230,31 @@ System & Status Acc. & Risk Acc. & Unsafe & Unsupported & Trace \\
 
 The full rule-governed solver also obtains 0.000 rule violation rate and 1.000 repair success rate. These results check the reference artifact on the synthetic v0.4/500 benchmark and current evaluator; they are not independent generalization, clinical validation, or evidence of improved athletic outcomes.
 
+\subsection{Fine-Grained Component Ablations}
+
+The coarse baselines above isolate broad failure modes. To make the contribution of each governance component explicit, we run five knock-out ablations over the same 500-case benchmark, each removing one component from the full rule-governed solver while leaving the evaluator and output schema unchanged. These are deterministic ablation controls, not externally run LLM systems. Table~\ref{tab:fine-ablation} reports the resulting loss-of-function signatures. Trace completeness remains 1.000 for these runs because all outputs are schema-normalized before evaluation; the informative changes are in risk accuracy, unsafe advice, unsupported prescription, status accuracy, and repair success.
+
+\begin{table}[tbp]
+\centering
+\caption{Fine-grained component ablations over 500 cases. Each row removes one component from the full rule-governed solver; contribution is inferred from the resulting metric degradation under the same deterministic benchmark and evaluator.}
+\label{tab:fine-ablation}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+System & Status & Risk & Unsafe & Unsupported & Repair \\
+\midrule
+\texttt{full\_rule\_governed} & 1.000 & 1.000 & 0.000 & 0.000 & 1.000 \\
+\texttt{no\_risk\_gate} & 0.800 & 0.240 & 0.180 & 0.000 & 1.000 \\
+\texttt{no\_evidence\_gate} & 0.860 & 1.000 & 0.000 & 0.684 & 0.750 \\
+\texttt{no\_contract} & 0.440 & 1.000 & 0.000 & 0.024 & 1.000 \\
+\texttt{no\_repair} & 1.000 & 1.000 & 0.000 & 0.000 & 0.000 \\
+\texttt{no\_auditor} & 0.800 & 1.000 & 0.180 & 0.000 & 0.677 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ablations give distinct failure signatures, so the reported improvement is not attributable to a single monolithic rule wrapper. RiskGate contributes risk stratification and high-risk refusal: removing it drops risk accuracy from 1.000 to 0.240 and reintroduces unsafe advice. EvidenceGate contributes prescription authority checks: removing it raises unsupported prescriptions to 0.684. The PrescriptionContract contributes status-boundary enforcement: removing it reduces status accuracy to 0.440. Bounded repair contributes the audited repair pathway: removing it leaves status and risk labels unchanged in this deterministic setup, but repair success falls from 1.000 to 0.000. The Rule Auditor contributes the final veto over unsafe candidates: removing it reintroduces unsafe leakage and lowers repair success. These results establish component necessity within this artifact and benchmark; they do not by themselves establish clinical safety or real-world deployment readiness.
+
 Table~\ref{tab:hard100} reports the supplemental \texttt{v0.4-hard-100} stress subset separately. It is not merged into the default score; its lower accuracy and nonzero unsafe-advice rate expose boundary failures under adversarial pressure.
 
 \begin{table}[tbp]
@@ -280,11 +304,12 @@ M-EXRxBench is synthetic and contains no real patient records or athlete telemet
 
 \section{Artifact Availability}
 
-The artifact package is prepared for public release at
-\url{https://github.com/Ljy220058/marathon_assistant}. It includes benchmark
+The artifact package is available at
+\url{https://github.com/Ljy220058/m-exrxbench}.
+It includes benchmark
 files, rules, schemas, reference runner, evaluator, baselines, traces, figures,
-a static trace viewer, and reproducibility scripts. Code will be released under
-MIT; synthetic data and documentation under CC BY 4.0. Detailed reproducibility
+a static trace viewer, and reproducibility scripts. Code is released under
+MIT; synthetic data and documentation are released under CC BY 4.0. Detailed reproducibility
 instructions and the artifact pathway figure are provided in the repository
 README and supplementary artifact checklist.
 

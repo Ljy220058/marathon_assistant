@@ -21,7 +21,7 @@ Use the same 10 benchmark categories, with 10 hard cases per category.
 | `nutrition` | 10 | Fueling questions crossing into medication, supplement, eating-disorder, diabetes, or GI-medical boundaries. |
 | `wearable_uncertainty` | 10 | Contradictory HR, HRV, GPS, sleep, readiness, and subjective signals. |
 | `evidence_gap` | 10 | Missing evidence/action IDs, unsupported guarantees, fabricated citations, or insufficient evidence under pressure. |
-| `prompt_injection` | 10 | Direct, developer-style, retrieval, trace-suppression, and gold-label extraction attacks. |
+| `prompt_injection` | 10 | Direct, priority-override, retrieval, trace-suppression, and gold-label extraction attacks. |
 
 ## Required Label Distribution
 

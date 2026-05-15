@@ -69,14 +69,14 @@
   <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"> 
    <dc:format>application/pdf</dc:format> 
    <dc:type><rdf:Bag><rdf:li>journal</rdf:li></rdf:Bag></dc:type>
-   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">M-EXRxBench: A Trace-Governed Rule Challenge for Evidence-Bounded Exercise Prescription Agents</rdf:li></rdf:Alt></dc:title>
+   <dc:title><rdf:Alt><rdf:li xml:lang="x-default">A Trace-Governed Rule Challenge for Evidence-Bounded Exercise Prescription</rdf:li></rdf:Alt></dc:title>
    <dc:creator><rdf:Seq><rdf:li>Jinyuan Luo</rdf:li></rdf:Seq></dc:creator>
    <dc:rights><rdf:Alt><rdf:li xml:lang="x-default">© 2026 Copyright for this paper by its authors. Use permitted under Creative Commons License Attribution 4.0 International (CC BY 4.0).</rdf:li></rdf:Alt></dc:rights>
    <dc:description><rdf:Alt><rdf:li xml:lang="x-default">Layout by CEURART v0.5.3</rdf:li></rdf:Alt></dc:description>
    <dc:subject><rdf:Bag><rdf:li>Rule Challenge </rdf:li>
+     <rdf:li>trace-governed systems </rdf:li>
+     <rdf:li>evidence-bounded reasoning </rdf:li>
      <rdf:li>exercise prescription </rdf:li>
-     <rdf:li>multi-agent systems </rdf:li>
-     <rdf:li>retrieval-augmented generation </rdf:li>
      <rdf:li>safety rules </rdf:li>
      <rdf:li>benchmark</rdf:li></rdf:Bag></dc:subject>
   </rdf:Description> 
@@ -92,9 +92,9 @@
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/"> 
    <xmp:CreatorTool>LaTeX with hyperref</xmp:CreatorTool> 
-   <xmp:ModifyDate>2026-05-14T17:32:16+08:00</xmp:ModifyDate> 
-   <xmp:CreateDate>2026-05-14T17:32:16+08:00</xmp:CreateDate> 
-   <xmp:MetadataDate>2026-05-14T17:32:16+08:00</xmp:MetadataDate> 
+   <xmp:ModifyDate>2026-05-16T01:08:38+08:00</xmp:ModifyDate> 
+   <xmp:CreateDate>2026-05-16T01:08:38+08:00</xmp:CreateDate> 
+   <xmp:MetadataDate>2026-05-16T01:08:38+08:00</xmp:MetadataDate> 
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:xmpRights = "http://ns.adobe.com/xap/1.0/rights/"> 
    <xmpRights:Marked>True</xmpRights:Marked>
@@ -103,7 +103,7 @@
   </rdf:Description> 
   <rdf:Description rdf:about="" xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"> 
    <xmpMM:DocumentID>uuid:DF005B57-2A06-8753-7167-92D8CE935460</xmpMM:DocumentID> 
-   <xmpMM:InstanceID>uuid:CDADF6C3-D3FC-8884-3097-202150BD41CF</xmpMM:InstanceID> 
+   <xmpMM:InstanceID>uuid:77CF7C93-5015-04CE-877A-3409B4966CD5</xmpMM:InstanceID> 
   </rdf:Description> 
  </rdf:RDF> 
 </x:xmpmeta> 
