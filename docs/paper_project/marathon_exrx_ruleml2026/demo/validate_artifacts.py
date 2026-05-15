@@ -1,10 +1,14 @@
 import json
 import re
+import subprocess
+import sys
+import hashlib
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+HASH_NORMALIZED_TEXT_SUFFIXES = {".json", ".jsonl", ".md", ".py", ".ps1", ".tex", ".txt", ".bib", ".xmpi"}
 
 GOLD_ONLY_FIELDS = {
     "expected_behavior",
@@ -17,6 +21,10 @@ GOLD_ONLY_FIELDS = {
     "variation_type",
     "source_seed_id",
     "annotation_notes",
+    "rule_basis_ids",
+    "rule_basis_links",
+    "mapping_status",
+    "mapping_confidence",
 }
 
 REQUIRED_TRACE_KEYS = [
@@ -48,6 +56,16 @@ RELEASE_REQUIRED_FILES = [
     "benchmark/system_visible_cases.jsonl",
     "benchmark/gold_labels.jsonl",
     "benchmark/m_exrxbench_v0.4_500_cases.jsonl",
+    "benchmark/rule_basis_sources.md",
+    "benchmark/rule_basis_sources.json",
+    "benchmark/case_to_rule_basis_map.jsonl",
+    "benchmark/hard_case_to_rule_basis_map.jsonl",
+    "benchmark/case_to_rule_basis_map_summary.md",
+    "benchmark/hard_case_to_rule_basis_map_summary.md",
+    "benchmark/traceable_dataset_schema.json",
+    "benchmark/validate_traceable_dataset.py",
+    "benchmark/annotation_protocol_v0.5.md",
+    "benchmark/traceable_upgrade_audit.md",
     "benchmark/result_schema.json",
     "rule_spec/trace_schema.json",
     "demo/run_demo.py",
@@ -56,6 +74,7 @@ RELEASE_REQUIRED_FILES = [
     "demo/evaluate_results.py",
     "demo/static_trace_viewer.html",
     "reproducibility/run_all.ps1",
+    "reproducibility/run_hard100.ps1",
     "artifacts/artifact_manifest.json",
 ]
 
@@ -145,6 +164,25 @@ def validate_release_files() -> None:
         path = ROOT / relative
         if not path.exists():
             raise ValueError(f"required release file missing: {relative}")
+
+
+def validate_traceable_dataset() -> None:
+    script = ROOT / "benchmark" / "validate_traceable_dataset.py"
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ValueError(
+            "traceable dataset validation failed:\n"
+            f"stdout={result.stdout}\n"
+            f"stderr={result.stderr}"
+        )
+    if "traceable_dataset_validation_ok" not in result.stdout:
+        raise ValueError("traceable dataset validator did not print success sentinel")
 
 
 def validate_gold_split() -> None:
@@ -256,6 +294,27 @@ def validate_manifest() -> None:
             raise ValueError(f"manifest file missing on disk: {item['path']}")
         if not item.get("license"):
             raise ValueError(f"manifest file missing license: {item['path']}")
+        if "sha256" in item:
+            digest = hashlib.sha256(manifest_hash_bytes(path)).hexdigest()
+            if digest != item["sha256"]:
+                raise ValueError(f"manifest sha256 mismatch for {item['path']}")
+        if "row_count" in item:
+            if path.suffix != ".jsonl":
+                raise ValueError(f"manifest row_count is only supported for jsonl files: {item['path']}")
+            actual_rows = len(load_jsonl(path))
+            if actual_rows != item["row_count"]:
+                raise ValueError(
+                    f"manifest row_count mismatch for {item['path']}: expected {item['row_count']}, got {actual_rows}"
+                )
+        if item.get("split_role") and not item.get("schema"):
+            raise ValueError(f"manifest split file missing schema reference: {item['path']}")
+
+
+def manifest_hash_bytes(path: Path) -> bytes:
+    data = path.read_bytes()
+    if path.suffix.lower() in HASH_NORMALIZED_TEXT_SUFFIXES:
+        return data.replace(b"\r\n", b"\n")
+    return data
 
 
 def iter_release_text_files() -> list[Path]:
@@ -336,6 +395,7 @@ def main() -> None:
         load_json(path)
 
     validate_release_files()
+    validate_traceable_dataset()
     validate_gold_split()
     validate_hard_split()
     validate_outputs()

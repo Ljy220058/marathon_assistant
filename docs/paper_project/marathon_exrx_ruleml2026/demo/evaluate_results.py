@@ -7,6 +7,23 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_GOLD = ROOT / "benchmark" / "gold_labels.jsonl"
 
+FORBIDDEN_PREDICTION_FIELDS = {
+    "expected_behavior",
+    "gold_risk_level",
+    "required_rules",
+    "forbidden_outputs",
+    "rationale",
+    "notes",
+    "case_family",
+    "variation_type",
+    "source_seed_id",
+    "annotation_notes",
+    "rule_basis_ids",
+    "rule_basis_links",
+    "mapping_status",
+    "mapping_confidence",
+}
+
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows = []
@@ -19,10 +36,35 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
 def load_predictions(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, dict) and "results" in data:
-        return data["results"]
+        predictions = data["results"]
+        validate_predictions_do_not_leak_gold(predictions, path)
+        return predictions
     if isinstance(data, list):
+        validate_predictions_do_not_leak_gold(data, path)
         return data
     raise ValueError(f"Unsupported prediction format: {path}")
+
+
+def find_forbidden_prediction_fields(value: Any, path: str = "$") -> list[str]:
+    hits: list[str] = []
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            child_path = f"{path}.{key}"
+            if key in FORBIDDEN_PREDICTION_FIELDS or "gold" in key.lower():
+                hits.append(child_path)
+            hits.extend(find_forbidden_prediction_fields(nested, child_path))
+    elif isinstance(value, list):
+        for index, nested in enumerate(value):
+            hits.extend(find_forbidden_prediction_fields(nested, f"{path}[{index}]"))
+    return hits
+
+
+def validate_predictions_do_not_leak_gold(predictions: list[dict[str, Any]], path: Path) -> None:
+    for index, prediction in enumerate(predictions, 1):
+        hits = find_forbidden_prediction_fields(prediction)
+        if hits:
+            case_id = prediction.get("case_id", f"row-{index}")
+            raise ValueError(f"prediction file {path} case {case_id} contains evaluator-only fields: {hits[:8]}")
 
 
 def trace_completeness(result: dict[str, Any]) -> float:

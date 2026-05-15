@@ -1,0 +1,390 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://m-exrxbench.local/schema/traceable_dataset_schema.json",
+  "title": "M-EXRxBench Traceable Dataset Schema",
+  "description": "Schema contract for the traceable benchmark views. The system_visible view is intentionally restricted to solver-safe fields and excludes evaluator gold labels and provenance.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "traceable_dataset_schema_v0.1"
+    },
+    "views": {
+      "type": "object",
+      "properties": {
+        "labeled_full": {
+          "$ref": "#/$defs/labeled_full"
+        },
+        "system_visible": {
+          "$ref": "#/$defs/system_visible"
+        },
+        "evaluator_gold": {
+          "$ref": "#/$defs/evaluator_gold"
+        },
+        "case_rule_basis_map": {
+          "$ref": "#/$defs/case_rule_basis_map"
+        }
+      },
+      "required": [
+        "labeled_full",
+        "system_visible",
+        "evaluator_gold",
+        "case_rule_basis_map"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "enum": [
+        "general_education",
+        "low_risk_plan",
+        "fatigue_overload",
+        "pain_injury",
+        "medical_red_flag",
+        "environment_risk",
+        "nutrition",
+        "wearable_uncertainty",
+        "evidence_gap",
+        "prompt_injection"
+      ]
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "expected_behavior": {
+      "enum": [
+        "answered",
+        "partial_answer",
+        "ask_clarification",
+        "refused"
+      ]
+    },
+    "gold_risk_level": {
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3"
+      ]
+    },
+    "string_array": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "system_visible": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "category",
+        "user_query",
+        "profile",
+        "available_evidence_ids",
+        "available_action_ids",
+        "difficulty"
+      ],
+      "properties": {
+        "case_id": {
+          "$ref": "#/$defs/case_id"
+        },
+        "category": {
+          "$ref": "#/$defs/category"
+        },
+        "user_query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "object"
+        },
+        "available_evidence_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "available_action_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "difficulty": {
+          "$ref": "#/$defs/difficulty"
+        }
+      },
+      "additionalProperties": false,
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "expected_behavior"
+            ]
+          },
+          {
+            "required": [
+              "gold_risk_level"
+            ]
+          },
+          {
+            "required": [
+              "required_rules"
+            ]
+          },
+          {
+            "required": [
+              "forbidden_outputs"
+            ]
+          },
+          {
+            "required": [
+              "rationale"
+            ]
+          },
+          {
+            "required": [
+              "case_family"
+            ]
+          },
+          {
+            "required": [
+              "variation_type"
+            ]
+          },
+          {
+            "required": [
+              "source_seed_id"
+            ]
+          },
+          {
+            "required": [
+              "annotation_notes"
+            ]
+          },
+          {
+            "required": [
+              "rule_basis_ids"
+            ]
+          },
+          {
+            "required": [
+              "mapping_status"
+            ]
+          }
+        ]
+      }
+    },
+    "evaluator_gold": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "expected_behavior",
+        "gold_risk_level",
+        "required_rules",
+        "forbidden_outputs",
+        "rationale"
+      ],
+      "properties": {
+        "case_id": {
+          "$ref": "#/$defs/case_id"
+        },
+        "expected_behavior": {
+          "$ref": "#/$defs/expected_behavior"
+        },
+        "gold_risk_level": {
+          "$ref": "#/$defs/gold_risk_level"
+        },
+        "required_rules": {
+          "$ref": "#/$defs/string_array"
+        },
+        "forbidden_outputs": {
+          "$ref": "#/$defs/string_array"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "case_family": {
+          "type": "string"
+        },
+        "variation_type": {
+          "type": "string"
+        },
+        "source_seed_id": {
+          "type": "string"
+        },
+        "annotation_notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "labeled_full": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "category",
+        "user_query",
+        "profile",
+        "available_evidence_ids",
+        "available_action_ids",
+        "difficulty",
+        "expected_behavior",
+        "gold_risk_level",
+        "required_rules",
+        "forbidden_outputs"
+      ],
+      "properties": {
+        "case_id": {
+          "$ref": "#/$defs/case_id"
+        },
+        "category": {
+          "$ref": "#/$defs/category"
+        },
+        "user_query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "object"
+        },
+        "available_evidence_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "available_action_ids": {
+          "$ref": "#/$defs/string_array"
+        },
+        "difficulty": {
+          "$ref": "#/$defs/difficulty"
+        },
+        "expected_behavior": {
+          "$ref": "#/$defs/expected_behavior"
+        },
+        "gold_risk_level": {
+          "$ref": "#/$defs/gold_risk_level"
+        },
+        "required_rules": {
+          "$ref": "#/$defs/string_array"
+        },
+        "forbidden_outputs": {
+          "$ref": "#/$defs/string_array"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "case_family": {
+          "type": "string"
+        },
+        "variation_type": {
+          "type": "string"
+        },
+        "source_seed_id": {
+          "type": "string"
+        },
+        "annotation_notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "case_rule_basis_map": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "case_id",
+        "category",
+        "gold_risk_level",
+        "expected_behavior",
+        "required_rules",
+        "rule_basis_ids",
+        "rule_basis_links",
+        "mapping_confidence",
+        "mapping_status"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "case_rule_basis_map_v0.1"
+        },
+        "case_id": {
+          "$ref": "#/$defs/case_id"
+        },
+        "category": {
+          "$ref": "#/$defs/category"
+        },
+        "gold_risk_level": {
+          "$ref": "#/$defs/gold_risk_level"
+        },
+        "expected_behavior": {
+          "$ref": "#/$defs/expected_behavior"
+        },
+        "required_rules": {
+          "$ref": "#/$defs/string_array"
+        },
+        "rule_basis_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^basis\\."
+          },
+          "uniqueItems": true
+        },
+        "rule_basis_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "required_rule",
+              "rule_basis_id",
+              "support_type",
+              "decision_effect"
+            ],
+            "properties": {
+              "required_rule": {
+                "type": "string"
+              },
+              "rule_basis_id": {
+                "type": "string",
+                "pattern": "^basis\\."
+              },
+              "support_type": {
+                "enum": [
+                  "direct",
+                  "indirect",
+                  "context"
+                ]
+              },
+              "decision_effect": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "mapping_confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "mapping_status": {
+          "enum": [
+            "draft",
+            "reviewed",
+            "accepted"
+          ]
+        },
+        "mapping_notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

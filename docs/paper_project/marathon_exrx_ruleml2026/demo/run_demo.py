@@ -18,6 +18,10 @@ GOLD_ONLY_FIELDS = {
     "variation_type",
     "source_seed_id",
     "annotation_notes",
+    "rule_basis_ids",
+    "rule_basis_links",
+    "mapping_status",
+    "mapping_confidence",
 }
 
 DETERMINISTIC_GENERATED_AT = "2026-05-13T00:00:00Z"
@@ -38,7 +42,12 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
             "Use benchmark/system_visible_cases.jsonl for the default v0.4 500-case run."
         )
     cases = load_jsonl(path)
-    return [{k: v for k, v in case.items() if k not in GOLD_ONLY_FIELDS} for case in cases]
+    for case in cases:
+        leaked = sorted(GOLD_ONLY_FIELDS & set(case))
+        if leaked:
+            case_id = case.get("case_id", "<unknown>")
+            raise ValueError(f"runner input {path} case {case_id} contains evaluator-only fields: {leaked}")
+    return cases
 
 
 def contains_any(text: str, keywords: list[str]) -> bool:

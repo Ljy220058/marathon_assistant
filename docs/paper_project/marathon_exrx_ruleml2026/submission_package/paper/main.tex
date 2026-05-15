@@ -26,7 +26,7 @@
 \address[1]{Shenzhen Technology University, Shenzhen, China}
 
 \begin{abstract}
-Large language models can draft fluent endurance-training plans, but fluency is not a safety boundary for exercise prescription. We formulate evidence-bounded exercise prescription as a RuleML+RR Rule Challenge task and introduce the Marathon Exercise Prescription Benchmark (M-EXRxBench), a 500-case synthetic benchmark for testing whether an agentic system should answer, downgrade, ask for clarification, or refuse. The cases cover half-marathon planning, fatigue and overload, pain and injury, medical red flags, environmental risk, nutrition scope, wearable uncertainty, evidence gaps, and prompt injection. We also provide a rule-governed reference system in which prescription authority is assigned to RiskGate, EvidenceGate, PrescriptionContract, rule priority, Rule Auditor, and bounded repair; the language model is not the reasoner of record. In the current deterministic run, the rule-governed system obtains 1.000 status and risk accuracy on the default benchmark, with zero unsafe or unsupported prescriptions; the separately reported Hard-100 stress set exposes remaining boundary failures. These numbers are artifact-level checks, not evidence of real-world clinical safety or deployment readiness.
+Large language models can draft fluent endurance-training plans, but fluency is not a safety boundary for exercise prescription. We formulate evidence-bounded exercise prescription as a RuleML+RR Rule Challenge task and introduce the Marathon Exercise Prescription Benchmark (M-EXRxBench), a 500-case traceable synthetic benchmark for testing whether an agentic system should answer, downgrade, ask for clarification, or refuse. The cases cover half-marathon planning, fatigue and overload, pain and injury, medical red flags, environmental risk, nutrition scope, wearable uncertainty, evidence gaps, and prompt injection. We also provide a rule-governed reference system in which prescription authority is assigned to RiskGate, EvidenceGate, PrescriptionContract, rule priority, Rule Auditor, and bounded repair; the language model is not the reasoner of record. In the current deterministic run, the rule-governed system obtains 1.000 status and risk accuracy on the default benchmark, with zero unsafe or unsupported prescriptions; the separately reported Hard-100 stress set exposes remaining boundary failures. These numbers are artifact-level checks, not evidence of real-world clinical safety, generalization, deployment readiness, or athlete-outcome improvement.
 \end{abstract}
 
 \begin{keywords}
@@ -48,7 +48,7 @@ This setting is a rule challenge because the hard cases involve permission state
 This paper addresses these gaps through three contributions:
 \begin{enumerate}
   \item \textbf{Challenge formulation}: answerability, downgrading, clarification, refusal, and trace fields become evaluated outcomes rather than generation side effects.
-  \item \textbf{Benchmark artifact}: M-EXRxBench provides a 500-case balanced synthetic benchmark with system-visible/evaluator-only splits, eligibility checks, forbidden-output labels, and a supplemental 100-case stress set.
+  \item \textbf{Benchmark artifact}: M-EXRxBench provides a 500-case balanced traceable synthetic benchmark with system-visible/evaluator-only splits, rule-basis label mappings, eligibility checks, forbidden-output labels, and a supplemental 100-case stress set.
   \item \textbf{Reference workflow and evaluator}: the rule-governed Marathon Exercise Prescription (M-EXRx) system, deterministic ablations, schemas, traces, bounded repair, and evaluator make the challenge reproducible.
 \end{enumerate}
 
@@ -89,9 +89,9 @@ The evaluator-only split contains expected behavior, gold risk level, required r
 
 \section{Benchmark Construction}
 
-M-EXRxBench contains a default 500-case balanced synthetic benchmark. Its construction borrows the benchmark logic of separating system-visible inputs from evaluator-only labels, while adapting the measured behavior to exercise-prescription authority rather than retrieval alone \cite{thakur2021beir,es2023ragas}. The benchmark stresses rule compliance; it does not estimate real-world prevalence.
+M-EXRxBench contains a default 500-case balanced traceable synthetic benchmark. Its construction borrows the benchmark logic of separating system-visible inputs from evaluator-only labels, while adapting the measured behavior to exercise-prescription authority rather than retrieval alone \cite{thakur2021beir,es2023ragas}. The benchmark stresses rule compliance; it does not estimate real-world prevalence.
 
-Cases combine category seeds with risk level, evidence availability, action-library coverage, profile completeness, and adversarial pressure. Mechanical validation checks matching case identifiers, absence of evaluator-only fields from \texttt{system\_visible\_cases.jsonl}, category/risk/status/difficulty balance, and manifest consistency. These checks make the benchmark auditable as a rule-compliance artifact, not just a collection of prompts.
+Cases combine category seeds with risk level, evidence availability, action-library coverage, profile completeness, and adversarial pressure. Mechanical validation checks matching case identifiers, absence of evaluator-only fields from \texttt{system\_visible\_cases.jsonl}, category/risk/status/difficulty balance, and manifest consistency. Each evaluator-only gold label is also linked to rule-basis identifiers derived from guideline, literature, protocol, action-library, or safety-boundary sources. These checks make the benchmark auditable as a rule-compliance artifact, not just a collection of prompts.
 
 \subsection{Case Taxonomy}
 
@@ -124,7 +124,7 @@ The default 500-case risk distribution is R0: 50, R1: 120, R2: 240, and R3: 90. 
 
 \subsection{Gold Split and Leakage Control}
 
-Cases are synthetic but not template-only: each category varies the user goal, profile completeness, evidence availability, action-library coverage, risk signal, and adversarial pressure. The labeled split records expected status, risk level, required rules, forbidden outputs, and rationale, while the system-visible split removes these fields. Figure~\ref{fig:benchmark-protocol} summarizes this split and shows that the stress-test set is reported separately rather than merged into the default 500-case score.
+Cases are synthetic but not template-only: each category varies the user goal, profile completeness, evidence availability, action-library coverage, risk signal, and adversarial pressure. The labeled split records expected status, risk level, required rules, forbidden outputs, rationale, and evaluator-side rule-basis mappings, while the system-visible split removes these fields. Release validation checks that these labels and provenance fields are absent from solver inputs. Figure~\ref{fig:benchmark-protocol} summarizes this split and shows that the stress-test set is reported separately rather than merged into the default 500-case score.
 
 \begin{figure}[tbp]
   \centering
@@ -365,7 +365,7 @@ The design also limits free-form multi-agent planning. M-EXRx uses three permane
 
 This artifact is for research on rule-governed generative decision support. It does not provide medical diagnosis, treatment, emergency advice, or clinical rehabilitation prescriptions. Exercise prescription can involve safety risks when users report pain, fever, chest pain, palpitations, syncope, heat illness symptoms, abnormal fatigue, recent injury, or missing profile information; responsible systems may need refusal, professional evaluation, or clarification rather than a modified workout \cite{riebe2015screening,acsm2021guidelines}.
 
-M-EXRxBench is synthetic and contains no real patient records, athlete telemetry, wearable streams, or private health information. The cases test rule boundaries, not real-world prevalence. A real deployment would require prospective validation, domain-expert governance, localized guidance, distribution-shift monitoring, privacy review, and clear escalation pathways for red-flag symptoms.
+M-EXRxBench is synthetic and contains no real patient records, athlete telemetry, wearable streams, or private health information. The cases test rule boundaries, not real-world prevalence. Rule-basis links make labels inspectable, but they do not convert the benchmark into a clinical validation study. A real deployment would require prospective validation, domain-expert governance, localized guidance, distribution-shift monitoring, privacy review, and clear escalation pathways for red-flag symptoms.
 
 \section{Artifact Availability}
 

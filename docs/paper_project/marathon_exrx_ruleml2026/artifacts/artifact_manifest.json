@@ -1,8 +1,8 @@
 {
   "artifact": "Rule-Governed M-EXRx Agent Rule Challenge package",
-  "version": "v0.4-500-case-benchmark",
+  "version": "v0.5-traceable-labeled-dataset",
   "benchmark_scope": {
-    "default": "M-EXRxBench v0.4 balanced 500-case synthetic benchmark",
+    "default": "M-EXRxBench v0.5 traceable labeled synthetic benchmark over the v0.4 500-case case set",
     "supplemental_hard": {
       "name": "M-EXRxBench v0.4-hard-100",
       "cases": 100,
@@ -32,63 +32,429 @@
     "cd paper && latexmk -xelatex -interaction=nonstopmode -halt-on-error main.tex"
   ],
   "release_files": [
-    { "path": "README.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "TODO.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "artifact_checklist.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "open_science_release_plan.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "submission_go_no_go.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "LICENSE-CODE-MIT.txt", "type": "license", "license": "MIT", "generated_by": "manual" },
-    { "path": "LICENSE-DATA-CC-BY-4.0.txt", "type": "license", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "requirements.txt", "type": "environment", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": ".gitignore", "type": "release hygiene", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "paper/main.tex", "type": "paper source", "license": "CEUR/author submission policy", "generated_by": "manual" },
-    { "path": "submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf", "type": "paper pdf", "license": "CEUR/author submission policy", "generated_by": "latexmk" },
-    { "path": "submission_upload/paper/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf", "type": "submission pdf", "license": "CEUR/author submission policy", "generated_by": "latexmk" },
-    { "path": "benchmark/system_visible_cases.jsonl", "type": "benchmark input", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "benchmark/gold_labels.jsonl", "type": "evaluator labels", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "benchmark/m_exrxbench_v0.4_500_cases.jsonl", "type": "labeled benchmark", "license": "CC BY 4.0", "generated_by": "benchmark/generate_v04_benchmark.py" },
-    { "path": "benchmark/m_exrxbench_v0.4_hard_100_cases.jsonl", "type": "supplemental labeled hard benchmark", "license": "CC BY 4.0", "generated_by": "benchmark/generate_hard100_benchmark.py" },
-    { "path": "benchmark/hard_system_visible_cases.jsonl", "type": "supplemental hard benchmark input", "license": "CC BY 4.0", "generated_by": "benchmark/generate_hard100_benchmark.py" },
-    { "path": "benchmark/hard_gold_labels.jsonl", "type": "supplemental hard evaluator labels", "license": "CC BY 4.0", "generated_by": "benchmark/generate_hard100_benchmark.py" },
-    { "path": "benchmark/generate_hard100_benchmark.py", "type": "supplemental hard data generator", "license": "MIT", "generated_by": "manual" },
-    { "path": "benchmark/result_schema.json", "type": "schema", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "rule_spec/trace_schema.json", "type": "schema", "license": "CC BY 4.0", "generated_by": "manual" },
-    { "path": "demo/run_demo.py", "type": "code", "license": "MIT", "generated_by": "manual" },
-    { "path": "demo/run_benchmark.py", "type": "code", "license": "MIT", "generated_by": "manual" },
-    { "path": "demo/run_baselines.py", "type": "code", "license": "MIT", "generated_by": "manual" },
-    { "path": "demo/evaluate_results.py", "type": "code", "license": "MIT", "generated_by": "manual" },
-    { "path": "demo/static_trace_viewer.html", "type": "demo", "license": "MIT", "generated_by": "manual" },
-    { "path": "reproducibility/run_all.ps1", "type": "reproduction script", "license": "MIT", "generated_by": "manual" },
-    { "path": "reproducibility/run_hard100.ps1", "type": "supplemental hard reproduction script", "license": "MIT", "generated_by": "manual" },
-    { "path": "artifacts/demo_runs/full_rule_governed_v04.json", "type": "precomputed proposed-system output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/demo_runs/full_rule_governed_eval.json", "type": "precomputed proposed-system evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/demo_runs/full_rule_governed_eval_summary.md", "type": "precomputed proposed-system evaluation summary", "license": "CC BY 4.0", "generated_by": "demo/summarize_results.py" },
-    { "path": "artifacts/demo_runs/hard100_full_rule_governed.json", "type": "precomputed hard-set proposed-system output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_hard100.ps1" },
-    { "path": "artifacts/demo_runs/hard100_full_rule_governed_eval.json", "type": "precomputed hard-set evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/naked_llm.json", "type": "precomputed baseline output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/naked_llm.eval.json", "type": "precomputed baseline evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/vanilla_rag.json", "type": "precomputed baseline output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/vanilla_rag.eval.json", "type": "precomputed baseline evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/multi_agent_no_rule_gate.json", "type": "precomputed baseline output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/multi_agent_no_rule_gate.eval.json", "type": "precomputed baseline evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/full_rule_governed.json", "type": "precomputed proposed-system baseline-table output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/full_rule_governed.eval.json", "type": "precomputed proposed-system baseline-table evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/no_risk_gate.json", "type": "precomputed component-ablation output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/no_risk_gate.eval.json", "type": "precomputed component-ablation evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/no_evidence_gate.json", "type": "precomputed component-ablation output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/no_evidence_gate.eval.json", "type": "precomputed component-ablation evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/no_contract.json", "type": "precomputed component-ablation output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/no_contract.eval.json", "type": "precomputed component-ablation evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/no_repair.json", "type": "precomputed component-ablation output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/no_repair.eval.json", "type": "precomputed component-ablation evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/baseline_runs/no_auditor.json", "type": "precomputed component-ablation output", "license": "CC BY 4.0", "generated_by": "reproducibility/run_all.ps1" },
-    { "path": "artifacts/baseline_runs/no_auditor.eval.json", "type": "precomputed component-ablation evaluation", "license": "CC BY 4.0", "generated_by": "demo/evaluate_results.py" },
-    { "path": "artifacts/artifact_manifest.json", "type": "manifest", "license": "CC BY 4.0", "generated_by": "manual" }
+    {
+      "path": "README.md",
+      "type": "documentation",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "TODO.md",
+      "type": "documentation",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "artifact_checklist.md",
+      "type": "documentation",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "open_science_release_plan.md",
+      "type": "documentation",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "submission_go_no_go.md",
+      "type": "documentation",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "LICENSE-CODE-MIT.txt",
+      "type": "license",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "LICENSE-DATA-CC-BY-4.0.txt",
+      "type": "license",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "requirements.txt",
+      "type": "environment",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": ".gitignore",
+      "type": "release hygiene",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "paper/main.tex",
+      "type": "paper source",
+      "license": "CEUR/author submission policy",
+      "generated_by": "manual"
+    },
+    {
+      "path": "submission_package/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf",
+      "type": "paper pdf",
+      "license": "CEUR/author submission policy",
+      "generated_by": "latexmk"
+    },
+    {
+      "path": "submission_upload/paper/A_Trace-Governed_Rule_Challenge_for_Evidence-Bounded_Exercise_Prescription.pdf",
+      "type": "submission pdf",
+      "license": "CEUR/author submission policy",
+      "generated_by": "latexmk"
+    },
+    {
+      "path": "benchmark/system_visible_cases.jsonl",
+      "type": "benchmark input",
+      "license": "CC BY 4.0",
+      "generated_by": "manual",
+      "row_count": 500,
+      "sha256": "adf19df66e619dde91c19f3ebf7e3a4935f52fe9bb534232cb302b2683322c2a",
+      "split_role": "system_visible",
+      "schema": "benchmark/traceable_dataset_schema.json#system_visible",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/gold_labels.jsonl",
+      "type": "evaluator labels",
+      "license": "CC BY 4.0",
+      "generated_by": "manual",
+      "row_count": 500,
+      "sha256": "8d904f22314f15e322a08e50505ed55fc72b5b61e979cd86a400848f59fed9ce",
+      "split_role": "evaluator_gold",
+      "schema": "benchmark/traceable_dataset_schema.json#evaluator_gold",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/m_exrxbench_v0.4_500_cases.jsonl",
+      "type": "labeled benchmark",
+      "license": "CC BY 4.0",
+      "generated_by": "benchmark/generate_v04_benchmark.py",
+      "row_count": 500,
+      "sha256": "9f2c5c27799e1cc91c1bcb9a75955f6e49ea54d8a2b759eee87f7a844cf6734b",
+      "split_role": "labeled_full",
+      "schema": "benchmark/traceable_dataset_schema.json#labeled_full",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/m_exrxbench_v0.4_hard_100_cases.jsonl",
+      "type": "supplemental labeled hard benchmark",
+      "license": "CC BY 4.0",
+      "generated_by": "benchmark/generate_hard100_benchmark.py",
+      "row_count": 100,
+      "sha256": "2fc8ba51e893aa91766e5e3453c57eca58f141c7553a4c792f1d60cf972c2b24",
+      "split_role": "hard_labeled_full",
+      "schema": "benchmark/traceable_dataset_schema.json#labeled_full",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/hard_system_visible_cases.jsonl",
+      "type": "supplemental hard benchmark input",
+      "license": "CC BY 4.0",
+      "generated_by": "benchmark/generate_hard100_benchmark.py",
+      "row_count": 100,
+      "sha256": "47cc231fbd676fa8b48e8c5ec4c29320b249332715999ba953208a5816a6e70a",
+      "split_role": "hard_system_visible",
+      "schema": "benchmark/traceable_dataset_schema.json#system_visible",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/hard_gold_labels.jsonl",
+      "type": "supplemental hard evaluator labels",
+      "license": "CC BY 4.0",
+      "generated_by": "benchmark/generate_hard100_benchmark.py",
+      "row_count": 100,
+      "sha256": "fa1356d83906b19f6eeb3c7050042e73165e2a19d6f0be75319cf11d31b561f9",
+      "split_role": "hard_evaluator_gold",
+      "schema": "benchmark/traceable_dataset_schema.json#evaluator_gold",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/generate_hard100_benchmark.py",
+      "type": "supplemental hard data generator",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "benchmark/result_schema.json",
+      "type": "schema",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "rule_spec/trace_schema.json",
+      "type": "schema",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "demo/run_demo.py",
+      "type": "code",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "demo/run_benchmark.py",
+      "type": "code",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "demo/run_baselines.py",
+      "type": "code",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "demo/evaluate_results.py",
+      "type": "code",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "demo/static_trace_viewer.html",
+      "type": "demo",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "reproducibility/run_all.ps1",
+      "type": "reproduction script",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "reproducibility/run_hard100.ps1",
+      "type": "supplemental hard reproduction script",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "artifacts/demo_runs/full_rule_governed_v04.json",
+      "type": "precomputed proposed-system output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/demo_runs/full_rule_governed_eval.json",
+      "type": "precomputed proposed-system evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/demo_runs/full_rule_governed_eval_summary.md",
+      "type": "precomputed proposed-system evaluation summary",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/summarize_results.py"
+    },
+    {
+      "path": "artifacts/demo_runs/hard100_full_rule_governed.json",
+      "type": "precomputed hard-set proposed-system output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_hard100.ps1"
+    },
+    {
+      "path": "artifacts/demo_runs/hard100_full_rule_governed_eval.json",
+      "type": "precomputed hard-set evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/naked_llm.json",
+      "type": "precomputed baseline output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/naked_llm.eval.json",
+      "type": "precomputed baseline evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/vanilla_rag.json",
+      "type": "precomputed baseline output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/vanilla_rag.eval.json",
+      "type": "precomputed baseline evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/multi_agent_no_rule_gate.json",
+      "type": "precomputed baseline output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/multi_agent_no_rule_gate.eval.json",
+      "type": "precomputed baseline evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/full_rule_governed.json",
+      "type": "precomputed proposed-system baseline-table output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/full_rule_governed.eval.json",
+      "type": "precomputed proposed-system baseline-table evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_risk_gate.json",
+      "type": "precomputed component-ablation output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_risk_gate.eval.json",
+      "type": "precomputed component-ablation evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_evidence_gate.json",
+      "type": "precomputed component-ablation output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_evidence_gate.eval.json",
+      "type": "precomputed component-ablation evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_contract.json",
+      "type": "precomputed component-ablation output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_contract.eval.json",
+      "type": "precomputed component-ablation evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_repair.json",
+      "type": "precomputed component-ablation output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_repair.eval.json",
+      "type": "precomputed component-ablation evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_auditor.json",
+      "type": "precomputed component-ablation output",
+      "license": "CC BY 4.0",
+      "generated_by": "reproducibility/run_all.ps1"
+    },
+    {
+      "path": "artifacts/baseline_runs/no_auditor.eval.json",
+      "type": "precomputed component-ablation evaluation",
+      "license": "CC BY 4.0",
+      "generated_by": "demo/evaluate_results.py"
+    },
+    {
+      "path": "artifacts/artifact_manifest.json",
+      "type": "manifest",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "benchmark/rule_basis_sources.md",
+      "type": "traceability documentation",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "benchmark/rule_basis_sources.json",
+      "type": "traceability registry",
+      "license": "CC BY 4.0",
+      "generated_by": "manual",
+      "sha256": "c46603f2dc68b0e6348648dd90e5745907bdf5d9ea4cd3a3eaa3843f3ec25850",
+      "schema": "self-describing JSON",
+      "claim_boundary": "source-informed traceability metadata; not clinical validation"
+    },
+    {
+      "path": "benchmark/case_to_rule_basis_map.jsonl",
+      "type": "case rule-basis map",
+      "license": "CC BY 4.0",
+      "generated_by": "mapping generator",
+      "row_count": 500,
+      "sha256": "3ee0f4056d3b1053fa0e2df5362f702a15fca7c7b81fb0a1b69641d2a7487fdb",
+      "split_role": "case_rule_basis_map",
+      "schema": "benchmark/traceable_dataset_schema.json#case_rule_basis_map",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/hard_case_to_rule_basis_map.jsonl",
+      "type": "hard case rule-basis map",
+      "license": "CC BY 4.0",
+      "generated_by": "mapping generator",
+      "row_count": 100,
+      "sha256": "e0192aab00428be2a9d0b6b180c0ba9e8e63da5c7da66ee657c1731695fd6831",
+      "split_role": "hard_case_rule_basis_map",
+      "schema": "benchmark/traceable_dataset_schema.json#case_rule_basis_map",
+      "claim_boundary": "synthetic rule-compliance benchmark data; not clinical validation"
+    },
+    {
+      "path": "benchmark/case_to_rule_basis_map_summary.md",
+      "type": "traceability summary",
+      "license": "CC BY 4.0",
+      "generated_by": "mapping generator"
+    },
+    {
+      "path": "benchmark/hard_case_to_rule_basis_map_summary.md",
+      "type": "hard traceability summary",
+      "license": "CC BY 4.0",
+      "generated_by": "mapping generator"
+    },
+    {
+      "path": "benchmark/traceable_dataset_schema.json",
+      "type": "traceable dataset schema",
+      "license": "CC BY 4.0",
+      "generated_by": "manual",
+      "sha256": "756a96c9c48c05639b8c5a651ef23098599a31bb575f2c9bd787df46cccbd674",
+      "schema": "self-describing JSON",
+      "claim_boundary": "source-informed traceability metadata; not clinical validation"
+    },
+    {
+      "path": "benchmark/validate_traceable_dataset.py",
+      "type": "traceable dataset validator",
+      "license": "MIT",
+      "generated_by": "manual"
+    },
+    {
+      "path": "benchmark/annotation_protocol_v0.5.md",
+      "type": "annotation protocol",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    },
+    {
+      "path": "benchmark/traceable_upgrade_audit.md",
+      "type": "traceability audit",
+      "license": "CC BY 4.0",
+      "generated_by": "manual"
+    }
   ],
   "notes": [
     "Deterministic reference artifact; no external LLM required.",
     "Reported metrics are synthetic benchmark rule-compliance signals, not clinical validation.",
-    "The v0.4-hard-100 subset is supplemental and must not change default v0.4/500 reporting.",
-    "The artifact excludes real health records, real athlete telemetry, private credentials, and unrelated manuscript sources."
+    "The artifact excludes real health records, real athlete telemetry, private credentials, and unrelated manuscript sources.",
+    "v0.5 adds rule-basis traceability metadata for each gold label while preserving solver-visible inputs."
   ]
 }

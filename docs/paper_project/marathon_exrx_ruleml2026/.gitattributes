@@ -1,0 +1,4 @@
+# Keep byte-level manifest hashes stable across Windows checkouts and git archive.
+benchmark/*.json text eol=lf
+benchmark/*.jsonl text eol=lf
+artifacts/artifact_manifest.json text eol=lf

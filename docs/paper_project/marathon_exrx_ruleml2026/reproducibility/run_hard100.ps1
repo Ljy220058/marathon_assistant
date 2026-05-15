@@ -17,10 +17,19 @@ if (-not (Test-Path $Gold)) {
 
 New-Item -ItemType Directory -Force -Path artifacts\demo_runs | Out-Null
 
-$Python = @("conda", "run", "-n", "torch2.5.1", "python")
+if ($env:MEXRX_PYTHON) {
+  $Python = @($env:MEXRX_PYTHON)
+} else {
+  $Python = @("python")
+}
+function Invoke-Python {
+  & $Python[0] @($Python | Select-Object -Skip 1) @args
+}
 
-& $Python[0] $Python[1] $Python[2] $Python[3] $Python[4] demo\run_benchmark.py --cases $Cases --output $Pred
-& $Python[0] $Python[1] $Python[2] $Python[3] $Python[4] demo\evaluate_results.py --gold $Gold --pred $Pred --output $Eval
-& $Python[0] $Python[1] $Python[2] $Python[3] $Python[4] demo\summarize_results.py --eval $Eval --output $Summary
+Invoke-Python benchmark\validate_traceable_dataset.py
+Invoke-Python demo\run_benchmark.py --cases $Cases --output $Pred
+Invoke-Python demo\evaluate_results.py --gold $Gold --pred $Pred --output $Eval
+Invoke-Python demo\summarize_results.py --eval $Eval --output $Summary
+Invoke-Python benchmark\validate_traceable_dataset.py
 
 Write-Output "m_exrx_hard100_reproducibility_ok"
