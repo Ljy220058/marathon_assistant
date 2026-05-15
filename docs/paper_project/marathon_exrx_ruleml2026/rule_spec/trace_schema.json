@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M-EXRxTrace",
+  "type": "object",
+  "required": [
+    "case_id",
+    "profile_version",
+    "risk_level",
+    "rules_fired",
+    "evidence_ids",
+    "action_ids",
+    "expert_calls",
+    "audit_result",
+    "repair_log",
+    "final_status"
+  ],
+  "properties": {
+    "case_id": { "type": "string" },
+    "profile_version": { "type": "string" },
+    "risk_level": { "enum": ["R0", "R1", "R2", "R3"] },
+    "rules_fired": { "type": "array", "items": { "type": "string" } },
+    "evidence_ids": { "type": "array", "items": { "type": "string" } },
+    "action_ids": { "type": "array", "items": { "type": "string" } },
+    "expert_calls": { "type": "array", "items": { "type": "string" } },
+    "audit_result": { "enum": ["pass", "repair_required", "review_required", "fail"] },
+    "repair_log": { "type": "array" },
+    "final_status": { "enum": ["answered", "partial_answer", "ask_clarification", "refused"] },
+    "generated_at": { "type": "string" }
+  }
+}

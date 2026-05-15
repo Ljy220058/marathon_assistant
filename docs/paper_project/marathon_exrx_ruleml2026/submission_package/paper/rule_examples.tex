@@ -1,0 +1,51 @@
+\subsection{Rule formalization}
+
+M-EXRx treats the rule layer as the component that records the binding decision.
+Each rule has the form
+\[
+r=\langle id, layer, priority, body, decision, obligations, prohibitions,
+evidence, trace\rangle .
+\]
+The body follows the shape of a RuleML implication, and the consequent emits
+decision, obligation, prohibition, and trace atoms. The decision vocabulary is
+\texttt{allow}, \texttt{downgrade}, \texttt{ask\_clarification},
+\texttt{repair\_required}, and \texttt{refuse}.
+
+Conflicts are resolved by strict priority:
+\[
+\begin{array}{l}
+red\_flags > injury/fatigue/environment > scope > evidence\\
+> protocol > capacity > progression > user\_preference .
+\end{array}
+\]
+Thus a preference for intervals cannot override chest pain, heat illness,
+acute injury escalation, or missing prescription evidence.
+
+For a candidate plan \(P\) and contract \(C\), an \texttt{answered} output is
+legal only when \(P\) uses allowed actions, avoids forbidden actions, respects
+volume and intensity budgets, supports prescriptive claims with eligible
+evidence, and emits the required trace. Otherwise the system must downgrade,
+ask for clarification, return a partial answer, or refuse. Evidence eligibility
+is narrower than retrieval relevance: protocol rules and active action-library
+entries may authorize prescription, while ordinary retrieved literature remains
+explanation-only unless promoted into an approved rule or action.
+
+\paragraph{Canonical decisions.}
+Four rule patterns cover the benchmark interface:
+\[
+\begin{array}{ll}
+\mathrm{Allow:} &
+R1 \wedge allowed\_action \wedge eligible\_evidence
+  \Rightarrow \texttt{allow}.\\
+\mathrm{Downgrade:} &
+fatigue\_signal \wedge requested\_hard\_session
+  \Rightarrow \texttt{downgrade}.\\
+\mathrm{Refuse:} &
+medical\_red\_flag \wedge asks\_for\_workout
+  \Rightarrow \texttt{refuse}.\\
+\mathrm{Clarify:} &
+missing\_profile \wedge individualized\_plan
+  \Rightarrow \texttt{ask\_clarification}.
+\end{array}
+\]
+The full rule listing is part of the supplementary artifact.

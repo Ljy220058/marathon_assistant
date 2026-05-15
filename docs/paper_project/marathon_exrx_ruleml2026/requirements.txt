@@ -1,0 +1,3 @@
+# Runtime uses the Python standard library only.
+# Recommended local environment for this workspace:
+# conda run -n torch2.5.1 python ...

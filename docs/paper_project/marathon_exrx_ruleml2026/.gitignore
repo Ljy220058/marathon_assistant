@@ -1,0 +1,25 @@
+# LaTeX build products
+paper/*.aux
+paper/*.abs
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.xmpi
+paper/*.xdv
+paper/*.synctex.gz
+paper/*.toc
+
+# Python caches
+**/__pycache__/
+*.pyc
+
+# Local-only packages and archives
+*.zip
+*.tar
+*.tar.gz
+
+# Internal non-submission materials
+non_submission_archive/

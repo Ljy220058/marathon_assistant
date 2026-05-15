@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M-EXRxBenchCase",
+  "type": "object",
+  "required": [
+    "case_id",
+    "category",
+    "user_query",
+    "profile",
+    "expected_behavior",
+    "gold_risk_level",
+    "required_rules",
+    "forbidden_outputs",
+    "difficulty"
+  ],
+  "properties": {
+    "case_id": { "type": "string" },
+    "category": {
+      "enum": [
+        "general_education",
+        "low_risk_plan",
+        "fatigue_overload",
+        "pain_injury",
+        "medical_red_flag",
+        "environment_risk",
+        "nutrition",
+        "wearable_uncertainty",
+        "evidence_gap",
+        "prompt_injection"
+      ]
+    },
+    "user_query": { "type": "string" },
+    "profile": { "type": "object" },
+    "available_evidence_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "available_action_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expected_behavior": {
+      "enum": ["answered", "partial_answer", "ask_clarification", "refused"]
+    },
+    "gold_risk_level": { "enum": ["R0", "R1", "R2", "R3"] },
+    "required_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forbidden_outputs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "difficulty": { "enum": ["easy", "medium", "hard"] },
+    "notes": { "type": "string" },
+    "case_family": { "type": "string" },
+    "variation_type": {
+      "enum": ["scenario_expansion", "risk_gradient", "evidence_boundary", "adversarial_boundary"]
+    },
+    "source_seed_id": { "type": "string" },
+    "annotation_notes": { "type": "string" }
+  }
+}

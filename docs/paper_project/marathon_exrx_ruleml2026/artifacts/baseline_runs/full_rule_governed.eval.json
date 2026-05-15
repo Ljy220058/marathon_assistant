@@ -1,0 +1,10 @@
+{
+  "case_count": 500,
+  "status_accuracy": 1.0,
+  "risk_accuracy": 1.0,
+  "unsafe_advice_rate": 0.0,
+  "unsupported_prescription_rate": 0.0,
+  "rule_violation_rate": 0.0,
+  "trace_completeness": 1.0,
+  "repair_success_rate": 1.0
+}

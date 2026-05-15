@@ -1,0 +1,70 @@
+{
+  "artifact": "Rule-Governed M-EXRx Agent Rule Challenge package",
+  "version": "v0.4-500-case-benchmark",
+  "benchmark_scope": {
+    "default": "M-EXRxBench v0.4 balanced 500-case synthetic benchmark",
+    "supplemental_hard": {
+      "name": "M-EXRxBench v0.4-hard-100",
+      "cases": 100,
+      "purpose": "reviewer-facing hard stress subset for rule priority, safety refusal, evidence boundary, and prompt/retrieval injection",
+      "status": "available; evaluated separately from the default v0.4/500 benchmark",
+      "current_reference_metrics": {
+        "status_accuracy": 0.67,
+        "risk_accuracy": 0.72,
+        "unsafe_advice_rate": 0.09,
+        "unsupported_prescription_rate": 0.0,
+        "trace_completeness": 1.0
+      },
+      "claim_boundary": "not clinical validation, not real-world safety evidence, and not external generalization proof"
+    }
+  },
+  "repository": "https://github.com/Ljy220058/marathon_assistant",
+  "artifact_path": "this artifact directory in the public repository",
+  "license_policy": {
+    "code": "MIT",
+    "data_docs": "CC BY 4.0",
+    "paper": "CEUR/author submission policy"
+  },
+  "core_commands": [
+    "conda run -n torch2.5.1 python demo/validate_artifacts.py",
+    "powershell -ExecutionPolicy Bypass -File reproducibility/run_all.ps1",
+    "powershell -ExecutionPolicy Bypass -File reproducibility/run_hard100.ps1",
+    "cd paper && latexmk -xelatex -interaction=nonstopmode -halt-on-error main.tex"
+  ],
+  "release_files": [
+    { "path": "README.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "TODO.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "artifact_checklist.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "open_science_release_plan.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "submission_go_no_go.md", "type": "documentation", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "LICENSE-CODE-MIT.txt", "type": "license", "license": "MIT", "generated_by": "manual" },
+    { "path": "LICENSE-DATA-CC-BY-4.0.txt", "type": "license", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "requirements.txt", "type": "environment", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": ".gitignore", "type": "release hygiene", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "paper/main.tex", "type": "paper source", "license": "CEUR/author submission policy", "generated_by": "manual" },
+    { "path": "paper/main.pdf", "type": "paper pdf", "license": "CEUR/author submission policy", "generated_by": "latexmk" },
+    { "path": "benchmark/system_visible_cases.jsonl", "type": "benchmark input", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "benchmark/gold_labels.jsonl", "type": "evaluator labels", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "benchmark/m_exrxbench_v0.4_500_cases.jsonl", "type": "labeled benchmark", "license": "CC BY 4.0", "generated_by": "benchmark/generate_v04_benchmark.py" },
+    { "path": "benchmark/m_exrxbench_v0.4_hard_100_cases.jsonl", "type": "supplemental labeled hard benchmark", "license": "CC BY 4.0", "generated_by": "benchmark/generate_hard100_benchmark.py" },
+    { "path": "benchmark/hard_system_visible_cases.jsonl", "type": "supplemental hard benchmark input", "license": "CC BY 4.0", "generated_by": "benchmark/generate_hard100_benchmark.py" },
+    { "path": "benchmark/hard_gold_labels.jsonl", "type": "supplemental hard evaluator labels", "license": "CC BY 4.0", "generated_by": "benchmark/generate_hard100_benchmark.py" },
+    { "path": "benchmark/generate_hard100_benchmark.py", "type": "supplemental hard data generator", "license": "MIT", "generated_by": "manual" },
+    { "path": "benchmark/result_schema.json", "type": "schema", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "rule_spec/trace_schema.json", "type": "schema", "license": "CC BY 4.0", "generated_by": "manual" },
+    { "path": "demo/run_demo.py", "type": "code", "license": "MIT", "generated_by": "manual" },
+    { "path": "demo/run_benchmark.py", "type": "code", "license": "MIT", "generated_by": "manual" },
+    { "path": "demo/run_baselines.py", "type": "code", "license": "MIT", "generated_by": "manual" },
+    { "path": "demo/evaluate_results.py", "type": "code", "license": "MIT", "generated_by": "manual" },
+    { "path": "demo/static_trace_viewer.html", "type": "demo", "license": "MIT", "generated_by": "manual" },
+    { "path": "reproducibility/run_all.ps1", "type": "reproduction script", "license": "MIT", "generated_by": "manual" },
+    { "path": "reproducibility/run_hard100.ps1", "type": "supplemental hard reproduction script", "license": "MIT", "generated_by": "manual" },
+    { "path": "artifacts/artifact_manifest.json", "type": "manifest", "license": "CC BY 4.0", "generated_by": "manual" }
+  ],
+  "notes": [
+    "Deterministic reference artifact; no external LLM required.",
+    "Reported metrics are synthetic benchmark rule-compliance signals, not clinical validation.",
+    "The v0.4-hard-100 subset is supplemental and must not change default v0.4/500 reporting.",
+    "The artifact excludes real health records, real athlete telemetry, private credentials, and unrelated manuscript sources."
+  ]
+}

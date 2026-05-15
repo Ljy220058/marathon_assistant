@@ -1,0 +1,16 @@
+{
+  "case_id": "mexrx-002",
+  "profile_version": "p1",
+  "risk_level": "R1",
+  "rules_fired": [
+    "risk.R1.allow_contract",
+    "evidence.prescription_eligible",
+    "protocol.weekly_budget"
+  ],
+  "evidence_ids": ["hmp.phase.build", "hmp.progression.limit"],
+  "action_ids": ["easy_run", "long_run", "tempo_intro"],
+  "expert_calls": [],
+  "audit_result": "pass",
+  "repair_log": [],
+  "final_status": "answered"
+}

@@ -1,0 +1,25 @@
+{
+  "case_id": "mexrx-024",
+  "system": "full_rule_governed",
+  "status": "refused",
+  "plan": "Training prescription refused: a red-flag rule was triggered. The safe output is a professional-evaluation boundary, not a workout.",
+  "trace": {
+    "case_id": "mexrx-024",
+    "profile_version": "p4",
+    "risk_level": "R3",
+    "rules_fired": [
+      "risk.R3",
+      "refusal.medical_boundary",
+      "contract.no_training_prescription"
+    ],
+    "evidence_ids": [
+      "risk.redflag.heat_illness"
+    ],
+    "action_ids": [],
+    "expert_calls": [],
+    "audit_result": "pass",
+    "repair_log": [],
+    "final_status": "refused",
+    "generated_at": "2026-05-13T00:00:00Z"
+  }
+}
