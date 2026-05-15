@@ -1,0 +1,10 @@
+{
+  "profile_version": "sample-v1",
+  "age_group": "adult",
+  "weekly_km": 25,
+  "usual_weekly_km": 25,
+  "weeks_to_race": 8,
+  "injury": false,
+  "goal": "finish half marathon safely",
+  "available_days": ["Tue", "Thu", "Sat", "Sun"]
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>M-EXRx Trace Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; line-height: 1.45; }
+    textarea { width: 100%; min-height: 180px; font-family: Consolas, monospace; }
+    button { padding: 8px 12px; }
+    pre { background: #f5f5f5; padding: 12px; overflow: auto; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .cell { border: 1px solid #ccc; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>M-EXRx Trace Viewer</h1>
+  <p>Paste one JSON result from <code>demo/run_demo.py</code> or a result item from a benchmark run.</p>
+  <textarea id="input">{
+  "case_id": "mexrx-005",
+  "system": "full_rule_governed",
+  "status": "refused",
+  "plan": "Training prescription refused: a red-flag rule was triggered.",
+  "trace": {
+    "risk_level": "R3",
+    "rules_fired": ["risk.R3", "refusal.medical_boundary"],
+    "evidence_ids": ["risk.redflag.chest_pain"],
+    "action_ids": [],
+    "repair_log": [],
+    "final_status": "refused"
+  }
+}</textarea>
+  <p><button onclick="render()">Render</button></p>
+  <div id="out"></div>
+  <script>
+    function render() {
+      const data = JSON.parse(document.getElementById('input').value);
+      const trace = data.trace || {};
+      document.getElementById('out').innerHTML = `
+        <div class="grid">
+          <div class="cell"><b>Case</b><pre>${data.case_id}</pre></div>
+          <div class="cell"><b>Status</b><pre>${data.status}</pre></div>
+          <div class="cell"><b>Risk</b><pre>${trace.risk_level || ''}</pre></div>
+          <div class="cell"><b>Rules Fired</b><pre>${JSON.stringify(trace.rules_fired || [], null, 2)}</pre></div>
+          <div class="cell"><b>Evidence / Actions</b><pre>${JSON.stringify({evidence_ids: trace.evidence_ids || [], action_ids: trace.action_ids || []}, null, 2)}</pre></div>
+          <div class="cell"><b>Repair Log</b><pre>${JSON.stringify(trace.repair_log || [], null, 2)}</pre></div>
+        </div>
+        <h2>Final Output</h2>
+        <pre>${data.plan || ''}</pre>
+      `;
+    }
+    render();
+  </script>
+</body>
+</html>

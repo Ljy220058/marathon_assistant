@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrescriptionContract",
+  "type": "object",
+  "required": [
+    "contract_id",
+    "profile_version",
+    "risk_level",
+    "goal",
+    "training_phase",
+    "allowed_actions",
+    "forbidden_actions",
+    "evidence_requirements",
+    "audit_rules",
+    "repair_scope"
+  ],
+  "properties": {
+    "contract_id": { "type": "string" },
+    "profile_version": { "type": "string" },
+    "risk_level": { "enum": ["R0", "R1", "R2", "R3"] },
+    "goal": { "type": "string" },
+    "training_phase": {
+      "enum": ["base", "build", "peak", "taper", "race_week", "recovery", "unknown"]
+    },
+    "allowed_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forbidden_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "volume_budget": {
+      "type": "object",
+      "properties": {
+        "weekly_km_min": { "type": "number" },
+        "weekly_km_max": { "type": "number" },
+        "max_progression_pct": { "type": "number" }
+      }
+    },
+    "intensity_budget": {
+      "type": "object",
+      "properties": {
+        "max_hard_sessions_per_week": { "type": "integer" },
+        "easy_ratio_min": { "type": "number" }
+      }
+    },
+    "recovery_requirement": {
+      "type": "object",
+      "properties": {
+        "min_rest_days": { "type": "integer" },
+        "must_include_deload": { "type": "boolean" }
+      }
+    },
+    "evidence_requirements": {
+      "type": "object",
+      "required": ["eligible_layers", "require_evidence_id"],
+      "properties": {
+        "eligible_layers": {
+          "type": "array",
+          "items": {
+            "enum": ["protocol_rule", "action_library", "curated_guideline"]
+          }
+        },
+        "require_evidence_id": { "type": "boolean" }
+      }
+    },
+    "expert_activation_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "audit_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "repair_scope": {
+      "type": "object",
+      "properties": {
+        "may_delete_unsupported_claims": { "type": "boolean" },
+        "may_downgrade_intensity": { "type": "boolean" },
+        "may_replace_with_approved_action": { "type": "boolean" },
+        "may_refuse": { "type": "boolean" },
+        "must_not_create_new_evidence": { "type": "boolean" }
+      }
+    }
+  }
+}

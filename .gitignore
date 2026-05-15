@@ -1,0 +1,21 @@
+# LaTeX build products
+paper/*.aux
+paper/*.abs
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.xdv
+paper/*.synctex.gz
+paper/*.toc
+
+# Python caches
+**/__pycache__/
+*.pyc
+
+# Local packages
+*.zip
+*.tar
+*.tar.gz

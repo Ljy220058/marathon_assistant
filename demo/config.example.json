@@ -1,0 +1,6 @@
+{
+  "rule_spec_dir": "../rule_spec",
+  "benchmark_path": "../benchmark/system_visible_cases.jsonl",
+  "output_dir": "../artifacts/demo_runs",
+  "mode": "deterministic_rule_layer"
+}

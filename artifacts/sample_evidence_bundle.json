@@ -1,0 +1,18 @@
+{
+  "bundle_id": "eb-sample-001",
+  "profile_version": "sample-v1",
+  "items": [
+    {
+      "evidence_id": "hmp.phase.build",
+      "layer": "protocol_rule",
+      "supports": ["training_phase", "weekly_structure"],
+      "limits": ["does not authorize medical advice"]
+    },
+    {
+      "evidence_id": "hmp.progression.limit",
+      "layer": "protocol_rule",
+      "supports": ["weekly_volume_budget"],
+      "limits": ["requires current mileage estimate"]
+    }
+  ]
+}
