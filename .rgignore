@@ -1,0 +1,6 @@
+apps/web/node_modules/
+apps/web/.npm-cache/
+apps/web/dist/
+.pytest_cache/
+**/__pycache__/
+archive/local_caches/

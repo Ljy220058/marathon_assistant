@@ -1,0 +1,19 @@
+# Default repository owner.
+* @Ljy220058
+
+# Product code.
+/apps/backend/ @Ljy220058
+/apps/web/ @Ljy220058
+/packages/ @Ljy220058
+
+# Research and data assets.
+/research/ @Ljy220058
+/data/ @Ljy220058
+/artifacts/ @Ljy220058
+
+# Repository governance and automation.
+/.github/ @Ljy220058
+/docs/ @Ljy220058
+/tools/ @Ljy220058
+/TODO.md @Ljy220058
+/CONTRIBUTING.md @Ljy220058
