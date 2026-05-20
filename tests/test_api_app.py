@@ -34,6 +34,30 @@ class _FakeIntegratedApp:
         }
 
 
+def _one_week_calendar_contract_plan():
+    return {
+        "plan_meta": {
+            "goal": "半马 PB",
+            "requested_weeks": 1,
+            "actual_weeks": 1,
+            "plan_type": "single_week",
+        },
+        "phase_summary": [
+            {"phase": "基础期", "start_week": 1, "end_week": 1, "objective": "建立有氧基础"},
+        ],
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "基础期",
+                "load_level": "easy",
+                "days": [
+                    {"day": "周二", "training_type": "VO2max", "main_set": ""},
+                ],
+            }
+        ],
+    }
+
+
 def test_query_rejects_unsupported_user_id():
     response = client.post(
         "/query",
@@ -82,6 +106,45 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
             "llm_timeout_sec": 12,
         }
     }
+
+
+def test_query_full_plan_backfills_calendar_contract_when_report_omits_it(monkeypatch):
+    structured_plan = _one_week_calendar_contract_plan()
+    fake_app = _FakeIntegratedApp(
+        result={
+            "final_report": "已生成训练计划。",
+            "structured_training_plan": structured_plan,
+            "structured_report": {"summary": "workflow report without calendar"},
+            "token_usage": {},
+            "audit_scores": {"consistency": 90, "safety": 90, "roi": 70, "summary": "通过"},
+            "guided_questions": [],
+        }
+    )
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "请给我生成 1 周半马训练计划",
+            "user_id": "default_user",
+            "response_mode": "full",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    calendar = payload["monthly_training_calendar"]
+    cards = payload["daily_schedule_cards"]
+    assert calendar["days"]
+    assert cards
+    assert len(cards) == len(calendar["days"]) == calendar["total_days"]
+    assert payload["phases"] == calendar["phases"]
+    assert payload["training_load_summary"] == calendar["training_load_summary"]
+    assert payload["structured_report"]["monthly_training_calendar"] == calendar
+    assert payload["structured_report"]["daily_schedule_cards"] == cards
 
 
 def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monkeypatch):
@@ -139,6 +202,16 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
     ]
     assert all(not text.startswith("hm_") for text in main_sets)
     assert not any("3:15/km" in text or "3:20/km" in text for text in main_sets)
+    daily_card_main_sets = [str(card.get("main_set") or "") for card in payload["daily_schedule_cards"]]
+    assert all(not text.startswith("hm_") for text in daily_card_main_sets)
+    assert not any("3×2000m" in text or "3:15/km" in text or "3:20/km" in text for text in daily_card_main_sets)
+    assert set(payload["generation_timings"]) >= {
+        "skeleton_build_sec",
+        "calendar_enrich_sec",
+        "save_plan_sec",
+        "total_sec",
+    }
+    assert all(isinstance(payload["generation_timings"][key], (int, float)) for key in payload["generation_timings"])
     assert payload["generation_timings"]["total_sec"] >= 0
     assert payload["training_plan_id"]
     assert db.get_plan(payload["training_plan_id"]) is not None
@@ -183,6 +256,237 @@ def test_skeleton_plan_respects_explicit_profile_prompt_weeks_over_stale_profile
     assert meta["requested_weeks"] == 12
     assert meta["actual_weeks"] == 12
     assert len(payload["structured_training_plan"]["week_plans"]) == 12
+
+
+def test_skeleton_plan_prompt_profile_fields_override_stale_profile_pollution(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    fake_app = _FakeIntegratedApp(error=AssertionError("skeleton mode should not call LLM workflow"))
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(
+        api_app,
+        "load_user_profile",
+        lambda: {
+            "goal": "旧画像：全马 3小时30分",
+            "weekly_mileage": 20,
+            "recent_four_week_mileage": 18,
+            "available_days": "周一",
+            "target_pace": "全马 3:30",
+            "injury_or_fatigue": "膝盖疼痛",
+            "plan_duration_weeks": 4,
+            "target_race_date": "",
+        },
+    )
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1160, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "\n".join(
+                [
+                    "请基于以下跑者画像生成训练计划：",
+                    "- goal: 半马 PB 1小时25分，目标破 1小时20分",
+                    "- target_race_date: 12周",
+                    "- weekly_mileage: 90 km",
+                    "- recent_four_week_mileage: 60 km",
+                    "- available_days: 周二, 周三, 周五, 周日",
+                    "- target_pace: 半马 1:20",
+                    "- injury_or_fatigue: 无",
+                ]
+            ),
+            "user_id": "default_user",
+            "response_mode": "skeleton",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    plan = payload["structured_training_plan"]
+    meta = plan["plan_meta"]
+    first_week_training_days = [
+        day["day"]
+        for day in plan["week_plans"][0]["days"]
+        if day["training_type"] != "休息"
+    ]
+    hm_protocol = plan["half_marathon_protocol"]
+    capacity_budget = hm_protocol["capacity_budget"]
+
+    assert payload["generation_status"] == "skeleton_ready"
+    assert meta["goal"].startswith("半马 PB")
+    assert meta["target_race_date"] == "12周"
+    assert meta["actual_weeks"] == 12
+    assert set(first_week_training_days).issubset({"周二", "周三", "周五", "周日"})
+    assert hm_protocol["active"] is True
+    assert hm_protocol["input_weekly_mileage_km"] == 90.0
+    assert hm_protocol["input_recent_four_week_mileage_km"] == 60.0
+    assert capacity_budget["volume_basis"] == "recent_four_week_mileage"
+    assert capacity_budget["quality_sessions_max"] == 2
+    assert fake_app.calls == []
+
+
+def test_skeleton_plan_accepts_unified_profile_contract_fields(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    fake_app = _FakeIntegratedApp(error=AssertionError("skeleton mode should not call LLM workflow"))
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(
+        api_app,
+        "load_user_profile",
+        lambda: {
+            "goal": "旧画像：半马完赛",
+            "weekly_mileage": 25,
+            "recent_four_week_mileage": 18,
+            "available_days": "周一",
+            "target_pace": "半马 1:55",
+            "target_half_time": "1:55:00",
+            "current_half_time": "2:00:00",
+            "injury": "有",
+            "plan_duration_weeks": 4,
+        },
+    )
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1160, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "\n".join(
+                [
+                    "请基于以下跑者画像生成训练计划：",
+                    "- goal: 半马 PB 1小时25分，目标破 1小时20分",
+                    "- target_race_date: 12周",
+                    "- weekly_mileage: 90 km",
+                    "- last_month_mileage: 60 km",
+                    "- available_days: 周二, 周三, 周五, 周日",
+                    "- current_half_time: 1:25:00",
+                    "- target_half_time: 1:20:00",
+                    "- target_pace: 半马 1:20",
+                    "- injury: none",
+                    "- recovery_state: normal",
+                ]
+            ),
+            "user_id": "default_user",
+            "response_mode": "skeleton",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    plan = payload["structured_training_plan"]
+    calibration = plan["plan_meta"]["performance_calibration"]
+    protocol = plan["half_marathon_protocol"]
+    capacity_budget = protocol["capacity_budget"]
+
+    assert payload["generation_status"] == "skeleton_ready"
+    assert plan["plan_meta"]["actual_weeks"] == 12
+    assert protocol["input_weekly_mileage_km"] == 90.0
+    assert protocol["input_recent_four_week_mileage_km"] == 60.0
+    assert capacity_budget["quality_sessions_max"] == 2
+    assert not any("疲劳或伤病风险" in note for note in capacity_budget["notes"])
+    assert calibration["status"] == "ambitious_target"
+    assert calibration["current_half_time_seconds"] == 5100
+    assert calibration["target_half_time_seconds"] == 4800
+    assert calibration["gap_seconds_per_km"] == 14
+    assert calibration["time_gap_seconds"] == 300
+    assert calibration["source_fields"] == ["current_half_time", "target_half_time"]
+    assert fake_app.calls == []
+
+
+def test_empty_skeleton_query_uses_existing_profile_for_plan_generation(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    fake_app = _FakeIntegratedApp(error=AssertionError("empty skeleton query should not call LLM workflow"))
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(
+        api_app,
+        "load_user_profile",
+        lambda: {
+            "goal": "半马 PB 1小时45分",
+            "weekly_mileage": 35,
+            "recent_four_week_mileage": 32,
+            "available_days": "周二,周四,周日",
+            "target_pace": "半马 1:45",
+            "target_race_date": "1个月",
+        },
+    )
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1160, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "",
+            "user_id": "default_user",
+            "response_mode": "skeleton",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["generation_status"] == "skeleton_ready"
+    assert payload["structured_training_plan"]["plan_meta"]["goal"] == "半马 PB 1小时45分"
+    assert payload["structured_training_plan"]["plan_meta"]["target_race_date"] == "1个月"
+    assert payload["structured_training_plan"]["plan_meta"]["actual_weeks"] == 4
+    assert payload["monthly_training_calendar"]["total_days"] == 28
+    assert payload["daily_schedule_cards"]
+    assert payload["training_plan_id"]
+    assert fake_app.calls == []
+
+
+def test_empty_skeleton_query_with_single_goal_field_still_generates_plan(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    fake_app = _FakeIntegratedApp(error=AssertionError("empty skeleton query should not call LLM workflow"))
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "完成首马"})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1160, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "",
+            "user_id": "default_user",
+            "response_mode": "skeleton",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["generation_status"] == "skeleton_ready"
+    assert payload["structured_training_plan"]["plan_meta"]["goal"] == "完成首马"
+    assert payload["monthly_training_calendar"]["days"]
+    assert payload["daily_schedule_cards"]
+    assert fake_app.calls == []
 
 
 def test_english_skeleton_query_accepts_unit_profile_and_keeps_12_weeks(tmp_path, monkeypatch):
@@ -321,6 +625,41 @@ def test_plan_query_full_timeout_falls_back_to_skeleton(tmp_path, monkeypatch):
     assert payload["structured_training_plan"]["week_plans"]
     assert payload["training_plan_id"]
     assert fake_app.calls[0]["config"]["configurable"]["llm_timeout_sec"] == 5
+
+
+def test_plan_query_full_error_falls_back_to_error_skeleton(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    fake_app = _FakeIntegratedApp(error=RuntimeError("model provider failed"))
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马完赛", "weekly_mileage": 28})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1160, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "帮我制定 8 周半马训练计划",
+            "user_id": "default_user",
+            "response_mode": "full",
+            "timeout_sec": 5,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["generation_status"] == "llm_error_skeleton"
+    assert payload["message"].startswith("完整 LLM 工作流异常")
+    assert payload["message"] != "完整工作流已返回。"
+    assert payload["monthly_training_calendar"]["days"]
+    assert payload["daily_schedule_cards"]
+    assert payload["training_plan_id"]
 
 
 def test_profile_get_and_post_support_frontend_bootstrap(monkeypatch):
@@ -519,6 +858,45 @@ def test_plan_save_accepts_calendar_settings_and_event_schedule_patch(tmp_path, 
     assert updated_event["scheduled_date"] == "2026-06-03"
     assert updated_event["start_time"] == "19:15"
     assert updated_event["duration_min"] == 45
+
+
+def test_training_calendar_response_exposes_full_calendar_and_daily_card_contract(monkeypatch):
+    structured_plan = _one_week_calendar_contract_plan()
+    fake_app = _FakeIntegratedApp(result={"structured_training_plan": structured_plan})
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+
+    response = client.post(
+        "/training-calendar",
+        json={
+            "query": "请给我生成 1 周半马训练计划",
+            "user_id": "default_user",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    calendar = payload["monthly_training_calendar"]
+    cards = payload["daily_schedule_cards"]
+    assert calendar["days"]
+    assert len(cards) == len(calendar["days"]) == calendar["total_days"]
+    assert payload["phases"] == calendar["phases"]
+    assert payload["training_load_summary"] == calendar["training_load_summary"]
+
+    required_card_fields = {
+        "warmup",
+        "main_set",
+        "cooldown",
+        "intensity",
+        "duration",
+        "training_load",
+        "training_objective",
+        "risk_gate",
+        "field_sources",
+    }
+    assert required_card_fields <= set(cards[0])
+    assert cards[0]["risk_gate"]
+    assert cards[0]["field_sources"]
 
 
 def test_feedback_endpoint_returns_adaptive_adjustment():

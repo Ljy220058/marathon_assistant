@@ -72,21 +72,21 @@ py -3 tests/integration_workflow_test.py
 
 ### 启动前端 (Astro)
 
-当前主交互界面是 `frontend/` 下的 Astro 前端。请先启动 FastAPI 后端，再启动前端：
+当前主交互界面是 `apps/web/` 下的 Astro 前端。请先启动 FastAPI 后端，再启动前端：
 
 ```bash
-cd frontend
+cd apps/web
 npm run dev
 ```
 
-中文路径下建议使用 `frontend/start_ascii.cmd`，脚本会把前端同步到临时英文路径后启动，避免 Vite/esbuild 解析路径失败。
+中文路径下建议使用 `apps/web/start_ascii.cmd`，脚本会把前端同步到临时英文路径后启动，避免 Vite/esbuild 解析路径失败。
 
 ### 启动后端 API (FastAPI)
 
 如果需要通过接口调用：
 
 ```bash
-python marathon_qa_assistant/apps/api_app.py
+$env:PYTHONPATH="apps/backend/src"; python -m uvicorn marathon_qa_assistant.apps.api_app:app --host 127.0.0.1 --port 8000
 ```
 
 当前 `/query` 接口按项目现状仅支持单用户画像，`user_id` 需传 `default_user`；传入其他值会被显式拒绝，避免误以为已经支持多用户隔离。
@@ -96,10 +96,10 @@ python marathon_qa_assistant/apps/api_app.py
 项目内置 RAG 评测脚本：
 
 ```bash
-python scripts/evaluate_rag_ragas.py
+$env:PYTHONPATH="apps/backend/src"; python tools/kb/evaluate_rag_ragas.py
 ```
 
-该脚本使用当前 `marathon_qa_assistant.services.vector_store` 中的向量库实现，并默认读取项目根目录下的 `vector_kb`。运行前需确保已安装 `requirements.txt` 中的 RAG 评测依赖，并已准备 `vector_kb/eval_dataset.json`。
+该脚本使用当前 `marathon_qa_assistant.services.vector_store` 中的向量库实现，并默认读取项目根目录下的 `data/vector_kb/default`。运行前需确保已安装 `requirements.txt` 中的 RAG 评测依赖，并已准备 `data/vector_kb/default/eval_dataset.json`。
 评测报告默认输出到当前项目根目录下的 `rag_eval_report.md`。脚本只汇总显式启用的 Ragas 评分项，不再把 `reference` 之类的数据列误记为指标。
 传统检索部分默认输出三档 Top-5 口径：`精确块命中`（同一 `chunk_id`）、`同页命中`（同一 `source_file` 且同页）、`同文档命中`（同一 `source_file`），便于区分“没召回到参考文档”和“召回到相邻块但未命中精确 chunk”这两类情况。
 当前检索侧还会对中文问题额外构造一个偏英文术语的查询变体，并与原查询结果做融合重排，用于缓解“中文问题检索英文知识库”时的召回偏弱。

@@ -1,0 +1,40 @@
+{
+  "case_id": "mexrx-011",
+  "system": "full_rule_governed",
+  "status": "partial_answer",
+  "plan": "Downgraded output: avoid hard sessions, reduce load, monitor stop conditions, and use rest/easy alternatives from approved actions.",
+  "trace": {
+    "case_id": "mexrx-011",
+    "profile_version": "p2",
+    "risk_level": "R2",
+    "rules_fired": [
+      "risk.R2",
+      "repair.downgrade_or_restrict",
+      "safety.fail_closed",
+      "audit.repair_required"
+    ],
+    "evidence_ids": [
+      "risk.fatigue.overload",
+      "hmp.recovery"
+    ],
+    "action_ids": [
+      "rest_day",
+      "easy_run"
+    ],
+    "expert_calls": [
+      "Rehab/Safety Expert"
+    ],
+    "audit_result": "pass",
+    "repair_log": [
+      {
+        "before_state": "candidate training prescription",
+        "repair_action": "downgrade_or_restrict_plan",
+        "rule_basis": "R2 safety risk outranks performance optimization",
+        "after_state": "partial safe answer",
+        "re_audit_result": "pass"
+      }
+    ],
+    "final_status": "partial_answer",
+    "generated_at": "2026-05-13T00:00:00Z"
+  }
+}

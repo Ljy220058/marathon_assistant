@@ -1,0 +1,145 @@
+
+<svg width="1800" height="720" viewBox="0 0 1800 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .box {
+        rx: 22;
+        ry: 22;
+        stroke-width: 2.5;
+        fill-opacity: 1;
+      }
+      .title {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 28px;
+        font-weight: 600;
+        fill: #111111;
+        text-anchor: middle;
+      }
+      .subtitle {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 18px;
+        font-style: italic;
+        fill: #444444;
+        text-anchor: middle;
+      }
+      .note {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 18px;
+        fill: #666666;
+        text-anchor: middle;
+      }
+      .rednote {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 18px;
+        fill: #c62828;
+        font-weight: 600;
+        text-anchor: middle;
+      }
+      .arrow {
+        stroke: #111111;
+        stroke-width: 2.8;
+        fill: none;
+      }
+      .dashed-red {
+        stroke: #d32f2f;
+        stroke-width: 2.8;
+        stroke-dasharray: 10 8;
+        fill: none;
+      }
+      .dashed-orange {
+        stroke: #ef6c00;
+        stroke-width: 2.8;
+        stroke-dasharray: 10 8;
+        fill: none;
+      }
+    </style>
+
+    <marker id="arrowBlack" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#111111"/>
+    </marker>
+
+    <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#d32f2f"/>
+    </marker>
+
+    <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#ef6c00"/>
+    </marker>
+  </defs>
+
+  <!-- Main workflow boxes -->
+  <rect class="box" x="20" y="80" width="190" height="110" fill="#f2f2f2" stroke="#9e9e9e"/>
+  <text class="title" x="115" y="145">User query</text>
+
+  <rect class="box" x="240" y="80" width="190" height="110" fill="#fdecec" stroke="#d32f2f"/>
+  <text class="title" x="335" y="135">Pre-gate</text>
+  <text class="subtitle" x="335" y="168">filter</text>
+
+  <rect class="box" x="460" y="80" width="190" height="110" fill="#edf4ff" stroke="#2962cc"/>
+  <text class="title" x="555" y="135">Retrieve</text>
+  <text class="subtitle" x="555" y="168">evidence</text>
+
+  <rect class="box" x="680" y="80" width="190" height="110" fill="#edf4ff" stroke="#2962cc"/>
+  <text class="title" x="775" y="135">Evidence gate</text>
+  <text class="subtitle" x="775" y="168">sufficiency</text>
+
+  <rect class="box" x="900" y="80" width="190" height="110" fill="#fdecec" stroke="#d32f2f"/>
+  <text class="title" x="995" y="135">Risk gate</text>
+  <text class="subtitle" x="995" y="168">safety</text>
+
+  <rect class="box" x="1120" y="80" width="190" height="110" fill="#eef8ef" stroke="#2e7d32"/>
+  <text class="title" x="1215" y="135">Generator</text>
+  <text class="subtitle" x="1215" y="168">constrained</text>
+
+  <rect class="box" x="1340" y="80" width="190" height="110" fill="#eef8ef" stroke="#2e7d32"/>
+  <text class="title" x="1435" y="135">Auditor</text>
+  <text class="subtitle" x="1435" y="168">grounding</text>
+
+  <rect class="box" x="1560" y="80" width="210" height="110" fill="#f2f2f2" stroke="#9e9e9e"/>
+  <text class="title" x="1665" y="135">Final answer</text>
+  <text class="subtitle" x="1665" y="168">verified</text>
+
+  <!-- Main arrows -->
+  <line class="arrow" x1="210" y1="135" x2="240" y2="135" marker-end="url(#arrowBlack)"/>
+  <line class="arrow" x1="430" y1="135" x2="460" y2="135" marker-end="url(#arrowBlack)"/>
+  <line class="arrow" x1="650" y1="135" x2="680" y2="135" marker-end="url(#arrowBlack)"/>
+  <line class="arrow" x1="870" y1="135" x2="900" y2="135" marker-end="url(#arrowBlack)"/>
+  <line class="arrow" x1="1090" y1="135" x2="1120" y2="135" marker-end="url(#arrowBlack)"/>
+  <line class="arrow" x1="1310" y1="135" x2="1340" y2="135" marker-end="url(#arrowBlack)"/>
+  <line class="arrow" x1="1530" y1="135" x2="1560" y2="135" marker-end="url(#arrowBlack)"/>
+
+  <!-- Lower modules -->
+  <rect class="box" x="650" y="360" width="320" height="110" fill="#fdecec" stroke="#d32f2f"/>
+  <text class="title" x="810" y="415">Refusal</text>
+  <text class="subtitle" x="810" y="448">no answer</text>
+
+  <rect class="box" x="1290" y="360" width="350" height="110" fill="#fff4e8" stroke="#ef6c00"/>
+  <text class="title" x="1465" y="415">Bounded repair</text>
+  <text class="subtitle" x="1465" y="448">citation + grounding</text>
+
+  <!-- Refusal dashed arrows -->
+  <path class="dashed-red" d="M335 190 L335 305 L650 305 L650 415" marker-end="url(#arrowRed)"/>
+  <path class="dashed-red" d="M775 190 L775 360" marker-end="url(#arrowRed)"/>
+  <path class="dashed-red" d="M995 190 L995 305 L970 305 L970 415" marker-end="url(#arrowRed)"/>
+  <path class="dashed-red" d="M1435 190 L1435 305 L970 305 L970 415" marker-end="url(#arrowRed)"/>
+
+  <!-- Repair loop -->
+  <path class="dashed-orange" d="M1420 190 L1420 320 L1375 320 L1375 360" marker-end="url(#arrowOrange)"/>
+  <path class="dashed-orange" d="M1555 360 L1555 320 L1505 320 L1505 190" marker-end="url(#arrowOrange)"/>
+
+  <text x="1465" y="345" font-family="Arial, Helvetica, sans-serif"
+        font-size="18" font-weight="600" fill="#ef6c00" text-anchor="middle">
+    repair then re-audit
+  </text>
+
+  <!-- Notes -->
+  <text class="rednote" x="810" y="520">
+    Only four modules can trigger refusal
+  </text>
+
+  <text class="note" x="900" y="626">
+    <tspan x="900" dy="0">Vanilla RAG: retrieve → generate → answer.</tspan>
+    <tspan x="900" dy="28">Proposed workflow: retrieve → gate → generate → audit → repair or refuse.</tspan>
+  </text>
+
+</svg>

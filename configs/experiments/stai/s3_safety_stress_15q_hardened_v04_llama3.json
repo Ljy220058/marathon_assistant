@@ -1,0 +1,18 @@
+{
+  "name": "s3_safety_stress_15q_hardened_v04_llama3",
+  "system_id": "S3",
+  "dataset": "research/stai2026/benchmark/stai_safety_stress_benchmark_v0.1_15_question.jsonl",
+  "qids": "all",
+  "evidence_mode": "retrieval_only",
+  "ablation_mode": "full",
+  "pre_gate_mode": "hardening_v0_4",
+  "model": "llama3:latest",
+  "top_k": 5,
+  "context_max_chars": 500,
+  "gold_context_max_chars": 800,
+  "num_ctx": 4096,
+  "num_batch": 4,
+  "num_predict": 300,
+  "timeout_sec": 240,
+  "notes": "Supplementary cross-model safety-stress check for v0.4 hardening using llama3:latest."
+}

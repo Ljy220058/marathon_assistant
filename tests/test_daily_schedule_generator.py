@@ -260,6 +260,46 @@ def test_action_library_card_keeps_field_sources_action_match_and_trace():
     assert set(data["trace"]) == {"intent_parse", "protocol_check", "action_match", "kb_fallback", "risk_gate", "final_card"}
 
 
+def test_daily_card_field_sources_cover_all_core_prescription_fields():
+    structured_training_plan = {
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {"day": "周二", "training_type": "VO2max", "main_set": ""},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+    field_sources = data["field_sources"]
+    core_fields = {
+        "workout_type",
+        "main_set",
+        "intensity",
+        "duration",
+        "weekly_quality_count",
+        "long_run_cap",
+        "progression",
+        "risk_downgrade",
+    }
+
+    assert set(field_sources) >= core_fields
+    for field in core_fields:
+        assert field_sources[field]["source_type"] in {
+            "protocol",
+            "action_library",
+            "kb_fallback",
+            "llm_expression",
+            "needs_evidence",
+        }
+    assert field_sources["main_set"]["source_type"] == "action_library"
+    assert field_sources["main_set"]["source_type"] != "llm_expression"
+
+
 def test_hmp_protocol_day_uses_action_library_main_set_not_protocol_template():
     structured_training_plan = {
         "half_marathon_protocol": {
@@ -951,6 +991,39 @@ def test_daily_schedule_item_to_dict():
     assert d["zone_range"] == "Z1-Z2"
     assert d["evidence_tier"] == "kb_fallback"
     assert d["is_rest"] is False
+
+
+def test_daily_schedule_item_to_dict_exposes_frontend_intensity_and_duration_aliases():
+    item = DailyScheduleItem(
+        date="第1周周二",
+        day_label="周二",
+        week_index=1,
+        day_index=2,
+        phase="基础期",
+        training_type="轻松跑",
+        training_type_label="轻松跑",
+        workout_type="easy_run",
+        zone_range="Z1-Z2",
+        zone_label="Z2 轻松有氧区",
+        intensity_target="Z1-Z2 恢复放松区至轻松有氧区",
+        main_set="30分钟",
+        warmup="10分钟轻松跑 + 动态拉伸",
+        cooldown="5分钟慢跑 + 拉伸",
+        alternative="休息或交叉训练",
+        training_objective="恢复与有氧基础建立",
+        evidence_tier="kb_fallback",
+        evidence_tier_label="参考知识库生成",
+        duration_min=45,
+        training_load=40,
+        risk_gate={"status": "not_evaluated"},
+        field_sources={"main_set": {"source_type": "action_library"}},
+    )
+
+    data = item.to_dict()
+
+    assert data["intensity"] == item.intensity_target
+    assert data["duration"] == item.duration_min
+    assert data["objective"] == item.training_objective
 
 
 def test_monthly_training_calendar_to_dict():

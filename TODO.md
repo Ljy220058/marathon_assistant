@@ -217,3 +217,11 @@
 5. [x] 再做 P0 证据完整性与反幻觉。
 6. [x] 然后进入 P1 Related Work、审稿人攻击、写作质量、案例研究。
 7. [ ] 最后根据时间决定 P2 扩展实验和投稿材料。
+## STAI final closeout update (2026-05-13)
+
+- [x] Prepared anonymous compact submission PDF: `docs/paper_project/stai2026_submission_main_8p_anonymous.pdf`.
+- [x] Prepared anonymous full manuscript PDF: `docs/paper_project/stai2026_submission_main_full_anonymous.pdf`.
+- [x] Prepared anonymous source package: `docs/paper_project/stai2026_anonymous_source_package_v0.2.zip`.
+- [x] Added final submission checklist: `docs/paper_project/67_STAI_final_submission_checklist_v0.1.md`.
+- [x] Updated `docs/paper_project/paper_stai2026/README.md` for `main_8p.tex`, current Figure 1, and current Tectonic build command.
+- [x] Recompiled `main_8p.tex` and `main.tex`; verified page count, anonymity, no undefined citation/reference, and no Overfull hbox warnings.

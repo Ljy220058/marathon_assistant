@@ -24,7 +24,7 @@
 
 ## 入口文件
 
-- `knowledge_base/canonical/academic_literature/source_registry.md`
-- `knowledge_base/canonical/academic_literature/paper_cards.jsonl`
-- `knowledge_base/packs/literature_pack/*/manifest.json`
+- `data/knowledge/curated/academic_literature/source_registry.md`
+- `data/knowledge/curated/academic_literature/paper_cards.jsonl`
+- `data/knowledge/packs/literature_pack/*/manifest.json`
 

@@ -151,15 +151,42 @@ cython_debug/
 # Trae
 .trae/
 
-# Local data
-data/
+# Local data and generated outputs
 *.db
 *.log
 outputs/
 temp/
+temp_images/
+artifacts/dev_logs/
+artifacts/**/tmp/
+archive/local_caches/
+
+# Local dependencies and runtime caches
+lib/
+.chainlit/
+.files/
+apps/**/.chainlit/
+apps/**/.files/
+!archive/legacy_chainlit/
+!archive/legacy_chainlit/**
 
 # Frontend generated files
-frontend/node_modules/
-frontend/.astro/
-frontend/.npm-cache/
-frontend/dist/
+frontend/
+apps/web/node_modules/
+apps/web/.astro/
+apps/web/.npm-cache/
+apps/web/dist/
+
+# LaTeX build products
+research/**/manuscript/**/build*/
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc

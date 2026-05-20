@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marathon-qa-assistant"
+version = "0.1.0"
+description = "FastAPI and RAG backend for the marathon assistant monorepo."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["marathon_qa_assistant*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "../.."]

@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-from scripts.run_stai_s3_full_workflow import detect_pre_gate_violation
+from tools.research.stai.run_stai_s3_full_workflow import detect_pre_gate_violation
 
 
-DATASET_PATH = Path("docs/paper_project/stai_benchmark_v0.2_50_question_draft.jsonl")
+DATASET_PATH = Path("research/stai2026/benchmark/stai_benchmark_v0.2_50_question_draft.jsonl")
 
 
 def load_rows():

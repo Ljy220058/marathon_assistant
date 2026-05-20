@@ -1,8 +1,9 @@
 from pathlib import Path
 
 
-FRONTEND_INDEX = Path(__file__).resolve().parents[1] / "frontend" / "src" / "pages" / "index.astro"
-FRONTEND_STYLE = Path(__file__).resolve().parents[1] / "frontend" / "src" / "styles" / "global.css"
+FRONTEND_ROOT = Path(__file__).resolve().parents[1] / "apps" / "web"
+FRONTEND_INDEX = FRONTEND_ROOT / "src" / "pages" / "index.astro"
+FRONTEND_STYLE = FRONTEND_ROOT / "src" / "styles" / "global.css"
 
 
 def _index_source() -> str:
@@ -344,7 +345,7 @@ def test_astro_mobile_sidebar_uses_sheet_instead_of_stacked_long_list():
 
 
 def test_frontend_workspace_smoke_script_covers_p0_to_p4():
-    smoke = Path("frontend/scripts/smoke-workspace.mjs")
+    smoke = FRONTEND_ROOT / "scripts" / "smoke-workspace.mjs"
 
     assert smoke.exists()
     source = smoke.read_text(encoding="utf-8")
@@ -512,6 +513,19 @@ def test_astro_day_card_always_shows_load_ratio_and_protocol_recheck_state():
     assert ".day-card.needs-recheck" in styles
 
 
+def test_astro_calendar_prioritizes_daily_cards_and_restores_day_modal_focus():
+    source = _index_source()
+
+    assert "const baseDays = dailyCards.length ? dailyCards : days.length ? days : weekDays;" in source
+    assert "return { ...day, ...matchingWeekDay, ...matchingCard };" in source
+    assert "lastDayModalTrigger" in source
+    assert "state.lastDayModalTrigger = opener instanceof HTMLElement ? opener : document.activeElement;" in source
+    assert "dayModalClose.focus();" in source
+    assert "state.lastDayModalTrigger?.focus();" in source
+    assert "state.lastDayModalTrigger = null;" in source
+    assert "openDayModal(days[index], null, button)" in source
+
+
 def test_astro_day_modal_surfaces_trust_status_strip():
     source = _index_source()
     styles = _style_source()
@@ -535,7 +549,7 @@ def test_astro_mobile_quick_navigation_and_profile_generation_waits_for_save():
     assert 'href="#calendar-section"' in source
     assert 'href="#evidence"' in source
     assert ".mobile-quick-nav" in styles
-    assert "await buildProfilePrompt();" in source
+    assert "await saveProfileDraft();" in source
     assert "formatPlanWeeksForPrompt" in source
 
 
@@ -553,6 +567,39 @@ def test_astro_surfaces_competitive_runner_calibration_fields():
     assert "目标半马" in source
     assert "秒/公里" in source
     assert "performance-card" in styles
+
+
+def test_astro_profile_payload_and_calibration_treat_no_limitation_as_safe():
+    source = _index_source()
+
+    for field in [
+        '["currentHalfTime", "当前半马 PB", "例如 1:25"]',
+        '["targetPace", "目标配速/成绩", "例如 半马 1:45 或 5:00/km"]',
+        '["lastMonthMileage", "上个月月跑量", "例如 300 km"]',
+        '["raceDate", "比赛日期", "例如 2026-10-18"]',
+        '["limitations", "伤病/疲劳限制", "例如 膝盖不适，近期疲劳偏高"]',
+    ]:
+        assert field in source
+
+    assert "function normalizeLimitationText" in source
+    assert "function hasProfileLimitation" in source
+    for no_limitation in ["无", "无伤病", "无疲劳"]:
+        assert no_limitation in source
+    assert "const limitationText = normalizeLimitationText(draft.limitations);" in source
+    assert "injury: limitationText" in source
+    assert "recovery_state: limitationText" in source
+    assert "injury_or_fatigue: hasProfileLimitation(draft.limitations)" in source
+    assert "target_time: draft.targetPace || \"\"" in source
+
+    performance_renderer = source[
+        source.index("function renderPerformanceCalibration") : source.index("function renderRacePrepOverview")
+    ]
+    assert "targetPace" not in performance_renderer
+    assert "target_pace" not in performance_renderer
+    assert "formatCalibrationField" in performance_renderer
+    assert "待校准" in performance_renderer
+    assert "calibration.target_hmp_pace || \"-\"" not in performance_renderer
+    assert "calibration.decision_reason ||" not in performance_renderer
 
 
 def test_astro_day_modal_surfaces_recent_four_week_capacity_basis():
@@ -595,3 +642,38 @@ def test_astro_surfaces_protocol_recheck_action_guidance():
     assert "只看关键课" in source
     assert "calendar-filter" in source
     assert "action-guidance" in styles
+
+
+def test_astro_personalized_training_calendar_generation_contract():
+    source = _index_source()
+    styles = _style_source()
+
+    assert 'const PLAN_GENERATION_PROMPT' in source
+    assert 'id="runQuery" class="primary-button" data-plan-generation-entry' in source
+    assert '<button id="runProfilePlan" class="primary-button" data-plan-generation-entry>生成训练日历</button>' in source
+    assert "复核训练负荷" not in source
+    assert "本周降载调整" not in source
+    assert "解释单日训练" not in source
+    assert 'data-prompt={PLAN_GENERATION_PROMPT}' in source
+    assert "profileDraftToPrompt(draft)" in source
+    assert 'queryInput.value = query;' in source
+    assert 'localStorage.setItem("marathon-profile-draft", JSON.stringify(draft));' in source
+
+    for label in ["连接后端", "解析画像", "生成骨架", "安全校验", "排布日历", "绑定依据", "补全解释"]:
+        assert label in source
+    assert ".progress-steps" in styles
+    assert "repeat(7, minmax(0, 1fr))" in styles
+
+    for stat in ["total-days", "total-weeks", "rest-days", "key-sessions"]:
+        assert f'data-calendar-stat="{stat}"' in source
+    assert "updateCalendarStat(\"total-days\"" in source
+    assert "updateCalendarStat(\"total-weeks\"" in source
+    assert "updateCalendarStat(\"rest-days\"" in source
+    assert "updateCalendarStat(\"key-sessions\"" in source
+    assert ".calendar-stat-strip" in styles
+
+    assert "画像已先保存到本地，本次生成不会被阻塞" in source
+    assert "超时" in source
+    assert "自动重试" in source
+    assert "后端不可用" in source
+    assert "缺少计划画像" in source

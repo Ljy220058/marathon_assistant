@@ -12,7 +12,7 @@ root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
-API_SCRIPT = root / "marathon_qa_assistant" / "apps" / "api_app.py"
+API_SCRIPT = root / "apps" / "backend" / "src" / "marathon_qa_assistant" / "apps" / "api_app.py"
 
 client = TestClient(api_app.app)
 

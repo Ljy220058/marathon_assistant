@@ -8,6 +8,10 @@ root = Path(__file__).parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
+backend_src = root / "apps" / "backend" / "src"
+if backend_src.exists() and str(backend_src) not in sys.path:
+    sys.path.insert(0, str(backend_src))
+
 
 def _has_module(module_name: str) -> bool:
     try:
