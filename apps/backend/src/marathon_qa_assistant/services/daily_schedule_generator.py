@@ -553,6 +553,20 @@ def _resolve_repetition_range_candidate(candidate_text: str, load_bias: str) -> 
     return resolved, selection
 
 
+def _normalize_main_set_candidates(raw_candidates: Any) -> List[str]:
+    candidates: List[str] = []
+    for item in raw_candidates or []:
+        text = str(item or "").strip()
+        if not text:
+            continue
+        parts = re.split(r"\s+/\s+", text)
+        for part in parts:
+            candidate = part.strip()
+            if candidate and candidate not in candidates:
+                candidates.append(candidate)
+    return candidates
+
+
 def _build_action_match(workout_type: str, card: Dict[str, Any], evidence_tier: str) -> Dict[str, Any]:
     execution_card = card.get("execution_action_card")
     if evidence_tier == "protocol_rule" and isinstance(execution_card, dict) and execution_card:
@@ -562,13 +576,19 @@ def _build_action_match(workout_type: str, card: Dict[str, Any], evidence_tier: 
             match["protocol_workout_type"] = workout_type
             match["selection_reason"] = "protocol_intent_projected_to_action_library"
         return match
+    if evidence_tier == "needs_evidence" and card.get("needs_evidence_reason") == "missing_action_library_match":
+        return {
+            "workout_type": workout_type,
+            "action_id": "",
+            "source": "",
+            "page": None,
+            "main_set": "",
+            "alternatives": [],
+            "needs_evidence": ["missing_action_library_match"],
+        }
     if evidence_tier != "action_library":
         return {}
-    candidates = [
-        str(item or "").strip()
-        for item in (card.get("main_set_candidates") or [])
-        if str(item or "").strip()
-    ]
+    candidates = _normalize_main_set_candidates(card.get("main_set_candidates") or [])
     if not candidates:
         return {
             "workout_type": workout_type,
@@ -939,11 +959,7 @@ def _resolve_evidence_backed_main_set(
 ) -> Tuple[str, str]:
     execution_card = card.get("execution_action_card")
     if evidence_tier == "protocol_rule" and isinstance(execution_card, dict) and execution_card:
-        action_candidates = [
-            str(item or "").strip()
-            for item in (execution_card.get("main_set_candidates") or [])
-            if str(item or "").strip()
-        ]
+        action_candidates = _normalize_main_set_candidates(execution_card.get("main_set_candidates") or [])
         if action_candidates:
             selected, selection = _resolve_repetition_range_candidate(action_candidates[0], load_bias)
             selected = sanitize_all_pace(selected)
@@ -952,16 +968,14 @@ def _resolve_evidence_backed_main_set(
                 selection["selected"] = selected
                 execution_card["prescription_selection"] = selection
             return selected, evidence_tier
+        card["needs_evidence_reason"] = "missing_action_library_match"
         no_evidence = _build_no_evidence_training_card(training_type, notes)
         return no_evidence["main_set"], "needs_evidence"
 
-    candidates = [
-        str(item or "").strip()
-        for item in (card.get("main_set_candidates") or [])
-        if str(item or "").strip()
-    ]
+    candidates = _normalize_main_set_candidates(card.get("main_set_candidates") or [])
     candidate_text = candidates[0] if candidates else ""
     if evidence_tier == "protocol_rule":
+        card["needs_evidence_reason"] = "missing_action_library_match"
         no_evidence = _build_no_evidence_training_card(training_type, notes)
         return no_evidence["main_set"], "needs_evidence"
     if evidence_tier == "action_library" and candidate_text:
@@ -1110,6 +1124,16 @@ def generate_daily_schedule(
                         break
 
             if not workout_type and training_type_raw:
+                no_evidence = _build_no_evidence_training_card(
+                    training_type_raw,
+                    str(day.get("notes") or "").strip(),
+                )
+                kb_trace = _build_kb_fallback_trace(None)
+                if main_set_display:
+                    kb_trace["blocked_core_candidates"] = {
+                        "main_set": [main_set_display],
+                        "reason": "plan_skeleton_cannot_source_core_prescription",
+                    }
                 load_estimate = calculate_plan_training_load(
                     day,
                     workout_type="",
@@ -1125,14 +1149,26 @@ def generate_daily_schedule(
                     main_km=float(day.get("main_km") or 0),
                 )
                 risk_gate = _default_risk_gate()
-                kb_trace = _build_kb_fallback_trace(None)
-                final_card = {"card_status": "needs_evidence", "evidence_tier": "plan_only", "main_set": main_set_display}
+                action_match = {
+                    "workout_type": "",
+                    "action_id": "",
+                    "source": "",
+                    "page": None,
+                    "main_set": "",
+                    "alternatives": [],
+                    "needs_evidence": ["unknown_workout_type"],
+                }
+                final_card = {
+                    "card_status": "needs_evidence",
+                    "evidence_tier": "needs_evidence",
+                    "main_set": no_evidence["main_set"],
+                }
                 trace = _build_trace(
                     training_type_raw=training_type_raw,
                     main_set_raw=main_set_raw,
                     workout_type="",
                     protocol_check=protocol_check,
-                    action_match={},
+                    action_match=action_match,
                     kb_fallback_trace=kb_trace,
                     risk_gate=risk_gate,
                     final_card=final_card,
@@ -1149,13 +1185,13 @@ def generate_daily_schedule(
                     zone_range="",
                     zone_label="",
                     intensity_target="",
-                    main_set=main_set_display,
-                    warmup=str(day.get("warmup") or "").strip(),
-                    cooldown=str(day.get("cooldown") or "").strip(),
+                    main_set=no_evidence["main_set"],
+                    warmup=no_evidence["warmup"],
+                    cooldown=no_evidence["cooldown"],
                     alternative="",
-                    training_objective=str(day.get("notes") or "").strip(),
-                    evidence_tier="plan_only",
-                    evidence_tier_label=EVIDENCE_TIER_LABELS["plan_only"],
+                    training_objective=no_evidence["training_objective"],
+                    evidence_tier="needs_evidence",
+                    evidence_tier_label=EVIDENCE_TIER_LABELS["needs_evidence"],
                     notes=str(day.get("notes") or "").strip(),
                     duration_min=load_estimate.duration_min,
                     training_load=load_estimate.training_load,
@@ -1164,7 +1200,7 @@ def generate_daily_schedule(
                     card_status="needs_evidence",
                     field_sources={
                         "workout_type": _source_record(value="", source_type="needs_evidence", confidence="missing", note="unknown_workout_type"),
-                        "main_set": _source_record(value=main_set_display, source_type="needs_evidence", confidence="missing", note="critical_prescription_requires_protocol_or_action_library"),
+                        "main_set": _source_record(value=no_evidence["main_set"], source_type="needs_evidence", confidence="missing", note="critical_prescription_requires_protocol_or_action_library"),
                         "intensity": _source_record(value="", source_type="needs_evidence", confidence="missing"),
                         "duration": _source_record(value=load_estimate.duration_min, source_type="protocol", source_id="training_load_estimator", confidence="verified"),
                         "weekly_quality_count": _source_record(value=protocol_check.get("quality_sessions_this_week"), source_type="protocol", source_id="protocol_check", confidence="verified"),
@@ -1173,7 +1209,7 @@ def generate_daily_schedule(
                         "risk_downgrade": _source_record(value="", source_type="protocol", source_id="risk_gate", confidence="needs_review"),
                     },
                     protocol_check=protocol_check,
-                    action_match={},
+                    action_match=action_match,
                     kb_fallback=kb_trace,
                     risk_gate=risk_gate,
                     trace=trace,
@@ -1339,6 +1375,7 @@ def generate_daily_schedule(
                 str(day.get("notes") or ""),
                 str(card.get("training_objective") or ""),
             )
+            card_status = _status_for_card(evidence_tier, protocol_check=protocol_check)
             kb_metadata = dict(card.get("kb_metadata") or {})
             if not kb_metadata:
                 kb_metadata = {
@@ -1349,7 +1386,6 @@ def generate_daily_schedule(
                 }
             if evidence_tier not in {"action_library", "protocol_rule"}:
                 kb_metadata["prescription_permission"] = "blocked_needs_evidence"
-            card_status = _status_for_card(evidence_tier, protocol_check=protocol_check)
             final_card = {
                 "card_status": card_status,
                 "evidence_tier": evidence_tier,
@@ -1415,8 +1451,8 @@ def generate_daily_schedule(
                 action_match=action_match,
                 kb_fallback=kb_fallback_trace,
                 risk_gate=risk_gate,
-                kb_metadata=kb_metadata,
                 trace=trace,
+                kb_metadata=kb_metadata,
             ))
 
     total_days = len(days)

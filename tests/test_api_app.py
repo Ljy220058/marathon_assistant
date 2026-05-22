@@ -96,6 +96,9 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
         "weeks": [],
     }
     assert payload["structured_report"]["training_explanation_panel"] == payload["training_explanation_panel"]
+    assert payload["workflow_trace"]["trace_version"] == "workflow_trace.v1"
+    assert payload["workflow_trace"]["status"] == "complete"
+    assert payload["structured_report"]["workflow_trace"]["run_id"] == payload["workflow_trace"]["run_id"]
     assert payload["llm_provider"] == "ds"
     assert payload["llm_model"] == "deepseek-test"
     assert fake_app.calls[0]["config"] == {
@@ -115,6 +118,13 @@ def test_query_full_plan_backfills_calendar_contract_when_report_omits_it(monkey
             "final_report": "已生成训练计划。",
             "structured_training_plan": structured_plan,
             "structured_report": {"summary": "workflow report without calendar"},
+            "workflow_trace": {
+                "trace_version": "workflow_trace.v1",
+                "run_id": "state-level-trace",
+                "workflow_kind": "plan",
+                "intent_type": "plan",
+                "status": "complete",
+            },
             "token_usage": {},
             "audit_scores": {"consistency": 90, "safety": 90, "roi": 70, "summary": "通过"},
             "guided_questions": [],
@@ -145,6 +155,8 @@ def test_query_full_plan_backfills_calendar_contract_when_report_omits_it(monkey
     assert payload["training_load_summary"] == calendar["training_load_summary"]
     assert payload["structured_report"]["monthly_training_calendar"] == calendar
     assert payload["structured_report"]["daily_schedule_cards"] == cards
+    assert payload["workflow_trace"]["run_id"] == "state-level-trace"
+    assert payload["structured_report"]["workflow_trace"]["run_id"] == "state-level-trace"
 
 
 def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monkeypatch):
@@ -187,6 +199,9 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
     assert payload["generation_status"] == "skeleton_ready"
     assert payload["structured_training_plan"]["week_plans"]
     assert payload["structured_report"] is None
+    assert payload["workflow_trace"]["trace_version"] == "workflow_trace.v1"
+    assert payload["workflow_trace"]["status"] == "skeleton_ready"
+    assert payload["structured_training_plan"]["workflow_trace"]["run_id"] == payload["workflow_trace"]["run_id"]
     assert payload["monthly_training_calendar"]["days"]
     assert payload["daily_schedule_cards"]
     hmp_cards = [card for card in payload["daily_schedule_cards"] if str(card.get("workout_type", "")).startswith("hm_")]
@@ -214,6 +229,21 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
     assert all(isinstance(payload["generation_timings"][key], (int, float)) for key in payload["generation_timings"])
     assert payload["generation_timings"]["total_sec"] >= 0
     assert payload["training_plan_id"]
+    assert payload["training_plan_review"]["review_version"] == "training_plan_review.v1"
+    assert payload["training_plan_review"]["dimensions"]["training_load"]["source_type"] == "planned_load_proxy"
+    assert payload["training_plan_review"]["dimensions"]["training_load"]["not_device_metric"] is True
+    assert set(payload["training_plan_review"]["dimensions"]) >= {
+        "training_load",
+        "plan_structure",
+        "periodization",
+        "injury_recovery",
+        "rehabilitation",
+        "strength_conditioning",
+        "mobility_recovery",
+        "injury_prevention",
+        "evidence_control",
+        "rag_vs_base_model",
+    }
     assert db.get_plan(payload["training_plan_id"]) is not None
     assert fake_app.calls == []
 
@@ -370,7 +400,7 @@ def test_skeleton_plan_accepts_unified_profile_contract_fields(tmp_path, monkeyp
                     "- goal: 半马 PB 1小时25分，目标破 1小时20分",
                     "- target_race_date: 12周",
                     "- weekly_mileage: 90 km",
-                    "- last_month_mileage: 60 km",
+                    "- last_month_mileage: 260 km",
                     "- available_days: 周二, 周三, 周五, 周日",
                     "- current_half_time: 1:25:00",
                     "- target_half_time: 1:20:00",
@@ -395,7 +425,7 @@ def test_skeleton_plan_accepts_unified_profile_contract_fields(tmp_path, monkeyp
     assert payload["generation_status"] == "skeleton_ready"
     assert plan["plan_meta"]["actual_weeks"] == 12
     assert protocol["input_weekly_mileage_km"] == 90.0
-    assert protocol["input_recent_four_week_mileage_km"] == 60.0
+    assert abs(protocol["input_recent_four_week_mileage_km"] - 59.8) < 0.1
     assert capacity_budget["quality_sessions_max"] == 2
     assert not any("疲劳或伤病风险" in note for note in capacity_budget["notes"])
     assert calibration["status"] == "ambitious_target"
@@ -656,10 +686,48 @@ def test_plan_query_full_error_falls_back_to_error_skeleton(tmp_path, monkeypatc
     payload = response.json()
     assert payload["generation_status"] == "llm_error_skeleton"
     assert payload["message"].startswith("完整 LLM 工作流异常")
+    assert "model provider failed" not in payload["message"]
     assert payload["message"] != "完整工作流已返回。"
     assert payload["monthly_training_calendar"]["days"]
     assert payload["daily_schedule_cards"]
     assert payload["training_plan_id"]
+
+
+def test_plan_query_provider_error_message_does_not_leak_raw_details(tmp_path, monkeypatch):
+    from marathon_qa_assistant.nodes.common import LLMProviderError
+    from marathon_qa_assistant.services.database import _Database
+
+    fake_app = _FakeIntegratedApp(
+        error=LLMProviderError(
+            provider="openai",
+            error_code="rate_limited",
+            status_code=429,
+            message="OpenAI 原始错误体 sk-secret should not leak",
+        )
+    )
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马完赛", "weekly_mileage": 28})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "帮我制定 8 周半马训练计划",
+            "user_id": "default_user",
+            "response_mode": "full",
+            "timeout_sec": 5,
+            "llm_provider": "openai",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["generation_status"] == "llm_error_skeleton"
+    assert "openai/rate_limited" in payload["message"]
+    assert "sk-secret" not in payload["message"]
+    assert "原始错误体" not in payload["message"]
 
 
 def test_profile_get_and_post_support_frontend_bootstrap(monkeypatch):
@@ -737,13 +805,41 @@ def test_profile_user_endpoints_patch_zones_and_nlu_preview(monkeypatch):
 def test_llm_options_support_frontend_model_controls(monkeypatch):
     monkeypatch.setenv("OLLAMA_MODEL", "qwen2.5:latest")
     monkeypatch.setenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-5.2")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
 
     response = client.get("/llm-options")
 
     assert response.status_code == 200
     payload = response.json()
     assert payload["default"]["provider"] == "ollama"
-    assert [item["id"] for item in payload["providers"]] == ["ollama", "ds"]
+    assert [item["id"] for item in payload["providers"]] == ["ollama", "ds", "openai"]
+    openai = next(item for item in payload["providers"] if item["id"] == "openai")
+    assert openai["default_model"] == "gpt-5.2"
+    assert openai["api_key_configured"] is True
+
+
+def test_llm_options_masks_provider_key_status_when_token_guard_is_enabled(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-ds-test")
+    monkeypatch.setenv("MARATHON_API_TOKEN", "guard-token")
+
+    public_response = client.get("/llm-options")
+    private_response = client.get("/llm-options", headers={"Authorization": "Bearer guard-token"})
+
+    assert public_response.status_code == 200
+    public_payload = public_response.json()
+    for provider_id in {"ds", "openai"}:
+        item = next(item for item in public_payload["providers"] if item["id"] == provider_id)
+        assert item["api_key_config_visible"] is False
+        assert item["api_key_configured"] is False
+
+    assert private_response.status_code == 200
+    private_payload = private_response.json()
+    openai = next(item for item in private_payload["providers"] if item["id"] == "openai")
+    assert openai["api_key_config_visible"] is True
+    assert openai["api_key_configured"] is True
 
 
 def test_plan_history_endpoints_support_frontend_persistence(tmp_path, monkeypatch):
@@ -860,6 +956,61 @@ def test_plan_save_accepts_calendar_settings_and_event_schedule_patch(tmp_path, 
     assert updated_event["duration_min"] == 45
 
 
+def test_plan_save_accepts_calendar_days_and_preserves_audit_chain(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "plans.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan = {
+        "plan_meta": {"goal": "半马 PB", "requested_weeks": 1, "actual_weeks": 1},
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [{"day": "周二", "training_type": "VO2max", "main_set": "骨架候选"}],
+            }
+        ],
+    }
+    calendar_day = {
+        "week_index": 1,
+        "day_index": 2,
+        "day_label": "周二",
+        "training_type": "VO2max",
+        "training_type_label": "VO2max 间歇",
+        "workout_type": "vo2max_interval",
+        "main_set": "4x1000m",
+        "evidence_tier": "action_library",
+        "card_status": "generated",
+        "field_sources": {"main_set": {"source_type": "action_library", "source_id": "动作库.pdf"}},
+        "protocol_check": {"allowed": True},
+        "action_match": {"action_id": "vo2max_interval_foundation", "source": "动作库.pdf"},
+        "kb_fallback": {"used": False},
+        "risk_gate": {"status": "not_evaluated"},
+        "trace": {"action_match": {"action_id": "vo2max_interval_foundation"}},
+    }
+
+    response = client.post(
+        "/plans",
+        json={
+            "user_id": "default_user",
+            "source_query": "生成1周计划",
+            "structured_training_plan": plan,
+            "calendar_days": [calendar_day],
+        },
+    )
+
+    assert response.status_code == 200
+    detail = client.get(f"/plans/{response.json()['plan_id']}").json()
+    event = detail["events"][0]
+    assert event["main_set"] == "4x1000m"
+    assert event["field_sources"]["main_set"]["source_type"] == "action_library"
+    assert event["protocol_check"]["allowed"] is True
+    assert event["action_match"]["action_id"] == "vo2max_interval_foundation"
+    assert event["kb_fallback"]["used"] is False
+    assert event["risk_gate"]["status"] == "not_evaluated"
+    assert event["trace"]["action_match"]["action_id"] == "vo2max_interval_foundation"
+
+
 def test_training_calendar_response_exposes_full_calendar_and_daily_card_contract(monkeypatch):
     structured_plan = _one_week_calendar_contract_plan()
     fake_app = _FakeIntegratedApp(result={"structured_training_plan": structured_plan})
@@ -899,6 +1050,23 @@ def test_training_calendar_response_exposes_full_calendar_and_daily_card_contrac
     assert cards[0]["field_sources"]
 
 
+def test_training_calendar_error_does_not_leak_raw_exception(monkeypatch):
+    fake_app = _FakeIntegratedApp(error=RuntimeError("database sk-secret should not leak"))
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+
+    response = client.post(
+        "/training-calendar",
+        json={
+            "query": "请给我生成 1 周半马训练计划",
+            "user_id": "default_user",
+        },
+    )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "模型服务暂不可用"
+
+
 def test_feedback_endpoint_returns_adaptive_adjustment():
     response = client.post(
         "/feedback",
@@ -921,6 +1089,10 @@ def test_feedback_endpoint_returns_adaptive_adjustment():
     assert payload["risk_gate"]["status"] == "needs_protocol_recheck"
     assert payload["risk_gate"]["adjustment_action"] == "deescalate_or_refuse"
     assert payload["protocol_recheck"]["allowed"] is True
+    assert payload["workflow_trace"]["trace_version"] == "workflow_trace.v1"
+    assert payload["workflow_trace"]["feedback_state"]["has_feedback"] is True
+    assert payload["workflow_trace"]["feedback_state"]["risk_gate"]["status"] == "needs_protocol_recheck"
+    assert payload["workflow_trace"]["risk_state"]["fail_closed"] is False
     assert payload["adaptive_adjustment"]["adjustment_required"] is True
     assert "pain_risk" in payload["adaptive_adjustment"]["reason_codes"]
     assert payload["adaptive_adjustment"]["adjustment_action"] == "deescalate_or_refuse"
@@ -950,9 +1122,305 @@ def test_feedback_endpoint_medical_risk_refuses_adjustment():
     assert payload["risk_gate"]["product_status"] == "medical_referral"
     assert payload["risk_gate"]["adjustment_action"] == "deescalate_or_refuse"
     assert payload["protocol_recheck"]["allowed"] is False
+    assert payload["workflow_trace"]["risk_state"]["fail_closed"] is True
+    assert payload["workflow_trace"]["feedback_state"]["protocol_recheck"]["allowed"] is False
     assert payload["generation_status"] == "medical_referral"
     assert payload["plan_diff"]["cancelled"] >= 1
     assert payload["plan_diff"]["workflow"] == ["risk_gate", "protocol_recheck", "adjustment", "plan_diff"]
+
+
+def test_feedback_endpoint_without_plan_event_fields_keeps_contract():
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "raw_text": "Completed as planned.",
+            "feedback": {
+                "completion_status": "completed",
+                "subjective_fatigue": "low",
+                "pain_status": "none",
+                "sleep_quality": "good",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert {
+        "workout_feedback",
+        "risk_gate",
+        "protocol_recheck",
+        "adaptive_feedback",
+        "adaptive_adjustment",
+        "plan_diff",
+        "generation_status",
+    } <= set(payload)
+    assert payload["feedback_id"] is None
+    assert payload["generation_status"] == "generated"
+
+
+def test_feedback_endpoint_rejects_invalid_plan_event_fields():
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": "missing-plan",
+            "event_id": "missing-event",
+            "day_key": "2026-06-01",
+            "raw_text": "Completed as planned.",
+            "feedback": {
+                "completion_status": "completed",
+                "subjective_fatigue": "low",
+                "pain_status": "none",
+                "sleep_quality": "good",
+            },
+        },
+    )
+
+    assert response.status_code == 404
+    assert "训练日历事件不存在" in response.json()["detail"]
+
+
+def test_feedback_endpoint_maps_four_feedback_inputs_to_reason_codes():
+    cases = [
+        (
+            {
+                "completion_status": "completed",
+                "subjective_fatigue": "mild",
+                "pain_status": "none",
+                "sleep_quality": "ok",
+            },
+            "mild_fatigue",
+        ),
+        (
+            {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+            "high_fatigue",
+        ),
+        (
+            {
+                "completion_status": "completed",
+                "subjective_fatigue": "low",
+                "pain_status": "risk",
+                "sleep_quality": "ok",
+            },
+            "pain_risk",
+        ),
+        (
+            {
+                "completion_status": "missed",
+                "subjective_fatigue": "low",
+                "pain_status": "none",
+                "sleep_quality": "ok",
+            },
+            "missed_workout",
+        ),
+    ]
+
+    for feedback, expected_code in cases:
+        response = client.post(
+            "/feedback",
+            json={
+                "user_id": "default_user",
+                "raw_text": "",
+                "feedback": feedback,
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert expected_code in payload["adaptive_adjustment"]["reason_codes"]
+        assert expected_code in payload["plan_diff"]["reason_codes"]
+
+
+def test_feedback_endpoint_downgrades_pain_and_medical_alternatives():
+    unsafe_terms = ["threshold", "interval", "high intensity", "vo2", "tempo"]
+    safe_terms = ["low impact", "rest", "swim", "bike", "cycling", "elliptical", "休息", "停止训练", "专业医疗评估"]
+
+    for raw_text, feedback in [
+        (
+            "Knee pain after training.",
+            {
+                "completion_status": "completed",
+                "subjective_fatigue": "low",
+                "pain_status": "risk",
+                "sleep_quality": "ok",
+            },
+        ),
+        (
+            "Chest pain and dizzy during a hot session, possible heat illness.",
+            {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "risk",
+                "sleep_quality": "poor",
+            },
+        ),
+    ]:
+        response = client.post(
+            "/feedback",
+            json={"user_id": "default_user", "raw_text": raw_text, "feedback": feedback},
+        )
+
+        assert response.status_code == 200
+        alternative = response.json()["adaptive_adjustment"]["alternative_workout"].lower()
+        assert any(term in alternative for term in safe_terms)
+        assert not any(term in alternative for term in unsafe_terms)
+
+
+def test_feedback_endpoint_persists_latest_event_feedback_summary(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan = {
+        "plan_meta": {
+            "goal": "Half marathon PB",
+            "requested_weeks": 1,
+            "actual_weeks": 1,
+            "plan_type": "single_week",
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "load_level": "easy",
+                "days": [
+                    {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                ],
+            }
+        ],
+    }
+    plan_id = db.save_training_plan(plan, source_query="save plan")
+    event_id = db.list_events(plan_id)[0]["id"]
+
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": event_id,
+            "day_key": "2026-06-01",
+            "raw_text": "Partial session with high fatigue.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["feedback_id"]
+
+    detail = client.get(f"/plans/{plan_id}").json()
+    latest = detail["events"][0]["latest_feedback"]
+    assert latest["id"] == payload["feedback_id"]
+    assert latest["completion_status"] == "partial"
+    assert "high_fatigue" in latest["reason_codes"]
+    assert latest["next_day_adjustment"]
+    assert latest["raw_text"] == "Partial session with high fatigue."
+    assert latest["risk_gate"]["status"] == "needs_protocol_recheck"
+    assert latest["risk_gate"]["adjustment_action"] == "deescalate"
+    assert "high_fatigue" in latest["risk_gate"]["triggers"]
+    assert latest["protocol_recheck"]["allowed"] is True
+    assert "high_fatigue" in latest["protocol_recheck"]["violations"]
+
+
+def test_get_plan_returns_execution_status_and_adjustment_history(tmp_path, monkeypatch):
+    from datetime import date, timedelta
+
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "execution-status.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    week_start = date.today() - timedelta(days=date.today().weekday())
+    plan = {
+        "plan_meta": {
+            "goal": "Half marathon status loop",
+            "requested_weeks": 1,
+            "actual_weeks": 1,
+            "plan_type": "single_week",
+        },
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "load_level": "easy",
+                "days": [
+                    {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                    {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min"},
+                    {"day": "Wed", "training_type": "Easy run", "main_set": "30 min Z2"},
+                    {"day": "Thu", "training_type": "Rest", "main_set": "Rest"},
+                ],
+            }
+        ],
+    }
+    plan_id = db.save_training_plan(plan, source_query="status loop", training_start_date=week_start.isoformat())
+    events = db.list_events(plan_id)
+
+    first = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Completed as planned.",
+            "feedback": {
+                "completion_status": "completed",
+                "subjective_fatigue": "low",
+                "pain_status": "none",
+                "sleep_quality": "good",
+            },
+        },
+    )
+    second = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[1]["id"],
+            "raw_text": "Partial session with high fatigue and poor sleep.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    detail = client.get(f"/plans/{plan_id}").json()
+
+    summary = detail["execution_status_summary"]
+    assert summary["planned_count"] == 3
+    assert summary["completed_count"] == 1
+    assert summary["partial_count"] == 1
+    assert summary["missed_feedback_count"] == 1
+    assert summary["completion_rate"] == 50
+    assert summary["risk_level"] == "deescalate"
+    assert "high_fatigue" in summary["risk_reasons"]
+    assert summary["risk_rule_source"] == "deterministic_feedback_rules"
+
+    history = detail["adjustment_history"]
+    assert len(history) == 2
+    assert history[0]["feedback_id"] == second.json()["feedback_id"]
+    assert history[0]["event_id"] == events[1]["id"]
+    assert "high_fatigue" in history[0]["reason_codes"]
+    assert history[0]["risk_gate"]["status"] == "needs_protocol_recheck"
+    assert history[0]["protocol_recheck"]["allowed"] is True
+    assert history[0]["adaptive_adjustment"]["next_day_adjustment"]
+    assert history[0]["plan_diff"]["workflow"] == ["risk_gate", "protocol_recheck", "adjustment", "plan_diff"]
+    assert history[0]["affected_events"][0]["event_id"] == events[2]["id"]
 
 
 def test_delete_plan_removes_plan_and_events(tmp_path, monkeypatch):
@@ -992,3 +1460,36 @@ def test_delete_plan_removes_plan_and_events(tmp_path, monkeypatch):
 
     response = client.delete(f"/plans/{plan_id}")
     assert response.status_code == 404
+
+
+def test_delete_plan_refuses_plan_owned_by_another_user(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "foreign_plan.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {
+                "goal": "foreign",
+                "requested_weeks": 1,
+                "actual_weeks": 1,
+                "plan_type": "single_week",
+            },
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "base",
+                    "load_level": "easy",
+                    "days": [{"day": "Mon", "training_type": "easy", "main_set": "30 min Z2"}],
+                }
+            ],
+        },
+        source_query="foreign delete",
+        user_id="another_user",
+    )
+
+    response = client.delete(f"/plans/{plan_id}")
+
+    assert response.status_code == 404
+    assert db.get_plan(plan_id) is not None

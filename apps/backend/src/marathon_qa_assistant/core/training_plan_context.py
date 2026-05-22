@@ -63,6 +63,7 @@ _PLAN_PROFILE_FIELD_ALIASES: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
 
 _NEGATIVE_HEALTH_VALUES = {"", "无", "没有", "暂无", "否", "none", "no", "n", "false", "0", "无伤病", "无疲劳"}
 _NEGATIVE_HEALTH_FIELDS = {"injury_or_fatigue", "injury", "fatigue"}
+_AVERAGE_WEEKS_PER_MONTH = 4.345
 
 
 def _clamp_weeks(value: int) -> int:
@@ -126,16 +127,34 @@ def merge_plan_profile_overrides(query: str, profile: Dict[str, Any]) -> Dict[st
     overrides = extract_plan_profile_overrides(query)
     if overrides:
         merged.update(overrides)
+        derived_weekly_from_month = _weekly_mileage_from_monthly_mileage(overrides.get("last_month_mileage"))
         if "last_month_mileage" in overrides and "recent_four_week_mileage" not in overrides:
-            merged["recent_four_week_mileage"] = overrides["last_month_mileage"]
+            merged["recent_four_week_mileage"] = derived_weekly_from_month or overrides["last_month_mileage"]
+        if "last_month_mileage" in overrides and "weekly_mileage" not in overrides and derived_weekly_from_month:
+            merged["weekly_mileage"] = derived_weekly_from_month
         explicit_fields: List[str] = list(merged.get("_explicit_plan_profile_fields") or [])
-        for field in list(overrides) + (["recent_four_week_mileage"] if "last_month_mileage" in overrides and "recent_four_week_mileage" not in overrides else []):
+        derived_fields: List[str] = []
+        if "last_month_mileage" in overrides and "recent_four_week_mileage" not in overrides:
+            derived_fields.append("recent_four_week_mileage")
+        if "last_month_mileage" in overrides and "weekly_mileage" not in overrides and derived_weekly_from_month:
+            derived_fields.append("weekly_mileage")
+        for field in list(overrides) + derived_fields:
             if field not in explicit_fields:
                 explicit_fields.append(field)
         merged["_explicit_plan_profile_fields"] = explicit_fields
         if "target_race_date" in overrides and "plan_duration_weeks" not in overrides:
             merged.pop("plan_duration_weeks", None)
     return merged
+
+
+def _weekly_mileage_from_monthly_mileage(value: Any) -> Optional[str]:
+    monthly = coerce_float_from_unit_text(value)
+    if monthly is None or monthly <= 0:
+        return None
+    weekly = monthly / _AVERAGE_WEEKS_PER_MONTH
+    rounded = round(weekly, 1)
+    number = int(rounded) if rounded.is_integer() else rounded
+    return f"{number} km"
 
 
 def coerce_float_from_unit_text(value: Any, default: Optional[float] = None) -> Optional[float]:

@@ -59,6 +59,7 @@ def build_working_state(
         "user_profile": user_profile or {},
         "adaptive_feedback": adaptive_feedback or {},
         "adaptive_adjustment": {},
+        "workflow_trace": {},
         "requested_weeks": None,
         "missing_fields": [],
         "enhancement_missing_fields": [],

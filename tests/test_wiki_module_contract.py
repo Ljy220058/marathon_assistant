@@ -108,6 +108,8 @@ def test_expert_prompt_includes_wiki_context_without_treating_it_as_numbered_evi
     assert "Wiki 概念补充上下文" in captured["prompt"]
     assert "乳酸阈是运动生理概念" in captured["prompt"]
     assert "不要给 Wiki 内容编造 [n] 引用" in captured["prompt"]
+    assert "没有本地知识库证据时，可以基于模型通用知识给出一般说明" in captured["prompt"]
+    assert "模型通用知识不得标成 [n] 证据" in captured["prompt"]
 
 
 def test_structured_report_keeps_wiki_context_for_audit():

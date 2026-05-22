@@ -1,5 +1,7 @@
 import operator
+from datetime import date, timedelta
 from typing import Annotated, Any, Dict, List, Optional, TypedDict
+from uuid import uuid4
 
 try:
     from pydantic import BaseModel, Field
@@ -71,6 +73,43 @@ class RiskGateResult(TypedDict, total=False):
     decision_reason: str
 
 
+class ExecutionStatusSummary(TypedDict, total=False):
+    week_start: str
+    week_end: str
+    completion_rate: int
+    planned_count: int
+    completed_count: int
+    partial_count: int
+    skipped_count: int
+    missed_feedback_count: int
+    plan_deviation: Dict[str, Any]
+    risk_level: str
+    risk_reasons: List[str]
+    recovery_status: str
+    next_training_recommendation: str
+    generation_status: str
+    risk_rule_source: str
+    current_week: int
+    total_weeks: int
+    cycle_completion_rate: int
+    completed_weeks: List[Dict[str, Any]]
+    phase_progress: List[Dict[str, Any]]
+
+
+class WorkflowTrace(TypedDict, total=False):
+    trace_version: str
+    run_id: str
+    workflow_kind: str
+    intent_type: str
+    status: str
+    evidence_state: Dict[str, Any]
+    protocol_state: Dict[str, Any]
+    risk_state: Dict[str, Any]
+    repair_state: Dict[str, Any]
+    feedback_state: Dict[str, Any]
+    audit_events: List[Dict[str, Any]]
+
+
 def _normalize_text(value: Any) -> str:
     return str(value or "").strip()
 
@@ -83,7 +122,7 @@ _ADAPTIVE_RULE_LIBRARY: Dict[str, Dict[str, str]] = {
     "pain_risk": {
         "next_day_adjustment": "次日暂停跑步主课，改为休息或 30-40 分钟无冲击交叉训练，并优先处理疼痛部位。",
         "weekly_adjustment": "本周取消质量课加量，长距离与强度课至少下调一个档位，先把目标切回安全完赛/安全训练。",
-        "alternative_workout": "可替代为自行车、椭圆机或游泳等低冲击有氧，并配合灵活性与激活训练。",
+        "alternative_workout": "可替代为自行车、椭圆机或游泳等低冲击有氧，并配合灵活性与激活训练。Low impact options: rest, swim, bike, cycling, or elliptical only.",
         "risk_alert": "若疼痛在日常行走中仍明显、持续 48 小时以上或出现加重，暂停跑步并尽快做专业评估。",
         "principle": "先控风险，再谈训练连续性。",
     },
@@ -160,7 +199,7 @@ def build_feedback_risk_gate(feedback: Optional[Dict[str, Any]] = None, raw_text
     severe_keywords = {
         "chest_pain": ["\u80f8\u75db", "\u80f8\u95f7", "chest pain", "chest tightness"],
         "dizziness_or_syncope": ["\u5934\u6655", "\u7729\u6655", "\u6655\u53a5", "\u6655\u5012", "dizzy", "faint"],
-        "heat_illness": ["\u4e2d\u6691", "\u70ed\u5c04\u75c5", "\u9ad8\u6e29\u5f02\u5e38", "heat illness", "heatstroke"],
+        "heat_illness": ["\u4e2d\u6691", "\u70ed\u75c5", "\u70ed\u5c04\u75c5", "\u9ad8\u6e29\u5f02\u5e38", "heat illness", "heatstroke"],
     }
     for code, keywords in severe_keywords.items():
         if _contains_any(combined_text, keywords):
@@ -211,6 +250,454 @@ def build_feedback_protocol_recheck(risk_gate: RiskGateResult) -> Dict[str, Any]
         "adjustment_action": risk_gate.get("adjustment_action", "none"),
         "violations": list(risk_gate.get("triggers") or []),
         "decision_reason": "风险门阻断，拒绝继续生成训练负荷调整。" if blocked else "风险门通过或已要求降级，允许进入受控调整。",
+    }
+
+
+def _parse_iso_date(value: Any) -> Optional[date]:
+    try:
+        return date.fromisoformat(str(value or "").strip()[:10])
+    except ValueError:
+        return None
+
+
+def _week_bounds(today: Optional[Any] = None) -> tuple[date, date]:
+    base = _parse_iso_date(today) if today is not None else None
+    base = base or date.today()
+    start = base - timedelta(days=base.weekday())
+    return start, start + timedelta(days=6)
+
+
+def _is_execution_rest_event(event: Dict[str, Any]) -> bool:
+    haystack = " ".join(
+        str(event.get(key) or "")
+        for key in ("workout_type", "training_type", "training_type_label", "title", "main_set")
+    ).lower()
+    return bool(event.get("is_rest")) or "rest" in haystack or "recovery" in haystack
+
+
+def _feedback_for_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    feedback = event.get("latest_feedback") or event.get("feedback") or {}
+    return feedback if isinstance(feedback, dict) else {}
+
+
+def _event_risk_reasons(feedback: Dict[str, Any]) -> List[str]:
+    reasons: List[str] = []
+    for code in feedback.get("reason_codes") or []:
+        if code:
+            reasons.append(str(code))
+    risk_gate = feedback.get("risk_gate") or {}
+    if isinstance(risk_gate, dict):
+        for code in risk_gate.get("triggers") or []:
+            if code:
+                reasons.append(str(code))
+        product_status = str(risk_gate.get("product_status") or "")
+        if product_status == "medical_referral":
+            reasons.append("medical_referral")
+    return list(dict.fromkeys(reasons))
+
+
+def _risk_level_from_reasons(reasons: List[str]) -> tuple[str, str, str]:
+    reason_set = set(reasons)
+    if {"medical_referral", "chest_pain", "dizziness_or_syncope", "heat_illness"} & reason_set:
+        return (
+            "medical_referral",
+            "medical_referral",
+            "停止训练，并在进行任何训练调整前先接受专业医疗评估。",
+        )
+    if "pain_risk" in reason_set:
+        return (
+            "deescalate",
+            "risk_refused",
+            "下一次训练降级为休息或低冲击活动，直到疼痛风险重新评估。",
+        )
+    if "high_fatigue" in reason_set:
+        return (
+            "deescalate",
+            "partial_generated",
+            "Reduce the next workout intensity and prioritize recovery before quality sessions.",
+        )
+    if "poor_sleep" in reason_set or "missed_workout" in reason_set:
+        return (
+            "attention",
+            "partial_generated",
+            "Keep the plan conservative and avoid stacking missed or low-recovery workouts.",
+        )
+    return ("normal", "generated", "Continue with the planned next workout and keep routine recovery checks.")
+
+
+def _week_number(event: Dict[str, Any]) -> int:
+    try:
+        return max(1, int(event.get("week_no") or event.get("week_index") or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _completion_points(feedback: Dict[str, Any]) -> float:
+    status = str(feedback.get("completion_status") or "").strip().lower()
+    if status == "completed":
+        return 1.0
+    if status == "partial":
+        return 0.5
+    return 0.0
+
+
+def _completed_weeks(events: List[Dict[str, Any]], today_date: date) -> List[Dict[str, Any]]:
+    grouped: Dict[int, List[Dict[str, Any]]] = {}
+    for event in events or []:
+        if _is_execution_rest_event(event):
+            continue
+        grouped.setdefault(_week_number(event), []).append(event)
+
+    rows: List[Dict[str, Any]] = []
+    for week_no in sorted(grouped):
+        week_events = grouped[week_no]
+        planned = len(week_events)
+        completed = 0.0
+        missing = 0
+        for event in week_events:
+            feedback = _feedback_for_event(event)
+            if feedback:
+                completed += _completion_points(feedback)
+                continue
+            event_date = _parse_iso_date(event.get("scheduled_date"))
+            if event_date is None or event_date <= today_date:
+                missing += 1
+        rows.append(
+            {
+                "week_no": week_no,
+                "planned_count": planned,
+                "completion_rate": int(round((completed / planned) * 100)) if planned else 0,
+                "missed_feedback_count": missing,
+            }
+        )
+    return rows
+
+
+def _phase_progress(events: List[Dict[str, Any]], current_week: int) -> List[Dict[str, Any]]:
+    phases: Dict[str, Dict[str, Any]] = {}
+    for event in events or []:
+        phase = str(event.get("phase") or event.get("phase_label") or "base").strip() or "base"
+        week_no = _week_number(event)
+        entry = phases.setdefault(
+            phase,
+            {"phase": phase, "start_week": week_no, "end_week": week_no, "state": "upcoming"},
+        )
+        entry["start_week"] = min(int(entry["start_week"]), week_no)
+        entry["end_week"] = max(int(entry["end_week"]), week_no)
+    for entry in phases.values():
+        if int(entry["end_week"]) < current_week:
+            entry["state"] = "complete"
+        elif int(entry["start_week"]) <= current_week <= int(entry["end_week"]):
+            entry["state"] = "current"
+        else:
+            entry["state"] = "upcoming"
+    return sorted(phases.values(), key=lambda item: int(item["start_week"]))
+
+
+def build_execution_status_summary(
+    events: List[Dict[str, Any]],
+    *,
+    plan: Optional[Dict[str, Any]] = None,
+    today: Optional[Any] = None,
+) -> ExecutionStatusSummary:
+    week_start, week_end = _week_bounds(today)
+    current_week_events: List[Dict[str, Any]] = []
+    for event in events or []:
+        event_date = _parse_iso_date(event.get("scheduled_date"))
+        if event_date is None or week_start <= event_date <= week_end:
+            current_week_events.append(event)
+
+    planned_events = [event for event in current_week_events if not _is_execution_rest_event(event)]
+    planned_count = len(planned_events)
+    completed_count = 0
+    partial_count = 0
+    skipped_count = 0
+    missed_feedback_count = 0
+    risk_reasons: List[str] = []
+
+    today_date = _parse_iso_date(today) if today is not None else date.today()
+    for event in planned_events:
+        feedback = _feedback_for_event(event)
+        event_date = _parse_iso_date(event.get("scheduled_date"))
+        if not feedback:
+            if event_date is None or event_date <= today_date:
+                missed_feedback_count += 1
+            continue
+
+        status = str(feedback.get("completion_status") or "").strip().lower()
+        if status == "completed":
+            completed_count += 1
+        elif status == "partial":
+            partial_count += 1
+        elif status in {"missed", "skipped"}:
+            skipped_count += 1
+        risk_reasons.extend(_event_risk_reasons(feedback))
+
+    risk_reasons = list(dict.fromkeys(risk_reasons))
+    risk_level, generation_status, recommendation = _risk_level_from_reasons(risk_reasons)
+    completion_points = completed_count + partial_count * 0.5
+    completion_rate = int(round((completion_points / planned_count) * 100)) if planned_count else 0
+    total_weeks = int((plan or {}).get("actual_weeks") or (plan or {}).get("total_weeks") or 0)
+    event_weeks = [_week_number(event) for event in events or []]
+    current_week = max((_week_number(event) for event in current_week_events), default=1)
+    if event_weeks:
+        current_week = min(current_week, max(event_weeks))
+    total_weeks = total_weeks or max(event_weeks, default=0)
+    cycle_completion_rate = int(round((current_week / total_weeks) * 100)) if total_weeks else 0
+    return {
+        "week_start": week_start.isoformat(),
+        "week_end": week_end.isoformat(),
+        "completion_rate": completion_rate,
+        "planned_count": planned_count,
+        "completed_count": completed_count,
+        "partial_count": partial_count,
+        "skipped_count": skipped_count,
+        "missed_feedback_count": missed_feedback_count,
+        "plan_deviation": {
+            "not_completed_count": skipped_count + missed_feedback_count,
+            "partial_count": partial_count,
+            "completion_points": completion_points,
+            "total_weeks": total_weeks,
+        },
+        "risk_level": risk_level,
+        "risk_reasons": risk_reasons,
+        "recovery_status": "medical_referral" if risk_level == "medical_referral" else risk_level,
+        "next_training_recommendation": recommendation,
+        "generation_status": generation_status,
+        "risk_rule_source": "deterministic_feedback_rules",
+        "current_week": current_week,
+        "total_weeks": total_weeks,
+        "cycle_completion_rate": cycle_completion_rate,
+        "completed_weeks": _completed_weeks(events or [], today_date),
+        "phase_progress": _phase_progress(events or [], current_week),
+    }
+
+
+WORKFLOW_TRACE_VERSION = "workflow_trace.v1"
+
+
+def _safe_dict(value: Any) -> Dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _safe_list(value: Any) -> List[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _tier_counts(items: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for item in items:
+        tier = str(item.get("tier") or "unknown")
+        counts[tier] = counts.get(tier, 0) + 1
+    return counts
+
+
+def _workflow_evidence_state(evidence_bundle: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    bundle = _safe_dict(evidence_bundle)
+    health = _safe_dict(bundle.get("health"))
+    items = [item for item in _safe_list(bundle.get("evidence_items")) if isinstance(item, dict)]
+    missing_evidence: List[str] = []
+    kb_ready = bool(health.get("kb_ready") or health.get("ready") or health.get("ok"))
+    if not kb_ready:
+        missing_evidence.append("kb_not_ready")
+    if not items:
+        missing_evidence.append("no_evidence_items")
+    citation_labels = [
+        str(item.get("citation_label") or "").strip()
+        for item in items
+        if str(item.get("citation_label") or "").strip()
+    ]
+    return {
+        "status": "ok" if not missing_evidence else "missing_or_partial",
+        "kb_ready": kb_ready,
+        "chunks_count": int(health.get("chunks_count") or 0),
+        "faiss_ready": bool(health.get("faiss_ready")),
+        "evidence_count": len(items),
+        "tier_counts": _tier_counts(items),
+        "citation_labels": citation_labels,
+        "evidence_ids": [str(item.get("evidence_id") or "") for item in items if item.get("evidence_id")],
+        "missing_evidence": missing_evidence,
+    }
+
+
+def _workflow_protocol_state(structured_training_plan: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    plan = _safe_dict(structured_training_plan)
+    protocol = _safe_dict(plan.get("half_marathon_protocol"))
+    validation = _safe_dict(plan.get("half_marathon_protocol_validation"))
+    active = bool(protocol.get("active"))
+    errors = [item for item in _safe_list(validation.get("errors")) if isinstance(item, dict)]
+    warnings = [item for item in _safe_list(validation.get("warnings")) if isinstance(item, dict)]
+    issues = [item for item in _safe_list(validation.get("issues")) if isinstance(item, dict)]
+    if not active:
+        status = "inactive"
+    elif errors:
+        status = "failed"
+    elif validation.get("passed", True):
+        status = "passed"
+    else:
+        status = "needs_review"
+
+    selected = protocol.get("selected_archetype")
+    if isinstance(selected, dict):
+        selected_archetype = str(selected.get("archetype_id") or selected.get("id") or "")
+    else:
+        selected_archetype = str(selected or "")
+
+    return {
+        "active": active,
+        "status": status,
+        "selected_archetype": selected_archetype,
+        "passed": bool(validation.get("passed", not errors)),
+        "issue_count": len(issues) + len(errors),
+        "error_count": len(errors),
+        "warning_count": len(warnings),
+        "checked_constraints": list(validation.get("checked_constraints") or []),
+        "capacity_budget": _safe_dict(protocol.get("capacity_budget")),
+        "source_docs": list(protocol.get("source_docs") or [
+            "Sub-70半程马拉松训练_图片OCR整理.md",
+            "docs/half_marathon_hmp_protocol.md",
+            "docs/product/half_marathon_hmp_protocol.md",
+            "docs/half_marathon_source_audit.md",
+            "docs/audits/half_marathon_source_audit.md",
+        ]),
+    }
+
+
+def _workflow_repair_state(structured_training_plan: Optional[Dict[str, Any]], protocol_state: Dict[str, Any]) -> Dict[str, Any]:
+    plan = _safe_dict(structured_training_plan)
+    protocol = _safe_dict(plan.get("half_marathon_protocol"))
+    validation = _safe_dict(plan.get("half_marathon_protocol_validation"))
+    repair_log = [
+        item
+        for item in (_safe_list(validation.get("repair_log")) or _safe_list(protocol.get("repair_log")))
+        if isinstance(item, dict)
+    ]
+    repair_suggestions = [item for item in _safe_list(validation.get("repair_suggestions")) if isinstance(item, dict)]
+    return {
+        "repair_applied": bool(validation.get("repair_applied") or repair_log),
+        "repair_attempts": len(repair_log),
+        "repair_log": repair_log,
+        "repair_suggestions": repair_suggestions,
+        "recheck_status": protocol_state.get("status", "inactive"),
+    }
+
+
+def _workflow_risk_state(
+    risk_gate: Optional[Dict[str, Any]],
+    protocol_recheck: Optional[Dict[str, Any]],
+    status: str,
+) -> Dict[str, Any]:
+    gate = _safe_dict(risk_gate)
+    recheck = _safe_dict(protocol_recheck)
+    product_status = str(gate.get("product_status") or status or "not_evaluated")
+    fail_closed = (
+        gate.get("status") == "blocked"
+        or product_status == "medical_referral"
+        or recheck.get("allowed") is False
+    )
+    return {
+        "status": str(gate.get("status") or "not_evaluated"),
+        "risk_level": str(gate.get("risk_level") or "unknown"),
+        "triggers": list(gate.get("triggers") or []),
+        "adjustment_action": str(gate.get("adjustment_action") or "none"),
+        "product_status": product_status,
+        "decision_reason": str(gate.get("decision_reason") or ""),
+        "fail_closed": bool(fail_closed),
+    }
+
+
+def _workflow_feedback_state(
+    adaptive_feedback: Optional[Dict[str, Any]],
+    adaptive_adjustment: Optional[Dict[str, Any]],
+    risk_gate: Optional[Dict[str, Any]],
+    protocol_recheck: Optional[Dict[str, Any]],
+    feedback_id: Optional[str],
+    feedback_persisted: bool,
+) -> Dict[str, Any]:
+    feedback = _safe_dict(adaptive_feedback)
+    adjustment = _safe_dict(adaptive_adjustment)
+    reason_codes = list(feedback.get("reason_codes") or adjustment.get("reason_codes") or [])
+    has_feedback = bool(feedback or reason_codes or feedback_id)
+    return {
+        "has_feedback": has_feedback,
+        "feedback_id": str(feedback_id or ""),
+        "persisted": bool(feedback_persisted or feedback_id),
+        "source": str(feedback.get("source") or ""),
+        "reason_codes": reason_codes,
+        "risk_gate": _safe_dict(risk_gate),
+        "protocol_recheck": _safe_dict(protocol_recheck),
+    }
+
+
+def _workflow_audit_events(
+    *,
+    evidence_state: Dict[str, Any],
+    protocol_state: Dict[str, Any],
+    risk_state: Dict[str, Any],
+    repair_state: Dict[str, Any],
+    feedback_state: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    events = [
+        {"event": "evidence_state", "status": evidence_state.get("status", "unknown")},
+        {"event": "protocol_state", "status": protocol_state.get("status", "inactive")},
+        {"event": "repair_state", "status": "applied" if repair_state.get("repair_applied") else "not_applied"},
+        {"event": "risk_state", "status": risk_state.get("status", "not_evaluated")},
+    ]
+    if feedback_state.get("has_feedback"):
+        events.append({
+            "event": "feedback_state",
+            "status": "persisted" if feedback_state.get("persisted") else "computed_only",
+        })
+    return events
+
+
+def build_workflow_trace(
+    *,
+    query: str = "",
+    workflow_kind: str = "",
+    intent_type: str = "",
+    status: str = "generated",
+    evidence_bundle: Optional[Dict[str, Any]] = None,
+    structured_training_plan: Optional[Dict[str, Any]] = None,
+    risk_gate: Optional[Dict[str, Any]] = None,
+    protocol_recheck: Optional[Dict[str, Any]] = None,
+    adaptive_feedback: Optional[Dict[str, Any]] = None,
+    adaptive_adjustment: Optional[Dict[str, Any]] = None,
+    feedback_id: Optional[str] = None,
+    feedback_persisted: bool = False,
+    run_id: Optional[str] = None,
+) -> WorkflowTrace:
+    del query
+    evidence_state = _workflow_evidence_state(evidence_bundle)
+    protocol_state = _workflow_protocol_state(structured_training_plan)
+    repair_state = _workflow_repair_state(structured_training_plan, protocol_state)
+    risk_state = _workflow_risk_state(risk_gate, protocol_recheck, status)
+    feedback_state = _workflow_feedback_state(
+        adaptive_feedback,
+        adaptive_adjustment,
+        risk_gate,
+        protocol_recheck,
+        feedback_id,
+        feedback_persisted,
+    )
+    return {
+        "trace_version": WORKFLOW_TRACE_VERSION,
+        "run_id": str(run_id or f"workflow-{uuid4().hex}"),
+        "workflow_kind": str(workflow_kind or "qa"),
+        "intent_type": str(intent_type or "qa"),
+        "status": str(status or "generated"),
+        "evidence_state": evidence_state,
+        "protocol_state": protocol_state,
+        "risk_state": risk_state,
+        "repair_state": repair_state,
+        "feedback_state": feedback_state,
+        "audit_events": _workflow_audit_events(
+            evidence_state=evidence_state,
+            protocol_state=protocol_state,
+            risk_state=risk_state,
+            repair_state=repair_state,
+            feedback_state=feedback_state,
+        ),
     }
 
 
@@ -479,6 +966,7 @@ class IntegratedState(TypedDict):
     user_profile: UserProfile
     adaptive_feedback: AdaptiveFeedback
     adaptive_adjustment: AdaptiveAdjustment
+    workflow_trace: WorkflowTrace
     requested_weeks: Optional[int]
     missing_fields: List[str]
     enhancement_missing_fields: List[str]

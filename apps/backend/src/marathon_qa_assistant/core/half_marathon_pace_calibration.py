@@ -68,6 +68,12 @@ def detect_half_marathon_profile_gaps(profile: Dict[str, Any]) -> List[Dict[str,
 def build_half_marathon_pace_calibration(profile: Dict[str, Any]) -> Dict[str, Any]:
     target_half_time_seconds, target_source = _target_half_time_detail(profile)
     target_seconds = round(target_half_time_seconds / HALF_MARATHON_KM) if target_half_time_seconds else None
+    target_pace_seconds, target_pace_source = _target_pace_seconds_detail(profile)
+    if target_pace_seconds is not None:
+        target_seconds = target_pace_seconds
+        target_source = target_pace_source
+        if target_half_time_seconds is None:
+            target_half_time_seconds = round(target_pace_seconds * HALF_MARATHON_KM)
     t_pace_seconds = _pace_seconds(profile.get("t_pace"))
     source_estimates = _current_hm_estimates(profile)
     current_seconds = _choose_current_hmp(source_estimates)
@@ -164,7 +170,10 @@ _HALF_KEYS = ("current_half", "current_half_time", "half_marathon_time", "pb_hal
 
 def _target_half_time_seconds(profile: Dict[str, Any]) -> Optional[int]:
     target_seconds, _source = _target_half_time_detail(profile)
-    return round(target_seconds / HALF_MARATHON_KM) if target_seconds else None
+    if target_seconds:
+        return round(target_seconds / HALF_MARATHON_KM)
+    target_pace_seconds, _pace_source = _target_pace_seconds_detail(profile)
+    return target_pace_seconds
 
 
 def _target_half_time_detail(profile: Dict[str, Any]) -> Tuple[Optional[int], str]:
@@ -201,8 +210,18 @@ def _target_half_time_detail(profile: Dict[str, Any]) -> Tuple[Optional[int], st
             seconds = (hours * 60 + minutes) * 60
         return seconds, "goal"
 
-    half_pb, source = _current_half_time_detail(profile)
-    return (half_pb, source) if half_pb else (None, "")
+    return None, ""
+
+
+def _target_pace_seconds_detail(profile: Dict[str, Any]) -> Tuple[Optional[int], str]:
+    value = profile.get("target_pace")
+    text = str(value or "").strip().lower()
+    if not text:
+        return None, ""
+    if "/km" not in text and "配速" not in text and "pace" not in text:
+        return None, ""
+    parsed = _pace_seconds(value)
+    return (parsed, "target_pace") if parsed else (None, "")
 
 
 def _target_marked_duration_seconds(value: Any) -> Optional[int]:
@@ -359,7 +378,7 @@ def _pace_seconds(value: Any) -> Optional[int]:
     text = str(value or "").strip()
     if not text:
         return None
-    match = re.search(r"(\d+)[:：](\d{1,2})", text)
+    match = re.search(r"(\d+)\s*[:：]\s*(\d{1,2})", text)
     if match:
         return int(match.group(1)) * 60 + int(match.group(2))
     return None

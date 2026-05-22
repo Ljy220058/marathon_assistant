@@ -7,6 +7,8 @@ from typing import Dict, Iterable, List, Optional, Sequence
 HMP_SOURCE_DOCS = (
     "Sub-70半程马拉松训练_图片OCR整理.md",
     "docs/half_marathon_hmp_protocol.md",
+    "docs/product/half_marathon_hmp_protocol.md",
+    "docs/product/reports/Sub-70半程马拉松训练_图片OCR整理.md",
 )
 
 
@@ -71,6 +73,24 @@ HMP_GLOSSARY_TERMS: Dict[str, HMPGlossaryTerm] = {
         definition="从恢复或基础训练过渡到半马专项训练的低风险阶段。",
         training_implication="刚比完全马或准备期较短时，应先用轻法特莱克、坡跑和 90% HMP 支撑课导入。",
     ),
+    "general_phase": HMPGlossaryTerm(
+        id="general_phase",
+        label="基础阶段",
+        definition="以总跑量、多配速能力和基础有氧功率为核心的半马准备阶段。",
+        training_implication="优先安排阈值、渐进跑、轻量速度刺激和长距离轻松跑，避免过早堆叠 100% HMP 大课。",
+    ),
+    "race_supportive_phase": HMPGlossaryTerm(
+        id="race_supportive_phase",
+        label="专项能力构建阶段",
+        definition="在比赛专项期前建立 90-95% HMP 耐力支撑和 105-110% HMP 速度支撑的阶段。",
+        training_implication="课表应围绕支撑能力递进，而不是直接跳到比赛日需求。",
+    ),
+    "race_specific_phase": HMPGlossaryTerm(
+        id="race_specific_phase",
+        label="比赛专项阶段",
+        definition="靠近比赛窗口、围绕 95-105% HMP 关键能力完成专项整合的阶段。",
+        training_implication="100% HMP 巡航恢复间歇应在该阶段逐步推进，并配套充分恢复。",
+    ),
     "capacity_budget": HMPGlossaryTerm(
         id="capacity_budget",
         label="HMP 容量预算",
@@ -89,36 +109,109 @@ HMP_GLOSSARY_TERMS: Dict[str, HMPGlossaryTerm] = {
         definition="基石文章中的高水平案例跑量不能直接作为普通跑者默认跑量。",
         training_implication="系统必须保留百分比训练结构，但按用户画像重算周跑量和专项容量。",
     ),
+    "threshold_lt2": HMPGlossaryTerm(
+        id="threshold_lt2",
+        label="LT2 / 阈值训练",
+        definition="接近第二乳酸阈值的可控高有氧强度训练。",
+        training_implication="基础阶段可用阈值巡航和阈值长间歇补有氧功率，为 100% HMP 核心课铺垫。",
+    ),
+    "ssmax": HMPGlossaryTerm(
+        id="ssmax",
+        label="SSmax 最大稳态",
+        definition="跑者可长时间维持、但接近上限的稳定有氧输出能力。",
+        training_implication="通过阈值、次阈值和 105% HMP 速度储备训练提高，不能用单次极限课替代。",
+    ),
+    "progression_run": HMPGlossaryTerm(
+        id="progression_run",
+        label="渐进跑",
+        definition="从轻松或中等强度逐步加速到目标区间的连续跑。",
+        training_implication="适合基础阶段和导入期，用较低心理成本连接轻松跑、阈值和 HMP 支撑区间。",
+    ),
+    "long_fast_run": HMPGlossaryTerm(
+        id="long_fast_run",
+        label="长距离快速跑",
+        definition="在 90-95% HMP 或相邻区间完成的较长距离连续或分段快速跑。",
+        training_implication="必须由短到长进阶，并根据容量预算缩放；不能从短间歇直接跳到 20-25 公里。",
+    ),
+    "alternating_kilometers": HMPGlossaryTerm(
+        id="alternating_kilometers",
+        label="一公里交替跑",
+        definition="以 100% HMP 主段和 85-90% HMP 巡航恢复段交替组成的核心专项形式。",
+        training_implication="可逐步延长 HMP 累计量，但恢复段仍有负荷，需要纳入整堂课容量。",
+    ),
+    "fartlek": HMPGlossaryTerm(
+        id="fartlek",
+        label="法特莱克",
+        definition="以时间或地形变化组织快慢交替的体感配速训练。",
+        training_implication="适合导入期和辅助速度建设，疲劳或缺少短距离成绩时可替代硬性配速间歇。",
+    ),
+    "hill_sprints": HMPGlossaryTerm(
+        id="hill_sprints",
+        label="坡冲 / 坡跑",
+        definition="在坡度上完成的短时间神经肌肉激活或中长间歇刺激。",
+        training_implication="导入期可用短坡冲重启速度和力量，避免演变为力竭训练。",
+    ),
+    "strides": HMPGlossaryTerm(
+        id="strides",
+        label="跨步跑",
+        definition="短距离、放松快速、强调跑姿和神经激活的加速跑。",
+        training_implication="可作为轻松跑后的低成本速度刺激，不应替代真正的专项课。",
+    ),
+    "vo2max": HMPGlossaryTerm(
+        id="vo2max",
+        label="VO2max 最大摄氧量",
+        definition="高强度耐力运动中摄取和利用氧气的能力上限。",
+        training_implication="107-110% HMP 辅助速度课可刺激 VO2max，但低跑量或疲劳用户必须压缩总量。",
+    ),
+    "fatigue_downgrade": HMPGlossaryTerm(
+        id="fatigue_downgrade",
+        label="疲劳降级",
+        definition="当疼痛、持续疲劳、睡眠差或主观压力高时主动降低课表强度或容量。",
+        training_implication="安全约束优先于原计划完整性；必要时改为恢复跑、轻松跑或延后关键课。",
+    ),
+    "environment_adjustment": HMPGlossaryTerm(
+        id="environment_adjustment",
+        label="环境调整",
+        definition="因高温、湿热、强风、路面或海拔等外部条件改变训练执行目标。",
+        training_implication="同一配速在恶劣环境下真实负荷更高，应优先按体感和安全边界调整。",
+    ),
+    "recovery_window": HMPGlossaryTerm(
+        id="recovery_window",
+        label="恢复窗口",
+        definition="关键训练之间用于吸收刺激、降低伤病风险的恢复间隔。",
+        training_implication="高质量 HMP 课之间通常需要约 48 小时恢复，连续硬课必须有明确理由和降级预案。",
+    ),
 }
 
 
 WORKOUT_TERM_IDS: Dict[str, Sequence[str]] = {
-    "hm_90_support_endurance": ("hmp", "support_endurance_90"),
-    "hm_95_long_fast_run": ("hmp", "specific_endurance_95", "support_endurance_90", "capacity_budget"),
-    "hm_100_float_intervals": ("hmp", "race_specific_100", "cruise_recovery", "capacity_budget"),
+    "hm_90_support_endurance": ("hmp", "support_endurance_90", "long_fast_run", "capacity_budget"),
+    "hm_95_long_fast_run": ("hmp", "specific_endurance_95", "long_fast_run", "support_endurance_90", "capacity_budget"),
+    "hm_100_float_intervals": ("hmp", "race_specific_100", "cruise_recovery", "alternating_kilometers", "capacity_budget"),
     "hm_105_specific_speed": ("hmp", "specific_speed_105", "dynamic_calibration", "capacity_budget"),
-    "hm_110_support_speed": ("hmp", "support_speed_107_110", "dynamic_calibration", "capacity_budget"),
-    "hm_intro_fartlek_hills": ("introductory_phase",),
-    "hm_base_threshold_progression": ("hmp", "dynamic_calibration"),
+    "hm_110_support_speed": ("hmp", "support_speed_107_110", "vo2max", "fartlek", "dynamic_calibration", "capacity_budget"),
+    "hm_intro_fartlek_hills": ("introductory_phase", "fartlek", "hill_sprints", "strides"),
+    "hm_base_threshold_progression": ("hmp", "threshold_lt2", "ssmax", "progression_run", "dynamic_calibration"),
 }
 
 
 CONSTRAINT_TERM_IDS: Dict[str, Sequence[str]] = {
     "no_sub70_volume_copy": ("sub70_volume_scaling", "capacity_budget"),
     "marathon_recovery_intro": ("introductory_phase", "specific_endurance_95", "capacity_budget"),
-    "quality_recovery_gap": ("capacity_budget",),
-    "progress_long_fast_run": ("support_endurance_90", "specific_endurance_95", "capacity_budget"),
+    "quality_recovery_gap": ("recovery_window", "capacity_budget"),
+    "progress_long_fast_run": ("long_fast_run", "support_endurance_90", "specific_endurance_95", "capacity_budget"),
     "dynamic_hmp_calibration": ("hmp", "dynamic_calibration", "specific_speed_105", "support_speed_107_110"),
-    "race_specific_timing": ("race_specific_100", "cruise_recovery", "capacity_budget"),
-    "environment_or_fatigue_downgrade": ("capacity_budget", "dynamic_calibration"),
+    "race_specific_timing": ("race_specific_phase", "race_specific_100", "cruise_recovery", "capacity_budget"),
+    "environment_or_fatigue_downgrade": ("fatigue_downgrade", "environment_adjustment", "capacity_budget", "dynamic_calibration"),
     "capacity_budget_exceeded": ("capacity_budget", "sub70_volume_scaling"),
 }
 
 
 PHASE_TERM_IDS: Dict[str, Sequence[str]] = {
-    "introductory": ("introductory_phase",),
-    "race_supportive": ("support_endurance_90", "specific_endurance_95"),
-    "race_specific": ("race_specific_100", "cruise_recovery"),
+    "introductory": ("introductory_phase", "fartlek", "hill_sprints", "strides"),
+    "general": ("general_phase", "threshold_lt2", "progression_run"),
+    "race_supportive": ("race_supportive_phase", "support_endurance_90", "specific_endurance_95", "specific_speed_105"),
+    "race_specific": ("race_specific_phase", "race_specific_100", "cruise_recovery"),
 }
 
 

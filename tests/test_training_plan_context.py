@@ -3,6 +3,7 @@ from marathon_qa_assistant.core.training_plan_context import (
     coerce_float_from_unit_text,
     coerce_int_from_unit_text,
     derive_plan_duration_weeks,
+    merge_plan_profile_overrides,
     parse_requested_weeks,
 )
 
@@ -74,3 +75,25 @@ def test_numeric_profile_fields_accept_common_units():
     assert coerce_int_from_unit_text("120 min") == 120
     assert coerce_int_from_unit_text("90分钟") == 90
     assert coerce_int_from_unit_text("12 周") == 12
+
+
+def test_last_month_mileage_override_estimates_recent_weekly_mileage():
+    profile = {
+        "weekly_mileage": "18 km",
+        "recent_four_week_mileage": "18 km",
+    }
+    merged = merge_plan_profile_overrides(
+        "\n".join(
+            [
+                "请按以下画像生成计划：",
+                "- weekly_mileage: 90 km",
+                "- last_month_mileage: 260 km",
+            ]
+        ),
+        profile,
+    )
+
+    assert merged["weekly_mileage"] == "90 km"
+    assert merged["last_month_mileage"] == "260 km"
+    assert merged["recent_four_week_mileage"] == "59.8 km"
+    assert "recent_four_week_mileage" in merged["_explicit_plan_profile_fields"]

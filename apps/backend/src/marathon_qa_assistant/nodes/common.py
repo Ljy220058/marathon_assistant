@@ -31,6 +31,7 @@ except ImportError:
 
 from marathon_qa_assistant.core import kb_runtime
 from marathon_qa_assistant.core.app_state import BASE_DIR
+from marathon_qa_assistant.core.observability import record_llm_provider_error
 try:
     from marathon_qa_assistant.services.knowledge_graph import graph_engine
 except Exception:
@@ -63,15 +64,18 @@ except Exception:
 logger = logging.getLogger("workflow_engine")
 
 env_path = BASE_DIR / "graphrag_project" / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    load_dotenv()
+if os.getenv("PYTHON_DOTENV_DISABLED") != "1":
+    if env_path.exists():
+        load_dotenv(env_path)
+    else:
+        load_dotenv()
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", os.getenv("DS_MODEL", "deepseek-v4-pro"))
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.aisz.mom/v1")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 
 llm = (
     ChatOllama(
@@ -89,6 +93,42 @@ output_guard_obj = OutputGuard()
 KB_CHUNKS = kb_runtime.KB_CHUNKS
 set_kb_data = kb_runtime.set_kb_data
 clear_kb_data = kb_runtime.clear_kb_data
+
+
+class LLMProviderError(RuntimeError):
+    def __init__(self, *, provider: str, error_code: str, message: str, status_code: Optional[int] = None):
+        super().__init__(message)
+        self.provider = provider
+        self.error_code = error_code
+        self.status_code = status_code
+
+
+def _provider_error_code_from_status(status_code: int) -> str:
+    if status_code == 429:
+        return "rate_limited"
+    if status_code >= 500:
+        return "provider_5xx"
+    return "invalid_request"
+
+
+def _record_and_raise_provider_error(
+    *,
+    provider: str,
+    error_code: str,
+    message: str,
+    status_code: Optional[int] = None,
+    cause: Optional[BaseException] = None,
+) -> None:
+    record_llm_provider_error(provider, error_code)
+    error = LLMProviderError(
+        provider=provider,
+        error_code=error_code,
+        status_code=status_code,
+        message=message,
+    )
+    if cause is not None:
+        raise error from cause
+    raise error
 
 
 def zero_usage() -> Dict[str, int]:
@@ -140,6 +180,8 @@ async def ai_invoke(
     provider = llm_settings["provider"]
     if provider in {"ds", "deepseek"}:
         return await _invoke_deepseek(prompt, llm_settings, current_usage)
+    if provider in {"openai", "gpt"}:
+        return await _invoke_openai(prompt, llm_settings, current_usage)
 
     if ChatOllama is None:
         raise RuntimeError("langchain_ollama 不可用")
@@ -165,11 +207,18 @@ def _extract_llm_settings(config: Optional[RunnableConfig]) -> Dict[str, Any]:
     provider = str(configurable.get("llm_provider") or os.getenv("LLM_PROVIDER", "ollama")).strip().lower()
     model = str(configurable.get("llm_model") or "").strip()
     if not model:
-        model = DEEPSEEK_MODEL if provider in {"ds", "deepseek"} else OLLAMA_MODEL
+        if provider in {"ds", "deepseek"}:
+            model = DEEPSEEK_MODEL
+        elif provider in {"openai", "gpt"}:
+            model = OPENAI_MODEL
+        else:
+            model = OLLAMA_MODEL
     return {
         "provider": provider,
         "model": model,
         "ds_api_key": str(configurable.get("ds_api_key") or os.getenv("DEEPSEEK_API_KEY") or os.getenv("DS_API_KEY") or "").strip(),
+        "openai_api_key": str(configurable.get("openai_api_key") or os.getenv("OPENAI_API_KEY") or "").strip(),
+        "openai_base_url": str(configurable.get("openai_base_url") or OPENAI_BASE_URL).strip(),
         "deepseek_base_url": str(configurable.get("deepseek_base_url") or DEEPSEEK_BASE_URL).strip(),
         "ollama_base_url": str(configurable.get("ollama_base_url") or OLLAMA_BASE_URL).strip(),
         "timeout_sec": float(configurable.get("llm_timeout_sec") or os.getenv("LLM_TIMEOUT_SEC", "60")),
@@ -183,7 +232,11 @@ async def _invoke_deepseek(
 ) -> Tuple[str, Dict[str, int]]:
     api_key = settings.get("ds_api_key")
     if not api_key:
-        raise RuntimeError("DeepSeek API Key 未配置")
+        _record_and_raise_provider_error(
+            provider="ds",
+            error_code="missing_key",
+            message="DeepSeek API Key 未配置",
+        )
 
     base_url = str(settings.get("deepseek_base_url") or DEEPSEEK_BASE_URL).rstrip("/")
     url = f"{base_url}/chat/completions"
@@ -193,17 +246,49 @@ async def _invoke_deepseek(
         "temperature": 0.3,
     }
     timeout = httpx.Timeout(float(settings.get("timeout_sec") or 60), connect=10.0)
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        response = await client.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+    except httpx.TimeoutException as exc:
+        _record_and_raise_provider_error(
+            provider="ds",
+            error_code="timeout",
+            message="DeepSeek 模型服务请求超时。",
+            cause=exc,
         )
-        response.raise_for_status()
-        data = response.json()
+    except httpx.HTTPStatusError as exc:
+        status_code = int(getattr(exc.response, "status_code", 0) or 0)
+        error_code = _provider_error_code_from_status(status_code)
+        _record_and_raise_provider_error(
+            provider="ds",
+            error_code=error_code,
+            status_code=status_code,
+            message=f"DeepSeek 模型服务请求失败：{error_code}。",
+            cause=exc,
+        )
+    except httpx.RequestError as exc:
+        _record_and_raise_provider_error(
+            provider="ds",
+            error_code="network_error",
+            message="DeepSeek 模型服务网络连接失败。",
+            cause=exc,
+        )
+    except ValueError as exc:
+        _record_and_raise_provider_error(
+            provider="ds",
+            error_code="invalid_response",
+            message="DeepSeek 模型服务返回了无法解析的响应。",
+            cause=exc,
+        )
 
     choices = data.get("choices") or []
     content = ""
@@ -223,6 +308,112 @@ async def _invoke_deepseek(
         "prompt_tokens": usage["prompt_tokens"] + prompt_tokens,
         "completion_tokens": usage["completion_tokens"] + completion_tokens,
         "total_tokens": usage["total_tokens"] + prompt_tokens + completion_tokens,
+    }
+
+
+def _extract_openai_response_text(data: Dict[str, Any]) -> str:
+    output_text = data.get("output_text")
+    if isinstance(output_text, str) and output_text.strip():
+        return output_text.strip()
+    chunks: List[str] = []
+    for item in data.get("output") or []:
+        if not isinstance(item, dict):
+            continue
+        for content in item.get("content") or []:
+            if isinstance(content, dict):
+                text = content.get("text") or content.get("value")
+                if text:
+                    chunks.append(str(text))
+    if chunks:
+        return "\n".join(chunk.strip() for chunk in chunks if chunk.strip()).strip()
+    choices = data.get("choices") or []
+    if choices:
+        message = choices[0].get("message") or {}
+        return str(message.get("content") or "").strip()
+    return ""
+
+
+async def _invoke_openai(
+    prompt: str,
+    settings: Dict[str, Any],
+    current_usage: Optional[Dict[str, int]],
+) -> Tuple[str, Dict[str, int]]:
+    api_key = settings.get("openai_api_key")
+    if not api_key:
+        _record_and_raise_provider_error(
+            provider="openai",
+            error_code="missing_key",
+            message="OpenAI API Key 未配置",
+        )
+
+    base_url = str(settings.get("openai_base_url") or OPENAI_BASE_URL).rstrip("/")
+    url = f"{base_url}/responses"
+    payload = {
+        "model": settings.get("model") or OPENAI_MODEL,
+        "input": prompt,
+        "temperature": 0.3,
+    }
+    timeout = httpx.Timeout(float(settings.get("timeout_sec") or 60), connect=10.0)
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+    except httpx.TimeoutException as exc:
+        _record_and_raise_provider_error(
+            provider="openai",
+            error_code="timeout",
+            message="OpenAI 模型服务请求超时。",
+            cause=exc,
+        )
+    except httpx.HTTPStatusError as exc:
+        status_code = int(getattr(exc.response, "status_code", 0) or 0)
+        error_code = _provider_error_code_from_status(status_code)
+        _record_and_raise_provider_error(
+            provider="openai",
+            error_code=error_code,
+            status_code=status_code,
+            message=f"OpenAI 模型服务请求失败：{error_code}。",
+            cause=exc,
+        )
+    except httpx.RequestError as exc:
+        _record_and_raise_provider_error(
+            provider="openai",
+            error_code="network_error",
+            message="OpenAI 模型服务网络连接失败。",
+            cause=exc,
+        )
+    except ValueError as exc:
+        _record_and_raise_provider_error(
+            provider="openai",
+            error_code="invalid_response",
+            message="OpenAI 模型服务返回了无法解析的响应。",
+            cause=exc,
+        )
+
+    content = _extract_openai_response_text(data)
+    usage = ensure_usage(current_usage)
+    raw_usage = data.get("usage") or {}
+    prompt_tokens = int(raw_usage.get("input_tokens") or raw_usage.get("prompt_tokens") or 0)
+    completion_tokens = int(raw_usage.get("output_tokens") or raw_usage.get("completion_tokens") or 0)
+    total_tokens = int(raw_usage.get("total_tokens") or 0)
+    if prompt_tokens == 0:
+        prompt_tokens = max(10, int(len(prompt) * 0.25))
+    if completion_tokens == 0:
+        completion_tokens = max(10, int(len(content) * 0.6))
+    if total_tokens == 0:
+        total_tokens = prompt_tokens + completion_tokens
+    return content, {
+        "prompt_tokens": usage["prompt_tokens"] + prompt_tokens,
+        "completion_tokens": usage["completion_tokens"] + completion_tokens,
+        "total_tokens": usage["total_tokens"] + total_tokens,
     }
 
 

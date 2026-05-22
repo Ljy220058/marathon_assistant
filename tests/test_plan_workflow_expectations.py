@@ -213,3 +213,48 @@ def test_api_skeleton_response_matches_frontend_calendar_contract(tmp_path, monk
     assert any(card.get("training_objective") for card in cards)
     assert any(card.get("warmup") and card.get("cooldown") for card in cards)
     assert payload["training_plan_id"]
+
+
+def test_adaptive_plan_request_uses_skeleton_plan_path(tmp_path, monkeypatch):
+    client = TestClient(api_app.app)
+    from marathon_qa_assistant.services.database import _Database
+
+    class _FailingIntegratedApp:
+        async def ainvoke(self, *_args, **_kwargs):
+            raise AssertionError("adaptive plan request should use the plan path")
+
+    db = _Database(tmp_path / "adaptive-plan.db")
+    monkeypatch.setattr(api_app, "integrated_app", _FailingIntegratedApp())
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(
+        api_app,
+        "load_user_profile",
+        lambda: {
+            "goal": "Half marathon PB",
+            "weekly_mileage": 35,
+            "target_pace": "1:45 half marathon",
+            "available_days": "Tue, Thu, Sun",
+            "plan_duration_weeks": 4,
+        },
+    )
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1398, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "Please adjust next week based on my training feedback.",
+            "user_id": "default_user",
+            "response_mode": "skeleton",
+            "timeout_sec": 15,
+        },
+    )
+
+    payload = response.json()
+    assert response.status_code == 200
+    assert payload["generation_status"] == "skeleton_ready"
+    assert payload["structured_training_plan"]["week_plans"]
+    assert payload["training_plan_id"]

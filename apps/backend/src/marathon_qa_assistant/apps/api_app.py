@@ -3,12 +3,16 @@ import os
 import sys
 import asyncio
 import time
+import hmac
+import ipaddress
+from contextlib import asynccontextmanager
+from uuid import uuid4
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from fastapi.responses import JSONResponse
 
 # 将项目根目录添加到 sys.path
 current_file = Path(__file__).absolute()
@@ -26,11 +30,19 @@ from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.training_plan_context import merge_plan_profile_overrides
 from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
 from marathon_qa_assistant.core.state_models import (
+    build_execution_status_summary,
     build_adaptive_adjustment_contract,
     build_feedback_protocol_recheck,
     build_feedback_risk_gate,
+    build_workflow_trace,
     derive_adaptive_reasons,
     normalize_workout_feedback,
+)
+from marathon_qa_assistant.core.observability import (
+    metrics_snapshot,
+    record_feedback_risk,
+    record_generation_status,
+    record_request,
 )
 from marathon_qa_assistant.core.kb_bootstrap import (
     bootstrap_knowledge_base,
@@ -39,104 +51,212 @@ from marathon_qa_assistant.core.kb_bootstrap import (
 )
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
 from marathon_qa_assistant.services.database import get_db
+from marathon_qa_assistant.services.training_plan_review import build_training_plan_review
 from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
     ZONE_LABELS,
     ZONE_LABELS_DETAIL,
     EVIDENCE_TIER_LABELS,
 )
+from marathon_qa_assistant.apps.schemas import (
+    DayDetailResponse,
+    EventScheduleRequest,
+    FeedbackRequest,
+    FeedbackResponse,
+    NluExtractRequest,
+    OpsMetricsResponse,
+    PlanDetailResponse,
+    ProfileFieldRequest,
+    ProfileRequest,
+    QueryRequest,
+    QueryResponse,
+    SavePlanRequest,
+    TrainingCalendarResponse,
+    ZoneReference,
+)
 
 DEFAULT_API_USER_ID = "default_user"
 
-app = FastAPI(title="Marathon QA Assistant API", version="1.0.0")
+
+@asynccontextmanager
+async def _lifespan(app_instance: FastAPI):
+    app_instance.state.rag_bootstrap = bootstrap_knowledge_base()
+    yield
+
+
+app = FastAPI(title="Marathon QA Assistant API", version="1.0.0", lifespan=_lifespan)
+
+_RATE_LIMIT_BUCKETS: Dict[Tuple[str, str, str], List[float]] = {}
+_RATE_LIMITED_PREFIXES = ("/query", "/feedback", "/training-calendar", "/plans", "/profile")
+_PUBLIC_API_PREFIXES = ("/health", "/zone-reference", "/evidence-tier-reference", "/llm-options", "/docs", "/openapi.json")
+
+
+def _rate_limit_per_minute() -> int:
+    raw = os.getenv("MARATHON_RATE_LIMIT_PER_MINUTE", "600").strip()
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 600
+
+
+def _rate_limit_client_id(request: Request) -> str:
+    if str(os.getenv("MARATHON_TRUST_PROXY_HEADERS") or "").strip() == "1":
+        forwarded = request.headers.get("X-Forwarded-For", "").split(",", 1)[0].strip()
+        if forwarded:
+            try:
+                return str(ipaddress.ip_address(forwarded))
+            except ValueError:
+                return "invalid-forwarded-for"
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _rate_limit_route_key(request: Request) -> Optional[Tuple[str, str]]:
+    method = request.method.upper()
+    if method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    path = request.url.path or "/"
+    for prefix in _RATE_LIMITED_PREFIXES:
+        if path == prefix or path.startswith(f"{prefix}/"):
+            return method, prefix
+    return None
+
+
+def _reset_rate_limit_state_for_tests() -> None:
+    _RATE_LIMIT_BUCKETS.clear()
+
+
+def _rate_limit_max_buckets() -> int:
+    raw = os.getenv("MARATHON_RATE_LIMIT_MAX_BUCKETS", "4096").strip()
+    try:
+        return max(128, int(raw))
+    except ValueError:
+        return 4096
+
+
+def _prune_rate_limit_buckets(now: float) -> None:
+    expired_keys = [
+        key
+        for key, stamps in _RATE_LIMIT_BUCKETS.items()
+        if not any(now - stamp < 60 for stamp in stamps)
+    ]
+    for key in expired_keys:
+        _RATE_LIMIT_BUCKETS.pop(key, None)
+    max_buckets = _rate_limit_max_buckets()
+    if len(_RATE_LIMIT_BUCKETS) <= max_buckets:
+        return
+    oldest = sorted(
+        _RATE_LIMIT_BUCKETS,
+        key=lambda key: min(_RATE_LIMIT_BUCKETS.get(key) or [now]),
+    )
+    for key in oldest[: len(_RATE_LIMIT_BUCKETS) - max_buckets]:
+        _RATE_LIMIT_BUCKETS.pop(key, None)
+
+
+def _configured_api_token() -> str:
+    return os.getenv("MARATHON_API_TOKEN", "").strip()
+
+
+def _request_api_token(request: Request) -> str:
+    auth = request.headers.get("Authorization", "").strip()
+    if auth.lower().startswith("bearer "):
+        return auth[7:].strip()
+    return request.headers.get("X-Marathon-API-Key", "").strip()
+
+
+def _requires_api_token(request: Request) -> bool:
+    if not _configured_api_token():
+        return False
+    if request.method.upper() == "OPTIONS":
+        return False
+    path = request.url.path or "/"
+    return not any(path == prefix or path.startswith(f"{prefix}/") for prefix in _PUBLIC_API_PREFIXES)
+
+def _allowed_cors_origins() -> List[str]:
+    if str(os.getenv("MARATHON_DEV_PERMISSIVE_CORS") or "").strip() == "1":
+        return ["*"]
+    raw = str(os.getenv("MARATHON_ALLOWED_ORIGINS") or "").strip()
+    if raw:
+        origins = [item.strip() for item in raw.split(",") if item.strip()]
+        return origins or ["http://127.0.0.1:4321", "http://localhost:4321"]
+    return ["http://127.0.0.1:4321", "http://localhost:4321"]
 
 # 配置 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_cors_origins(),
     # Browsers reject "*" + credentials, so keep the API permissive but stateless.
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class QueryRequest(BaseModel):
-    query: str
-    mode: str = "team"  # team (coach) or research
-    user_id: str = DEFAULT_API_USER_ID
-    stream: bool = False
-    llm_provider: str = "ollama"
-    llm_model: str = ""
-    ds_api_key: str = ""
-    response_mode: str = "full"  # full | skeleton | skeleton_first
-    timeout_sec: int = Field(default=45, ge=5, le=180)
 
-class QueryResponse(BaseModel):
-    report: str
-    structured_training_plan: Optional[Dict[str, Any]] = None
-    structured_report: Optional[Dict[str, Any]] = None
-    training_explanation_panel: Optional[Dict[str, Any]] = None
-    monthly_training_calendar: Optional[Dict[str, Any]] = None
-    daily_schedule_cards: Optional[List[Dict[str, Any]]] = None
-    phases: List[Dict[str, Any]] = Field(default_factory=list)
-    training_load_summary: Dict[str, Any] = Field(default_factory=dict)
-    token_usage: Dict[str, int]
-    audit_scores: Dict[str, Any]
-    guided_questions: List[str]
-    training_plan_id: Optional[str] = None
-    generation_status: str = "complete"
-    llm_provider: str = "ollama"
-    llm_model: str = ""
-    message: str = ""
-    generation_timings: Dict[str, float] = Field(default_factory=dict)
-    half_marathon_protocol_validation: Optional[Dict[str, Any]] = None
+@app.middleware("http")
+async def _rate_limit_middleware(request: Request, call_next):
+    limit = _rate_limit_per_minute()
+    route_key = _rate_limit_route_key(request)
+    if limit <= 0 or route_key is None:
+        return await call_next(request)
 
-class ProfileRequest(BaseModel):
-    user_id: str = DEFAULT_API_USER_ID
-    profile: Dict[str, Any]
+    now = time.monotonic()
+    _prune_rate_limit_buckets(now)
+    bucket_key = (_rate_limit_client_id(request), route_key[0], route_key[1])
+    recent = [stamp for stamp in _RATE_LIMIT_BUCKETS.get(bucket_key, []) if now - stamp < 60]
+    if len(recent) >= limit:
+        return JSONResponse(
+            {"detail": "请求过于频繁，请稍后再试。"},
+            status_code=429,
+            headers={"Retry-After": "60"},
+        )
+    recent.append(now)
+    _RATE_LIMIT_BUCKETS[bucket_key] = recent
+    return await call_next(request)
 
-class ProfileFieldRequest(BaseModel):
-    value: Any
 
-class NluExtractRequest(BaseModel):
-    text: str = ""
+@app.middleware("http")
+async def _api_token_middleware(request: Request, call_next):
+    if not _requires_api_token(request):
+        return await call_next(request)
+    expected = _configured_api_token()
+    supplied = _request_api_token(request)
+    if not supplied or not hmac.compare_digest(supplied, expected):
+        return JSONResponse(
+            {"detail": "API 访问需要有效凭据。"},
+            status_code=401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return await call_next(request)
 
-class SavePlanRequest(BaseModel):
-    user_id: str = DEFAULT_API_USER_ID
-    source_query: str = ""
-    structured_training_plan: Dict[str, Any]
-    calendar_settings: Dict[str, Any] = Field(default_factory=dict)
 
-class FeedbackRequest(BaseModel):
-    user_id: str = DEFAULT_API_USER_ID
-    raw_text: str = ""
-    feedback: Dict[str, Any] = Field(default_factory=dict)
-
-class EventScheduleRequest(BaseModel):
-    scheduled_date: str
-    start_time: str
-    duration_min: int = Field(default=60, ge=0, le=600)
-
-class TrainingCalendarResponse(BaseModel):
-    year: int
-    month: int
-    start_week_index: int
-    end_week_index: int
-    total_days: int
-    days: List[Dict[str, Any]]
-    phases: List[Dict[str, Any]]
-    evidence_summary: Dict[str, int]
-    monthly_training_calendar: Dict[str, Any]
-    daily_schedule_cards: List[Dict[str, Any]]
-    training_load_summary: Dict[str, Any]
-
-class ZoneReference(BaseModel):
-    zones: Dict[str, str]  # Z1-Z9 -> label mapping
-    zones_detail: Dict[str, str]  # Z1-Z9 -> detail label mapping
-
-class DayDetailResponse(BaseModel):
-    day: Dict[str, Any]
-    evidence_tier_labels: Dict[str, str]
+@app.middleware("http")
+async def _request_observability_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or f"req-{uuid4().hex}"
+    request.state.request_id = request_id
+    route_path = getattr(request.scope.get("route"), "path", None) or "/__unmatched__"
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        route_path = getattr(request.scope.get("route"), "path", None) or route_path
+        record_request(
+            method=request.method,
+            path=route_path,
+            status_code=500,
+            duration_ms=(time.perf_counter() - started) * 1000,
+            error_type=exc.__class__.__name__,
+        )
+        raise
+    route_path = getattr(request.scope.get("route"), "path", None) or route_path
+    response.headers["X-Request-ID"] = request_id
+    record_request(
+        method=request.method,
+        path=route_path,
+        status_code=response.status_code,
+        duration_ms=(time.perf_counter() - started) * 1000,
+    )
+    return response
 
 def _require_default_user(user_id: str):
     if user_id != DEFAULT_API_USER_ID:
@@ -159,7 +279,7 @@ def _load_structured_plan(plan_row: Dict[str, Any]) -> Dict[str, Any]:
 
 def _normalize_frontend_feedback(payload: Dict[str, Any]) -> Dict[str, Any]:
     completion_map = {"已完成": "completed", "部分完成": "partial", "未完成": "missed"}
-    fatigue_map = {"轻微": "mild", "明显": "high", "高疲劳": "high"}
+    fatigue_map = {"轻微": "mild", "中等": "mild", "明显": "high", "高疲劳": "high"}
     pain_map = {"没有疼痛": "none", "轻微不适": "watch", "疼痛风险": "risk"}
     sleep_map = {"良好": "good", "一般": "ok", "较差": "poor"}
     return {
@@ -230,6 +350,10 @@ PLAN_QUERY_KEYWORDS = (
     "half marathon",
     "marathon",
     "training plan",
+    "training feedback",
+    "adjust next week",
+    "adjusted plan",
+    "adaptive plan",
     "race prep",
     "race preparation",
     "sub ",
@@ -289,9 +413,99 @@ def _build_feedback_plan_diff(
     }
 
 
+def _feedback_summary_to_adaptive_adjustment(feedback: Dict[str, Any]) -> Dict[str, Any]:
+    reason_codes = list(feedback.get("reason_codes") or [])
+    return {
+        "adjustment_required": bool(reason_codes),
+        "primary_reason_code": reason_codes[0] if reason_codes else "",
+        "reason_codes": reason_codes,
+        "next_day_adjustment": feedback.get("next_day_adjustment") or "",
+        "weekly_adjustment": feedback.get("weekly_adjustment") or "",
+        "alternative_workout": feedback.get("alternative_workout") or "",
+        "risk_alert": feedback.get("risk_alert") or "",
+        "rationale": feedback.get("rationale") or "",
+        "adjustment_action": (feedback.get("risk_gate") or {}).get("adjustment_action", "none"),
+    }
+
+
+def _affected_events_after_feedback(events: List[Dict[str, Any]], event_id: str, limit: int = 3) -> List[Dict[str, Any]]:
+    index = next((idx for idx, event in enumerate(events) if str(event.get("id")) == str(event_id)), -1)
+    if index < 0:
+        return []
+    affected: List[Dict[str, Any]] = []
+    for event in events[index + 1 :]:
+        if str(event.get("workout_type") or "").lower() == "rest":
+            continue
+        affected.append(
+            {
+                "event_id": event.get("id"),
+                "day_label": event.get("day_label"),
+                "scheduled_date": event.get("scheduled_date"),
+                "title": event.get("title"),
+                "workout_type": event.get("workout_type"),
+            }
+        )
+        if len(affected) >= limit:
+            break
+    return affected
+
+
+def _build_adjustment_history(plan_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    history: List[Dict[str, Any]] = []
+    for feedback in get_db().list_plan_feedback(plan_id):
+        risk_gate = feedback.get("risk_gate") or {}
+        protocol_recheck = feedback.get("protocol_recheck") or {}
+        adaptive_adjustment = _feedback_summary_to_adaptive_adjustment(feedback)
+        reason_codes = list(feedback.get("reason_codes") or [])
+        history.append(
+            {
+                "feedback_id": feedback.get("id"),
+                "created_at": feedback.get("created_at"),
+                "plan_id": feedback.get("plan_id"),
+                "event_id": feedback.get("event_id"),
+                "day_key": feedback.get("event_id"),
+                "reason_codes": reason_codes,
+                "risk_gate": risk_gate,
+                "protocol_recheck": protocol_recheck,
+                "adaptive_adjustment": adaptive_adjustment,
+                "plan_diff": _build_feedback_plan_diff(
+                    risk_gate=risk_gate,
+                    protocol_recheck=protocol_recheck,
+                    adaptive_adjustment=adaptive_adjustment,
+                    reason_codes=reason_codes,
+                ),
+                "affected_events": _affected_events_after_feedback(events, str(feedback.get("event_id") or "")),
+            }
+        )
+    return history
+
+
+def _medical_referral_adjustment(adaptive_adjustment: Dict[str, Any]) -> Dict[str, Any]:
+    adjusted = dict(adaptive_adjustment)
+    adjusted["adjustment_required"] = True
+    adjusted["next_day_adjustment"] = (
+        "停止训练，优先休息并进行专业医疗评估；评估前不要安排下一次跑步训练。"
+    )
+    adjusted["weekly_adjustment"] = (
+        "本周暂停强度训练；只有在症状解除且专业评估允许后，才考虑恢复低强度训练。"
+    )
+    adjusted["alternative_workout"] = (
+        "不生成跑步替代课；专业评估通过前只保留休息，必要活动应非常轻柔。"
+    )
+    adjusted["risk_alert"] = (
+        "胸痛、头晕/晕厥或热病迹象属于医疗红旗，需要停止运动并寻求专业医疗帮助。"
+    )
+    adjusted["rationale"] = "医疗红旗优先于训练连续性，本次反馈将停止训练并建议专业医疗评估。"
+    return adjusted
+
+
 def _normalize_provider(provider: str) -> str:
     normalized = str(provider or "ollama").strip().lower()
-    return "ds" if normalized in {"ds", "deepseek"} else "ollama"
+    if normalized in {"ds", "deepseek"}:
+        return "ds"
+    if normalized in {"openai", "gpt"}:
+        return "openai"
+    return "ollama"
 
 
 def _selected_model(request: QueryRequest) -> str:
@@ -300,7 +514,19 @@ def _selected_model(request: QueryRequest) -> str:
         return request.llm_model.strip()
     if provider == "ds":
         return os.getenv("DEEPSEEK_MODEL", os.getenv("DS_MODEL", "deepseek-v4-pro"))
+    if provider == "openai":
+        return os.getenv("OPENAI_MODEL", "gpt-5.5")
     return os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
+
+
+def _safe_workflow_error_summary(exc: Exception) -> str:
+    provider = str(getattr(exc, "provider", "") or "").strip()
+    error_code = str(getattr(exc, "error_code", "") or "").strip()
+    if provider and error_code:
+        return f"模型服务暂不可用（{provider}/{error_code}）"
+    if isinstance(exc, TimeoutError):
+        return "模型服务请求超时"
+    return "模型服务暂不可用"
 
 
 def _build_llm_config(request: QueryRequest) -> Dict[str, Any]:
@@ -376,11 +602,35 @@ def _event_with_content_trace(event: Dict[str, Any]) -> Dict[str, Any]:
             "action_match",
             "kb_fallback",
             "risk_gate",
+            "workflow_trace",
             "trace",
         }
         for key in passthrough_keys:
             if key in content and content[key] not in (None, ""):
                 enriched[key] = content[key]
+    return enriched
+
+
+def _event_with_latest_feedback(event: Dict[str, Any]) -> Dict[str, Any]:
+    enriched = _event_with_content_trace(event)
+    latest = get_db().get_latest_event_feedback(str(event.get("id") or ""))
+    if latest:
+        latest["workflow_trace"] = build_workflow_trace(
+            query="training_event_feedback",
+            workflow_kind="adaptive",
+            intent_type="feedback",
+            status=(latest.get("risk_gate") or {}).get("product_status", "generated"),
+            risk_gate=latest.get("risk_gate"),
+            protocol_recheck=latest.get("protocol_recheck"),
+            adaptive_feedback={
+                "reason_codes": latest.get("reason_codes") or [],
+                "source": "stored_event_feedback",
+            },
+            adaptive_adjustment=_feedback_summary_to_adaptive_adjustment(latest),
+            feedback_id=latest.get("id"),
+            feedback_persisted=True,
+        )
+        enriched["latest_feedback"] = latest
     return enriched
 
 
@@ -438,11 +688,17 @@ def _calendar_contract_from_plan(structured_plan: Dict[str, Any]) -> Dict[str, A
     calendar = generate_daily_schedule(structured_plan, enable_kb_fallback=True)
     calendar_payload = calendar.to_dict() if calendar else None
     daily_schedule_cards = list((calendar_payload or {}).get("days") or [])
+    training_load_summary = dict((calendar_payload or {}).get("training_load_summary") or {})
     return {
         "monthly_training_calendar": calendar_payload,
         "daily_schedule_cards": daily_schedule_cards,
         "phases": list((calendar_payload or {}).get("phases") or []),
-        "training_load_summary": dict((calendar_payload or {}).get("training_load_summary") or {}),
+        "training_load_summary": training_load_summary,
+        "training_plan_review": build_training_plan_review(
+            structured_training_plan=structured_plan,
+            daily_schedule_cards=daily_schedule_cards,
+            training_load_summary=training_load_summary,
+        ),
     }
 
 
@@ -471,6 +727,11 @@ async def _build_skeleton_plan_response(
     calendar_payload = monthly_training_calendar.to_dict() if monthly_training_calendar else None
     phases = list((calendar_payload or {}).get("phases") or [])
     training_load_summary = dict((calendar_payload or {}).get("training_load_summary") or {})
+    training_plan_review = build_training_plan_review(
+        structured_training_plan=structured_plan,
+        daily_schedule_cards=daily_schedule_cards,
+        training_load_summary=training_load_summary,
+    )
     report = _compose_skeleton_report(structured_plan, message)
     audit_scores = {
         "consistency": 90,
@@ -479,6 +740,17 @@ async def _build_skeleton_plan_response(
         "summary": "规则骨架已生成，等待可选 LLM 解释补充。",
         "score_sources": {"path": "astro_skeleton_first"},
     }
+    workflow_trace = build_workflow_trace(
+        query=request.query,
+        workflow_kind=state.get("workflow_kind", "plan"),
+        intent_type=state.get("intent_type", "plan"),
+        status=generation_status,
+        evidence_bundle=state.get("evidence_bundle"),
+        structured_training_plan=structured_plan,
+    )
+    state["workflow_trace"] = workflow_trace
+    if isinstance(structured_plan, dict):
+        structured_plan["workflow_trace"] = workflow_trace
     save_started = time.perf_counter()
     training_plan_id = _save_plan_if_ready(structured_plan, request, daily_schedule_cards)
     save_elapsed = time.perf_counter() - save_started
@@ -492,6 +764,7 @@ async def _build_skeleton_plan_response(
         daily_schedule_cards=daily_schedule_cards,
         phases=phases,
         training_load_summary=training_load_summary,
+        training_plan_review=training_plan_review,
         token_usage={},
         audit_scores=audit_scores,
         guided_questions=[],
@@ -509,7 +782,9 @@ async def _build_skeleton_plan_response(
         half_marathon_protocol_validation=structured_plan.get("half_marathon_protocol_validation")
         if isinstance(structured_plan, dict)
         else None,
+        workflow_trace=workflow_trace,
     )
+    record_generation_status(generation_status, duration_sec=total_elapsed)
     return response
 
 
@@ -529,12 +804,14 @@ def _query_response_from_state(
     daily_schedule_cards = None
     phases: List[Dict[str, Any]] = []
     training_load_summary: Dict[str, Any] = {}
+    training_plan_review: Dict[str, Any] = {}
     if isinstance(structured_report, dict):
         training_explanation_panel = structured_report.get("training_explanation_panel")
         monthly_training_calendar = structured_report.get("monthly_training_calendar")
         daily_schedule_cards = structured_report.get("daily_schedule_cards")
         phases = list(structured_report.get("phases") or [])
         training_load_summary = dict(structured_report.get("training_load_summary") or {})
+        training_plan_review = dict(structured_report.get("training_plan_review") or {})
 
     if (not monthly_training_calendar or not daily_schedule_cards) and _has_calendar_source_plan(structured_plan):
         contract = _calendar_contract_from_plan(structured_plan)
@@ -542,16 +819,51 @@ def _query_response_from_state(
         daily_schedule_cards = daily_schedule_cards or contract["daily_schedule_cards"]
         phases = phases or contract["phases"]
         training_load_summary = training_load_summary or contract["training_load_summary"]
+        training_plan_review = training_plan_review or contract["training_plan_review"]
         if isinstance(structured_report, dict):
             structured_report["monthly_training_calendar"] = monthly_training_calendar
             structured_report["daily_schedule_cards"] = daily_schedule_cards
             structured_report["phases"] = phases
             structured_report["training_load_summary"] = training_load_summary
+            structured_report["training_plan_review"] = training_plan_review
     elif isinstance(monthly_training_calendar, dict):
         phases = phases or list(monthly_training_calendar.get("phases") or [])
         training_load_summary = training_load_summary or dict(monthly_training_calendar.get("training_load_summary") or {})
+        training_plan_review = training_plan_review or dict(monthly_training_calendar.get("training_plan_review") or {})
 
-    return QueryResponse(
+    if not training_plan_review and _has_calendar_source_plan(structured_plan):
+        training_plan_review = build_training_plan_review(
+            structured_training_plan=structured_plan,
+            daily_schedule_cards=daily_schedule_cards or [],
+            training_load_summary=training_load_summary,
+        )
+        if isinstance(structured_report, dict):
+            structured_report["training_plan_review"] = training_plan_review
+
+    workflow_trace: Dict[str, Any] = {}
+    if isinstance(result.get("workflow_trace"), dict):
+        workflow_trace = result["workflow_trace"]
+    elif isinstance(structured_report, dict) and isinstance(structured_report.get("workflow_trace"), dict):
+        workflow_trace = structured_report["workflow_trace"]
+    elif isinstance(structured_plan, dict) and isinstance(structured_plan.get("workflow_trace"), dict):
+        workflow_trace = structured_plan["workflow_trace"]
+    if not workflow_trace:
+        workflow_trace = build_workflow_trace(
+            query=request.query,
+            workflow_kind=str(result.get("workflow_kind") or result.get("category") or ""),
+            intent_type=str(result.get("intent_type") or ""),
+            status=generation_status,
+            evidence_bundle=result.get("evidence_bundle") if isinstance(result.get("evidence_bundle"), dict) else None,
+            structured_training_plan=structured_plan if isinstance(structured_plan, dict) else None,
+            adaptive_feedback=result.get("adaptive_feedback") if isinstance(result.get("adaptive_feedback"), dict) else None,
+            adaptive_adjustment=result.get("adaptive_adjustment") if isinstance(result.get("adaptive_adjustment"), dict) else None,
+        )
+    if isinstance(structured_report, dict):
+        structured_report["workflow_trace"] = workflow_trace
+    if isinstance(structured_plan, dict):
+        structured_plan["workflow_trace"] = workflow_trace
+
+    response = QueryResponse(
         report=result.get("final_report", ""),
         structured_training_plan=structured_plan,
         structured_report=structured_report,
@@ -560,6 +872,7 @@ def _query_response_from_state(
         daily_schedule_cards=daily_schedule_cards,
         phases=phases,
         training_load_summary=training_load_summary,
+        training_plan_review=training_plan_review,
         token_usage=result.get("token_usage", {}),
         audit_scores=result.get("audit_scores", {}),
         guided_questions=result.get("guided_questions", []),
@@ -571,7 +884,10 @@ def _query_response_from_state(
         half_marathon_protocol_validation=structured_plan.get("half_marathon_protocol_validation")
         if isinstance(structured_plan, dict)
         else None,
+        workflow_trace=workflow_trace,
     )
+    record_generation_status(generation_status)
+    return response
 
 @app.get("/health")
 async def health_check():
@@ -583,15 +899,18 @@ async def health_check():
     }
 
 
-@app.on_event("startup")
-async def startup_load_knowledge_base():
-    app.state.rag_bootstrap = bootstrap_knowledge_base()
+@app.get("/ops/metrics", response_model=OpsMetricsResponse)
+async def get_ops_metrics():
+    return metrics_snapshot()
 
 
 @app.delete("/plans/{plan_id}")
 async def delete_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
     """删除已保存的训练计划及其日历事件。"""
     _require_default_user(user_id)
+    plan = get_db().get_plan(plan_id)
+    if not plan or plan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="训练计划不存在。")
     if not get_db().delete_training_plan(plan_id):
         raise HTTPException(status_code=404, detail="训练计划不存在。")
     return {"deleted": True, "plan_id": plan_id}
@@ -659,15 +978,22 @@ async def preview_profile_nlu_extract(user_id: str, request: NluExtractRequest):
 
 
 @app.get("/llm-options")
-async def get_llm_options():
+async def get_llm_options(request: Request):
     """返回前端模型选择控件所需的可用模型清单。"""
     ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
     deepseek_model = os.getenv("DEEPSEEK_MODEL", os.getenv("DS_MODEL", "deepseek-v4-pro"))
-    default_provider = os.getenv("LLM_PROVIDER", "ollama")
+    openai_model = os.getenv("OPENAI_MODEL", "gpt-5.5")
+    default_provider = _normalize_provider(os.getenv("LLM_PROVIDER", "ollama"))
+    default_model = {
+        "ds": deepseek_model,
+        "openai": openai_model,
+    }.get(default_provider, ollama_model)
+    configured_token = _configured_api_token()
+    can_show_private_config = not configured_token or hmac.compare_digest(_request_api_token(request), configured_token)
     return {
         "default": {
             "provider": default_provider,
-            "model": deepseek_model if default_provider == "ds" else ollama_model,
+            "model": default_model,
         },
         "providers": [
             {
@@ -681,7 +1007,16 @@ async def get_llm_options():
                 "label": "DeepSeek",
                 "default_model": deepseek_model,
                 "models": [deepseek_model],
-                "api_key_configured": bool(os.getenv("DEEPSEEK_API_KEY") or os.getenv("DS_API_KEY")),
+                "api_key_configured": bool(os.getenv("DEEPSEEK_API_KEY") or os.getenv("DS_API_KEY")) if can_show_private_config else False,
+                "api_key_config_visible": bool(can_show_private_config),
+            },
+            {
+                "id": "openai",
+                "label": "OpenAI GPT",
+                "default_model": openai_model,
+                "models": [openai_model],
+                "api_key_configured": bool(os.getenv("OPENAI_API_KEY")) if can_show_private_config else False,
+                "api_key_config_visible": bool(can_show_private_config),
             },
         ],
     }
@@ -705,13 +1040,14 @@ async def save_plan(request: SavePlanRequest):
         request.structured_training_plan,
         source_query=request.source_query,
         user_id=request.user_id,
+        calendar_days=request.calendar_days,
         training_start_date=str(calendar_settings.get("training_start_date") or ""),
         default_start_time=str(calendar_settings.get("default_start_time") or "07:00"),
     )
     return {"plan_id": plan_id, "saved": True}
 
 
-@app.post("/feedback")
+@app.post("/feedback", response_model=FeedbackResponse)
 async def submit_feedback(request: FeedbackRequest):
     """根据训练反馈返回自适应调整建议，供 Astro 反馈面板使用。"""
     _require_default_user(request.user_id)
@@ -723,6 +1059,8 @@ async def submit_feedback(request: FeedbackRequest):
     protocol_recheck = build_feedback_protocol_recheck(risk_gate)
     reasons = derive_adaptive_reasons(workout_feedback, raw_text=request.raw_text)
     adaptive_adjustment = build_adaptive_adjustment_contract(workout_feedback, raw_text=request.raw_text)
+    if risk_gate.get("product_status") == "medical_referral":
+        adaptive_adjustment = _medical_referral_adjustment(adaptive_adjustment)
     adaptive_adjustment["adjustment_action"] = risk_gate.get("adjustment_action", "none")
     adaptive_adjustment["workflow_status"] = risk_gate.get("product_status", "generated")
     reason_codes = [reason["code"] for reason in reasons]
@@ -732,35 +1070,88 @@ async def submit_feedback(request: FeedbackRequest):
         adaptive_adjustment=adaptive_adjustment,
         reason_codes=reason_codes,
     )
+    feedback_id = None
+    if bool(request.plan_id) != bool(request.event_id):
+        raise HTTPException(status_code=400, detail="保存训练反馈需要同时提供 plan_id 和 event_id。")
+    if request.plan_id and request.event_id:
+        if not get_db().get_event(request.plan_id, request.event_id, request.user_id):
+            raise HTTPException(status_code=404, detail="训练日历事件不存在，反馈未保存。")
+        feedback_id = get_db().save_training_event_feedback(
+            plan_id=request.plan_id,
+            event_id=request.event_id,
+            user_id=request.user_id,
+            workout_feedback=workout_feedback,
+            reason_codes=reason_codes,
+            adaptive_adjustment=adaptive_adjustment,
+            risk_gate=risk_gate,
+            protocol_recheck=protocol_recheck,
+            raw_text=request.raw_text,
+        )
+    adaptive_feedback = {
+        "workout_feedback": workout_feedback,
+        "reason_codes": reason_codes,
+        "reasons": reasons,
+        "raw_text": request.raw_text,
+        "source": "astro_feedback_form",
+        "workflow": ["risk_gate", "protocol_recheck", "adjustment"],
+    }
+    workflow_trace = build_workflow_trace(
+        query=request.raw_text,
+        workflow_kind="adaptive",
+        intent_type="feedback",
+        status=risk_gate.get("product_status", "generated"),
+        risk_gate=risk_gate,
+        protocol_recheck=protocol_recheck,
+        adaptive_feedback=adaptive_feedback,
+        adaptive_adjustment=adaptive_adjustment,
+        feedback_id=feedback_id,
+        feedback_persisted=bool(feedback_id),
+    )
+    generation_status = risk_gate.get("product_status", "generated")
+    record_feedback_risk(risk_gate)
+    record_generation_status(generation_status)
     return {
         "workout_feedback": workout_feedback,
         "risk_gate": risk_gate,
         "protocol_recheck": protocol_recheck,
-        "adaptive_feedback": {
-            "workout_feedback": workout_feedback,
-            "reason_codes": reason_codes,
-            "reasons": reasons,
-            "raw_text": request.raw_text,
-            "source": "astro_feedback_form",
-            "workflow": ["risk_gate", "protocol_recheck", "adjustment"],
-        },
+        "adaptive_feedback": adaptive_feedback,
         "adaptive_adjustment": adaptive_adjustment,
         "plan_diff": plan_diff,
-        "generation_status": risk_gate.get("product_status", "generated"),
+        "generation_status": generation_status,
+        "feedback_id": feedback_id,
+        "workflow_trace": workflow_trace,
     }
 
 
-@app.get("/plans/{plan_id}")
+@app.get("/plans/{plan_id}", response_model=PlanDetailResponse)
 async def get_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
     """返回单个已保存训练计划及其日历事件。"""
     _require_default_user(user_id)
     plan = get_db().get_plan(plan_id)
     if not plan or plan.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="训练计划不存在。")
+    structured_plan = _load_structured_plan(plan)
+    events = [_event_with_latest_feedback(event) for event in get_db().list_events(plan_id)]
+    calendar_day_contract = events
+    training_plan_review = (
+        build_training_plan_review(
+            structured_training_plan=structured_plan,
+            daily_schedule_cards=calendar_day_contract,
+        )
+        if isinstance(structured_plan, dict)
+        else {}
+    )
     return {
         "plan": plan,
-        "structured_training_plan": _load_structured_plan(plan),
-        "events": [_event_with_content_trace(event) for event in get_db().list_events(plan_id)],
+        "structured_training_plan": structured_plan,
+        "workflow_trace": structured_plan.get("workflow_trace", {}) if isinstance(structured_plan, dict) else {},
+        "events": events,
+        "execution_status_summary": build_execution_status_summary(
+            events,
+            plan={**plan, **(structured_plan.get("plan_meta") or {})},
+        ),
+        "adjustment_history": _build_adjustment_history(plan_id, events),
+        "training_plan_review": training_plan_review,
     }
 
 
@@ -796,9 +1187,10 @@ async def execute_query(request: QueryRequest):
     profile = merge_plan_profile_overrides(request.query, load_user_profile())
     response_mode = str(request.response_mode or "full").strip().lower()
     skeleton_requested = response_mode in {"skeleton", "skeleton_first"}
-    plan_query = _is_plan_query(request.query) or (skeleton_requested and _has_plan_generation_profile(profile))
+    empty_profile_plan = not str(request.query or "").strip() and _has_plan_generation_profile(profile)
+    plan_query = _is_plan_query(request.query) or empty_profile_plan
 
-    if plan_query and skeleton_requested:
+    if plan_query and (skeleton_requested or empty_profile_plan):
         return await _build_skeleton_plan_response(
             request,
             profile,
@@ -836,9 +1228,9 @@ async def execute_query(request: QueryRequest):
                 request,
                 profile,
                 generation_status="llm_error_skeleton",
-                message=f"完整 LLM 工作流异常，已回退到结构化规则骨架：{str(e)}",
+                message=f"完整 LLM 工作流异常，已回退到结构化规则骨架：{_safe_workflow_error_summary(e)}。",
             )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=_safe_workflow_error_summary(e))
 
 
 @app.get("/zone-reference", response_model=ZoneReference)
@@ -885,6 +1277,11 @@ async def get_training_calendar(request: QueryRequest):
 
         calendar_payload = calendar.to_dict()
         daily_schedule_cards = list(calendar_payload.get("days") or [])
+        training_plan_review = build_training_plan_review(
+            structured_training_plan=structured_training_plan,
+            daily_schedule_cards=daily_schedule_cards,
+            training_load_summary=calendar.training_load_summary,
+        )
         return TrainingCalendarResponse(
             year=calendar.year,
             month=calendar.month,
@@ -897,11 +1294,12 @@ async def get_training_calendar(request: QueryRequest):
             monthly_training_calendar=calendar_payload,
             daily_schedule_cards=daily_schedule_cards,
             training_load_summary=calendar.training_load_summary,
+            training_plan_review=training_plan_review,
         )
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=_safe_workflow_error_summary(e))
 
 
 @app.get("/training-calendar/day-detail/{day_index}", response_model=DayDetailResponse)

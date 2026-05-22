@@ -21,16 +21,24 @@ PROFILE_UPDATE_SYSTEM = """你是一个训练画像智能管家。分析用户�
 |------|------|---------|
 | lthr | 乳酸阈心率 (bpm, 纯数字) | "乳酸阈心率180"、"LTHR是175"、"我心率阈值172" |
 | t_pace | 阈值/目标配速 | "配速3:30/km"、"T配速是4:00" |
+| target_pace | 目标配速/成绩 | "目标配速5:00/km"、"目标半马1:45" |
 | weekly_mileage | 周跑量 (km, 纯数字) | "周跑量80"、"每周跑60公里" |
+| recent_four_week_mileage | 最近四周平均周跑量 | "近四周平均周跑量60公里" |
+| last_month_mileage | 上个月月跑量 | "上个月跑了260公里" |
 | vo2max | 最大摄氧量 (纯数字) | "VO2max是55"、"最大摄氧量60" |
 | pb_5k | 5公里最好成绩 | "5K PB 19:30"、"5000米跑进20分"、"五公里19分半" |
 | pb_10k | 10公里最好成绩 | "10K 42分"、"万米PB了 40:00" |
 | pb_half | 半马最好成绩 | "半马135"、"半马PB 1:30:00" |
+| current_half_time | 当前半马 PB | "当前半马PB 1:25:00"、"半马最好成绩1小时25分" |
+| target_half_time | 目标半马成绩 | "目标半马1:20:00"、"半马目标破120" |
 | pb_full | 全马最好成绩 | "全马330"、"马拉松破三" |
 | experience_level | 经验水平 | "我现在算进阶了"、"水平是精英" |
 | goal | 目标赛事/成绩 | "目标全马330"、"想跑进半马130" |
 | target_race_date | 比赛日期 | "比赛在6月15号"、"距比赛2个月" |
 | available_days | 可用训练日 | "我周一三五训练" |
+| injury | 伤病限制 | "无伤病"、"膝盖有点疼" |
+| recovery_state | 恢复状态 | "恢复正常"、"近期疲劳偏高" |
+| injury_or_fatigue | 伤病/疲劳限制 | "无疲劳"、"小腿紧张" |
 | max_session_minutes | 单次最长训练分钟 | "最多跑90分钟" |
 
 返回 JSON（严格只输出 JSON，不要 Markdown 代码块包裹）：
@@ -54,16 +62,24 @@ PROFILE_UPDATE_SYSTEM = """你是一个训练画像智能管家。分析用户�
 _FIELD_LABEL_MAP = {
     "lthr": "乳酸阈心率",
     "t_pace": "阈值配速",
+    "target_pace": "目标配速/成绩",
     "weekly_mileage": "周跑量",
+    "recent_four_week_mileage": "最近四周平均周跑量",
+    "last_month_mileage": "上个月月跑量",
     "vo2max": "VO₂max",
     "pb_5k": "5K PB",
     "pb_10k": "10K PB",
     "pb_half": "半马 PB",
+    "current_half_time": "当前半马 PB",
+    "target_half_time": "目标半马成绩",
     "pb_full": "全马 PB",
     "experience_level": "经验水平",
     "goal": "目标赛事",
     "target_race_date": "比赛日期",
     "available_days": "可用训练日",
+    "injury": "伤病限制",
+    "recovery_state": "恢复状态",
+    "injury_or_fatigue": "伤病/疲劳限制",
     "max_session_minutes": "单次最长训练",
 }
 

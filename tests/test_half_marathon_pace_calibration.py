@@ -61,6 +61,47 @@ def test_calibrates_half_marathon_125_to_120_goal_from_colon_times():
     assert "target_pace" in calibration["source_fields"]
 
 
+def test_current_half_time_without_target_does_not_fabricate_goal():
+    profile = {
+        "current_half_time": "1:45:00",
+        "weekly_mileage": 45,
+        "available_days": "周二,周四,周日",
+        "recovery_state": "正常",
+    }
+
+    gaps = detect_half_marathon_profile_gaps(profile)
+    calibration = build_half_marathon_pace_calibration(profile)
+
+    assert "half_marathon_goal_or_pb" in {item["field"] for item in gaps}
+    assert calibration["status"] == "insufficient"
+    assert calibration["target_half_time_seconds"] is None
+    assert calibration["target_hmp_seconds_per_km"] is None
+    assert calibration["source_fields"] == ["current_half_time"]
+
+
+def test_target_pace_per_km_calibrates_hmp_target_without_t_pace_pollution():
+    calibration = build_half_marathon_pace_calibration(
+        {
+            "goal": "半马目标按目标配速推进",
+            "current_half_time": "1:50:00",
+            "target_pace": "5:00/km",
+            "t_pace": "4:00/km",
+            "weekly_mileage": 50,
+            "available_days": "周二,周四,周日",
+            "recovery_state": "正常",
+        }
+    )
+
+    assert calibration["status"] == "ambitious_target"
+    assert calibration["target_hmp_seconds_per_km"] == 300
+    assert calibration["target_hmp_pace"] == "5:00/km"
+    assert calibration["target_half_time_seconds"] == 6329
+    assert calibration["current_half_time_seconds"] == 6600
+    assert calibration["gap_seconds_per_km"] == 13
+    assert calibration["fallback_used"] is False
+    assert calibration["source_fields"] == ["current_half_time", "target_pace"]
+
+
 def test_calibrates_half_marathon_71_to_69_from_target_time_field():
     calibration = build_half_marathon_pace_calibration(
         {

@@ -1,4 +1,5 @@
 import json
+import hashlib
 import re
 import sqlite3
 import threading
@@ -11,6 +12,7 @@ from marathon_qa_assistant.core.app_state import RUNTIME_DATA_DIR
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
 
 DB_PATH = RUNTIME_DATA_DIR / "marathon_assistant.db"
+MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
 
 
 SCHEMA_SQL = """
@@ -118,6 +120,8 @@ CREATE TABLE IF NOT EXISTS training_event_feedback (
     alternative_workout TEXT,
     risk_alert          TEXT,
     adjustment_rationale TEXT,
+    risk_gate_json      TEXT,
+    protocol_recheck_json TEXT,
     created_at          TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (event_id) REFERENCES training_calendar_events(id),
     FOREIGN KEY (plan_id) REFERENCES training_plans(id)
@@ -167,8 +171,108 @@ class _Database:
 
     def _init_schema(self):
         conn = self._get_conn()
+        self._preflight_legacy_schema(conn)
         conn.executescript(SCHEMA_SQL)
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version TEXT PRIMARY KEY,
+                applied_at TEXT NOT NULL DEFAULT (datetime('now')),
+                checksum TEXT NOT NULL
+            )
+            """
+        )
+        self._ensure_schema_migrations_checksum(conn)
+        self._apply_migrations(conn)
+        self._ensure_columns(
+            conn,
+            "training_event_feedback",
+            {
+                "risk_gate_json": "TEXT",
+                "protocol_recheck_json": "TEXT",
+            },
+        )
         conn.commit()
+
+    def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
+        row = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table_name,),
+        ).fetchone()
+        return row is not None
+
+    def _preflight_legacy_schema(self, conn: sqlite3.Connection):
+        if self._table_exists(conn, "training_calendar_events"):
+            self._ensure_columns(
+                conn,
+                "training_calendar_events",
+                {
+                    "warmup_km": "REAL DEFAULT 0",
+                    "main_km": "REAL DEFAULT 0",
+                    "cooldown_km": "REAL DEFAULT 0",
+                    "total_km": "REAL DEFAULT 0",
+                    "evidence_ids": "TEXT",
+                    "phase": "TEXT",
+                    "load_level": "TEXT",
+                    "ics_uid": "TEXT",
+                    "external_event_id": "TEXT",
+                    "external_calendar_provider": "TEXT",
+                    "sync_status": "TEXT DEFAULT 'not_synced'",
+                    "last_synced_at": "TEXT",
+                    "created_at": "TEXT",
+                    "updated_at": "TEXT",
+                },
+            )
+
+    def _ensure_schema_migrations_checksum(self, conn: sqlite3.Connection):
+        if not self._table_exists(conn, "schema_migrations"):
+            return
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(schema_migrations)").fetchall()}
+        if "checksum" not in columns:
+            conn.execute("ALTER TABLE schema_migrations ADD COLUMN checksum TEXT")
+        if not MIGRATIONS_DIR.exists():
+            return
+        migration_checksums = {
+            path.stem: hashlib.sha256(path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+            for path in sorted(MIGRATIONS_DIR.glob("*.sql"))
+        }
+        for version, checksum in migration_checksums.items():
+            conn.execute(
+                "UPDATE schema_migrations SET checksum = ? WHERE version = ? AND (checksum IS NULL OR checksum = '')",
+                (checksum, version),
+            )
+
+    def _apply_migrations(self, conn: sqlite3.Connection):
+        if not MIGRATIONS_DIR.exists():
+            return
+
+        applied = {
+            row["version"]: row["checksum"]
+            for row in conn.execute("SELECT version, checksum FROM schema_migrations").fetchall()
+        }
+        for migration_path in sorted(MIGRATIONS_DIR.glob("*.sql")):
+            version = migration_path.stem
+            sql = migration_path.read_text(encoding="utf-8")
+            checksum = hashlib.sha256(sql.encode("utf-8")).hexdigest()
+            if version in applied:
+                if applied[version] != checksum:
+                    raise RuntimeError(
+                        f"Applied migration {version} checksum mismatch. "
+                        "Do not edit migration files after they have been applied; create a new migration instead."
+                    )
+                continue
+            if sql.strip():
+                conn.executescript(sql)
+            conn.execute(
+                "INSERT INTO schema_migrations (version, checksum) VALUES (?, ?)",
+                (version, checksum),
+            )
+
+    def _ensure_columns(self, conn: sqlite3.Connection, table_name: str, columns: Dict[str, str]):
+        existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()}
+        for column_name, column_type in columns.items():
+            if column_name not in existing:
+                conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
 
     def close(self):
         if hasattr(self._local, "conn") and self._local.conn:
@@ -484,6 +588,123 @@ class _Database:
             (plan_id,),
         ).fetchall()
         return [dict(r) for r in rows]
+
+    def get_event(self, plan_id: str, event_id: str, user_id: str = "default_user") -> Optional[Dict[str, Any]]:
+        row = self._get_conn().execute(
+            "SELECT * FROM training_calendar_events WHERE plan_id = ? AND id = ? AND user_id = ?",
+            (plan_id, event_id, user_id),
+        ).fetchone()
+        return dict(row) if row else None
+
+    @staticmethod
+    def _feedback_summary(row: sqlite3.Row) -> Dict[str, Any]:
+        data = dict(row)
+        try:
+            reason_codes = json.loads(data.get("adaptive_reason_codes") or "[]")
+        except Exception:
+            reason_codes = []
+        if not isinstance(reason_codes, list):
+            reason_codes = []
+        try:
+            risk_gate = json.loads(data.get("risk_gate_json") or "{}")
+        except Exception:
+            risk_gate = {}
+        if not isinstance(risk_gate, dict):
+            risk_gate = {}
+        try:
+            protocol_recheck = json.loads(data.get("protocol_recheck_json") or "{}")
+        except Exception:
+            protocol_recheck = {}
+        if not isinstance(protocol_recheck, dict):
+            protocol_recheck = {}
+        return {
+            "id": data.get("id"),
+            "feedback_id": data.get("id"),
+            "event_id": data.get("event_id"),
+            "plan_id": data.get("plan_id"),
+            "user_id": data.get("user_id"),
+            "completion_status": data.get("completion_status"),
+            "completion_quality": data.get("completion_quality"),
+            "subjective_fatigue": data.get("subjective_fatigue"),
+            "pain_status": data.get("pain_status"),
+            "sleep_quality": data.get("sleep_quality"),
+            "notes": data.get("user_notes"),
+            "raw_text": data.get("raw_feedback_text"),
+            "reason_codes": reason_codes,
+            "next_day_adjustment": data.get("next_day_adjustment"),
+            "weekly_adjustment": data.get("weekly_adjustment"),
+            "alternative_workout": data.get("alternative_workout"),
+            "risk_alert": data.get("risk_alert"),
+            "rationale": data.get("adjustment_rationale"),
+            "risk_gate": risk_gate,
+            "protocol_recheck": protocol_recheck,
+            "created_at": data.get("created_at"),
+        }
+
+    def save_training_event_feedback(
+        self,
+        *,
+        plan_id: str,
+        event_id: str,
+        user_id: str = "default_user",
+        workout_feedback: Dict[str, Any],
+        reason_codes: List[str],
+        adaptive_adjustment: Dict[str, Any],
+        risk_gate: Dict[str, Any],
+        protocol_recheck: Optional[Dict[str, Any]] = None,
+        raw_text: str = "",
+    ) -> Optional[str]:
+        if not self.get_event(plan_id, event_id, user_id):
+            return None
+
+        feedback_id = str(uuid.uuid4())
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT INTO training_event_feedback
+                (id, event_id, plan_id, user_id, completion_status, completion_quality,
+                 subjective_fatigue, pain_status, sleep_quality, user_notes, raw_feedback_text,
+                 adaptive_reason_codes, next_day_adjustment, weekly_adjustment,
+                 alternative_workout, risk_alert, adjustment_rationale,
+                 risk_gate_json, protocol_recheck_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                feedback_id,
+                event_id,
+                plan_id,
+                user_id,
+                str(workout_feedback.get("completion_status") or "completed"),
+                str(workout_feedback.get("completion_quality") or ""),
+                str(workout_feedback.get("subjective_fatigue") or ""),
+                str(workout_feedback.get("pain_status") or ""),
+                str(workout_feedback.get("sleep_quality") or ""),
+                str(workout_feedback.get("notes") or ""),
+                str(raw_text or ""),
+                json.dumps(list(reason_codes or []), ensure_ascii=False),
+                str(adaptive_adjustment.get("next_day_adjustment") or ""),
+                str(adaptive_adjustment.get("weekly_adjustment") or ""),
+                str(adaptive_adjustment.get("alternative_workout") or ""),
+                str(adaptive_adjustment.get("risk_alert") or risk_gate.get("decision_reason") or ""),
+                str(adaptive_adjustment.get("rationale") or ""),
+                json.dumps(dict(risk_gate or {}), ensure_ascii=False),
+                json.dumps(dict(protocol_recheck or {}), ensure_ascii=False),
+            ),
+        )
+        conn.commit()
+        return feedback_id
+
+    def get_latest_event_feedback(self, event_id: str) -> Optional[Dict[str, Any]]:
+        row = self._get_conn().execute(
+            "SELECT * FROM training_event_feedback WHERE event_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1",
+            (event_id,),
+        ).fetchone()
+        return self._feedback_summary(row) if row else None
+
+    def list_plan_feedback(self, plan_id: str) -> list:
+        rows = self._get_conn().execute(
+            "SELECT * FROM training_event_feedback WHERE plan_id = ? ORDER BY created_at DESC, rowid DESC",
+            (plan_id,),
+        ).fetchall()
+        return [self._feedback_summary(row) for row in rows]
 
     def get_unsynced_events(self, plan_id: str) -> list:
         rows = self._get_conn().execute(

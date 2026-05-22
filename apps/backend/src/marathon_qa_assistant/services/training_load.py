@@ -230,19 +230,27 @@ def calculate_plan_training_load(
     )
     intensity_weight = ZONE_LOAD_WEIGHTS.get(intensity_zone, ZONE_LOAD_WEIGHTS["Z2"])
     training_load = int(round(duration_min * intensity_weight))
+    method = "planned_zone_duration_proxy"
     return TrainingLoadEstimate(
         duration_min=duration_min,
         intensity_zone=intensity_zone,
         intensity_weight=intensity_weight,
         training_load=training_load,
-        method="planned_zone_duration",
+        method=method,
         factors={
             "duration_min": duration_min,
             "intensity_zone": intensity_zone,
             "intensity_weight": intensity_weight,
+            "method": method,
             "source": "planned workout zone and inferred duration",
+            "source_type": "planned_load_proxy",
             "load_kind": "planned_load_proxy",
-            "disclaimer": "计划代理负荷，不等同于设备基于心率、HRV或个体恢复状态计算的真实生理负荷。",
+            "is_estimated": True,
+            "confidence": "estimated",
+            "not_device_metric": True,
+            "calculation_inputs": ["duration_min", "intensity_zone", "intensity_weight"],
+            "missing_inputs": ["heart_rate", "hrv", "sleep_score", "device_recovery_status"],
+            "disclaimer": "计划代理负荷，不等同于设备基于心率、HRV、睡眠或个体恢复状态计算的真实生理负荷。",
             **{key: value for key, value in distance_repetition.items() if key != "duration_min"},
         },
     )
@@ -271,13 +279,22 @@ def calculate_hr_trimp_training_load(
         intensity_zone="HR",
         intensity_weight=round(hrr * multiplier, 4),
         training_load=load,
-        method="hr_trimp",
+        method="hr_trimp_estimated",
         factors={
+            "method": "hr_trimp_estimated",
+            "source_type": "estimated_heart_rate_proxy",
+            "load_kind": "estimated",
+            "is_estimated": True,
+            "confidence": "estimated_from_heart_rate",
+            "not_device_metric": True,
+            "calculation_inputs": ["duration_min", "avg_hr", "resting_hr", "max_hr", "sex"],
+            "missing_inputs": ["hrv", "sleep_score", "device_recovery_status"],
             "hrr": round(hrr, 4),
             "avg_hr": avg_hr,
             "resting_hr": resting_hr,
             "max_hr": max_hr,
             "sex": sex,
+            "disclaimer": "HR TRIMP 是基于输入心率的训练负荷代理值，不等同于设备厂商的完整恢复或生理负荷模型。",
         },
     )
 
@@ -342,6 +359,12 @@ def build_training_load_summary(days: Iterable[Any]) -> Dict[str, Any]:
     return {
         "method": "planned_zone_duration_proxy",
         "load_kind": "planned_load_proxy",
+        "source_type": "planned_load_proxy",
+        "is_estimated": True,
+        "confidence": "estimated",
+        "not_device_metric": True,
+        "calculation_inputs": ["daily.training_load", "week_index"],
+        "missing_inputs": ["heart_rate", "hrv", "sleep_score", "device_recovery_status"],
         "disclaimer": "这是计划代理负荷：由计划时长与强度区权重估算，用于比较课表内部负荷，不等同于 COROS/Garmin 等设备的真实生理负荷。",
         "total_planned_load": sum(loads),
         "load_impact_7d": load_impact,

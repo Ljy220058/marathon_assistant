@@ -314,12 +314,128 @@ def test_daily_card_field_sources_cover_all_core_prescription_fields():
         assert field_sources[field]["source_type"] in {
             "protocol",
             "action_library",
-            "kb_fallback",
-            "llm_expression",
             "needs_evidence",
         }
     assert field_sources["main_set"]["source_type"] == "action_library"
     assert field_sources["main_set"]["source_type"] != "llm_expression"
+
+
+def test_action_library_candidate_string_is_not_joined_as_visible_main_set(monkeypatch):
+    def fake_hits(_workout_type):
+        return []
+
+    def fake_card(*, workout_type, day, hits):
+        return {
+            "workout_type": workout_type,
+            "main_set_candidates": ["4x1000m / 5x1000m / 6x1000m"],
+            "training_objective": "action library prescription",
+            "warmup_suggestion": "15min easy",
+            "cooldown_suggestion": "10min easy",
+            "alternative_workout": "",
+            "evidence_tier": "action_library",
+            "source": [{"source_id": "action-library.pdf", "page": 7, "chunk_id": "act-7"}],
+            "evidence_status": {"main_set_candidates": "direct"},
+        }
+
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.daily_schedule_generator.get_action_library_foundation_hits",
+        fake_hits,
+    )
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.daily_schedule_generator.build_daily_workout_template_card_from_hits",
+        fake_card,
+    )
+
+    calendar = generate_daily_schedule(
+        {
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "base",
+                    "days": [{"day": "Tue", "training_type": "VO2max", "main_set": ""}],
+                },
+            ],
+        },
+        enable_kb_fallback=False,
+    )
+    data = calendar.days[0].to_dict()
+
+    assert data["main_set"] == "4x1000m"
+    assert data["action_match"]["main_set"] == "4x1000m"
+    assert data["action_match"]["alternatives"] == ["5x1000m", "6x1000m"]
+    assert " / " not in data["main_set"]
+
+
+def test_hmp_protocol_missing_action_library_fails_closed_with_trace(monkeypatch):
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.daily_schedule_generator._build_hmp_action_library_execution_card",
+        lambda *args, **kwargs: {},
+    )
+
+    calendar = generate_daily_schedule(
+        {
+            "half_marathon_protocol": {
+                "active": True,
+                "capacity_budget": {"quality_sessions_max": 2, "long_run_max_km": 18},
+            },
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "base",
+                    "days": [
+                        {
+                            "day": "Tue",
+                            "training_type": "half marathon protocol",
+                            "main_set": "hm_base_threshold_progression HMP 40min progression",
+                        },
+                    ],
+                },
+            ],
+        },
+        enable_kb_fallback=False,
+    )
+    data = calendar.days[0].to_dict()
+
+    assert data["evidence_tier"] == "needs_evidence"
+    assert data["card_status"] == "needs_evidence"
+    assert data["field_sources"]["main_set"]["source_type"] == "needs_evidence"
+    assert data["action_match"]["needs_evidence"] == ["missing_action_library_match"]
+    assert data["trace"]["final_card"]["evidence_tier"] == "needs_evidence"
+    assert data["trace"]["action_match"]["needs_evidence"] == ["missing_action_library_match"]
+
+
+def test_unknown_workout_does_not_expose_plan_skeleton_main_set():
+    calendar = generate_daily_schedule(
+        {
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "base",
+                    "days": [
+                        {
+                            "day": "Tue",
+                            "training_type": "Mystery workout",
+                            "main_set": "3x2000m @ HMP from skeleton",
+                        },
+                    ],
+                },
+            ],
+        },
+        enable_kb_fallback=False,
+    )
+    data = calendar.days[0].to_dict()
+
+    assert data["evidence_tier"] == "needs_evidence"
+    assert data["card_status"] == "needs_evidence"
+    assert data["main_set"] == "动作库证据不足，暂不展示具体主课。"
+    assert data["field_sources"]["main_set"]["source_type"] == "needs_evidence"
+    assert data["field_sources"]["main_set"]["value"] == data["main_set"]
+    assert data["action_match"]["needs_evidence"] == ["unknown_workout_type"]
+    assert data["trace"]["intent_parse"]["main_set_raw"] == "3x2000m @ HMP from skeleton"
+    assert data["trace"]["action_match"]["needs_evidence"] == ["unknown_workout_type"]
+    assert data["trace"]["final_card"]["main_set"] == data["main_set"]
+    assert data["kb_fallback"]["blocked_core_candidates"]["main_set"] == ["3x2000m @ HMP from skeleton"]
+    assert "3x2000m" not in data["main_set"]
 
 
 def test_hmp_protocol_day_uses_action_library_main_set_not_protocol_template():
@@ -576,6 +692,63 @@ def test_final_action_main_set_duration_overrides_inconsistent_allocated_distanc
     assert data["card_status"] == "needs_protocol_recheck"
 
 
+def test_training_load_fields_are_explicit_estimates_not_device_metrics():
+    structured_training_plan = {
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {
+                        "day": "周一",
+                        "training_type": "Easy",
+                        "main_set": "45分钟 Z2 轻松跑",
+                        "zone_range": "Z2",
+                    },
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    data = calendar.days[0].to_dict()
+    factors = data["training_load_factors"]
+
+    assert data["training_load_method"] == "planned_zone_duration_proxy"
+    assert factors["source_type"] == "planned_load_proxy"
+    assert factors["load_kind"] == "planned_load_proxy"
+    assert factors["is_estimated"] is True
+    assert factors["not_device_metric"] is True
+    assert "heart_rate" in factors["missing_inputs"]
+    assert "HRV" not in str(data["training_load"]).upper()
+    assert "不等同于设备" in factors["disclaimer"]
+
+    summary = calendar.training_load_summary
+    assert summary["source_type"] == "planned_load_proxy"
+    assert summary["is_estimated"] is True
+    assert summary["not_device_metric"] is True
+
+
+def test_heart_rate_trimp_load_keeps_estimated_boundary():
+    from marathon_qa_assistant.services.training_load import calculate_hr_trimp_training_load
+
+    estimate = calculate_hr_trimp_training_load(
+        duration_min=45,
+        avg_hr=150,
+        resting_hr=50,
+        max_hr=190,
+        sex="male",
+    )
+
+    assert estimate.method == "hr_trimp_estimated"
+    assert estimate.factors["source_type"] == "estimated_heart_rate_proxy"
+    assert estimate.factors["load_kind"] == "estimated"
+    assert estimate.factors["is_estimated"] is True
+    assert estimate.factors["not_device_metric"] is True
+    assert "physiology_proxy" not in str(estimate.factors)
+    assert "sleep_score" in estimate.factors["missing_inputs"]
+
+
 def test_final_main_set_distance_exceeding_long_run_cap_is_blocked_even_without_raw_main_km(monkeypatch):
     def fake_build_daily_workout_template_card_from_hits(*, workout_type, day, hits):
         return {
@@ -729,8 +902,10 @@ def test_monthly_calendar_handles_missing_workout_types():
     calendar = generate_daily_schedule(structured_training_plan)
     assert calendar.total_days == 2
     custom_day = calendar.days[1]
-    assert custom_day.evidence_tier == "plan_only"
-    assert custom_day.evidence_tier_label == "基础计划"
+    assert custom_day.evidence_tier == "needs_evidence"
+    assert custom_day.evidence_tier_label == "证据不足待补全"
+    assert custom_day.card_status == "needs_evidence"
+    assert custom_day.main_set == "动作库证据不足，暂不展示具体主课。"
 
 
 def test_monthly_calendar_projects_hmp_candidate_to_quality_day():

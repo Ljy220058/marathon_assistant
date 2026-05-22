@@ -1632,6 +1632,11 @@ RAG 对 HMP 的主要职责是：
 - 每张训练卡必须保留 `trace.intent_parse / protocol_check / action_match / kb_fallback / risk_gate / final_card`。
 - 产品状态允许 `generated / partial_generated / needs_evidence / needs_user_info / risk_refused / medical_referral`，不得把所有分支硬塞成“已生成训练安排”。
 
+**EvidenceDrawer 与无证据回答边界**
+- Astro 前端必须提供统一 `EvidenceDrawer`：训练依据区、每日训练卡和解释引用入口都通过同一抽屉展示 `source / page / excerpt / evidence_type / relation / status`。
+- 当没有本地 RAG、动作库或协议证据时，系统允许基于模型通用知识输出一般说明，但 UI 必须标为 `llm_general_knowledge` / “模型知识说明（未绑定外部证据）”，并明确“不能作为核心处方依据，不生成伪引用”。
+- `needs_evidence` 训练日仍保持 fail-visible：可以展示一般训练解释和执行提醒，但 `main_set`、强度、时长等核心处方字段不得因此从 `needs_evidence` 升级为已验证证据。
+
 **训练负荷口径**
 - 当前日卡与负荷曲线使用 `planned_load_proxy`，即“计划代理负荷”：由计划时长与强度区权重估算，用于比较课表内部负荷，不等同于 COROS/Garmin 等设备基于心率、HRV、睡眠或个体恢复状态计算的真实生理负荷。
 - 后端必须保留 `training_load_method / training_load_factors`，前端展示时必须说明负荷来源；若前端因缺少后端字段进行兜底估算，必须标记为 `frontend_estimated_duration_type`，不得作为论文侧负荷证据。
@@ -1671,3 +1676,10 @@ HMP 基石协议只决定阶段、训练意图、强度边界、容量预算和�
 ### 2026-05-12 Chainlit 开发线移除状态
 
 当前已删除 Chainlit 可运行入口、启动脚本、依赖和专属应用包；原 `apps/chainlit/plan_ui.py` 等可复用纯辅助迁移到 `marathon_qa_assistant/ui/`。后续前端验收与产品开发以 Astro + FastAPI 为准。
+### 执行状态面板与调整历史闭环
+
+- `/plans/{plan_id}` 返回 `execution_status_summary` 与 `adjustment_history`，前端不再从 Markdown 推导本周完成度或调整历史。
+- `execution_status_summary` 使用确定性规则源 `deterministic_feedback_rules`，字段包括 `completion_rate / planned_count / completed_count / partial_count / skipped_count / missed_feedback_count / risk_level / risk_reasons / recovery_status / next_training_recommendation / generation_status`。
+- 风险优先级固定为 `medical_referral > pain_risk > high_fatigue > poor_sleep > missed_workout > normal`；胸痛、头晕/晕厥、中暑等医疗风险继续 fail-closed，不生成继续训练或高强度替代建议。
+- `adjustment_history` 从 `training_event_feedback` 水合，保留 `risk_gate / protocol_recheck / adaptive_adjustment / plan_diff / affected_events`，用于历史计划回显和审计。
+- 无本地证据时允许展示 `llm_general_knowledge` 通用解释，但该来源只能用于说明层，不能写入 `risk_level`、`risk_reasons`、核心处方字段或伪引用。

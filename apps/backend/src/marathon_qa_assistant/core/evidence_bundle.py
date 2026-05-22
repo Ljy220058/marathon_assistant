@@ -14,7 +14,7 @@ _INPUT_GUARD = InputGuard()
 
 PROTOCOL_SOURCE_DOCS = (
     "Sub-70半程马拉松训练_图片OCR整理.md",
-    "docs/half_marathon_hmp_protocol.md",
+    "docs/product/half_marathon_hmp_protocol.md",
     "docs/half_marathon_source_audit.md",
 )
 

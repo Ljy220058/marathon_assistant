@@ -2,6 +2,8 @@ import asyncio
 import sys
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 
 root = Path(__file__).parents[1]
 if str(root) not in sys.path:
@@ -9,6 +11,7 @@ if str(root) not in sys.path:
 
 from marathon_qa_assistant.nodes.security import security_gate_node
 from marathon_qa_assistant.services.security_guards import InputGuard, OutputGuard
+from marathon_qa_assistant.apps import api_app
 
 
 def test_input_guard_allows_safe_query():
@@ -102,3 +105,95 @@ def test_security_gate_blocks_unsafe_history():
     assert result["mode"] == "intercepted"
     assert "会话已重置" in result["final_report"]
     assert "历史风险" in result["risk_alert"]
+
+
+def test_api_cors_defaults_to_local_origins(monkeypatch):
+    monkeypatch.delenv("MARATHON_ALLOWED_ORIGINS", raising=False)
+    monkeypatch.delenv("MARATHON_DEV_PERMISSIVE_CORS", raising=False)
+
+    origins = api_app._allowed_cors_origins()
+
+    assert "*" not in origins
+    assert "http://127.0.0.1:4321" in origins
+    assert "http://localhost:4321" in origins
+
+
+def test_api_cors_allows_explicit_dev_permissive_mode(monkeypatch):
+    monkeypatch.setenv("MARATHON_DEV_PERMISSIVE_CORS", "1")
+
+    assert api_app._allowed_cors_origins() == ["*"]
+
+
+def test_api_rate_limit_blocks_repeated_sensitive_requests(monkeypatch):
+    api_app._reset_rate_limit_state_for_tests()
+    monkeypatch.setenv("MARATHON_RATE_LIMIT_PER_MINUTE", "1")
+    monkeypatch.delenv("MARATHON_TRUST_PROXY_HEADERS", raising=False)
+    headers = {"X-Forwarded-For": "203.0.113.77"}
+    payload = {
+        "raw_text": "完成训练，轻微疲劳",
+        "feedback": {"completion_status": "completed", "subjective_fatigue": "mild"},
+    }
+
+    first = TestClient(api_app.app).post("/feedback", json=payload, headers=headers)
+    second = TestClient(api_app.app).post("/feedback", json=payload, headers=headers)
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.headers["Retry-After"] == "60"
+    assert "请求过于频繁" in second.json()["detail"]
+    api_app._reset_rate_limit_state_for_tests()
+
+
+def test_api_rate_limit_does_not_trust_spoofed_forwarded_for_by_default(monkeypatch):
+    api_app._reset_rate_limit_state_for_tests()
+    monkeypatch.setenv("MARATHON_RATE_LIMIT_PER_MINUTE", "1")
+    monkeypatch.delenv("MARATHON_TRUST_PROXY_HEADERS", raising=False)
+    payload = {
+        "raw_text": "完成训练，轻微疲劳",
+        "feedback": {"completion_status": "completed", "subjective_fatigue": "mild"},
+    }
+
+    first = TestClient(api_app.app).post(
+        "/feedback",
+        json=payload,
+        headers={"X-Forwarded-For": "203.0.113.10"},
+    )
+    second = TestClient(api_app.app).post(
+        "/feedback",
+        json=payload,
+        headers={"X-Forwarded-For": "203.0.113.11"},
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert len(api_app._RATE_LIMIT_BUCKETS) == 1
+    api_app._reset_rate_limit_state_for_tests()
+
+
+def test_api_token_protects_non_public_endpoints_when_configured(monkeypatch):
+    monkeypatch.setenv("MARATHON_API_TOKEN", "test-token")
+    client = TestClient(api_app.app)
+
+    public_response = client.get("/health")
+    missing = client.get("/plans")
+    invalid = client.get("/plans", headers={"Authorization": "Bearer wrong-token"})
+    valid = client.get("/plans", headers={"Authorization": "Bearer test-token"})
+    metrics = client.get("/ops/metrics")
+    preflight = client.options("/plans")
+
+    assert public_response.status_code == 200
+    assert missing.status_code == 401
+    assert missing.headers["WWW-Authenticate"] == "Bearer"
+    assert invalid.status_code == 401
+    assert valid.status_code == 200
+    assert metrics.status_code == 401
+    assert preflight.status_code != 401
+
+
+def test_frontend_does_not_persist_deepseek_api_key():
+    root_path = root / "apps" / "web" / "src" / "scripts" / "app.js"
+    app_script = root_path.read_text(encoding="utf-8")
+
+    assert 'localStorage.setItem("marathon_ds_api_key"' not in app_script
+    assert 'localStorage.getItem("marathon_ds_api_key"' not in app_script
+    assert 'localStorage.removeItem("marathon_ds_api_key"' in app_script

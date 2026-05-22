@@ -21,6 +21,14 @@ from marathon_qa_assistant.nodes.common import (
 )
 
 
+def _safe_llm_fallback_summary(exc: Exception) -> str:
+    provider = str(getattr(exc, "provider", "") or "").strip()
+    error_code = str(getattr(exc, "error_code", "") or "").strip()
+    if provider and error_code:
+        return f"{provider}/{error_code}"
+    return exc.__class__.__name__
+
+
 def _parse_pace_seconds(pace_str: str) -> float:
     """解析配速字符串为秒/公里。支持 3:30/km, 3分30, 3.5min/km, 210s 等格式。"""
     if not pace_str:
@@ -40,7 +48,7 @@ def _parse_pace_seconds(pace_str: str) -> float:
 
 def _compute_pace_zones(profile: dict) -> dict:
     """基于用户画像获取或计算 9 区配速区间。
-    
+
     优先级：profile['pace_zones'] > T-Pace > 目标成绩。
     """
     from marathon_qa_assistant.core.zone_constants import ZONE_LABELS
@@ -48,7 +56,7 @@ def _compute_pace_zones(profile: dict) -> dict:
 
     zones = {}
     pace_zones = profile.get("pace_zones", {})
-    
+
     # 1. 优先使用已有的 9 区配速
     if pace_zones and isinstance(pace_zones, dict) and any(pace_zones.values()):
         for i in range(1, 10):
@@ -363,7 +371,7 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         content, usage = await ai_invoke(prompt, config, state.get("token_usage"))
         fallback_reason = ""
     except Exception as exc:
-        fallback_reason = f"[executor] LLM 调用失败，已使用静态模板兜底: {exc}"
+        fallback_reason = f"[executor] LLM 调用失败，已使用静态模板兜底: {_safe_llm_fallback_summary(exc)}"
         profile = state.get("user_profile", {})
         evidence_lines = format_evidence_lines(rag_sources, limit=3)
         content = _static_executor_fallback(state, profile, evidence_lines)

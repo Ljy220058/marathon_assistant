@@ -5,7 +5,7 @@ try:
 except ImportError:
     RunnableConfig = Any
 
-from marathon_qa_assistant.core.state_models import IntegratedState
+from marathon_qa_assistant.core.state_models import IntegratedState, build_workflow_trace
 from marathon_qa_assistant.core.evidence_bundle import evidence_base_from_bundle
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
 from marathon_qa_assistant.nodes.common import ensure_usage, output_guard_obj
@@ -729,6 +729,20 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
     ]
     summary = final_report if final_report and final_report.strip() else "（本轮未产生实质性回复内容）"
     audit_scores = state.get("audit_scores", {})
+    workflow_trace = state.get("workflow_trace") if isinstance(state.get("workflow_trace"), dict) else {}
+    if not workflow_trace:
+        workflow_trace = build_workflow_trace(
+            query=state.get("query", ""),
+            workflow_kind=state.get("workflow_kind", "") or state.get("category", "qa"),
+            intent_type=state.get("intent_type", ""),
+            status="complete",
+            evidence_bundle=evidence_bundle,
+            structured_training_plan=structured_training_plan if isinstance(structured_training_plan, dict) else None,
+            adaptive_feedback=state.get("adaptive_feedback") if isinstance(state.get("adaptive_feedback"), dict) else None,
+            adaptive_adjustment=adaptive_adjustment if isinstance(adaptive_adjustment, dict) else None,
+        )
+    if isinstance(structured_training_plan, dict):
+        structured_training_plan["workflow_trace"] = workflow_trace
     training_explanation_panel = _build_training_explanation_panel(
         structured_training_plan,
         training_plan_weeks,
@@ -823,6 +837,7 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             "wiki_context": wiki_context,
         },
         "adaptive_adjustment": adaptive_adjustment,
+        "workflow_trace": workflow_trace,
         "structured_training_plan": structured_training_plan,
         "training_plan_overview": training_plan_overview,
         "training_explanation_panel": training_explanation_panel,

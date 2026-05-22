@@ -200,11 +200,21 @@
 
 ## 9. 文档补漏审计
 
-`Sub-70半程马拉松训练_图片OCR整理.md` 已覆盖半马 HMP 协议的主要训练逻辑，但末尾补充内容仍缺一块可见 OCR：
+`docs/product/reports/Sub-70半程马拉松训练_图片OCR整理.md` 已覆盖半马 HMP 协议的主要训练逻辑。原图片末尾仍只可见以下补充标题，未保留完整原文表格：
 
 - “补充 1：马拉松/半马训练专业术语参考表”
 
-当前系统已先按主协议落地规则、模板和验证器；该术语表后续应补回原文，以便统一 UI 术语与知识库解释口径。
+为避免 UI、解释面板、安全约束和后续知识库治理各自使用不同说法，系统已先将可从正文和协议中确认的术语落地到 `apps/backend/src/marathon_qa_assistant/core/half_marathon_glossary.py`。该运行时术语表作为当前专家知识库的统一口径，覆盖以下分组：
+
+| 分组 | 术语口径 | 主要用途 |
+|---|---|---|
+| HMP 强度区间 | `hmp`、`support_endurance_90`、`specific_endurance_95`、`race_specific_100`、`specific_speed_105`、`support_speed_107_110` | 统一半马百分比配速解释、训练卡片目标和证据面板文案。 |
+| 阶段术语 | `introductory_phase`、`general_phase`、`race_supportive_phase`、`race_specific_phase` | 将计划阶段、输出解释和安全验证中的阶段命名对齐。 |
+| 关键课表术语 | `long_fast_run`、`alternating_kilometers`、`cruise_recovery`、`threshold_lt2`、`ssmax`、`progression_run` | 解释 95% HMP 长距离快速跑、100% HMP 巡航恢复间歇和基础期阈值/渐进课。 |
+| 辅助训练术语 | `fartlek`、`hill_sprints`、`strides`、`vo2max` | 支撑导入期、基础期和 107-110% HMP 辅助速度课解释。 |
+| 安全与个性化术语 | `capacity_budget`、`dynamic_calibration`、`sub70_volume_scaling`、`fatigue_downgrade`、`environment_adjustment`、`recovery_window` | 统一容量预算、配速校准、Sub-70 跑量缩放、疲劳/环境降级和恢复窗口说明。 |
+
+当前策略：未看到原始补充表全文前，不编造来源声称；运行时术语表只承载已由正文、协议和代码约束交叉确认的定义。后续如补回原图 OCR，应先与上述 ID 合并，避免新增平行术语。
 
 ## 10. 容量预算落地规则
 
