@@ -89,6 +89,7 @@ class DailyScheduleItem:
     kb_fallback: Dict[str, Any] = field(default_factory=dict)
     risk_gate: Dict[str, Any] = field(default_factory=dict)
     trace: Dict[str, Any] = field(default_factory=dict)
+    kb_metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
@@ -1338,6 +1339,16 @@ def generate_daily_schedule(
                 str(day.get("notes") or ""),
                 str(card.get("training_objective") or ""),
             )
+            kb_metadata = dict(card.get("kb_metadata") or {})
+            if not kb_metadata:
+                kb_metadata = {
+                    "knowledge_layer": "prescription_library",
+                    "evidence_domain": "protocol" if evidence_tier == "protocol_rule" else evidence_tier,
+                    "retrieval_mode": "protocol_rule" if evidence_tier == "protocol_rule" else "none",
+                    "prescription_permission": "can_write_core" if evidence_tier in {"action_library", "protocol_rule"} else "blocked_needs_evidence",
+                }
+            if evidence_tier not in {"action_library", "protocol_rule"}:
+                kb_metadata["prescription_permission"] = "blocked_needs_evidence"
             card_status = _status_for_card(evidence_tier, protocol_check=protocol_check)
             final_card = {
                 "card_status": card_status,
@@ -1404,6 +1415,7 @@ def generate_daily_schedule(
                 action_match=action_match,
                 kb_fallback=kb_fallback_trace,
                 risk_gate=risk_gate,
+                kb_metadata=kb_metadata,
                 trace=trace,
             ))
 

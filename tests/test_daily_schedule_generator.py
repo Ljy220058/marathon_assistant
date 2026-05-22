@@ -260,6 +260,28 @@ def test_action_library_card_keeps_field_sources_action_match_and_trace():
     assert set(data["trace"]) == {"intent_parse", "protocol_check", "action_match", "kb_fallback", "risk_gate", "final_card"}
 
 
+def test_daily_card_preserves_layered_kb_metadata_for_action_library():
+    structured_training_plan = {
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {"day": "Tue", "training_type": "VO2max", "main_set": ""},
+                ],
+            },
+        ],
+    }
+
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+    card = calendar.days[0].to_dict()
+
+    assert card["kb_metadata"]["knowledge_layer"] == "prescription_library"
+    assert card["kb_metadata"]["evidence_domain"] == "action_library"
+    assert card["kb_metadata"]["prescription_permission"] == "can_write_core"
+    assert card["field_sources"]["main_set"]["source_type"] != "llm_general_knowledge"
+
+
 def test_daily_card_field_sources_cover_all_core_prescription_fields():
     structured_training_plan = {
         "week_plans": [
