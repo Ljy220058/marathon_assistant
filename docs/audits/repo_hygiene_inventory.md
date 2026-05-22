@@ -1,7 +1,7 @@
 # 仓库卫生检查清单
 
-日期：2026-05-21  
-工作目录：`C:\Users\26318\Documents\trae_projects\ollama_pro\马拉松助手`  
+日期：2026-05-21
+工作目录：`C:\Users\26318\Documents\trae_projects\ollama_pro\马拉松助手`
 分支：`codex/5/20`
 
 ## 迁移前状态
@@ -28,19 +28,19 @@
 | 用户向量库 | `vector_kb_user/` | `data/vector_kb/user/` | 移动并保留旧路径 fallback |
 | 上传资料 | `uploaded_docs/` | `data/uploads/seed/` | 移动 |
 | 知识库源材料 | `knowledge_base/` | `data/knowledge/` | 按 raw/curated/packs 归类 |
-| STAI 论文与 benchmark | `docs/paper_project/` | `research/stai2026/` | 按 manuscript/benchmark/analysis 归类 |
-| M-EXRxBench | `docs/paper_project/marathon_exrx_ruleml2026/` | `research/mexrxbench/` | 移动为独立研究子项目 |
-| STAI runs | `docs/paper_project/runs/` | `artifacts/research_runs/stai2026/` | 移动 |
+| STAI 论文与 benchmark | 迁移前论文项目目录 | `research/stai2026/` | 按 manuscript/benchmark/analysis 归类 |
+| M-EXRxBench | 迁移前论文项目下的 RuleML 子目录 | `research/mexrxbench/` | 移动为独立研究子项目 |
+| STAI runs | 迁移前论文项目下的 runs 目录 | `artifacts/research_runs/stai2026/` | 移动 |
 | UI 审计截图 | `artifacts/ui_audit_*` | `artifacts/ui_audits/` | 归类 |
 | Chainlit 遗留配置 | `.chainlit/`、包内 `.chainlit/` | `archive/legacy_chainlit/` | 归档 |
 | 本地依赖/缓存 | `lib/`、`frontend/node_modules/`、`.pytest_cache/` | 不进入正式结构 | `.gitignore` 明确忽略 |
 
 ## 风险点
 
-- 多个脚本硬编码 `docs/paper_project`、`vector_kb`、`uploaded_docs`，迁移时必须同步更新默认路径。
+- 多个脚本曾硬编码迁移前论文项目目录、`vector_kb`、`uploaded_docs`，迁移时必须同步更新默认路径。
 - 现有测试直接读取 `frontend/src/pages/index.astro`，迁移到 `apps/web` 后必须更新测试路径。
 - `app_state.py` 是所有运行时路径的统一入口，需保留 `PROJECT_ROOT`、`MARATHON_DATA_DIR`、旧根路径 fallback。
-- `docs/paper_project` 中包含论文源码、输出 PDF、zip 包、benchmark、runs 和人工审计记录，不能整体当作普通 docs 移走。
+- 迁移前论文项目目录中包含论文源码、输出 PDF、zip 包、benchmark、runs 和人工审计记录，不能整体当作普通 docs 移走。
 
 ## 验收口径
 

@@ -159,6 +159,7 @@ temp/
 temp_images/
 artifacts/dev_logs/
 artifacts/**/tmp/
+artifacts/frontend-audit/chrome-*-profile/
 archive/local_caches/
 
 # Local dependencies and runtime caches

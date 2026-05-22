@@ -22,6 +22,17 @@ CACHE_PATTERNS = (
     "apps/web/dist",
 )
 
+VERSION_EXCLUDED_PATHS = (
+    "data/vector_kb/default/user_profile.json",
+    "data/vector_kb/default/knowledge_graph.json",
+    "papers/",
+    "artifacts/frontend-audit/",
+)
+
+VERSION_EXCLUDED_ROOT_PATTERNS = (
+    re.compile(r"^Sub-70.*OCR.*\.md$"),
+)
+
 OLD_PATH_PATTERNS = (
     "docs/paper_project",
     "frontend/src",
@@ -37,6 +48,7 @@ ROOT_ALLOWLIST = {
     ".gitignore",
     ".rgignore",
     ".pytest_cache",
+    "pytest.ini",
     "README.md",
     "TODO.md",
     "CONTRIBUTING.md",
@@ -116,6 +128,13 @@ def run_git(args: list[str], timeout: int = 20) -> tuple[int, str, str]:
     return completed.returncode, completed.stdout, completed.stderr
 
 
+def git_status_porcelain() -> list[str]:
+    code, stdout, stderr = run_git(["-c", "core.quotePath=false", "status", "--porcelain=v1"])
+    if code != 0:
+        raise RuntimeError(f"git status failed: {stderr.strip()}")
+    return [line for line in stdout.splitlines() if line.strip()]
+
+
 def git_ls_files() -> list[str]:
     code, stdout, stderr = run_git(["-c", "core.quotePath=false", "ls-files"])
     if code != 0:
@@ -158,6 +177,43 @@ def check_cache_noise() -> CheckResult:
         if any(pattern in normalized for pattern in CACHE_PATTERNS):
             errors.append(f"tracked cache/build path: {normalized}")
     return CheckResult("cache-noise", errors, warnings)
+
+
+def _status_path(line: str) -> str:
+    value = line[3:] if len(line) >= 4 else line
+    if " -> " in value:
+        value = value.split(" -> ", 1)[1]
+    return value.strip().strip('"').replace("\\", "/")
+
+
+def _is_version_excluded(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    return (
+        normalized in VERSION_EXCLUDED_PATHS
+        or any(normalized.startswith(prefix) for prefix in VERSION_EXCLUDED_PATHS if prefix.endswith("/"))
+        or any(pattern.match(normalized) for pattern in VERSION_EXCLUDED_ROOT_PATTERNS)
+    )
+
+
+def check_version_exclusions() -> CheckResult:
+    errors: list[str] = []
+    warnings: list[str] = []
+    try:
+        status_lines = git_status_porcelain()
+    except RuntimeError as exc:
+        return CheckResult("version-exclusions", [str(exc)], warnings)
+
+    for line in status_lines:
+        path = _status_path(line)
+        if not _is_version_excluded(path):
+            continue
+        staged = line[:2] != "??" and line[0] != " "
+        message = f"version-excluded path is dirty: {path}"
+        if staged:
+            errors.append(f"staged excluded path: {path}")
+        else:
+            warnings.append(message)
+    return CheckResult("version-exclusions", errors, warnings)
 
 
 def check_old_paths() -> CheckResult:
@@ -240,7 +296,7 @@ def check_git_diff() -> CheckResult:
 def collect_checks(scope: str, warn_mb: int, fail_mb: int) -> list[CheckResult]:
     checks: list[CheckResult] = []
     if scope in {"all", "hygiene", "docs"}:
-        checks.extend([check_root_clean(), check_cache_noise(), check_old_paths(), check_manifest_links()])
+        checks.extend([check_root_clean(), check_cache_noise(), check_version_exclusions(), check_old_paths(), check_manifest_links()])
     if scope in {"all", "large-files", "hygiene"}:
         checks.append(check_large_files(warn_mb=warn_mb, fail_mb=fail_mb))
     if scope in {"all", "docs", "hygiene"}:
