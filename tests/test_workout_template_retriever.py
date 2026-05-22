@@ -74,6 +74,34 @@ def test_build_daily_workout_template_card_from_action_library_hits():
     assert card["evidence_status"]["cooldown"] == "missing"
 
 
+def test_workout_template_card_exposes_layered_kb_metadata():
+    card = build_daily_workout_template_card_from_hits(
+        "easy_run",
+        day="周三",
+        hits=[
+            {
+                "source_file": "动作库.pdf",
+                "page": 4,
+                "chunk_id": "动作库_p0004_c0001",
+                "score": 0.91,
+                "text": """
+                【轻松跑】
+                name：轻松跑
+                content：30-60分钟 Z1-Z2 轻松跑
+                objective：促进恢复并维持有氧基础
+                热身：10分钟慢跑+动态活动
+                """,
+            }
+        ],
+    )
+
+    assert card["kb_metadata"]["knowledge_layer"] == "prescription_library"
+    assert card["kb_metadata"]["evidence_domain"] == "action_library"
+    assert card["kb_metadata"]["prescription_permission"] == "can_write_core"
+    assert card["kb_metadata"]["retrieval_mode"] == "action_library"
+    assert card["kb_metadata"]["source_registry_id"].startswith("src_")
+
+
 def test_build_daily_workout_template_card_does_not_fabricate_when_evidence_missing():
     card = build_daily_workout_template_card_from_hits(
         "aerobic_threshold",

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from marathon_qa_assistant.core.app_state import get_preferred_vector_dir, has_vector_kb_artifacts
 from marathon_qa_assistant.core.zone_constants import ZONE_LABELS, ZONE_LABELS_DETAIL
+from marathon_qa_assistant.services.kb.source_registry import build_source_registry_id
 from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve
 
 
@@ -37,7 +38,28 @@ class DailyWorkoutTemplateCard:
     evidence: List[WorkoutTemplateEvidence] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        primary_source = self.source[0] if self.source else self.title
+        if self.evidence_tier == "action_library":
+            evidence_domain = "action_library"
+            retrieval_mode = "action_library"
+            prescription_permission = "can_write_core"
+        elif self.evidence_tier == "protocol_rule":
+            evidence_domain = "protocol"
+            retrieval_mode = "protocol_rule"
+            prescription_permission = "can_write_core"
+        else:
+            evidence_domain = self.evidence_tier
+            retrieval_mode = "none"
+            prescription_permission = "blocked_needs_evidence"
+        data["kb_metadata"] = {
+            "knowledge_layer": "prescription_library",
+            "evidence_domain": evidence_domain,
+            "retrieval_mode": retrieval_mode,
+            "prescription_permission": prescription_permission,
+            "source_registry_id": build_source_registry_id(primary_source),
+        }
+        return data
 
 
 WORKOUT_TEMPLATE_REGISTRY = {
