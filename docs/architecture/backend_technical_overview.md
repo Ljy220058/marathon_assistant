@@ -215,6 +215,14 @@ data/vector_kb/default/            # 全局 TF‑IDF 知识库（chunks.jsonl / 
   - **稳定 Citation 编号**：在 `retrieval` 聚合层即完成去重、排序与编号分配（`[1][2][3]`），编号一旦分配则贯穿 Prompt 注入、LLM 生成与输出校验；`common.py::format_evidence_lines()` 默认优先消费 `ranked_evidence`，仅保留 `rag_sources` 作为兼容兜底。
   - **输出合法性校验**：在 `formatter_node` 增加引用校验，检测 LLM 回复中的 `[n]` 是否存在于当前证据池中；若检测到无效引用，在计划模式下直接拦截输出，在 QA 模式下自动移除越界编号并记录降级日志，避免伪造引用继续外显。
   - **可观测性日志**：`build_ranked_evidence()` 会输出排序前来源分布（vector / graph / fusion / merged）以及 Top-N 证据的 `kind / hybrid_score / trace`，便于定位证据融合、降权或错误引用问题。
+
+### 6.5 Layered KB and GraphRAG Evidence Kernel
+
+- **分层知识库边界**：知识库拆为 `source_registry`、`document_index`、`domain_graph`、`prescription_library`、`evaluation` 五层。每层只暴露自己的证据责任，不把检索命中直接等同于可处方依据。
+- **核心处方写入规则**：`main_set`、`intensity`、`duration`、`progression`、`risk_downgrade` 等核心字段只允许 `protocol` 或 `action_library` 且 `prescription_permission=can_write_core` 的来源写入。
+- **GraphRAG 使用边界**：图谱和向量检索用于关系发现、解释和候选证据聚合；graph-only 或 vector-only 证据默认 `explanation_only`，不能绕过协议或动作库生成核心训练处方。
+- **模型常识兜底**：无本地证据时允许 `llm_general_knowledge` 回答普通解释问题，但不得伪造 `source_registry_id`、source path、页码或引用编号，也不得写入核心处方字段。
+- **评估与健康检查**：`services/kb/evaluation.py` 区分 `retrieval_miss`、`answer_unsupported`、`core_prescription_missing_evidence`；`services/kb/health.py` 检查缺 source、缺 page 和核心权限越权。
 - **组间实现方法说明（引用链路）**：
   - `knowledge_graph.py` 提供 `map_edge_to_evidence()`，将图谱边证据映射为统一格式。
   - `profile_and_retrieval.py` 实现 `build_ranked_evidence()`，负责聚合、去重、融合、打分、日志追踪与固定编号。
