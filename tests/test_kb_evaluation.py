@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from marathon_qa_assistant.services.kb.evaluation import evaluate_evidence_answer
 
 
@@ -54,3 +57,22 @@ def test_evaluation_distinguishes_unsupported_answer_from_retrieval_miss():
     assert result["faithfulness_proxy"] == 0.0
     assert result["needs_review"] is True
     assert result["failure_modes"] == ["answer_unsupported"]
+
+
+def test_kb_golden_questions_cover_required_domains():
+    questions = json.loads(Path("tests/fixtures/kb_golden_questions.json").read_text(encoding="utf-8"))
+    domains = {item["domain"] for item in questions}
+
+    assert len(questions) >= 10
+    assert {
+        "training_load",
+        "plan_structure",
+        "periodization",
+        "injury_recovery",
+        "rehabilitation",
+        "strength_conditioning",
+        "mobility_recovery",
+        "injury_prevention",
+        "evidence_control",
+        "rag_vs_base_model",
+    }.issubset(domains)

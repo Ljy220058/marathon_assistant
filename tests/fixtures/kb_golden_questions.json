@@ -1,0 +1,52 @@
+[
+  {
+    "id": "kb-load-001",
+    "domain": "training_load",
+    "question": "Why can this plan only call the load value a planned_load_proxy instead of a device-grade physiological training load?"
+  },
+  {
+    "id": "kb-structure-001",
+    "domain": "plan_structure",
+    "question": "Why should a half marathon plan avoid three high-intensity sessions every week?"
+  },
+  {
+    "id": "kb-period-001",
+    "domain": "periodization",
+    "question": "Why should a 16-week half marathon plan separate base, build, specific, peak, and taper phases?"
+  },
+  {
+    "id": "kb-injury-001",
+    "domain": "injury_recovery",
+    "question": "Why should knee pain block immediate interval training and trigger a safer adjustment?"
+  },
+  {
+    "id": "kb-rehab-001",
+    "domain": "rehabilitation",
+    "question": "What is the difference between rehabilitation training and an ordinary recovery run?"
+  },
+  {
+    "id": "kb-strength-001",
+    "domain": "strength_conditioning",
+    "question": "What user problem should strength and conditioning solve inside a half marathon plan?"
+  },
+  {
+    "id": "kb-mobility-001",
+    "domain": "mobility_recovery",
+    "question": "Why should warmup, cooldown, stretching, and mobility not be reduced to one vague sentence?"
+  },
+  {
+    "id": "kb-prevent-001",
+    "domain": "injury_prevention",
+    "question": "Which signals should cause a training plan to downgrade load or intensity?"
+  },
+  {
+    "id": "kb-evidence-001",
+    "domain": "evidence_control",
+    "question": "How should the system answer when there is no local evidence without fabricating sources?"
+  },
+  {
+    "id": "kb-rag-001",
+    "domain": "rag_vs_base_model",
+    "question": "How can the product prove a RAG-backed plan is more traceable than a base-model-only plan?"
+  }
+]
