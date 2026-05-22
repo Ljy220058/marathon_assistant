@@ -1,0 +1,343 @@
+.phase-overview-bar {
+  display: grid;
+  gap: 13px;
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(96, 165, 250, 0.08), transparent 58%),
+    rgba(12, 15, 22, 0.72);
+  padding: 14px;
+}
+
+.phase-overview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.phase-overview-head h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+}
+
+.phase-overview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.phase-overview-meta span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  background: rgba(16, 19, 26, 0.72);
+}
+
+.phase-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.phase-progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent-3));
+}
+
+.phase-step-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 9px;
+}
+
+.phase-step {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: 92px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(21, 24, 33, 0.82);
+  color: var(--text);
+  padding: 11px;
+  text-align: left;
+}
+
+.phase-step.current {
+  border-color: rgba(34, 211, 238, 0.46);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.phase-step strong,
+.phase-step span,
+.phase-step small {
+  overflow-wrap: anywhere;
+}
+
+.phase-step span,
+.phase-step small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.callout-card {
+  padding: 14px;
+  box-shadow: none;
+  background:
+    linear-gradient(135deg, rgba(167, 139, 250, 0.1), transparent),
+    var(--panel-muted);
+}
+
+.callout-card.secondary {
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.08), transparent),
+    var(--panel-muted);
+}
+
+.callout-card p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.performance-card {
+  display: grid;
+  gap: 12px;
+  border-color: rgba(96, 165, 250, 0.34);
+  background:
+    linear-gradient(135deg, rgba(96, 165, 250, 0.12), transparent 58%),
+    var(--panel-muted);
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.performance-item {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--radius);
+  padding: 11px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.race-prep-overview {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  border-radius: var(--radius);
+  padding: 14px;
+  background:
+    linear-gradient(135deg, rgba(52, 211, 153, 0.1), transparent 55%),
+    var(--panel-muted);
+}
+
+.race-prep-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.race-prep-header span,
+.key-session-list > span {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.race-prep-header strong {
+  max-width: 70%;
+  text-align: right;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.race-prep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.race-prep-grid div,
+.plan-diff-card {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 7px;
+  padding: 10px;
+  background: rgba(9, 11, 16, 0.35);
+}
+
+.race-prep-grid span,
+.plan-diff-card span {
+  display: block;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.race-prep-grid strong,
+.plan-diff-card strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.race-prep-grid em,
+.plan-diff-card em {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.key-session-list ul {
+  display: grid;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.key-session-list li {
+  display: grid;
+  grid-template-columns: 56px minmax(120px, 0.45fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 7px;
+  padding: 9px;
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.key-session-list strong,
+.key-session-list span,
+.key-session-list em {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.key-session-list em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.performance-item small,
+.performance-item em {
+  display: block;
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.performance-item strong {
+  display: block;
+  margin: 5px 0 4px;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.metric-grid {
+  grid-template-columns: 1fr;
+}
+
+.runner-identity-card {
+  display: grid;
+  gap: 12px;
+  border-color: rgba(15, 143, 165, 0.18);
+  background: var(--panel-muted);
+}
+
+.identity-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.identity-card-head h2 {
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-card-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.identity-summary-rows {
+  display: grid;
+  gap: 6px;
+}
+
+.identity-summary-rows div {
+  display: grid;
+  grid-template-columns: minmax(68px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 8px 9px;
+}
+
+.identity-summary-rows span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.identity-summary-rows strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-supporting-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.identity-zones table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.identity-zones th,
+.identity-zones td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 6px 4px;
+  text-align: left;
+}
+
+.compact-button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+

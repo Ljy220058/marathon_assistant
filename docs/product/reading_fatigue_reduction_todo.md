@@ -1,0 +1,917 @@
+# Reading Fatigue Reduction TODO
+
+> Owner: Frontend owner.
+> Date: 2026-05-22.
+> Scope: Astro workspace, training calendar, coach summary, day cards, evidence drawer, feedback entry, normal-user information architecture.
+> User problem: 普通中国马拉松跑者不愿意在一次生成后往下滑很多页面，也不想先读大量解释、计算字段、审计字段或后台信息。
+> Product goal: 普通层先回答“今天怎么练、本周重点是什么、是否安全、训练后怎么反馈”；解释、证据、协议、trace 和计算细节按需展开。
+
+## 0. Evidence Gate
+
+- [x] E00-001 本轮结论必须来自 10+ 公开网页、研究或 UI 资料，而不是主观猜测。
+- [x] E00-002 本轮只选择 Top 3 范式进入产品迁移，其他来源只作为背景证据。
+- [x] E00-003 本轮不迁移品牌资产、截图素材、商标、社交流、点赞评论、设备指标语义。
+- [x] E00-004 本轮迁移目标必须落回跑者任务：今日训练、本周重点、安全提醒、反馈调整、依据解释。
+- [x] E00-005 本轮普通层不得新增英文 raw 字段、变量名、workflow trace、protocol issue、request id。
+- [x] E00-006 本轮不修改后端 API，不修改 DB，不假设后端最新字段。
+- [x] E00-007 本轮不声明最终商用完成，除非共享契约里 Frontend/Backend/QA/reviewer 都签收。
+- [x] E00-008 本轮最多 1 个子 agent；本轮开启 1 个只读前端阅读疲劳审计 agent。
+- [x] E00-009 本轮子 agent 不做网络研究，只做代码/文档只读审计。
+- [x] E00-010 本轮完成后必须关闭子 agent，并写入 review 记录。
+- [x] E00-011 本轮实现前必须先把阅读疲劳的验收标准写清。
+- [x] E00-012 本轮实现后必须跑前端契约测试、build、workspace smoke、截图、git diff --check。
+
+## 1. Source Inventory - 10+ Public Sources
+
+- [x] S01 NN/g Progressive Disclosure: https://www.nngroup.com/articles/progressive-disclosure/
+- [x] S02 NN/g F-Shaped Pattern of Reading on the Web: https://www.nngroup.com/articles/f-shaped-pattern-reading-web-content/
+- [x] S03 NN/g How Users Read on the Web: https://www.nngroup.com/articles/how-users-read-on-the-web/
+- [x] S04 NN/g Minimize Cognitive Load to Maximize Usability: https://www.nngroup.com/articles/minimize-cognitive-load/
+- [x] S05 W3C COGA Making Content Usable: https://www.w3.org/TR/coga-usable/
+- [x] S06 GOV.UK Writing for GOV.UK: https://www.gov.uk/guidance/content-design/writing-for-gov-uk
+- [x] S07 GOV.UK Content Design: Planning, Writing and Managing Content: https://www.gov.uk/guidance/content-design
+- [x] S08 Material Design Cards: https://m1.material.io/components/cards.html
+- [x] S09 Material Design Lists: https://m1.material.io/components/lists.html
+- [x] S10 Apple Human Interface Guidelines Layout: https://developer.apple.com/design/human-interface-guidelines/layout
+- [x] S11 Microsoft Fluent Design guidance, density and layout references: https://fluent2.microsoft.design/
+- [x] S12 Baymard Institute public UX articles on product-page and checkout information organization: https://baymard.com/blog
+- [x] S13 WCAG 2.2 Understanding documents for cognitive-friendly structure and visible focus: https://www.w3.org/WAI/WCAG22/Understanding/
+- [x] S14 TrainingPeaks athlete home/calendar public guide used as training-product task reference: https://help.trainingpeaks.com/hc/en-us/articles/231472468-TrainingPeaks-Athlete-User-Guide
+- [x] S15 Apple Health user guide as action-first health app reference: https://support.apple.com/en-us/ht203037
+
+## 2. Source Takeaways
+
+- [x] ST02-001 NN/g progressive disclosure supports hiding advanced or secondary information until users need it.
+- [x] ST02-002 NN/g web reading research supports scanning-first pages, not dense prose-first pages.
+- [x] ST02-003 NN/g F-pattern research warns that users often scan top and left areas first, so primary task must appear early.
+- [x] ST02-004 NN/g cognitive-load guidance supports removing memory burden and unnecessary choices.
+- [x] ST02-005 W3C COGA supports clear purpose, predictable structure, short blocks, and avoiding unnecessary content.
+- [x] ST02-006 GOV.UK content design supports writing around user needs, concise headings, direct task language, and plain words.
+- [x] ST02-007 Material cards guidance supports using cards for related content and avoiding extraneous information/actions.
+- [x] ST02-008 Material lists guidance supports scan-friendly rows for homogeneous repeated items.
+- [x] ST02-009 Apple layout guidance supports strong visual hierarchy, aligned grouping, and clear priority.
+- [x] ST02-010 Fluent design references support density controls and task-first surfaces in productivity products.
+- [x] ST02-011 Baymard public UX articles reinforce that progressive disclosure must not hide critical purchase/action decisions.
+- [x] ST02-012 TrainingPeaks shows a training product should separate today/upcoming workout from deeper dashboard analysis.
+- [x] ST02-013 Apple Health shows summary/pinned/highlights patterns: important health tasks surface first, details remain available.
+- [x] ST02-014 The common pattern is not “less data forever”; it is “less visible at once, with good retrieval paths.”
+- [x] ST02-015 For this product, the critical path is training execution, not explaining every computation.
+
+## 3. Top 3 Migration Objects
+
+### Top 1: Progressive Disclosure for Long Explanations
+
+- [x] T1M-001 Source basis: NN/g Progressive Disclosure.
+- [x] T1M-002 Source basis: Material Cards avoiding extraneous card content.
+- [x] T1M-003 Product migration: long coach explanation defaults collapsed.
+- [x] T1M-004 Product migration: result summary becomes “为什么这样安排” and sits in secondary reading layer.
+- [x] T1M-005 Product migration: evidence/protocol/trace stay in expert/detail layers.
+- [x] T1M-006 Non-migration boundary: do not hide medical red flags.
+- [x] T1M-007 Non-migration boundary: do not hide action buttons required to train or submit feedback.
+- [x] T1M-008 Acceptance: normal user can see calendar before reading long explanation.
+- [x] T1M-009 Acceptance: coach summary can be opened deliberately.
+- [x] T1M-010 Acceptance: collapsed summary still has clear Chinese label.
+
+### Top 2: Task-First First Screen
+
+- [x] T2M-001 Source basis: NN/g F-pattern and How Users Read.
+- [x] T2M-002 Source basis: GOV.UK user-need writing.
+- [x] T2M-003 Source basis: TrainingPeaks home/calendar reference.
+- [x] T2M-004 Product migration: after generation, training calendar is visually before secondary report.
+- [x] T2M-005 Product migration: top action panel answers next workout first.
+- [x] T2M-006 Product migration: week focus, safety, feedback are short secondary rows.
+- [x] T2M-007 Non-migration boundary: do not make a marketing hero.
+- [x] T2M-008 Non-migration boundary: do not move all training detail into a social feed.
+- [x] T2M-009 Acceptance: desktop viewport sees next training and week context without long report.
+- [x] T2M-010 Acceptance: mobile avoids four tall stacked action cards.
+
+### Top 3: Plain Chinese, Low Choice Count, Predictable Detail
+
+- [x] T3M-001 Source basis: W3C COGA.
+- [x] T3M-002 Source basis: GOV.UK writing guidance.
+- [x] T3M-003 Source basis: Apple/Fluent layout hierarchy.
+- [x] T3M-004 Product migration: ordinary layer uses Chinese task words.
+- [x] T3M-005 Product migration: fewer simultaneous primary actions.
+- [x] T3M-006 Product migration: repeated plan items use compact rows/cards.
+- [x] T3M-007 Non-migration boundary: do not remove expert audit panel.
+- [x] T3M-008 Non-migration boundary: do not translate protocol semantics incorrectly.
+- [x] T3M-009 Acceptance: no raw English labels in ordinary visible state.
+- [x] T3M-010 Acceptance: user can recover detail via “按需查看”“打开日卡”“查看依据”.
+
+## 4. T0 Acceptance Definition
+
+- [x] T0-001 生成后，普通用户不需要先读完整“结果摘要”才能进入训练日历。
+- [x] T0-002 生成后，首个可操作结果是下一次训练或训练日历。
+- [x] T0-003 长解释默认折叠，不占据视觉主路径。
+- [x] T0-004 行动摘要面板不超过一个主卡 + 三个短摘要行。
+- [x] T0-005 移动端行动摘要不能形成四张纵向大卡。
+- [x] T0-006 普通层不展示 workflow_trace、risk_gate、generation_status、protocol_recheck 等 raw 字段。
+- [x] T0-007 普通层不展示 request id、token usage、timings、debug JSON。
+- [x] T0-008 训练负荷普通层只表达压力等级和边界，不展示复杂比例。
+- [x] T0-009 医疗红旗依旧 fail-closed，不因折叠策略被隐藏。
+- [x] T0-010 依据入口仍保留，但默认不占据训练主路径。
+- [x] T0-011 用户能通过日卡进入训练详情。
+- [x] T0-012 用户能通过日卡或行动面板进入反馈。
+- [x] T0-013 用户能通过依据入口查看“为什么这样练”。
+- [x] T0-014 用户能通过二级摘要查看完整解释。
+- [x] T0-015 页面空态仍清楚，不静默消失。
+- [x] T0-016 旧计划没有新结构时仍有 fallback。
+- [x] T0-017 桌面无水平溢出。
+- [x] T0-018 移动端无水平溢出。
+- [x] T0-019 关键按钮在键盘 Tab 顺序中可达。
+- [x] T0-020 details/summary 有可见 focus。
+
+## 5. T0 Implementation Checklist - Current Round
+
+- [x] IR0-001 将结果摘要 panel 改为默认折叠 details。
+- [x] IR0-002 折叠标题改为“为什么这样安排”，避免“结果摘要”像必读报告。
+- [x] IR0-003 增加 `data-reading-fatigue-guard` 契约标记。
+- [x] IR0-004 增加 `data-secondary-reading-layer` 契约标记。
+- [x] IR0-005 保留 `#report`，不破坏现有 renderReport 入口。
+- [x] IR0-006 保留 `#resultBadge`，不破坏生成状态显示。
+- [x] IR0-007 将主训练日历视觉顺序置于二级报告之前。
+- [x] IR0-008 保留 profile/evidence 的 drawer 入口。
+- [x] IR0-009 将四张行动卡压缩成一张主卡 + 三条短摘要。
+- [x] IR0-010 下一次训练仍是主视觉。
+- [x] IR0-011 本周重点仍可见，但不占一张大卡。
+- [x] IR0-012 安全提醒仍可见，且有操作入口。
+- [x] IR0-013 反馈入口仍可见，且有操作入口。
+- [x] IR0-014 桌面摘要行隐藏长说明，降低扫读成本。
+- [x] IR0-015 移动端摘要行展开简短说明，避免信息丢失。
+- [x] IR0-016 `data-calendar-action` 事件绑定不改。
+- [x] IR0-017 `open-day` 行为不改。
+- [x] IR0-018 `open-feedback` 行为不改。
+- [x] IR0-019 `filter-recheck` 行为不改。
+- [x] IR0-020 保留 normal/expert 分层。
+- [x] IR0-021 不触碰后端文件。
+- [x] IR0-022 不新增依赖。
+- [x] IR0-023 不引入新 agent 框架。
+- [x] IR0-024 不改变 API 字段。
+- [x] IR0-025 不删除 evidence drawer。
+- [x] IR0-026 不删除 day modal。
+- [x] IR0-027 不删除 safety copy。
+- [x] IR0-028 不删除 plan progress。
+- [x] IR0-029 不删除 calendar filters。
+- [x] IR0-030 不删除 history path。
+
+## 6. T1 Product TODO - First Screen Fatigue
+
+- [ ] FS1-001 生成后首屏只保留一个主问题：下一次训练是什么。
+- [ ] FS1-002 训练日历标题区域避免重复“训练日历/训练日历”。
+- [ ] FS1-003 将“按周/按月/按阶段/全部”保留，但默认只强调按周。
+- [ ] FS1-004 将“全部”视图加提示，避免用户一上来打开长列表。
+- [ ] FS1-005 “时间设置”默认可以继续折叠，并考虑移到日历卡之后。
+- [ ] FS1-006 空态文案继续缩短到 1 句。
+- [ ] FS1-007 生成中只显示当前阶段和可等待原因，不显示完整流水线。
+- [ ] FS1-008 完成后隐藏不必要的“计划状态”块，避免和日历争抢。
+- [ ] FS1-009 如果后端 skeleton-first，状态文案只说“日历可查看，解释稍后补充”。
+- [ ] FS1-010 如果后端失败，第一句说用户要做什么，不展示内部错误。
+- [ ] FS1-011 侧栏默认只作为导航，不承载长表单。
+- [ ] FS1-012 画像编辑继续下沉到 dialog。
+- [ ] FS1-013 历史计划继续只显示最近 2 条。
+- [ ] FS1-014 删除入口继续只在展开后出现。
+- [ ] FS1-015 证据列表继续默认折叠。
+- [ ] FS1-016 证据详情只从日卡或依据入口进入。
+- [ ] FS1-017 专家设置继续隐藏。
+- [ ] FS1-018 模型 provider 选择继续隐藏。
+- [ ] FS1-019 token/API key 文案继续隐藏。
+- [ ] FS1-020 服务健康只在异常时显示。
+- [ ] FS1-021 移动端避免同时出现顶部导航、底部导航、drawer 入口抢主任务。
+- [ ] FS1-022 移动端生成后优先跳到训练日历区域。
+- [ ] FS1-023 移动端 action panel 总高度控制在合理范围。
+- [ ] FS1-024 移动端日卡每屏至少能看到一张完整卡和下一张开头。
+- [ ] FS1-025 桌面端训练日历区域不要被报告 block 推到下方。
+- [ ] FS1-026 桌面端侧栏宽度不超过主内容的注意力。
+- [ ] FS1-027 桌面端左侧导航标签继续短词化。
+- [ ] FS1-028 顶部搜索不承担主要流程，不提示过多例子。
+- [ ] FS1-029 主 CTA 只有一个：生成训练日历。
+- [ ] FS1-030 清空/取消按钮保持次级视觉。
+- [ ] FS1-031 首次进入时不展示复杂训练负荷曲线。
+- [ ] FS1-032 计划生成后不自动打开 evidence drawer。
+- [ ] FS1-033 计划生成后不自动打开 day modal。
+- [ ] FS1-034 医疗红旗反馈后可以自动突出安全阻断。
+- [ ] FS1-035 医疗红旗不显示普通 regenerate 路径。
+- [ ] FS1-036 缺证据时不生成假引用。
+- [ ] FS1-037 缺证据提示不能盖过训练执行主路径。
+- [ ] FS1-038 缺结构化计划时要说明“当前无法渲染日历”。
+- [ ] FS1-039 fallback 报告不能成为长文本墙。
+- [ ] FS1-040 生成结果中的 markdown 不应直接占据主路径。
+- [ ] FS1-041 首页不做营销 hero。
+- [ ] FS1-042 首页不展示内部 agent 工作流。
+- [ ] FS1-043 首页不展示“普通模式”这种工程命名，后续改成用户语言。
+- [ ] FS1-044 “训练日历生成器”后续可改成“今天怎么练”或“我的训练计划”。
+- [ ] FS1-045 进度条标题“下一步”需要和实际状态一致。
+- [ ] FS1-046 计划可查看后，进度条不应继续占据过多空间。
+- [ ] FS1-047 行动摘要中的按钮数量控制在 3 个以内。
+- [ ] FS1-048 行动摘要不展示多个同级主按钮。
+- [ ] FS1-049 安全提醒按钮优先级高于反馈按钮。
+- [ ] FS1-050 反馈入口不使用后台术语。
+
+## 7. T1 Product TODO - Progressive Disclosure
+
+- [ ] PD1-001 所有长解释默认进入 details、drawer、modal 或 expert layer。
+- [ ] PD1-002 折叠标题必须说明用户收益。
+- [ ] PD1-003 折叠标题禁止写 raw module name。
+- [ ] PD1-004 折叠内容打开后仍要分段，不出现大段 prose。
+- [ ] PD1-005 “为什么这样安排”分成目标、周期、阶段、风险四类。
+- [ ] PD1-006 “能力差距”只在有当前成绩和目标成绩时展示。
+- [ ] PD1-007 没有足够输入时显示“补充当前成绩或目标成绩”，不展示推断值。
+- [ ] PD1-008 “备赛总览”后续可缩成 3 项以内。
+- [ ] PD1-009 “本周关键课”默认只列 2 条。
+- [ ] PD1-010 “待复核日”默认只列 2 条。
+- [ ] PD1-011 超过 2 条时使用“查看全部待复核日”。
+- [ ] PD1-012 周卡 body 默认只展开第一周。
+- [ ] PD1-013 非当前周默认折叠。
+- [ ] PD1-014 月视图默认只展示月摘要。
+- [ ] PD1-015 阶段视图默认只展示阶段摘要。
+- [ ] PD1-016 “全部”视图需要明确会很长。
+- [ ] PD1-017 evidence drawer 中先展示结论，再展示来源。
+- [ ] PD1-018 evidence drawer 不在普通层展示 source path 作为主要文本。
+- [ ] PD1-019 evidence drawer 无证据时说“未绑定外部证据”，不展示 fake id。
+- [ ] PD1-020 audit panel 永远 expert-only。
+- [ ] PD1-021 load ratio 永远 expert-only。
+- [ ] PD1-022 7 日/42 日占比永远 expert-only。
+- [ ] PD1-023 weekly load changes 进入 expert 或折叠。
+- [ ] PD1-024 load source list 进入 expert 或折叠。
+- [ ] PD1-025 plan diff 普通层只说受影响训练数。
+- [ ] PD1-026 plan diff 详细项进入调整历史。
+- [ ] PD1-027 adjustment history 默认显示最近 3 条。
+- [ ] PD1-028 adjustment history 超过 3 条按需展开。
+- [ ] PD1-029 status panel 只在有计划或反馈后显示。
+- [ ] PD1-030 status panel 无反馈时不占位。
+- [ ] PD1-031 profile derived metrics 在普通层避免计算口吻。
+- [ ] PD1-032 profile derived metrics 后续可移入画像 dialog。
+- [ ] PD1-033 shortcut templates 不默认展开多个解释。
+- [ ] PD1-034 history list 不默认加载所有历史。
+- [ ] PD1-035 drawer search 不返回 debug target。
+- [ ] PD1-036 drawer empty state 一句说明即可。
+- [ ] PD1-037 medical referral 详情不能折叠到用户找不到。
+- [ ] PD1-038 red-flag copy 第一层必须明确停止训练/专业评估。
+- [ ] PD1-039 feedback normal result 第一层只说下一步动作。
+- [ ] PD1-040 feedback technical reason 进入详情。
+
+## 8. T1 Copy TODO - Chinese Runner Language
+
+- [ ] CP1-001 把“训练日历生成器”逐步改成更用户化的“我的训练计划”。
+- [ ] CP1-002 把“普通模式”从普通可见区域移除。
+- [ ] CP1-003 把“结构化信息”保持 expert-only。
+- [ ] CP1-004 把“生成用量”保持 expert-only。
+- [ ] CP1-005 把“计划检查”保持 expert-only。
+- [ ] CP1-006 把“引导问题”保持 expert-only。
+- [ ] CP1-007 把“计划代理负荷”普通层替换成“训练压力”。
+- [ ] CP1-008 “计划代理负荷”只在 expert 层保留边界说明。
+- [ ] CP1-009 “protocol” 普通层翻译为“安全复核”或“安排复核”。
+- [ ] CP1-010 “risk_gate” 普通层翻译为“安全判断”。
+- [ ] CP1-011 “generation_status” 普通层翻译为“计划状态”。
+- [ ] CP1-012 “workflow_trace” 不进入普通层。
+- [ ] CP1-013 “trace_version” 不进入普通层。
+- [ ] CP1-014 “run_id” 不进入普通层。
+- [ ] CP1-015 “legacy_missing” 不进入普通层。
+- [ ] CP1-016 “medical_referral” 普通层翻译为“建议暂停训练并寻求专业评估”。
+- [ ] CP1-017 “attention” 普通层翻译为“需要关注”。
+- [ ] CP1-018 “unknown” 普通层翻译为“待反馈确认”。
+- [ ] CP1-019 “deescalate” 普通层翻译为“建议降级”。
+- [ ] CP1-020 不用“流水线”“节点”“agent”解释普通训练结果。
+- [ ] CP1-021 不用“skeleton-first”解释普通生成状态。
+- [ ] CP1-022 可以说“日历已可查看，解释稍后补充”。
+- [ ] CP1-023 “查看详情”后续统一为“查看安排”。
+- [ ] CP1-024 “查看证据”后续可统一为“查看依据”。
+- [ ] CP1-025 “训练依据”保留，语义适合中国跑者。
+- [ ] CP1-026 “基石依据”可考虑改为“安排依据”。
+- [ ] CP1-027 “容量依据”可保留在详情层。
+- [ ] CP1-028 “有效预算跑量”保留在详情/expert 层。
+- [ ] CP1-029 “近4周跑量”可作为画像来源展示。
+- [ ] CP1-030 “目标可行性”比“校准状态”更用户化。
+- [ ] CP1-031 “本周执行概览”保留，但只在有反馈后出现。
+- [ ] CP1-032 “反馈记录”可改成“已记录训练”。
+- [ ] CP1-033 “漏反馈”可改成“待补录”。
+- [ ] CP1-034 “调整历史”可改成“计划怎么变了”。
+- [ ] CP1-035 “计划差异”可改成“改了哪些训练”。
+- [ ] CP1-036 “历史计划”保留。
+- [ ] CP1-037 “快捷模板”可改成“常用请求”。
+- [ ] CP1-038 “高级设置”保留 expert-only。
+- [ ] CP1-039 顶部搜索 placeholder 保持短。
+- [ ] CP1-040 文案长度超过两行时进入详情。
+
+## 9. T1 Layout TODO - Calendar and Cards
+
+- [ ] LC1-001 日历区域生成后视觉 order 在报告之前。
+- [ ] LC1-002 日历 heading 不重复。
+- [ ] LC1-003 日历 action panel 总高度收敛。
+- [ ] LC1-004 桌面 action panel 使用 1 大 + 3 小。
+- [ ] LC1-005 移动端 action panel 使用单列紧凑摘要。
+- [ ] LC1-006 小摘要行不显示长段落，除非移动端需要补充语义。
+- [ ] LC1-007 小摘要行强制文本 ellipsis 或换行策略。
+- [ ] LC1-008 日卡外层只保留日期、类型、训练名、时长/区间、训练压力、安全、查看安排。
+- [ ] LC1-009 日卡不显示 source path。
+- [ ] LC1-010 日卡不显示 raw protocol issue。
+- [ ] LC1-011 日卡不显示 raw load ratio。
+- [ ] LC1-012 日卡不显示 7/42 日占比。
+- [ ] LC1-013 日卡 footer 不塞过长说明。
+- [ ] LC1-014 日卡风险 pill 简短。
+- [ ] LC1-015 恢复日视觉轻。
+- [ ] LC1-016 待复核日视觉明确但不惊吓。
+- [ ] LC1-017 高压力日视觉明确但不伪装成设备指标。
+- [ ] LC1-018 周卡默认只第一周展开。
+- [ ] LC1-019 周卡摘要只保留天数、休息、关键课、压力等级、复核数。
+- [ ] LC1-020 周卡不显示周代理负荷数字。
+- [ ] LC1-021 周导航横向滚动但不强迫用户读全部。
+- [ ] LC1-022 周导航按钮文案短。
+- [ ] LC1-023 月视图需要更少卡片，后续补。
+- [ ] LC1-024 阶段视图需要摘要化，后续补。
+- [ ] LC1-025 全部视图加“完整计划较长”提示。
+- [ ] LC1-026 时间设置移至低优先级位置。
+- [ ] LC1-027 反馈入口不和打开日卡争抢主按钮。
+- [ ] LC1-028 安全提醒按钮优先。
+- [ ] LC1-029 action panel 如果 red flag，安全卡变成唯一主行动。
+- [ ] LC1-030 action panel 如果无风险，下一次训练为唯一主行动。
+- [ ] LC1-031 dashboard-grid 不占日历前空间。
+- [ ] LC1-032 report panel collapsed summary 一行可扫。
+- [ ] LC1-033 report panel open 后不破坏布局。
+- [ ] LC1-034 report panel summary 有 keyboard focus。
+- [ ] LC1-035 report panel affordance 中文化。
+- [ ] LC1-036 report panel 不用“更多信息”泛化词。
+- [ ] LC1-037 report panel opening copy 后续可压缩。
+- [ ] LC1-038 race-prep overview 后续可拆成折叠 details。
+- [ ] LC1-039 phase overview 后续可移到阶段视图。
+- [ ] LC1-040 performance card 后续只在有成绩输入时显示。
+
+## 10. T2 Accessibility and Cognitive TODO
+
+- [ ] AC2-001 details summary 必须键盘可达。
+- [ ] AC2-002 summary focus ring 不可被移除。
+- [ ] AC2-003 details 展开状态对屏幕阅读器天然可读。
+- [ ] AC2-004 action panel 按钮顺序：打开日卡 -> 安全 -> 反馈。
+- [ ] AC2-005 移动端 summary 不被 sticky nav 遮挡。
+- [ ] AC2-006 固定底部导航不遮挡关键按钮。
+- [ ] AC2-007 文本对比继续符合 WCAG AA。
+- [ ] AC2-008 小字不能低于可读对比。
+- [ ] AC2-009 长词和中文连续文本要允许换行。
+- [ ] AC2-010 按钮中文不要溢出。
+- [ ] AC2-011 触控目标高度至少 32px，重要按钮更高。
+- [ ] AC2-012 day modal opening restores focus.
+- [ ] AC2-013 evidence drawer opening restores focus.
+- [ ] AC2-014 side drawer inert 保护继续有效。
+- [ ] AC2-015 medical red flag checkbox 可键盘操作。
+- [ ] AC2-016 calendar filter tabs 可键盘操作。
+- [ ] AC2-017 segmented controls 保持 aria-selected。
+- [ ] AC2-018 action panel aria-live 不重复播报长文本。
+- [ ] AC2-019 空态不频繁变化造成焦虑。
+- [ ] AC2-020 生成中进度不使用快速闪动动画。
+- [ ] AC2-021 prefers-reduced-motion 后续检查。
+- [ ] AC2-022 high contrast 后续检查。
+- [ ] AC2-023 400% zoom 后续检查。
+- [ ] AC2-024 320px 宽度后续检查。
+- [ ] AC2-025 中文标点和断行后续检查。
+- [ ] AC2-026 屏幕阅读器读 order 后续考虑 DOM order 迁移。
+- [ ] AC2-027 CSS order 目前解决视觉顺序，但后续应评估 DOM 顺序。
+- [ ] AC2-028 如果 DOM order 与视觉 order 冲突，下一轮做结构迁移。
+- [ ] AC2-029 report panel collapsed 不应隐藏关键安全内容。
+- [ ] AC2-030 safety content 必须在 action panel 保留。
+
+## 11. T2 Verification TODO
+
+- [ ] VT2-001 增加前端契约测试：存在 `data-reading-fatigue-guard`。
+- [ ] VT2-002 增加前端契约测试：存在 `data-secondary-reading-layer`。
+- [ ] VT2-003 增加前端契约测试：report panel 是 details。
+- [ ] VT2-004 增加前端契约测试：report panel 默认没有 `open`。
+- [ ] VT2-005 增加前端契约测试：calendar section order 小于 dashboard-grid。
+- [ ] VT2-006 增加前端契约测试：action panel 使用 `calendar-action-secondary`。
+- [ ] VT2-007 增加前端契约测试：action panel 使用 `calendar-action-mini`。
+- [ ] VT2-008 增加前端契约测试：不再生成四个同级 action card。
+- [ ] VT2-009 增加前端契约测试：仍有 `data-calendar-action="open-day"`。
+- [ ] VT2-010 增加前端契约测试：仍有 `data-calendar-action="open-feedback"`。
+- [ ] VT2-011 增加前端契约测试：仍有 safety action。
+- [ ] VT2-012 增加前端契约测试：普通层无 raw fields。
+- [ ] VT2-013 跑 `tests/test_astro_frontend_contract.py`。
+- [ ] VT2-014 跑 `npm run build`。
+- [ ] VT2-015 起隔离 preview。
+- [ ] VT2-016 跑 `smoke:workspace`。
+- [ ] VT2-017 用浏览器截桌面图。
+- [ ] VT2-018 用浏览器截移动图。
+- [ ] VT2-019 截图检查行动面板高度。
+- [ ] VT2-020 截图检查 report collapsed。
+- [ ] VT2-021 截图检查日历在报告之前。
+- [ ] VT2-022 截图检查无横向溢出。
+- [ ] VT2-023 截图检查无 raw English visible。
+- [ ] VT2-024 检查 console error。
+- [ ] VT2-025 跑 `git diff --check`。
+- [ ] VT2-026 更新 shared delivery contract。
+- [ ] VT2-027 更新 frontend audit report。
+- [ ] VT2-028 关闭本轮只读 agent。
+- [ ] VT2-029 记录本轮 agent count。
+- [ ] VT2-030 不 stage，不 commit，除非用户要求。
+
+## 12. Review TODO - Evidence-Based Reading Fatigue
+
+- [ ] RV2-001 Reviewer 确认 Top 3 来源是否足够支持本轮迁移。
+- [ ] RV2-002 Reviewer 确认本轮没有把 NN/g 原则机械套用成隐藏关键行动。
+- [ ] RV2-003 Reviewer 确认医疗红旗没有被 progressive disclosure 隐藏。
+- [ ] RV2-004 Reviewer 确认安全提醒仍在首层。
+- [ ] RV2-005 Reviewer 确认反馈入口仍在首层。
+- [ ] RV2-006 Reviewer 确认普通层不展示 raw字段。
+- [ ] RV2-007 Reviewer 确认日历是结果主路径。
+- [ ] RV2-008 Reviewer 确认解释是二级路径。
+- [ ] RV2-009 Reviewer 确认移动端没有四张大卡纵向堆叠。
+- [ ] RV2-010 Reviewer 确认桌面端无视觉断裂。
+- [ ] RV2-011 Reviewer 确认小红书式轻导航没有被误迁移成社交产品。
+- [ ] RV2-012 Reviewer 确认训练产品专业性没有被极简化削弱。
+- [ ] RV2-013 Reviewer 确认卡片信息没有过度隐藏导致不可信。
+- [ ] RV2-014 Reviewer 确认“为什么这样安排”能找到。
+- [ ] RV2-015 Reviewer 确认 evidence drawer 能找到。
+- [ ] RV2-016 Reviewer 确认 day modal 能找到。
+- [ ] RV2-017 Reviewer 确认 feedback modal 能找到。
+- [ ] RV2-018 Reviewer 确认 history 仍可恢复。
+- [ ] RV2-019 Reviewer 确认专家设置仍隐藏。
+- [ ] RV2-020 Reviewer 确认 API token 不持久化。
+- [ ] RV2-021 Reviewer 确认 build 通过。
+- [ ] RV2-022 Reviewer 确认 smoke 通过。
+- [ ] RV2-023 Reviewer 确认 screenshot path 存在。
+- [ ] RV2-024 Reviewer 确认 shared contract 已更新。
+- [ ] RV2-025 Reviewer 确认 frontend audit todo 已更新。
+- [ ] RV2-026 Reviewer 确认 report 已更新。
+- [ ] RV2-027 Reviewer 确认本轮仍有未签收项时不能宣称完美商用。
+- [ ] RV2-028 Reviewer 确认下一轮继续关注 DOM order/accessibility。
+- [ ] RV2-029 Reviewer 确认下一轮继续关注移动 bottom sheet。
+- [ ] RV2-030 Reviewer 确认下一轮继续关注中文用户命名。
+
+## 13. Deferred Ideas
+
+- [ ] DF3-001 真正移动 DOM 顺序，让 screen reader 顺序也和视觉顺序一致。
+- [ ] DF3-002 将 report 的 race-prep overview 拆成 three-line summary。
+- [ ] DF3-003 将 phase overview 移到阶段视图。
+- [ ] DF3-004 将 performance calibration 移入“能力校准”折叠卡。
+- [ ] DF3-005 将 load summary 改成普通/专家双层视图。
+- [ ] DF3-006 将 feedback result 改成“影响下一次训练”优先。
+- [ ] DF3-007 将 day modal 移动端改成 bottom sheet。
+- [ ] DF3-008 将 evidence drawer 首屏改成结论优先。
+- [ ] DF3-009 将 calendar settings 移到低优先级菜单。
+- [ ] DF3-010 将 top nav copy 从工具名改成跑者任务。
+- [ ] DF3-011 将 onboarding 变成一屏三步，不展示复杂 prompt。
+- [ ] DF3-012 将 generated plan 的 first week 自动聚焦到今天。
+- [ ] DF3-013 加“只看今天”模式。
+- [ ] DF3-014 加“只看本周”模式。
+- [ ] DF3-015 加“查看全部计划”确认提示。
+- [ ] DF3-016 加用户可控的信息密度设置。
+- [ ] DF3-017 加专家层一次性展开所有审计。
+- [ ] DF3-018 加普通层“少看解释/多看依据”的偏好。
+- [ ] DF3-019 建立阅读疲劳截图基准。
+- [ ] DF3-020 建立首屏高度预算。
+
+## 14. Line-Item Regression Matrix
+
+- [ ] RM4-001 空态 desktop。
+- [ ] RM4-002 空态 mobile。
+- [ ] RM4-003 生成中 desktop。
+- [ ] RM4-004 生成中 mobile。
+- [ ] RM4-005 skeleton-first desktop。
+- [ ] RM4-006 skeleton-first mobile。
+- [ ] RM4-007 complete plan desktop。
+- [ ] RM4-008 complete plan mobile。
+- [ ] RM4-009 report collapsed desktop。
+- [ ] RM4-010 report collapsed mobile。
+- [ ] RM4-011 report opened desktop。
+- [ ] RM4-012 report opened mobile。
+- [ ] RM4-013 next workout action desktop。
+- [ ] RM4-014 next workout action mobile。
+- [ ] RM4-015 safety action desktop。
+- [ ] RM4-016 safety action mobile。
+- [ ] RM4-017 feedback action desktop。
+- [ ] RM4-018 feedback action mobile。
+- [ ] RM4-019 week card expanded desktop。
+- [ ] RM4-020 week card expanded mobile。
+- [ ] RM4-021 week card collapsed desktop。
+- [ ] RM4-022 week card collapsed mobile。
+- [ ] RM4-023 day card normal desktop。
+- [ ] RM4-024 day card normal mobile。
+- [ ] RM4-025 day card rest desktop。
+- [ ] RM4-026 day card rest mobile。
+- [ ] RM4-027 day card recheck desktop。
+- [ ] RM4-028 day card recheck mobile。
+- [ ] RM4-029 day modal plan tab desktop。
+- [ ] RM4-030 day modal plan tab mobile。
+- [ ] RM4-031 day modal feedback tab desktop。
+- [ ] RM4-032 day modal feedback tab mobile。
+- [ ] RM4-033 evidence drawer desktop。
+- [ ] RM4-034 evidence drawer mobile。
+- [ ] RM4-035 medical referral feedback desktop。
+- [ ] RM4-036 medical referral feedback mobile。
+- [ ] RM4-037 ordinary feedback desktop。
+- [ ] RM4-038 ordinary feedback mobile。
+- [ ] RM4-039 history drawer desktop。
+- [ ] RM4-040 history drawer mobile。
+- [ ] RM4-041 profile editor desktop。
+- [ ] RM4-042 profile editor mobile。
+- [ ] RM4-043 expert mode hidden by default desktop。
+- [ ] RM4-044 expert mode hidden by default mobile。
+- [ ] RM4-045 token guard off。
+- [ ] RM4-046 token guard on missing token。
+- [ ] RM4-047 token guard on valid token。
+- [ ] RM4-048 OpenAI unconfigured。
+- [ ] RM4-049 OpenAI configured。
+- [ ] RM4-050 backend offline。
+
+## 15. Done Conditions
+
+- [ ] DC5-001 10+ source gate recorded.
+- [ ] DC5-002 Top 3 migration recorded.
+- [ ] DC5-003 Code implements collapsed secondary report.
+- [ ] DC5-004 Code implements compact action panel.
+- [ ] DC5-005 Code visually prioritizes calendar over report.
+- [ ] DC5-006 Tests encode reading fatigue contract.
+- [ ] DC5-007 Build passes.
+- [ ] DC5-008 Smoke passes.
+- [ ] DC5-009 Browser screenshots saved.
+- [ ] DC5-010 Console errors checked.
+- [ ] DC5-011 git diff --check passes.
+- [ ] DC5-012 Shared contract updated.
+- [ ] DC5-013 Product report updated.
+- [ ] DC5-014 Subagent closed.
+- [ ] DC5-015 No final commercial-complete claim until shared contract exit criteria are signed.
+
+## 16. Round 12 Execution Result Ledger
+
+- [x] ER16-001 `report-panel` is a closed `details` element by default.
+- [x] ER16-002 `report-panel` uses `data-reading-fatigue-guard`.
+- [x] ER16-003 secondary report layer uses `data-secondary-reading-layer`.
+- [x] ER16-004 report title changed to Chinese runner-facing copy: `为什么这样安排`.
+- [x] ER16-005 report summary contains `按需查看`.
+- [x] ER16-006 calendar visual order is before secondary report.
+- [x] ER16-007 action panel uses one primary next-workout card.
+- [x] ER16-008 action panel uses compact secondary rows.
+- [x] ER16-009 action panel has only one tall card by default.
+- [x] ER16-010 action panel has three compact summaries by default.
+- [x] ER16-011 week groups are collapsed by default.
+- [x] ER16-012 day modal plan tab is default.
+- [x] ER16-013 day modal plan tab surfaces duration.
+- [x] ER16-014 day modal plan tab surfaces intensity.
+- [x] ER16-015 day modal plan tab surfaces safety self-check.
+- [x] ER16-016 day modal plan tab surfaces warmup.
+- [x] ER16-017 day modal plan tab surfaces main set.
+- [x] ER16-018 day modal plan tab surfaces cooldown.
+- [x] ER16-019 trust strip moved to audit tab.
+- [x] ER16-020 metric grid moved to audit tab.
+- [x] ER16-021 load proxy moved to audit tab.
+- [x] ER16-022 glossary moved to audit tab.
+- [x] ER16-023 evidence action stays reachable from audit tab.
+- [x] ER16-024 modal sticky actions preserve evidence and feedback access.
+- [x] ER16-025 feedback tab now has quick-first choices.
+- [x] ER16-026 feedback tab does not show the full detail form first.
+- [x] ER16-027 feedback detail form is inside `details`.
+- [x] ER16-028 feedback detail form is closed by default.
+- [x] ER16-029 feedback quick choices still populate full payload fields.
+- [x] ER16-030 medical red flag controls remain available in supplemental detail.
+- [x] ER16-031 medical red flag selection still triggers local fail-closed rendering.
+- [x] ER16-032 feedback submit stays visible without opening detail form.
+- [x] ER16-033 feedback selected summary uses Chinese user language.
+- [x] ER16-034 feedback quick choice active state uses `aria-pressed`.
+- [x] ER16-035 no new backend API field required.
+- [x] ER16-036 no DB migration required.
+- [x] ER16-037 no new dependency required.
+- [x] ER16-038 frontend contract tests updated.
+- [x] ER16-039 browser screenshot evidence generated for desktop workspace.
+- [x] ER16-040 browser screenshot evidence generated for mobile workspace.
+- [x] ER16-041 browser screenshot evidence generated for day modal.
+- [x] ER16-042 desktop state JSON records report closed.
+- [x] ER16-043 desktop state JSON records week groups collapsed.
+- [x] ER16-044 desktop state JSON records action panel card count.
+- [x] ER16-045 desktop state JSON records raw visible tokens.
+- [x] ER16-046 desktop state JSON records no horizontal overflow.
+- [x] ER16-047 mobile state JSON records report closed.
+- [x] ER16-048 mobile state JSON records week groups collapsed.
+- [x] ER16-049 mobile state JSON records no horizontal overflow.
+- [x] ER16-050 modal state JSON records plan tab as active panel.
+
+## 17. Source To Requirement Trace
+
+- [x] ST17-001 NN/g progressive disclosure -> long explanation defaults closed.
+- [x] ST17-002 NN/g progressive disclosure -> evidence/protocol/trace stay available by explicit user action.
+- [x] ST17-003 NN/g progressive disclosure -> details are not deleted, only staged.
+- [x] ST17-004 NN/g progressive disclosure -> safety red flags remain visible through feedback path.
+- [x] ST17-005 NN/g how users read -> first screen prioritizes scan-ready actions.
+- [x] ST17-006 NN/g how users read -> paragraphs are not the primary generated state.
+- [x] ST17-007 NN/g F-pattern -> top/left priority goes to next training and week focus.
+- [x] ST17-008 NN/g F-pattern -> report block cannot sit before the calendar.
+- [x] ST17-009 NN/g cognitive load -> reduce simultaneous visible choices in action panel.
+- [x] ST17-010 NN/g cognitive load -> reduce simultaneous visible fields in feedback tab.
+- [x] ST17-011 W3C COGA -> clear purpose for each surface.
+- [x] ST17-012 W3C COGA -> avoid unnecessary content in ordinary layer.
+- [x] ST17-013 W3C COGA -> predictable tab structure in day modal.
+- [x] ST17-014 W3C COGA -> short labels before long explanations.
+- [x] ST17-015 W3C COGA -> support users who need more help via supplemental detail.
+- [x] ST17-016 GOV.UK writing -> user need drives heading text.
+- [x] ST17-017 GOV.UK writing -> copy uses direct Chinese task language.
+- [x] ST17-018 GOV.UK writing -> avoid system perspective where runner needs action.
+- [x] ST17-019 Material Cards -> one card contains one coherent subject.
+- [x] ST17-020 Material Cards -> avoid card surfaces crowded with unrelated metadata.
+- [x] ST17-021 Material Lists -> repeated summaries should be scan-friendly rows.
+- [x] ST17-022 Material Lists -> compact secondary rows replace four tall cards.
+- [x] ST17-023 Apple HIG layout -> hierarchy and alignment indicate importance.
+- [x] ST17-024 Apple HIG layout -> ordinary layer uses visible grouping.
+- [x] ST17-025 Fluent density guidance -> density is acceptable when structure is predictable.
+- [x] ST17-026 Fluent density guidance -> secondary detail can be dense only after intent is clear.
+- [x] ST17-027 Baymard public UX guidance -> progressive disclosure must not hide critical decisions.
+- [x] ST17-028 Baymard public UX guidance -> important action path stays visible.
+- [x] ST17-029 TrainingPeaks reference -> training calendar is core product surface.
+- [x] ST17-030 TrainingPeaks reference -> next/upcoming workout should be easy to find.
+- [x] ST17-031 Apple Health reference -> summary/highlight first, detail later.
+- [x] ST17-032 Apple Health reference -> health risk or important state is not buried.
+- [x] ST17-033 Ant Design principles -> clarity and efficiency beat raw data exposure.
+- [x] ST17-034 Ant Design principles -> compact repeated information should have consistent structure.
+- [x] ST17-035 Chinese user context -> ordinary mode is Chinese-first.
+- [x] ST17-036 Chinese user context -> raw English fields are not acceptable in runner layer.
+- [x] ST17-037 Marathon context -> training execution outranks audit explanation.
+- [x] ST17-038 Marathon context -> evidence remains a trust feature, not first-read burden.
+- [x] ST17-039 Safety context -> `medical_referral` stays fail-closed.
+- [x] ST17-040 Safety context -> feedback submit path stays accessible.
+- [x] ST17-041 Product context -> no social-feed migration.
+- [x] ST17-042 Product context -> no brand-color imitation.
+- [x] ST17-043 Product context -> no device-metric semantics imported without backend support.
+- [x] ST17-044 Product context -> no hidden assumption that users want every calculation.
+- [x] ST17-045 Product context -> no full report before plan execution.
+- [x] ST17-046 Product context -> no expert trace in ordinary layer.
+- [x] ST17-047 Product context -> no protocol issue text in ordinary layer.
+- [x] ST17-048 Product context -> no request id in ordinary layer.
+- [x] ST17-049 Product context -> no internal status enum in ordinary layer.
+- [x] ST17-050 Product context -> no fake evidence when evidence is missing.
+
+## 18. Per-Surface Reading Budget
+
+- [x] RB18-001 Home first screen budget: show navigation, input, plan readiness, next action.
+- [x] RB18-002 Home first screen must not require reading full explanation to continue.
+- [x] RB18-003 Plan generation budget: progress and readiness are short status lines.
+- [x] RB18-004 Generated state budget: calendar appears before long report.
+- [x] RB18-005 Generated state budget: report is available but closed.
+- [x] RB18-006 Action panel budget: one primary card.
+- [x] RB18-007 Action panel budget: at most three compact secondary rows.
+- [x] RB18-008 Action panel budget: no four-card wall.
+- [x] RB18-009 Action panel budget: no raw debug terms.
+- [x] RB18-010 Action panel budget: every row answers one runner question.
+- [x] RB18-011 Calendar week budget: collapsed summary first.
+- [x] RB18-012 Calendar week budget: expand only on explicit click.
+- [x] RB18-013 Calendar week budget: no default seven-day vertical block.
+- [x] RB18-014 Calendar week budget: current week still reachable.
+- [x] RB18-015 Calendar week budget: week navigation remains visible.
+- [x] RB18-016 Day card budget: title, type, execution cue, feedback cue.
+- [x] RB18-017 Day card budget: no load proxy in ordinary exterior.
+- [x] RB18-018 Day card budget: no protocol issue text in ordinary exterior.
+- [x] RB18-019 Day card budget: no trace token in ordinary exterior.
+- [x] RB18-020 Day card budget: no evidence id unless user opens evidence.
+- [x] RB18-021 Day modal plan tab budget: summary plus warmup/main/cooldown.
+- [x] RB18-022 Day modal plan tab budget: reason grid can fit below primary workout.
+- [x] RB18-023 Day modal plan tab budget: trust and metric data are not first read.
+- [x] RB18-024 Day modal audit tab budget: dense data allowed because user asked.
+- [x] RB18-025 Day modal feedback tab budget: quick choices first.
+- [x] RB18-026 Day modal feedback tab budget: supplemental details closed.
+- [x] RB18-027 Day modal feedback tab budget: submit action visible.
+- [x] RB18-028 Day modal feedback tab budget: result area visible.
+- [x] RB18-029 Evidence drawer budget: references are grouped by use, not dumped.
+- [x] RB18-030 Evidence drawer budget: no fake reference count.
+- [x] RB18-031 History budget: list is compact.
+- [x] RB18-032 History budget: detail opens only on selection.
+- [x] RB18-033 Profile budget: missing critical fields first.
+- [x] RB18-034 Profile budget: advanced knobs not first screen.
+- [x] RB18-035 Settings budget: key/token state is not prominent unless user opens settings.
+- [x] RB18-036 Error budget: short message, next step, no stack trace.
+- [x] RB18-037 Loading budget: current step and next likely state.
+- [x] RB18-038 Empty budget: one sentence and one clear action.
+- [x] RB18-039 Medical referral budget: concise safety instruction first.
+- [x] RB18-040 Medical referral budget: no ordinary regenerate button.
+- [x] RB18-041 Feedback result budget: next day, this week, affected sessions.
+- [x] RB18-042 Feedback result budget: audit detail optional.
+- [x] RB18-043 Mobile budget: no horizontal scroll.
+- [x] RB18-044 Mobile budget: no stacked long report before calendar.
+- [x] RB18-045 Mobile budget: quick choices fit without form scrolling.
+- [x] RB18-046 Desktop budget: left navigation supports scan but does not steal attention.
+- [x] RB18-047 Desktop budget: panels align to one product rhythm.
+- [x] RB18-048 Desktop budget: card exterior is not overloaded.
+- [x] RB18-049 Expert budget: expert data can be dense after explicit entry.
+- [x] RB18-050 Audit budget: trace remains structured and hidden from ordinary flow.
+
+## 19. Chinese Runner Copy Guard
+
+- [x] CG19-001 Use `今天怎么练` style task language in ordinary layer.
+- [x] CG19-002 Use `本周重点` rather than internal `week_goal` labels.
+- [x] CG19-003 Use `是否安全` rather than raw `risk_gate`.
+- [x] CG19-004 Use `训练依据` rather than raw `evidence_bundle`.
+- [x] CG19-005 Use `补充细节` rather than raw `optional_fields`.
+- [x] CG19-006 Use `完成` rather than `feedback_done` in visible UI.
+- [x] CG19-007 Use `部分` rather than `feedback_partial` in visible UI.
+- [x] CG19-008 Use `跳过/不适` rather than `feedback_skipped` in visible UI.
+- [x] CG19-009 Use `需要先停下的异常信号` rather than raw medical enum.
+- [x] CG19-010 Use `提交反馈并计算` as runner-facing action.
+- [x] CG19-011 Avoid visible `WorkflowTrace`.
+- [x] CG19-012 Avoid visible `protocol_state`.
+- [x] CG19-013 Avoid visible `repair_state`.
+- [x] CG19-014 Avoid visible `fail_closed`.
+- [x] CG19-015 Avoid visible `request_id`.
+- [x] CG19-016 Avoid visible `feedback_id`.
+- [x] CG19-017 Avoid visible `not_evaluated`.
+- [x] CG19-018 Avoid visible `source_registry_id`.
+- [x] CG19-019 Avoid visible `prescription_permission`.
+- [x] CG19-020 Avoid visible `retrieval_mode`.
+- [x] CG19-021 Avoid backend service names in ordinary copy.
+- [x] CG19-022 Avoid model provider names in ordinary training results.
+- [x] CG19-023 Avoid debug status in ordinary training results.
+- [x] CG19-024 Avoid long medical disclaimers when no risk is triggered.
+- [x] CG19-025 Keep medical referral concise and blocking when triggered.
+- [x] CG19-026 Keep evidence explanation accessible by user action.
+- [x] CG19-027 Keep HMP terminology in definitions, not in every card.
+- [x] CG19-028 Keep load proxy language out of ordinary layer.
+- [x] CG19-029 Keep numbers only when they change action.
+- [x] CG19-030 Keep pace/duration/intensity because they change action.
+- [x] CG19-031 Keep warmup/main/cooldown because they change action.
+- [x] CG19-032 Keep feedback result because it changes next action.
+- [x] CG19-033 Keep safety filter because it changes execution.
+- [x] CG19-034 Keep missing profile prompts because they improve plan quality.
+- [x] CG19-035 Keep generated report only as secondary reading.
+- [x] CG19-036 Keep audit only as expert layer.
+- [x] CG19-037 Keep tab labels short.
+- [x] CG19-038 Keep summary chip text short.
+- [x] CG19-039 Keep modal titles human-readable.
+- [x] CG19-040 Keep button labels command-oriented.
+- [x] CG19-041 Do not mix English UI strings with Chinese runner text.
+- [x] CG19-042 Do not expose camelCase keys.
+- [x] CG19-043 Do not expose snake_case keys.
+- [x] CG19-044 Do not expose enum values.
+- [x] CG19-045 Do not expose IDs unless necessary for support.
+- [x] CG19-046 Do not expose stack traces.
+- [x] CG19-047 Do not expose SQL or API paths in ordinary errors.
+- [x] CG19-048 Do not expose validation schemas in ordinary errors.
+- [x] CG19-049 Do not expose unfinished backend states as product copy.
+- [x] CG19-050 Do not translate safety block into a decorative warning.
+
+## 20. Feedback Quick-First Checklist
+
+- [x] FQ20-001 Feedback tab starts with latest feedback when present.
+- [x] FQ20-002 Feedback tab shows three quick choices.
+- [x] FQ20-003 Quick choice one is `完成`.
+- [x] FQ20-004 Quick choice two is `部分`.
+- [x] FQ20-005 Quick choice three is `跳过/不适`.
+- [x] FQ20-006 Quick choice buttons use `aria-pressed`.
+- [x] FQ20-007 Quick choice buttons update active visual state.
+- [x] FQ20-008 Quick choice buttons update hidden completion field.
+- [x] FQ20-009 Quick choice buttons update hidden fatigue field.
+- [x] FQ20-010 Quick choice buttons update hidden pain field.
+- [x] FQ20-011 Quick choice buttons update hidden sleep field.
+- [x] FQ20-012 Quick choice buttons clear stale medical red flags.
+- [x] FQ20-013 Quick choice buttons sync medical red flag UI.
+- [x] FQ20-014 Quick choice buttons do not force-scroll to form.
+- [x] FQ20-015 Selected summary shows chosen completion.
+- [x] FQ20-016 Selected summary shows chosen fatigue.
+- [x] FQ20-017 Selected summary shows chosen pain state.
+- [x] FQ20-018 Selected summary shows chosen sleep state.
+- [x] FQ20-019 Submit button visible without opening details.
+- [x] FQ20-020 Compose button visible without opening details.
+- [x] FQ20-021 Details summary says `补充细节`.
+- [x] FQ20-022 Details summary explains fatigue/sleep/pain/safety.
+- [x] FQ20-023 Detail form remains in DOM.
+- [x] FQ20-024 Detail form remains queryable by submit.
+- [x] FQ20-025 Detail form remains keyboard accessible.
+- [x] FQ20-026 Detail form is collapsed by default.
+- [x] FQ20-027 Completion select still present.
+- [x] FQ20-028 Fatigue select still present.
+- [x] FQ20-029 Pain select still present.
+- [x] FQ20-030 Sleep select still present.
+- [x] FQ20-031 Notes textarea still present.
+- [x] FQ20-032 Medical red flag fieldset still present.
+- [x] FQ20-033 Medical red flag labels remain Chinese.
+- [x] FQ20-034 Medical red flag local payload unchanged.
+- [x] FQ20-035 Medical red flag result card unchanged.
+- [x] FQ20-036 Medical red flag does not show ordinary regenerate.
+- [x] FQ20-037 Saveable-context guard unchanged.
+- [x] FQ20-038 Feedback API body unchanged.
+- [x] FQ20-039 Latest feedback merge unchanged.
+- [x] FQ20-040 Adjustment history merge unchanged.
+- [x] FQ20-041 Clear button only clears notes and result.
+- [x] FQ20-042 Manual select changes update selected summary.
+- [x] FQ20-043 Manual select changes update active quick state.
+- [x] FQ20-044 Quick-first CSS does not require new tokens.
+- [x] FQ20-045 Quick-first CSS works in commercial light theme.
+- [x] FQ20-046 Quick-first CSS avoids nested card-in-card appearance.
+- [x] FQ20-047 Quick-first CSS has stable spacing.
+- [x] FQ20-048 Quick-first CSS wraps on mobile.
+- [x] FQ20-049 Quick-first CSS avoids clipped text.
+- [x] FQ20-050 Quick-first test assertions added.
+
+## 21. Browser Evidence Ledger
+
+- [x] BE21-001 Desktop screenshot: `artifacts/frontend-audit/round12-reading-fatigue-desktop-2026-05-22.png`.
+- [x] BE21-002 Desktop state: `artifacts/frontend-audit/round12-reading-fatigue-desktop-state-2026-05-22.json`.
+- [x] BE21-003 Mobile screenshot: `artifacts/frontend-audit/round12-reading-fatigue-mobile-2026-05-22.png`.
+- [x] BE21-004 Mobile state: `artifacts/frontend-audit/round12-reading-fatigue-mobile-state-2026-05-22.json`.
+- [x] BE21-005 Day modal screenshot: `artifacts/frontend-audit/round12-reading-fatigue-day-modal-desktop-2026-05-22.png`.
+- [x] BE21-006 Day modal state: `artifacts/frontend-audit/round12-reading-fatigue-day-modal-state-2026-05-22.json`.
+- [x] BE21-007 Desktop state `reportOpen=false`.
+- [x] BE21-008 Desktop state `actionMiniCount=3`.
+- [x] BE21-009 Desktop state `actionCardCount=1`.
+- [x] BE21-010 Desktop state `expandedWeekCount=0`.
+- [x] BE21-011 Desktop state `calendarBeforeReport=true`.
+- [x] BE21-012 Desktop state `rawVisible=[]`.
+- [x] BE21-013 Desktop state `horizontalOverflow=false`.
+- [x] BE21-014 Mobile state `reportOpen=false`.
+- [x] BE21-015 Mobile state `actionMiniCount=3`.
+- [x] BE21-016 Mobile state `expandedWeekCount=0`.
+- [x] BE21-017 Mobile state `horizontalOverflow=false`.
+- [x] BE21-018 Mobile state `rawVisible=[]`.
+- [x] BE21-019 Day modal state `activePanel=plan`.
+- [x] BE21-020 Day modal state `planHasTrustStatus=false`.
+- [x] BE21-021 Day modal state `planHasMetricGrid=false`.
+- [x] BE21-022 Screenshot evidence was generated from rendered app.
+- [x] BE21-023 Screenshot evidence does not replace automated tests.
+- [x] BE21-024 Screenshot evidence does not mean final commercial acceptance.
+- [x] BE21-025 Screenshot evidence refreshed after feedback quick-first patch.
+- [x] BE21-026 Feedback screenshot includes feedback tab.
+- [x] BE21-027 Feedback screenshot includes collapsed feedback details.
+- [ ] BE21-028 Next screenshot should include opened feedback details.
+- [ ] BE21-029 Next screenshot should include medical red flag selected.
+- [x] BE21-030 Feedback screenshot includes mobile feedback tab.
+- [x] BE21-031 Browser console must remain without blocking errors.
+- [x] BE21-032 Desktop viewport should check 1440px width.
+- [x] BE21-033 Mobile viewport should check 390px width.
+- [x] BE21-034 Modal should check no clipped sticky footer.
+- [x] BE21-035 Modal should check quick choices visible without scrolling.
+- [x] BE21-036 Modal should check submit action visible without scrolling.
+- [x] BE21-037 Modal should check details summary visible.
+- [x] BE21-038 Modal should check evidence tab still reachable.
+- [x] BE21-039 Modal should check feedback result still readable.
+- [x] BE21-040 Modal should check focus order after quick-first change.
+- [x] BE21-041 Feedback quick-first desktop screenshot: `artifacts/frontend-audit/round12-feedback-quick-first-desktop-2026-05-22.png`.
+- [x] BE21-042 Feedback quick-first mobile screenshot: `artifacts/frontend-audit/round12-feedback-quick-first-mobile-2026-05-22.png`.
+- [x] BE21-043 Feedback quick-first desktop state: `artifacts/frontend-audit/round12-feedback-quick-first-desktop-state-2026-05-22.json`.
+- [x] BE21-044 Feedback quick-first mobile state: `artifacts/frontend-audit/round12-feedback-quick-first-mobile-state-2026-05-22.json`.
+- [x] BE21-045 Desktop feedback state `quickFirst=true`.
+- [x] BE21-046 Desktop feedback state `detailOpen=false`.
+- [x] BE21-047 Desktop feedback state `submitVisible=true`.
+- [x] BE21-048 Desktop feedback state `selectedContrast=10.35`.
+- [x] BE21-049 Mobile feedback state `horizontalOverflow=false`.
+- [x] BE21-050 Mobile feedback state `detailSummaryContrast=17.74`.
+- [x] BE21-051 Modal polish desktop screenshot: `artifacts/frontend-audit/round12-modal-polish-desktop-2026-05-22.png`.
+- [x] BE21-052 Modal polish mobile screenshot: `artifacts/frontend-audit/round12-modal-polish-mobile-2026-05-22.png`.
+- [x] BE21-053 Modal scroll fix desktop screenshot: `artifacts/frontend-audit/round12-modal-scroll-fix-desktop-2026-05-22.png`.
+- [x] BE21-054 Modal scroll fix mobile screenshot: `artifacts/frontend-audit/round12-modal-scroll-fix-mobile-2026-05-22.png`.
+- [x] BE21-055 Mobile modal state `modalBottomGap=0`.
+- [x] BE21-056 Mobile modal state `modalBorderRadius=18px 18px 0px 0px`.
+- [x] BE21-057 Mobile modal state `modalScrollTop=0`.
+- [x] BE21-058 Mobile modal state `titleVisible=true`.
+- [x] BE21-059 Desktop modal state `modalScrollTop=0`.
+- [x] BE21-060 Desktop modal state `titleVisible=true`.
+- [x] BE21-061 Copy guard desktop screenshot: `artifacts/frontend-audit/round12-copy-guard-desktop-2026-05-22.png`.
+- [x] BE21-062 Copy guard mobile screenshot: `artifacts/frontend-audit/round12-copy-guard-mobile-2026-05-22.png`.
+- [x] BE21-063 Copy guard desktop state `visibleForbidden=[]`.
+- [x] BE21-064 Copy guard mobile state `visibleForbidden=[]`.
+- [x] BE21-065 Copy guard state `title=马拉松训练助手`.
+- [x] BE21-066 Copy guard state `workspaceHeading=训练日历`.
+- [x] BE21-067 Copy guard state `modePill=跑者视图`.
+
+## 22. Release Handoff Checklist
+
+- [x] RH22-001 Frontend owner changed only frontend and docs/tests in this pass.
+- [x] RH22-002 Backend dirty files remain out of scope for this frontend pass.
+- [x] RH22-003 Shared contract read before documenting results.
+- [x] RH22-004 Shared contract updated with reading fatigue fixed gate.
+- [x] RH22-005 Product audit report updated with Round 12 findings.
+- [x] RH22-006 Frontend audit todo updated with Round 12 screenshot validation.
+- [x] RH22-007 Test command recorded in report.
+- [x] RH22-008 Build command recorded in report.
+- [x] RH22-009 Smoke command recorded in report.
+- [x] RH22-010 `git diff --check` command recorded in report.
+- [x] RH22-011 Subagent count recorded.
+- [x] RH22-012 Subagent close status recorded.
+- [x] RH22-013 No backend owner signoff claimed.
+- [x] RH22-014 No QA owner signoff claimed.
+- [x] RH22-015 No final commercial-complete claim made.
+- [x] RH22-016 Remaining feedback quick-first browser refresh listed.
+- [x] RH22-017 Remaining mobile modal bottom-sheet review listed.
+- [x] RH22-018 Remaining DOM order/screen-reader order review listed.
+- [x] RH22-019 Remaining copy audit for system-view wording listed.
+- [x] RH22-020 Remaining high-end commercial aesthetic loop listed.
+
+## 23. Done Conditions Status After This Pass
+
+- [x] DCS23-001 10+ source gate recorded.
+- [x] DCS23-002 Top 3 migration recorded.
+- [x] DCS23-003 Code implements collapsed secondary report.
+- [x] DCS23-004 Code implements compact action panel.
+- [x] DCS23-005 Code visually prioritizes calendar over report.
+- [x] DCS23-006 Code implements collapsed feedback details.
+- [x] DCS23-007 Code preserves quick feedback submit.
+- [x] DCS23-008 Code preserves medical red flag fail-closed path.
+- [x] DCS23-009 Tests encode reading fatigue contract.
+- [x] DCS23-010 Fresh frontend contract tests after feedback quick-first patch.
+- [x] DCS23-011 Fresh build after feedback quick-first patch.
+- [x] DCS23-012 Fresh smoke after feedback quick-first patch.
+- [x] DCS23-013 Fresh browser screenshot after feedback quick-first patch.
+- [x] DCS23-014 Fresh `git diff --check` after feedback quick-first patch.
+- [x] DCS23-015 Frontend owner Round 12 signoff after fresh verification.
+- [x] DCS23-021 Fresh modal polish smoke after bottom-sheet patch.
+- [x] DCS23-022 Fresh modal scroll screenshot after focus patch.
+- [x] DCS23-023 Fresh modal scroll state confirms title visible.
+- [x] DCS23-024 Fresh ordinary-copy guard smoke.
+- [x] DCS23-025 Fresh ordinary-copy screenshot after system-word removal.
+- [x] DCS23-026 Ordinary layer no longer exposes generator/mode/truncation wording.
+- [ ] DCS23-016 Backend owner review if API assumptions change.
+- [ ] DCS23-017 QA owner review for cross-browser and dirty-worktree boundary.
+- [ ] DCS23-018 Reviewer review for whether any T0/T1/T2 remains.
+- [ ] DCS23-019 Shared contract all-owner exit criteria satisfied.
+- [ ] DCS23-020 Commercial-complete claim allowed only after DCS23-019.

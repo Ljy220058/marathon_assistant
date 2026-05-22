@@ -32,8 +32,8 @@
 
 ## 证据可信
 
-- [ ] [product-evidence][P0] 落地 `EvidenceDrawer`。完成定义：点击引用编号或查看证据后展示来源、页码、摘录、证据类型和建议关系。
-- [ ] [product-evidence][P0] 统一证据点击链路。完成定义：训练卡、解释抽屉、QA 回答中的引用进入同一证据体验。
+- [x] [product-evidence][P0] 落地 `EvidenceDrawer`。完成定义：点击引用编号或查看证据后展示来源、页码、摘录、证据类型和建议关系；无证据时可展示“模型知识说明（未绑定外部证据）”，但明确不能作为核心处方依据。
+- [x] [product-evidence][P0] 统一证据点击链路。完成定义：训练卡、训练依据区和解释引用入口进入同一证据体验，不生成伪引用。
 - [ ] [product-evidence][P1] 补齐半马训练专业术语参考表。完成定义：术语表可用于 UI 标准文案、解释和证据展示。
 - [ ] [product-evidence][P2] 决定 `EvidenceDrawer` 使用 Dialog 还是侧边 Sheet。完成定义：产品文档固定一种交互形态。
 
@@ -86,3 +86,9 @@
 - [ ] [product-rules][P0] 适配 3 天及以下训练日的高负荷场景。完成定义：高负荷不会被不合理压缩到少数训练日。
 - [ ] [product-rules][P1] 将个性化周结构约束扩展到多周。完成定义：约束可逐周差异化生效，不只作用于首周。
 - [ ] [product-rules][P1] 接入模板库兜底。完成定义：动作库缺证据时仍能给出可解释的保守课表模板。
+## 执行状态与调整历史闭环
+
+- [x] [product-status][P0] 固化 `ExecutionStatusSummary`。完成定义：`/plans/{plan_id}` 返回本周完成度、完成/部分/跳过/漏反馈计数、风险等级、恢复状态和下次训练建议，风险来源标记为 `deterministic_feedback_rules`。
+- [x] [product-status][P1] 落地 `StatusPanel`。完成定义：日历上方展示本周执行状态、风险等级、漏反馈提醒和下次训练建议；`medical_referral` 视觉上区别于普通已生成状态。
+- [x] [product-progress][P1] 落地 `AdjustmentHistory` 最小闭环。完成定义：保存反馈后，历史计划详情回显 `risk_gate`、`protocol_recheck`、`adaptive_adjustment`、`plan_diff` 和受影响后续训练日。
+- [x] [product-status][P0] 明确 LLM 通用知识边界。完成定义：无证据时可展示 `llm_general_knowledge` 解释，但不能写入风险规则、核心处方、`risk_level` 或伪引用。

@@ -1,0 +1,366 @@
+@media (max-width: 1120px) {
+  .top-nav {
+    grid-template-columns: 1fr auto;
+  }
+
+  .top-nav nav {
+    display: none;
+  }
+
+  .app-layout,
+  .dashboard-grid,
+  .reference-grid,
+  .profile-grid,
+  .profile-derived-metrics,
+  .feedback-form,
+  .feedback-result-grid,
+  .feedback-risk-gate,
+  .audit-grid,
+  .trust-status-strip,
+  .modal-metric-grid,
+  .modal-session-grid,
+  .modal-explain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .side-rail {
+    position: static;
+  }
+
+  .side-drawer {
+    position: fixed;
+    inset: 74px 14px auto 14px;
+    width: auto;
+    max-height: min(82vh, 720px);
+  }
+
+  .report-summary,
+  .phase-overview-head,
+  .performance-grid,
+  .race-prep-grid,
+  .key-session-list li,
+  .load-summary-panel,
+  .calendar-stat-strip,
+  .calendar-settings,
+  .migration-grid,
+  .progress-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .race-prep-header {
+    display: grid;
+  }
+
+  .race-prep-header strong {
+    max-width: none;
+    text-align: left;
+  }
+
+  .load-chart-heading {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .load-chart-legend {
+    justify-content: flex-start;
+  }
+
+  .calendar-toolbar {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .calendar-action-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    padding-bottom: 168px;
+  }
+
+  .workspace-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .side-drawer {
+    position: fixed;
+    inset: auto auto 82px 12px;
+    width: 116px;
+    max-height: min(82vh, 720px);
+  }
+
+  .side-drawer:not([open]) {
+    display: grid;
+  }
+
+  .side-drawer[open] {
+    inset: auto 12px 86px 12px;
+    width: auto;
+    z-index: 45;
+    max-height: min(68vh, 560px);
+    border-radius: 8px;
+    box-shadow: 0 20px 56px rgba(0, 0, 0, 0.48);
+  }
+
+  .side-drawer:not([open]) .side-drawer-toggle {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 46px;
+    border-radius: 999px;
+    padding: 8px 10px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
+  }
+
+  .side-drawer:not([open]) .drawer-toggle-copy small,
+  .side-drawer:not([open]) .drawer-toggle-affordance {
+    display: none;
+  }
+
+  .side-drawer:not([open]) .drawer-toggle-copy strong {
+    font-size: 12px;
+  }
+
+  .side-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: none;
+    border: 0;
+    background: rgba(3, 6, 12, 0.62);
+    padding: 0;
+  }
+
+  .side-drawer[open] .side-drawer-backdrop {
+    display: block;
+  }
+
+  .side-drawer[open] .side-drawer-toggle,
+  .side-drawer[open] .side-drawer-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  body.side-drawer-modal-open {
+    overflow: hidden;
+  }
+
+  .side-drawer-close {
+    display: inline-grid;
+    justify-self: end;
+    min-height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0 12px;
+    background: var(--panel-muted);
+    color: var(--muted);
+    font-weight: 800;
+  }
+
+  .top-nav {
+    min-height: 58px;
+    padding: 0 14px;
+  }
+
+  .mobile-quick-nav {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 8px;
+    padding: 6px;
+    background: rgba(9, 11, 16, 0.92);
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-quick-nav a {
+    display: grid;
+    min-height: 38px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    background: var(--panel-muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .mobile-quick-nav a:focus-visible,
+  .mobile-quick-nav a:hover {
+    border-color: rgba(34, 211, 238, 0.52);
+    color: var(--text);
+  }
+
+  .brand span:last-child {
+    display: none;
+  }
+
+  .hero-panel {
+    align-items: start;
+    min-height: 0;
+    padding: 42px 14px 34px;
+    text-align: left;
+  }
+
+  .hero-copy {
+    font-size: 15px;
+  }
+
+  .app-layout {
+    padding: 14px;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .toolbar,
+  .model-controls,
+  .api-key-controls,
+  .panel-heading.split {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .api-key-actions {
+    width: 100%;
+  }
+
+  .api-key-actions .secondary-button {
+    flex: 1;
+  }
+
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .segmented-control {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+
+  .calendar-action-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-action-mini {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .calendar-action-mini p {
+    display: block;
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .calendar-action-mini strong {
+    white-space: normal;
+  }
+
+  .status-panel-grid,
+  .adjustment-history-item dl {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-primary-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-progress-head,
+  .progress-insight {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-progress-head {
+    display: grid;
+  }
+
+  .modal-feedback-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .load-chart-card {
+    overflow-x: auto;
+  }
+
+  .load-chart-card::after {
+    content: "横向滑动查看完整趋势";
+    display: block;
+    margin-top: 8px;
+    color: var(--faint);
+    font-size: 11px;
+  }
+
+  .load-chart {
+    min-width: 760px;
+    min-height: 180px;
+  }
+
+  .medical-red-flag-checklist div {
+    grid-template-columns: 1fr;
+  }
+
+  .day-modal {
+    align-items: end;
+    justify-items: stretch;
+    padding: 0;
+  }
+
+  .day-modal.open {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .day-modal-card {
+    width: 100%;
+    max-height: min(92svh, 760px);
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    padding: 14px;
+  }
+
+  .evidence-drawer-panel {
+    width: 100%;
+    border-left: 0;
+    padding: 14px;
+  }
+
+  .evidence-drawer-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-day-hero {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 10px;
+    padding: 4px 42px 14px 0;
+  }
+
+  .modal-day-hero h2 {
+    font-size: 20px;
+  }
+
+  .modal-day-hero strong {
+    justify-self: start;
+  }
+
+  .day-load-ratio-row {
+    grid-template-columns: 1fr;
+  }
+
+  .button-row,
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+  }
+}

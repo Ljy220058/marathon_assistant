@@ -17,11 +17,15 @@ async function inspectViewport(browser, viewport, label) {
   const base = await page.evaluate((forbidden) => {
     const bodyText = document.body.innerText;
     const toggle = document.querySelector(".side-drawer-toggle");
+    const apiToken = document.querySelector("#apiToken");
+    const openaiProviderButton = document.querySelector('[data-provider-choice="openai"]');
     const toggleRect = toggle?.getBoundingClientRect();
     return {
       workspaceFlow: Boolean(document.querySelector("#workspaceFlow")),
       primaryCard: Boolean(document.querySelector("[data-primary-workspace-card]")),
       drawerToggle: Boolean(toggle),
+      apiTokenInput: Boolean(apiToken),
+      openaiProviderButton: Boolean(openaiProviderButton),
       drawerToggleOverflows: toggleRect ? toggleRect.left < 0 || toggleRect.right > window.innerWidth : true,
       hiddenPanelCount: Array.from(document.querySelectorAll("[data-drawer-section]")).filter((item) => item.hidden).length,
       visibleForbidden: forbidden.filter((item) => bodyText.includes(item)),
@@ -32,12 +36,17 @@ async function inspectViewport(browser, viewport, label) {
   assert(base.workspaceFlow, `${label}: workspaceFlow missing`);
   assert(base.primaryCard, `${label}: primary workspace card missing`);
   assert(base.drawerToggle, `${label}: drawer toggle missing`);
+  assert(base.apiTokenInput, `${label}: api token input missing`);
+  assert(base.openaiProviderButton, `${label}: openai provider button missing`);
   assert(!base.drawerToggleOverflows, `${label}: drawer toggle overflows viewport`);
   assert(base.hiddenPanelCount >= 3, `${label}: drawer panels should be hidden by default`);
   assert(base.visibleForbidden.length === 0, `${label}: forbidden normal-mode text visible: ${base.visibleForbidden.join(", ")}`);
   assert(base.hasDayEssentialsTemplate, `${label}: day-card-essentials template missing`);
 
-  await page.click(".side-drawer-toggle");
+  const drawerAlreadyOpen = await page.locator("[data-side-drawer]").evaluate((drawer) => Boolean(drawer.open));
+  if (!drawerAlreadyOpen) {
+    await page.click(".side-drawer-toggle");
+  }
   await page.fill("#drawerSearch", "依据");
   const basisActions = await page.evaluate(() =>
     Array.from(document.querySelectorAll("[data-drawer-action]"))
