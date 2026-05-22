@@ -12,6 +12,10 @@ from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
 from marathon_qa_assistant.core.app_state import BASE_DIR, DEFAULT_VECTOR_DIR
+from marathon_qa_assistant.services.kb.graph_evidence import (
+    evidence_from_graph_edge,
+    graph_binding_to_legacy_evidence,
+)
 
 # 配置日志
 logger = logging.getLogger("graph_engine")
@@ -487,29 +491,7 @@ class GraphEngine:
 
     def map_edge_to_evidence(self, edge: Dict[str, Any]) -> Dict[str, Any]:
         """将图谱边证据映射为统一 Evidence 结构"""
-        evidence_raw = edge.get("evidence", {})
-        chunk_id = evidence_raw.get("chunk_id", "")
-        source_file = evidence_raw.get("source", "unknown")
-        confidence = float(evidence_raw.get("confidence", 0.0))
-        text_span = evidence_raw.get("text_span", "")
-
-        return {
-            "evidence_id": f"graph_{chunk_id or hashlib.md5(text_span.encode()).hexdigest()[:8]}",
-            "kind": "graph",
-            "source_file": source_file,
-            "page": 1,  # 图谱目前暂未精确存储页码，默认为 1
-            "chunk_id": chunk_id,
-            "snippet": text_span[:300],
-            "text": text_span,
-            "vector_score": 0.0,
-            "retrieval_score": 0.0,
-            "graph_confidence": confidence,
-            "entity_overlap": 0.0,
-            "fusion_bonus": 0.0,
-            "hybrid_score": 0.0,
-            "citation_label": "",
-            "trace": {"graph_hit": True, "graph_edge": edge.get("relation", "")}
-        }
+        return graph_binding_to_legacy_evidence(evidence_from_graph_edge(edge))
 
     def _ensure_node(
         self,
