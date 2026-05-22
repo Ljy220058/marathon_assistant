@@ -59,6 +59,9 @@
 - 完整商用安全仍需要 authN/authZ、租户隔离、对象级授权、账号/订阅级 quota、分布式 rate limit 和 abuse dashboard。
 - 当前对象级保护已覆盖 `GET /plans/{plan_id}`、`PATCH /plans/{plan_id}/events/{event_id}` 和 `DELETE /plans/{plan_id}` 的 plan owner 检查；未来新增 plan/event/feedback endpoint 必须沿用先查 owner 再操作。
 - `/feedback` 仅在未提供 `plan_id/event_id` 时走“只计算建议、不入库”的兼容路径；一旦客户端提供 plan/event，就必须先验证事件存在且属于当前 user，非法或不存在时返回 404/400，不得静默返回 `feedback_id=None` 伪装保存成功。
+- 后端已新增 runner/expert 响应投影：当 `MARATHON_API_TOKEN` 或 `MARATHON_EXPERT_API_TOKEN` 已配置时，`/query`、`/feedback`、`/training-calendar`、`GET /plans/{plan_id}` 默认按 `runner` 裁掉 `workflow_trace`、`field_sources`、`protocol_check`、`action_match`、`kb_fallback`、`risk_gate`、`protocol_recheck`、`trace`、`content_json`、`raw_text` 等专家/审计字段。
+- 前端普通层不得依赖上述专家字段；需要专家面板数据时，请求必须显式带 `X-Marathon-Response-Role: expert`，并提供服务端配置的 `X-Marathon-Expert-Key`。伪造或错误 expert key 返回 403，无效 role 返回 400。
+- 本地未配置 API token 与 expert token 时，后端保留 expert 完整响应以兼容现有开发测试；部署或预发布环境必须配置 `MARATHON_API_TOKEN`，如需专家面板再配置 `MARATHON_EXPERT_API_TOKEN`。
 - LLM provider 错误必须进入结构化分类：`missing_key`、`timeout`、`rate_limited`、`provider_5xx`、`invalid_request`、`network_error`、`invalid_response` 等；`/ops/metrics` 通过 `llm_provider_error_counts` 汇总 provider/error_code，不记录 prompt 原文、API key 或 Authorization header。
 - 数据库 migration 已发布后不得修改旧 SQL；必须 checksum fail-fast，新增变更写新 migration。
 - 旧版 `schema_migrations` 如果缺少 `checksum` 列，启动时必须补列并回填已知 migration checksum；已发布 migration 被改写仍必须 fail-fast。

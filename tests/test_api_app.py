@@ -892,6 +892,282 @@ def test_plan_history_endpoints_support_frontend_persistence(tmp_path, monkeypat
     assert detail["events"][0]["plan_id"] == plan_id
 
 
+def test_runner_role_plan_detail_trims_expert_audit_fields(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "runner-plan-projection.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+    monkeypatch.delenv("MARATHON_EXPERT_API_TOKEN", raising=False)
+    plan = {
+        "plan_meta": {
+            "goal": "Half marathon projection",
+            "requested_weeks": 1,
+            "actual_weeks": 1,
+            "plan_type": "single_week",
+        },
+        "workflow_trace": {"trace_version": "workflow_trace.v1", "run_id": "internal-run"},
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "load_level": "easy",
+                "days": [
+                    {
+                        "day": "Mon",
+                        "training_type": "Easy run",
+                        "main_set": "30 min Z2",
+                        "evidence_tier": "action_library",
+                        "training_load": {"source_type": "planned_load_proxy", "not_device_metric": True},
+                        "field_sources": {"main_set": {"source_type": "action_library"}},
+                        "protocol_check": {"allowed": True},
+                        "action_match": {"matched": True},
+                        "kb_fallback": {"used": False},
+                        "risk_gate": {"status": "not_evaluated"},
+                        "workflow_trace": {"run_id": "day-run"},
+                        "trace": {"final_card": True},
+                    },
+                ],
+            }
+        ],
+    }
+    plan_id = db.save_training_plan(plan, source_query="projection")
+    event_id = db.list_events(plan_id)[0]["id"]
+
+    feedback = client.post(
+        "/feedback",
+        headers={"Authorization": "Bearer runner-token"},
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": event_id,
+            "raw_text": "Partial session with high fatigue.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+    assert feedback.status_code == 200
+
+    response = client.get(f"/plans/{plan_id}", headers={"Authorization": "Bearer runner-token"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["workflow_trace"] == {}
+    assert "workflow_trace" not in payload["structured_training_plan"]
+    event = payload["events"][0]
+    assert event["main_set"] == "30 min Z2"
+    assert event["evidence_tier"] == "action_library"
+    assert event["training_load"]["source_type"] == "planned_load_proxy"
+    for key in {"field_sources", "protocol_check", "action_match", "kb_fallback", "risk_gate", "workflow_trace", "trace"}:
+        assert key not in event
+    latest = event["latest_feedback"]
+    assert latest["next_day_adjustment"]
+    for key in {"raw_text", "risk_gate", "protocol_recheck", "workflow_trace"}:
+        assert key not in latest
+    history = payload["adjustment_history"][0]
+    assert history["adaptive_adjustment"]["next_day_adjustment"]
+    for key in {"risk_gate", "protocol_recheck"}:
+        assert key not in history
+
+
+def test_expert_role_plan_detail_preserves_audit_fields_with_expert_key(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "expert-plan-projection.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+    monkeypatch.setenv("MARATHON_EXPERT_API_TOKEN", "expert-token")
+    plan = {
+        "plan_meta": {
+            "goal": "Half marathon expert projection",
+            "requested_weeks": 1,
+            "actual_weeks": 1,
+            "plan_type": "single_week",
+        },
+        "workflow_trace": {"trace_version": "workflow_trace.v1", "run_id": "internal-run"},
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "load_level": "easy",
+                "days": [
+                    {
+                        "day": "Mon",
+                        "training_type": "Easy run",
+                        "main_set": "30 min Z2",
+                        "field_sources": {"main_set": {"source_type": "action_library"}},
+                        "risk_gate": {"status": "not_evaluated"},
+                        "workflow_trace": {"run_id": "day-run"},
+                    },
+                ],
+            }
+        ],
+    }
+    plan_id = db.save_training_plan(plan, source_query="expert projection")
+
+    response = client.get(
+        f"/plans/{plan_id}",
+        headers={
+            "Authorization": "Bearer runner-token",
+            "X-Marathon-Response-Role": "expert",
+            "X-Marathon-Expert-Key": "expert-token",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["workflow_trace"]["run_id"] == "internal-run"
+    assert payload["structured_training_plan"]["workflow_trace"]["run_id"] == "internal-run"
+    assert payload["events"][0]["field_sources"]["main_set"]["source_type"] == "action_library"
+    assert payload["events"][0]["risk_gate"]["status"] == "not_evaluated"
+
+
+def test_invalid_expert_role_header_is_rejected_when_expert_key_configured(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "invalid-expert-role.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+    monkeypatch.setenv("MARATHON_EXPERT_API_TOKEN", "expert-token")
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "reject expert spoof", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [{"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"}],
+                }
+            ],
+        },
+        source_query="reject",
+    )
+
+    response = client.get(
+        f"/plans/{plan_id}",
+        headers={
+            "Authorization": "Bearer runner-token",
+            "X-Marathon-Response-Role": "expert",
+            "X-Marathon-Expert-Key": "wrong-token",
+        },
+    )
+
+    assert response.status_code == 403
+    assert "专家响应" in response.json()["detail"]
+
+
+def test_invalid_response_role_header_is_rejected(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "invalid-response-role.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "invalid response role", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [{"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"}],
+                }
+            ],
+        },
+        source_query="invalid role",
+    )
+
+    response = client.get(
+        f"/plans/{plan_id}",
+        headers={
+            "Authorization": "Bearer runner-token",
+            "X-Marathon-Response-Role": "admin",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "response role" in response.json()["detail"]
+
+
+def test_runner_role_query_projection_trims_nested_audit_fields(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "runner-query-projection.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+    monkeypatch.delenv("MARATHON_EXPERT_API_TOKEN", raising=False)
+    monkeypatch.setattr(
+        api_app,
+        "load_user_profile",
+        lambda: {
+            "goal": "半马 PB 1小时45分",
+            "weekly_mileage": 35,
+            "target_pace": "半马 1:45",
+        },
+    )
+    monkeypatch.setattr(
+        api_app,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 1160, "faiss_ready": True, "source": "test"},
+    )
+
+    response = client.post(
+        "/query",
+        headers={"Authorization": "Bearer runner-token"},
+        json={
+            "query": "请给我生成 4 周半马训练计划",
+            "user_id": "default_user",
+            "response_mode": "skeleton",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["workflow_trace"] == {}
+    assert payload["token_usage"] == {}
+    assert payload["audit_scores"] == {}
+    assert "workflow_trace" not in payload["structured_training_plan"]
+    assert payload["daily_schedule_cards"]
+    assert any(str(card.get("main_set") or "").strip() for card in payload["daily_schedule_cards"])
+    assert any(str(card.get("evidence_tier") or "").strip() for card in payload["daily_schedule_cards"])
+    for card in payload["daily_schedule_cards"]:
+        for key in {"field_sources", "protocol_check", "action_match", "kb_fallback", "risk_gate", "workflow_trace", "trace"}:
+            assert key not in card
+    for day in payload["monthly_training_calendar"]["days"]:
+        for key in {"field_sources", "protocol_check", "action_match", "kb_fallback", "risk_gate", "workflow_trace", "trace"}:
+            assert key not in day
+
+
+def test_runner_role_training_calendar_projection_trims_daily_audit_fields(monkeypatch):
+    structured_plan = _one_week_calendar_contract_plan()
+    fake_app = _FakeIntegratedApp(result={"structured_training_plan": structured_plan})
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+
+    response = client.post(
+        "/training-calendar",
+        headers={"Authorization": "Bearer runner-token"},
+        json={
+            "query": "请给我生成 1 周半马训练计划",
+            "user_id": "default_user",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["daily_schedule_cards"]
+    for card in payload["daily_schedule_cards"]:
+        assert "training_load" in card
+        for key in {"field_sources", "protocol_check", "action_match", "kb_fallback", "risk_gate", "workflow_trace", "trace"}:
+            assert key not in card
+    for day in payload["monthly_training_calendar"]["days"]:
+        for key in {"field_sources", "protocol_check", "action_match", "kb_fallback", "risk_gate", "workflow_trace", "trace"}:
+            assert key not in day
+
+
 def test_plan_save_accepts_calendar_settings_and_event_schedule_patch(tmp_path, monkeypatch):
     from marathon_qa_assistant.services.database import _Database
 
@@ -1099,6 +1375,41 @@ def test_feedback_endpoint_returns_adaptive_adjustment():
     assert payload["plan_diff"]["workflow"] == ["risk_gate", "protocol_recheck", "adjustment", "plan_diff"]
     assert payload["plan_diff"]["downgraded"] >= 1
     assert "pain_risk" in payload["plan_diff"]["reason_codes"]
+
+
+def test_runner_role_feedback_projection_keeps_user_actions_and_hides_trace(monkeypatch):
+    monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
+
+    response = client.post(
+        "/feedback",
+        headers={"Authorization": "Bearer runner-token"},
+        json={
+            "user_id": "default_user",
+            "raw_text": "训练完成，但疲劳明显，膝盖有疼痛风险。",
+            "feedback": {
+                "completion": "已完成",
+                "fatigue": "明显",
+                "pain": "疼痛风险",
+                "sleep": "一般",
+                "notes": "希望降低下一次训练负荷。",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["risk_gate"]["status"] == "needs_protocol_recheck"
+    assert payload["risk_gate"]["adjustment_action"] == "deescalate_or_refuse"
+    assert payload["protocol_recheck"] == {
+        "allowed": True,
+        "risk_gate_status": "needs_protocol_recheck",
+    }
+    assert payload["adaptive_adjustment"]["next_day_adjustment"]
+    assert payload["plan_diff"]["affected_days"] >= 1
+    assert payload["workflow_trace"] == {}
+    assert "raw_text" not in payload["adaptive_feedback"]
+    assert "workflow" not in payload["adaptive_feedback"]
+    assert "workout_feedback" not in payload["adaptive_feedback"]
 
 
 def test_feedback_endpoint_medical_risk_refuses_adjustment():

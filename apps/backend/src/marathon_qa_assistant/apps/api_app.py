@@ -5,6 +5,7 @@ import asyncio
 import time
 import hmac
 import ipaddress
+import copy
 from contextlib import asynccontextmanager
 from uuid import uuid4
 from pathlib import Path
@@ -163,6 +164,37 @@ def _request_api_token(request: Request) -> str:
     if auth.lower().startswith("bearer "):
         return auth[7:].strip()
     return request.headers.get("X-Marathon-API-Key", "").strip()
+
+
+def _configured_expert_api_token() -> str:
+    return os.getenv("MARATHON_EXPERT_API_TOKEN", "").strip()
+
+
+def _request_expert_api_token(request: Request) -> str:
+    return request.headers.get("X-Marathon-Expert-Key", "").strip()
+
+
+def _request_has_expert_response_access(request: Request) -> bool:
+    expected = _configured_expert_api_token()
+    supplied = _request_expert_api_token(request)
+    return bool(expected and supplied and hmac.compare_digest(supplied, expected))
+
+
+def _response_role(request: Request) -> str:
+    requested = str(request.headers.get("X-Marathon-Response-Role") or "").strip().lower()
+    if requested == "runner":
+        return "runner"
+    if requested == "expert":
+        if _request_has_expert_response_access(request):
+            return "expert"
+        if not _configured_api_token() and not _configured_expert_api_token():
+            return "expert"
+        raise HTTPException(status_code=403, detail="专家响应需要有效专家凭据。")
+    if requested:
+        raise HTTPException(status_code=400, detail="无效 response role。")
+    if _configured_api_token() or _configured_expert_api_token():
+        return "runner"
+    return "expert"
 
 
 def _requires_api_token(request: Request) -> bool:
@@ -634,6 +666,201 @@ def _event_with_latest_feedback(event: Dict[str, Any]) -> Dict[str, Any]:
     return enriched
 
 
+_RUNNER_EXPERT_ONLY_NESTED_KEYS = {
+    "content_json",
+    "field_sources",
+    "protocol_check",
+    "action_match",
+    "kb_fallback",
+    "risk_gate",
+    "protocol_recheck",
+    "workflow_trace",
+    "trace",
+    "training_load_factors",
+    "raw_text",
+}
+
+
+def _response_payload(value: Any) -> Dict[str, Any]:
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    if hasattr(value, "dict"):
+        return value.dict()
+    return dict(value or {})
+
+
+def _drop_expert_keys_deep(value: Any, keys: Optional[set] = None) -> Any:
+    blocked = keys or _RUNNER_EXPERT_ONLY_NESTED_KEYS
+    if isinstance(value, dict):
+        return {
+            key: _drop_expert_keys_deep(item, blocked)
+            for key, item in value.items()
+            if key not in blocked
+        }
+    if isinstance(value, list):
+        return [_drop_expert_keys_deep(item, blocked) for item in value]
+    return value
+
+
+def _public_risk_gate(risk_gate: Dict[str, Any]) -> Dict[str, Any]:
+    gate = risk_gate if isinstance(risk_gate, dict) else {}
+    return {
+        key: gate.get(key)
+        for key in ("status", "product_status", "adjustment_action", "decision_reason", "triggers")
+        if gate.get(key) not in (None, "", [])
+    }
+
+
+def _public_protocol_recheck(protocol_recheck: Dict[str, Any]) -> Dict[str, Any]:
+    recheck = protocol_recheck if isinstance(protocol_recheck, dict) else {}
+    return {
+        "allowed": bool(recheck.get("allowed", True)),
+        "risk_gate_status": str(recheck.get("risk_gate_status") or ""),
+    }
+
+
+def _project_runner_training_plan_review(review: Dict[str, Any]) -> Dict[str, Any]:
+    public_review = _drop_expert_keys_deep(copy.deepcopy(review or {}))
+    summary = public_review.get("summary")
+    if isinstance(summary, dict):
+        summary["review_scope"] = [
+            item
+            for item in summary.get("review_scope", [])
+            if str(item) not in {"field_sources", "workflow_trace", "risk_gate", "protocol_recheck"}
+        ]
+    return public_review
+
+
+def _project_runner_query_response(response: QueryResponse) -> Dict[str, Any]:
+    payload = _response_payload(response)
+    payload["workflow_trace"] = {}
+    payload["token_usage"] = {}
+    payload["audit_scores"] = {}
+    payload["half_marathon_protocol_validation"] = None
+    for key in (
+        "structured_training_plan",
+        "structured_report",
+        "training_explanation_panel",
+        "monthly_training_calendar",
+        "daily_schedule_cards",
+        "phases",
+        "training_load_summary",
+    ):
+        payload[key] = _drop_expert_keys_deep(payload.get(key))
+    payload["training_plan_review"] = _project_runner_training_plan_review(payload.get("training_plan_review") or {})
+    return payload
+
+
+def _project_query_response_for_role(response: QueryResponse, role: str) -> Any:
+    if role == "expert":
+        return response
+    return _project_runner_query_response(response)
+
+
+def _project_runner_feedback_summary(feedback: Dict[str, Any]) -> Dict[str, Any]:
+    latest = feedback if isinstance(feedback, dict) else {}
+    allowed_keys = {
+        "id",
+        "feedback_id",
+        "event_id",
+        "plan_id",
+        "completion_status",
+        "completion_quality",
+        "subjective_fatigue",
+        "pain_status",
+        "sleep_quality",
+        "notes",
+        "reason_codes",
+        "next_day_adjustment",
+        "weekly_adjustment",
+        "alternative_workout",
+        "risk_alert",
+        "rationale",
+        "created_at",
+    }
+    return {
+        key: _drop_expert_keys_deep(value)
+        for key, value in latest.items()
+        if key in allowed_keys and value not in (None, "")
+    }
+
+
+def _project_runner_feedback_response(payload: Dict[str, Any]) -> Dict[str, Any]:
+    projected = copy.deepcopy(payload)
+    projected["risk_gate"] = _public_risk_gate(projected.get("risk_gate") or {})
+    projected["protocol_recheck"] = _public_protocol_recheck(projected.get("protocol_recheck") or {})
+    adaptive_feedback = projected.get("adaptive_feedback") if isinstance(projected.get("adaptive_feedback"), dict) else {}
+    projected["adaptive_feedback"] = {
+        key: _drop_expert_keys_deep(value)
+        for key, value in adaptive_feedback.items()
+        if key in {"reason_codes", "reasons", "source"}
+    }
+    projected["workflow_trace"] = {}
+    return projected
+
+
+def _project_feedback_response_for_role(payload: Dict[str, Any], role: str) -> Dict[str, Any]:
+    if role == "expert":
+        return payload
+    return _project_runner_feedback_response(payload)
+
+
+def _project_runner_plan_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    projected = _drop_expert_keys_deep(copy.deepcopy(event or {}))
+    latest = event.get("latest_feedback") if isinstance(event, dict) else None
+    if isinstance(latest, dict):
+        projected["latest_feedback"] = _project_runner_feedback_summary(latest)
+    return projected
+
+
+def _project_runner_adjustment_history(history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    projected = []
+    for item in history or []:
+        if not isinstance(item, dict):
+            continue
+        public_item = {
+            key: _drop_expert_keys_deep(value)
+            for key, value in item.items()
+            if key not in {"risk_gate", "protocol_recheck"}
+        }
+        projected.append(public_item)
+    return projected
+
+
+def _project_runner_plan_detail_response(payload: Dict[str, Any]) -> Dict[str, Any]:
+    projected = copy.deepcopy(payload)
+    plan = dict(projected.get("plan") or {})
+    plan.pop("structured_plan_json", None)
+    projected["plan"] = plan
+    projected["structured_training_plan"] = _drop_expert_keys_deep(projected.get("structured_training_plan") or {})
+    projected["workflow_trace"] = {}
+    projected["events"] = [_project_runner_plan_event(event) for event in projected.get("events") or []]
+    projected["adjustment_history"] = _project_runner_adjustment_history(projected.get("adjustment_history") or [])
+    projected["execution_status_summary"] = _drop_expert_keys_deep(projected.get("execution_status_summary") or {})
+    projected["training_plan_review"] = _project_runner_training_plan_review(projected.get("training_plan_review") or {})
+    return projected
+
+
+def _project_plan_detail_response_for_role(payload: Dict[str, Any], role: str) -> Dict[str, Any]:
+    if role == "expert":
+        return payload
+    return _project_runner_plan_detail_response(payload)
+
+
+def _project_runner_training_calendar_response(response: TrainingCalendarResponse) -> Dict[str, Any]:
+    payload = _response_payload(response)
+    for key in ("days", "phases", "monthly_training_calendar", "daily_schedule_cards", "training_load_summary"):
+        payload[key] = _drop_expert_keys_deep(payload.get(key))
+    payload["training_plan_review"] = _project_runner_training_plan_review(payload.get("training_plan_review") or {})
+    return payload
+
+
+def _project_training_calendar_response_for_role(response: TrainingCalendarResponse, role: str) -> Any:
+    if role == "expert":
+        return response
+    return _project_runner_training_calendar_response(response)
+
+
 def _compose_skeleton_report(structured_plan: Dict[str, Any], status_message: str) -> str:
     meta = structured_plan.get("plan_meta", {}) if isinstance(structured_plan, dict) else {}
     weeks = structured_plan.get("week_plans", []) if isinstance(structured_plan, dict) else []
@@ -1048,7 +1275,7 @@ async def save_plan(request: SavePlanRequest):
 
 
 @app.post("/feedback", response_model=FeedbackResponse)
-async def submit_feedback(request: FeedbackRequest):
+async def submit_feedback(request: FeedbackRequest, http_request: Request):
     """根据训练反馈返回自适应调整建议，供 Astro 反馈面板使用。"""
     _require_default_user(request.user_id)
     workout_feedback = normalize_workout_feedback(
@@ -1110,7 +1337,7 @@ async def submit_feedback(request: FeedbackRequest):
     generation_status = risk_gate.get("product_status", "generated")
     record_feedback_risk(risk_gate)
     record_generation_status(generation_status)
-    return {
+    response_payload = {
         "workout_feedback": workout_feedback,
         "risk_gate": risk_gate,
         "protocol_recheck": protocol_recheck,
@@ -1121,10 +1348,11 @@ async def submit_feedback(request: FeedbackRequest):
         "feedback_id": feedback_id,
         "workflow_trace": workflow_trace,
     }
+    return _project_feedback_response_for_role(response_payload, _response_role(http_request))
 
 
 @app.get("/plans/{plan_id}", response_model=PlanDetailResponse)
-async def get_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
+async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_API_USER_ID):
     """返回单个已保存训练计划及其日历事件。"""
     _require_default_user(user_id)
     plan = get_db().get_plan(plan_id)
@@ -1141,7 +1369,7 @@ async def get_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
         if isinstance(structured_plan, dict)
         else {}
     )
-    return {
+    response_payload = {
         "plan": plan,
         "structured_training_plan": structured_plan,
         "workflow_trace": structured_plan.get("workflow_trace", {}) if isinstance(structured_plan, dict) else {},
@@ -1153,6 +1381,7 @@ async def get_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
         "adjustment_history": _build_adjustment_history(plan_id, events),
         "training_plan_review": training_plan_review,
     }
+    return _project_plan_detail_response_for_role(response_payload, _response_role(http_request))
 
 
 @app.patch("/plans/{plan_id}/events/{event_id}")
@@ -1180,7 +1409,7 @@ async def update_plan_event_schedule(
 
 
 @app.post("/query", response_model=QueryResponse)
-async def execute_query(request: QueryRequest):
+async def execute_query(request: QueryRequest, http_request: Request):
     """查询接口。Astro 计划生成默认可走 skeleton-first，避免前端长时间空等。"""
     _require_default_user(request.user_id)
 
@@ -1191,11 +1420,14 @@ async def execute_query(request: QueryRequest):
     plan_query = _is_plan_query(request.query) or empty_profile_plan
 
     if plan_query and (skeleton_requested or empty_profile_plan):
-        return await _build_skeleton_plan_response(
-            request,
-            profile,
-            generation_status="skeleton_ready",
-            message="已先返回确定性结构化计划骨架，避免模型长时间生成导致前端卡住。",
+        return _project_query_response_for_role(
+            await _build_skeleton_plan_response(
+                request,
+                profile,
+                generation_status="skeleton_ready",
+                message="已先返回确定性结构化计划骨架，避免模型长时间生成导致前端卡住。",
+            ),
+            _response_role(http_request),
         )
 
     ensure_knowledge_base_ready()
@@ -1207,28 +1439,37 @@ async def execute_query(request: QueryRequest):
             integrated_app.ainvoke(initial_state, config=config),
             timeout=float(request.timeout_sec),
         )
-        return _query_response_from_state(
-            result,
-            request,
-            generation_status="complete",
-            message="完整工作流已返回。",
+        return _project_query_response_for_role(
+            _query_response_from_state(
+                result,
+                request,
+                generation_status="complete",
+                message="完整工作流已返回。",
+            ),
+            _response_role(http_request),
         )
     except asyncio.TimeoutError:
         if plan_query:
-            return await _build_skeleton_plan_response(
-                request,
-                profile,
-                generation_status="llm_timeout_skeleton",
-                message=f"完整 LLM 工作流超过 {request.timeout_sec} 秒，已回退到结构化规则骨架。",
+            return _project_query_response_for_role(
+                await _build_skeleton_plan_response(
+                    request,
+                    profile,
+                    generation_status="llm_timeout_skeleton",
+                    message=f"完整 LLM 工作流超过 {request.timeout_sec} 秒，已回退到结构化规则骨架。",
+                ),
+                _response_role(http_request),
             )
         raise HTTPException(status_code=504, detail=f"完整 LLM 工作流超过 {request.timeout_sec} 秒。")
     except Exception as e:
         if plan_query:
-            return await _build_skeleton_plan_response(
-                request,
-                profile,
-                generation_status="llm_error_skeleton",
-                message=f"完整 LLM 工作流异常，已回退到结构化规则骨架：{_safe_workflow_error_summary(e)}。",
+            return _project_query_response_for_role(
+                await _build_skeleton_plan_response(
+                    request,
+                    profile,
+                    generation_status="llm_error_skeleton",
+                    message=f"完整 LLM 工作流异常，已回退到结构化规则骨架：{_safe_workflow_error_summary(e)}。",
+                ),
+                _response_role(http_request),
             )
         raise HTTPException(status_code=500, detail=_safe_workflow_error_summary(e))
 
@@ -1258,7 +1499,7 @@ async def get_evidence_tier_reference():
 
 
 @app.post("/training-calendar", response_model=TrainingCalendarResponse)
-async def get_training_calendar(request: QueryRequest):
+async def get_training_calendar(request: QueryRequest, http_request: Request):
     """生成并返回训练日历（月历视图数据）"""
     _require_default_user(request.user_id)
 
@@ -1282,7 +1523,7 @@ async def get_training_calendar(request: QueryRequest):
             daily_schedule_cards=daily_schedule_cards,
             training_load_summary=calendar.training_load_summary,
         )
-        return TrainingCalendarResponse(
+        response = TrainingCalendarResponse(
             year=calendar.year,
             month=calendar.month,
             start_week_index=calendar.start_week_index,
@@ -1296,6 +1537,7 @@ async def get_training_calendar(request: QueryRequest):
             training_load_summary=calendar.training_load_summary,
             training_plan_review=training_plan_review,
         )
+        return _project_training_calendar_response_for_role(response, _response_role(http_request))
     except HTTPException:
         raise
     except Exception as e:
