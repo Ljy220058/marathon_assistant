@@ -593,3 +593,13 @@ git status --short --branch
 - Frontend owner 下一轮需要优先消费 `response.evidence_chain.items` 的 `display_mode/source_url/page/section/user_facing_summary`；旧 `evidence_bundle/evidence_base` 仅作 fallback，且 fallback citation 不得显示为 verified。
 - 运行事实仍不变：当前 runtime KB 仍是 legacy，v2 source registry 没有 ready/approved runtime index；P2 只解决 metadata 保真，不代表知识库已达到商用 ready。
 - P2 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_rag_metadata_preservation.py tests/test_evidence_chain_contract.py tests/test_kb_evidence_binding.py tests/test_working_state_audit_loop.py tests/test_openapi_contract.py tests/test_api_app.py -q`，结果 `66 passed, 2 warnings`；`git diff --check` 针对 P2 后端与文档文件通过。
+
+## 22. RAG Evidence Chain P3 No Fake Citation Gate Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/rag-evidence-p3-no-fake-citation`。
+- 后端新增 `validate_citation_faithfulness(answer_text, evidence_chain)`，会拦截未知编号引用、引用 `model_general_knowledge`、引用 `legacy_explanation`、以及缺少 `source_url + page/section` 的不可定位 citation。
+- `evidence_chain` 现在返回 `citation_gate` 和 `fake_citation_violations`；`citation_gate.status=failed` 或 `fake_citation_count>0` 时，前端普通层不得显示 citation badge 或“已验证引用”。
+- `/query` 响应会把 citation gate 摘要同步写入 `workflow_trace.evidence_state` 和 `training_plan_review.dimensions.evidence_control`，字段包括 `citation_gate_status`、`fake_citation_count`、`fake_citation_violations`。
+- Frontend owner 下一轮需要：优先以 `evidence_chain.items[].display_mode=verified_source` 且有 `source_url` 与 `page/section` 为唯一可点击 citation 条件；`model_general_knowledge` 显示为模型常识说明；`legacy_explanation` 只可在专家层作为背景来源，不可在普通层显示为 verified badge。
+- 当前 gate 只验证编号 citation 和来源定位忠实性；它不证明来源内容本身足够权威，source registry approved/ready 和 RAG-vs-base evaluation 仍由后续 P 阶段完成。
+- P3 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_evidence_chain_contract.py tests/test_api_app.py tests/test_openapi_contract.py tests/test_working_state_audit_loop.py tests/test_kb_governance.py tests/test_rag_metadata_preservation.py -q`，结果 `79 passed, 2 warnings`；`git diff --check` 针对 P3 后端与测试文件通过。

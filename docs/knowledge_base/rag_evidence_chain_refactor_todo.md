@@ -156,18 +156,18 @@ python -m pytest tests/test_vector_store_query_fusion.py tests/test_kb_evidence_
 
 ### TODO
 
-- [ ] 新增 `validate_citation_faithfulness(answer_text, evidence_chain)`。
-- [ ] 检查 Markdown 中 `[1]`、`[2]` 等引用是否存在于 evidence item。
-- [ ] 检查每个可点击 citation 是否有 `source_url` 且有 `page` 或 `section`。
-- [ ] 如果回答引用了 `model_general_knowledge`，直接标为 fake citation violation。
-- [ ] 如果回答引用了 legacy explanation-only source，允许在专家层显示背景来源，但普通层不显示 citation badge。
-- [ ] gate 结果写入 `workflow_trace.evidence_state` 和 `training_plan_review.dimensions.evidence_control`。
+- [x] 新增 `validate_citation_faithfulness(answer_text, evidence_chain)`。
+- [x] 检查 Markdown 中 `[1]`、`[2]` 等引用是否存在于 evidence item。
+- [x] 检查每个可点击 citation 是否有 `source_url` 且有 `page` 或 `section`。
+- [x] 如果回答引用了 `model_general_knowledge`，直接标为 fake citation violation。
+- [x] 如果回答引用了 legacy explanation-only source，允许在专家层显示背景来源，但普通层不显示 citation badge。
+- [x] gate 结果写入 `workflow_trace.evidence_state` 和 `training_plan_review.dimensions.evidence_control`。
 
 ### 验收标准
 
-- [ ] `answer [99]` 必须被 auditor 拦截。
-- [ ] 无 `source_url/page/section` 的 source 不生成 citation badge。
-- [ ] fake citation count > 0 时 commercial gate fail。
+- [x] `answer [99]` 必须被 auditor 拦截。
+- [x] 无 `source_url/page/section` 的 source 不生成 citation badge。
+- [x] fake citation count > 0 时 commercial gate fail。
 
 ### 验证命令
 
@@ -176,6 +176,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_working_state_audit_loop.py tests/test_kb_governance.py -q
 ```
+
+实际结果：`tests/test_evidence_chain_contract.py tests/test_api_app.py tests/test_openapi_contract.py tests/test_working_state_audit_loop.py tests/test_kb_governance.py tests/test_rag_metadata_preservation.py -q` 通过，结果 `79 passed, 2 warnings`；`git diff --check` 针对 P3 后端与测试文件通过。
 
 ## P4: Answer Source Mode Contract
 

@@ -159,6 +159,59 @@ def test_query_full_plan_backfills_calendar_contract_when_report_omits_it(monkey
     assert payload["structured_report"]["workflow_trace"]["run_id"] == "state-level-trace"
 
 
+def test_query_response_records_fake_citation_gate_in_trace_and_plan_review(monkeypatch):
+    structured_plan = _one_week_calendar_contract_plan()
+    fake_app = _FakeIntegratedApp(
+        result={
+            "final_report": "这份计划的证据见 [99]。",
+            "structured_training_plan": structured_plan,
+            "structured_report": {"summary": "workflow report without calendar"},
+            "evidence_bundle": {
+                "evidence_items": [
+                    {
+                        "evidence_id": "chunk-1",
+                        "citation_label": "[1]",
+                        "source_file": "approved.md",
+                        "page": 1,
+                        "trace": {"source_url": "https://example.com/approved", "section": "threshold"},
+                        "evidence_domain": "protocol",
+                        "prescription_permission": "can_write_core",
+                    }
+                ],
+                "health": {"ready": True, "chunks_count": 1, "faiss_ready": True},
+            },
+            "token_usage": {},
+            "audit_scores": {"consistency": 90, "safety": 90, "roi": 70, "summary": "通过"},
+            "guided_questions": [],
+        }
+    )
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "请完整评审这份半马训练计划",
+            "user_id": "default_user",
+            "response_mode": "full",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    violation = payload["evidence_chain"]["fake_citation_violations"][0]
+    assert violation["citation_label"] == "[99]"
+    assert violation["reason"] == "unknown_citation"
+    evidence_state = payload["workflow_trace"]["evidence_state"]
+    assert evidence_state["citation_gate_status"] == "failed"
+    assert evidence_state["fake_citation_count"] == 1
+    evidence_control = payload["training_plan_review"]["dimensions"]["evidence_control"]
+    assert evidence_control["citation_gate_status"] == "failed"
+    assert evidence_control["fake_citation_count"] == 1
+
+
 def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monkeypatch):
     from marathon_qa_assistant.services.database import _Database
 

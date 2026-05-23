@@ -969,13 +969,46 @@ def _build_response_evidence_chain(
     query: str,
     evidence_bundle: Any = None,
     answer_source_mode: str = "",
+    answer_text: str = "",
 ) -> Dict[str, Any]:
     return build_evidence_chain_payload(
         query=query,
         evidence_bundle=evidence_bundle if isinstance(evidence_bundle, dict) else None,
         answer_source_mode=answer_source_mode,
+        answer_text=answer_text,
         health=get_knowledge_base_health_snapshot(),
     )
+
+
+def _attach_citation_gate_to_trace_and_review(
+    *,
+    workflow_trace: Dict[str, Any],
+    training_plan_review: Dict[str, Any],
+    evidence_chain: Dict[str, Any],
+) -> None:
+    gate = evidence_chain.get("citation_gate") if isinstance(evidence_chain.get("citation_gate"), dict) else {}
+    summary = {
+        "citation_gate_status": str(gate.get("status") or "passed"),
+        "fake_citation_count": int(gate.get("fake_citation_count") or 0),
+        "fake_citation_violations": list(gate.get("violations") or []),
+    }
+    evidence_state = workflow_trace.setdefault("evidence_state", {})
+    if isinstance(evidence_state, dict):
+        evidence_state.update(summary)
+
+    if not isinstance(training_plan_review, dict):
+        return
+    dimensions = training_plan_review.setdefault("dimensions", {})
+    if not isinstance(dimensions, dict):
+        return
+    evidence_control = dimensions.setdefault("evidence_control", {})
+    if not isinstance(evidence_control, dict):
+        return
+    evidence_control.update(summary)
+    evidence_control["citation_gate"] = gate
+    if summary["fake_citation_count"] > 0:
+        evidence_control["status"] = "attention"
+        training_plan_review["status"] = "needs_attention"
 
 
 async def _build_skeleton_plan_response(
@@ -1031,6 +1064,12 @@ async def _build_skeleton_plan_response(
         query=request.query,
         evidence_bundle=state.get("evidence_bundle"),
         answer_source_mode="structured_plan_rule",
+        answer_text=report,
+    )
+    _attach_citation_gate_to_trace_and_review(
+        workflow_trace=workflow_trace,
+        training_plan_review=training_plan_review,
+        evidence_chain=evidence_chain,
     )
     save_started = time.perf_counter()
     training_plan_id = _save_plan_if_ready(structured_plan, request, daily_schedule_cards)
@@ -1150,7 +1189,13 @@ def _query_response_from_state(
             query=request.query,
             evidence_bundle=result.get("evidence_bundle"),
             answer_source_mode=_answer_source_mode_from_result(result, structured_plan, generation_status),
+            answer_text=str(result.get("final_report") or result.get("report") or ""),
         )
+    _attach_citation_gate_to_trace_and_review(
+        workflow_trace=workflow_trace,
+        training_plan_review=training_plan_review,
+        evidence_chain=evidence_chain,
+    )
 
     response = QueryResponse(
         report=result.get("final_report", ""),

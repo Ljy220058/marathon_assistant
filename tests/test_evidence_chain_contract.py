@@ -3,6 +3,7 @@ from marathon_qa_assistant.services.kb.evidence_chain import (
     build_evidence_chain_payload,
     build_model_general_knowledge_item,
     build_needs_evidence_item,
+    validate_citation_faithfulness,
 )
 
 
@@ -131,3 +132,77 @@ def test_runner_projection_hides_expert_evidence_fields():
     assert "chunk_id" not in item
     assert "expert_metadata" not in item
     assert "C:/private/approved.md" not in str(projected)
+
+
+def test_validate_citation_faithfulness_blocks_unknown_numbered_reference():
+    payload = build_evidence_chain_payload(
+        query="threshold run",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-1",
+                    "citation_label": "[1]",
+                    "source_file": "approved.md",
+                    "page": 2,
+                    "trace": {"source_url": "https://example.com/approved", "section": "threshold"},
+                    "evidence_domain": "protocol",
+                    "prescription_permission": "can_write_core",
+                }
+            ]
+        },
+        answer_text="阈值跑可以这样安排 [99]。",
+    )
+
+    assert payload["fake_citation_violations"][0]["citation_label"] == "[99]"
+    assert payload["fake_citation_violations"][0]["reason"] == "unknown_citation"
+
+
+def test_validate_citation_faithfulness_blocks_model_and_legacy_citations():
+    chain = {
+        "items": [
+            {
+                **build_model_general_knowledge_item("模型常识"),
+                "citation_label": "[1]",
+            },
+            {
+                "evidence_id": "legacy-1",
+                "citation_label": "[2]",
+                "display_mode": "legacy_explanation",
+                "source_label": "legacy.pdf",
+                "source_url": "",
+                "page": None,
+                "section": "",
+                "prescription_permission": "explanation_only",
+            },
+        ]
+    }
+
+    audit = validate_citation_faithfulness("说明 [1] 和背景 [2]。", chain)
+
+    reasons = {item["reason"] for item in audit["violations"]}
+    assert audit["status"] == "failed"
+    assert audit["fake_citation_count"] == 2
+    assert "model_general_knowledge_cited" in reasons
+    assert "legacy_explanation_cited" in reasons
+
+
+def test_validate_citation_faithfulness_allows_verified_located_source():
+    audit = validate_citation_faithfulness(
+        "已定位来源 [1]。",
+        {
+            "items": [
+                {
+                    "evidence_id": "chunk-1",
+                    "citation_label": "[1]",
+                    "display_mode": "verified_source",
+                    "source_url": "https://example.com/approved",
+                    "page": 2,
+                    "section": "",
+                    "prescription_permission": "can_write_core",
+                }
+            ]
+        },
+    )
+
+    assert audit["status"] == "passed"
+    assert audit["fake_citation_count"] == 0

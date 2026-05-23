@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional
 
 from marathon_qa_assistant.services.kb.models import EvidenceDisplayMode, PrescriptionPermission
@@ -37,6 +38,7 @@ CORE_FIELDS = {
 def build_model_general_knowledge_item(summary: str = "") -> Dict[str, Any]:
     return {
         "evidence_id": "model_general_knowledge",
+        "citation_label": "",
         "display_mode": EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value,
         "source_label": "模型常识说明",
         "source_registry_id": "",
@@ -63,6 +65,7 @@ def build_needs_evidence_item(reason: str = "", field_binding: Optional[Dict[str
     suffix = f"：{reason}" if reason else ""
     return {
         "evidence_id": f"needs_evidence:{binding.get('field') or reason or 'unknown'}",
+        "citation_label": "",
         "display_mode": EvidenceDisplayMode.NEEDS_EVIDENCE.value,
         "source_label": "待补证据",
         "source_registry_id": "",
@@ -89,6 +92,7 @@ def build_evidence_chain_payload(
     query: str = "",
     evidence_bundle: Optional[Dict[str, Any]] = None,
     answer_source_mode: str = "",
+    answer_text: str = "",
     health: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     bundle = evidence_bundle if isinstance(evidence_bundle, dict) else {}
@@ -102,16 +106,19 @@ def build_evidence_chain_payload(
         items.append(build_model_general_knowledge_item())
 
     inferred_mode = answer_source_mode if answer_source_mode in ANSWER_SOURCE_MODES else _infer_answer_source_mode(items)
-    return {
+    payload = {
         "query": str(query or bundle.get("query") or ""),
         "answer_source_mode": inferred_mode,
         "runtime_index_schema_version": str(health_payload.get("index_schema_version") or health_payload.get("source") or "unknown"),
         "runtime_core_prescription_enabled": bool(health_payload.get("runtime_core_prescription_enabled")),
         "items": items,
-        "fake_citation_violations": [],
         "core_permission_violations": _core_permission_violations(items),
         "source_path_leak_count": _source_path_leak_count(items),
     }
+    citation_audit = validate_citation_faithfulness(answer_text, payload)
+    payload["fake_citation_violations"] = citation_audit["violations"]
+    payload["citation_gate"] = citation_audit
+    return payload
 
 
 def evidence_chain_item_from_bundle_item(item: Dict[str, Any]) -> Dict[str, Any]:
@@ -137,6 +144,7 @@ def evidence_chain_item_from_bundle_item(item: Dict[str, Any]) -> Dict[str, Any]
     )
     return {
         "evidence_id": str(item.get("evidence_id") or chunk_id or source_registry_id or source_file or display_mode),
+        "citation_label": str(item.get("citation_label") or ""),
         "display_mode": display_mode,
         "source_label": source_file or source_registry_id or _label_for_mode(display_mode),
         "source_registry_id": source_registry_id,
@@ -197,6 +205,92 @@ def _infer_answer_source_mode(items: List[Dict[str, Any]]) -> str:
     return "model_general_knowledge" if not items else "needs_evidence"
 
 
+def validate_citation_faithfulness(answer_text: str, evidence_chain: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Validate that numbered Markdown citations point to located verified sources."""
+    refs = _numbered_citations(answer_text)
+    items = [
+        item
+        for item in ((evidence_chain or {}).get("items") or [])
+        if isinstance(item, dict)
+    ]
+    by_label: Dict[str, Dict[str, Any]] = {}
+    citable_labels: List[str] = []
+    for index, item in enumerate(items, start=1):
+        label = str(item.get("citation_label") or f"[{index}]").strip()
+        if not label:
+            continue
+        by_label.setdefault(label, item)
+        if _is_located_verified_item(item):
+            citable_labels.append(label)
+
+    violations: List[Dict[str, Any]] = []
+    for label in refs:
+        item = by_label.get(label)
+        if item is None:
+            violations.append(
+                {
+                    "citation_label": label,
+                    "reason": "unknown_citation",
+                    "display_mode": "",
+                    "evidence_id": "",
+                    "severity": "blocking",
+                }
+            )
+            continue
+        reason = _citation_violation_reason(item)
+        if reason:
+            violations.append(
+                {
+                    "citation_label": label,
+                    "reason": reason,
+                    "display_mode": str(item.get("display_mode") or ""),
+                    "evidence_id": str(item.get("evidence_id") or ""),
+                    "severity": "blocking",
+                }
+            )
+
+    return {
+        "status": "passed" if not violations else "failed",
+        "fake_citation_count": len(violations),
+        "cited_labels": refs,
+        "citable_labels": citable_labels,
+        "violations": violations,
+    }
+
+
+def _numbered_citations(answer_text: str) -> List[str]:
+    seen = set()
+    labels: List[str] = []
+    for raw in re.findall(r"\[(\d+)\]", str(answer_text or "")):
+        label = f"[{raw}]"
+        if label not in seen:
+            labels.append(label)
+            seen.add(label)
+    return labels
+
+
+def _is_located_verified_item(item: Dict[str, Any]) -> bool:
+    if str(item.get("display_mode") or "") != EvidenceDisplayMode.VERIFIED_SOURCE.value:
+        return False
+    source_url = str(item.get("source_url") or "")
+    page = item.get("page")
+    section = str(item.get("section") or "")
+    return bool(source_url and (page not in (None, "", 0) or section))
+
+
+def _citation_violation_reason(item: Dict[str, Any]) -> str:
+    display_mode = str(item.get("display_mode") or "")
+    if display_mode == EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value:
+        return "model_general_knowledge_cited"
+    if display_mode == EvidenceDisplayMode.LEGACY_EXPLANATION.value:
+        return "legacy_explanation_cited"
+    if display_mode != EvidenceDisplayMode.VERIFIED_SOURCE.value:
+        return "non_citable_display_mode"
+    if not _is_located_verified_item(item):
+        return "unlocatable_citation"
+    return ""
+
+
 def _core_permission_violations(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     violations = []
     for item in items:
@@ -255,4 +349,3 @@ def _summary_for_mode(display_mode: str) -> str:
         EvidenceDisplayMode.LEGACY_EXPLANATION.value: "旧知识库解释性来源，不能写入核心处方。",
         EvidenceDisplayMode.REJECTED_SOURCE.value: "该来源已被阻断或隔离。",
     }.get(display_mode, "证据状态待复核。")
-
