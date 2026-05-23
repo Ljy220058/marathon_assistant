@@ -217,17 +217,17 @@ python -m pytest tests/test_api_app.py tests/test_state_models.py -q
 
 ### TODO
 
-- [ ] `/query` response 携带 `rag_health.index_schema_version`、`metadata_completeness`、`runtime_core_prescription_enabled`。
-- [ ] 当 runtime 是 `legacy` 或 `mixed` 时，所有 vector KB 命中最多为 `legacy_explanation`。
-- [ ] 当 `runtime_core_prescription_enabled=false` 时，后端不允许把 vector hit 绑定到核心字段。
-- [ ] `training_plan_review` 增加 `runtime_kb_boundary` 维度。
-- [ ] 前端普通层显示“当前依据可解释但不可写核心处方”的人话状态。
+- [x] `/query` response 携带 `rag_health.index_schema_version`、`metadata_completeness`、`runtime_core_prescription_enabled`。
+- [x] 当 runtime 是 `legacy` 或 `mixed` 时，所有 vector KB 命中最多为 `legacy_explanation`。
+- [x] 当 `runtime_core_prescription_enabled=false` 时，后端不允许把 vector hit 绑定到核心字段。
+- [x] `training_plan_review` 增加 `runtime_kb_boundary` 维度。
+- [x] 前端普通层显示“当前依据可解释但不可写核心处方”的人话状态。
 
 ### 验收标准
 
-- [ ] 当前 legacy runtime 下不会出现 `verified_core_prescription_source`。
-- [ ] `/health` 与 `/query` 中 runtime 状态一致。
-- [ ] runtime 切 v2 前，核心处方仍只来自协议和动作库。
+- [x] 当前 legacy runtime 下不会出现 `verified_core_prescription_source`。
+- [x] `/health` 与 `/query` 中 runtime 状态一致。
+- [x] runtime 切 v2 前，核心处方仍只来自协议和动作库。
 
 ### 验证命令
 
@@ -236,6 +236,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_kb_health.py tests/test_vector_kb_runtime_contract.py tests/test_training_plan_review.py -q
 ```
+
+实际结果：`tests/test_api_app.py tests/test_evidence_chain_contract.py tests/test_openapi_contract.py tests/test_training_plan_review.py tests/test_kb_health.py tests/test_vector_kb_runtime_contract.py -q` 通过，结果 `68 passed, 2 warnings`；`git diff --check` 针对 P5 后端与测试文件通过。
 
 ## P6: Daily Card Evidence Binding Unification
 

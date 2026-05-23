@@ -206,3 +206,34 @@ def test_validate_citation_faithfulness_allows_verified_located_source():
 
     assert audit["status"] == "passed"
     assert audit["fake_citation_count"] == 0
+
+
+def test_legacy_runtime_downgrades_located_vector_source_to_legacy_explanation():
+    payload = build_evidence_chain_payload(
+        query="threshold run",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-legacy-runtime",
+                    "citation_label": "[1]",
+                    "source_file": "approved.md",
+                    "page": 2,
+                    "trace": {"source_url": "https://example.com/approved", "section": "threshold"},
+                    "evidence_domain": "protocol",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "can_write_core",
+                }
+            ],
+            "health": {
+                "index_schema_version": "legacy",
+                "runtime_core_prescription_enabled": False,
+            },
+        },
+        answer_text="不应该可点击 [1]。",
+    )
+
+    item = payload["items"][0]
+    assert item["display_mode"] == "legacy_explanation"
+    assert item["source_url"] == ""
+    assert payload["citation_gate"]["status"] == "failed"
+    assert payload["fake_citation_violations"][0]["reason"] == "legacy_explanation_cited"

@@ -319,6 +319,13 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
     assert payload["training_plan_id"]
     assert payload["answer_source_mode"] == "structured_plan_rule"
     assert payload["workflow_trace"]["evidence_state"]["answer_source_mode"] == "structured_plan_rule"
+    assert payload["rag_health"]["index_schema_version"] == "test"
+    assert payload["rag_health"]["metadata_completeness"] == 0.0
+    assert payload["rag_health"]["runtime_core_prescription_enabled"] is False
+    boundary = payload["training_plan_review"]["dimensions"]["runtime_kb_boundary"]
+    assert boundary["index_schema_version"] == "test"
+    assert boundary["runtime_core_prescription_enabled"] is False
+    assert boundary["status"] == "not_core_enabled"
     assert db.get_plan(payload["training_plan_id"]) is not None
     assert fake_app.calls == []
 

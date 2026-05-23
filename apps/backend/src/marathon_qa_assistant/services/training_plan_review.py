@@ -390,11 +390,32 @@ def _review_layered_kb(days: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def _review_runtime_kb_boundary(rag_health: Dict[str, Any]) -> Dict[str, Any]:
+    health = dict(rag_health or {})
+    schema_version = str(health.get("index_schema_version") or health.get("source") or "unknown")
+    metadata_completeness = health.get("metadata_completeness")
+    runtime_core_enabled = bool(health.get("runtime_core_prescription_enabled"))
+    if runtime_core_enabled:
+        status = "core_enabled"
+    elif schema_version in {"legacy", "mixed", "unknown", ""}:
+        status = "explanation_only"
+    else:
+        status = "not_core_enabled"
+    return {
+        "status": status,
+        "index_schema_version": schema_version,
+        "metadata_completeness": metadata_completeness,
+        "runtime_core_prescription_enabled": runtime_core_enabled,
+        "boundary": "vector KB can explain evidence, but cannot write core prescription unless runtime_core_prescription_enabled=true",
+    }
+
+
 def build_training_plan_review(
     *,
     structured_training_plan: Optional[Dict[str, Any]],
     daily_schedule_cards: Optional[Iterable[Any]],
     training_load_summary: Optional[Dict[str, Any]] = None,
+    rag_health: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     plan = structured_training_plan if isinstance(structured_training_plan, dict) else {}
     days = _day_dicts(daily_schedule_cards)
@@ -412,6 +433,7 @@ def build_training_plan_review(
         "evidence_control": evidence_review,
         "rag_vs_base_model": _review_rag_vs_base_model(evidence_review),
         "layered_kb": _review_layered_kb(days),
+        "runtime_kb_boundary": _review_runtime_kb_boundary(dict(rag_health or {})),
     }
     risks = [
         f"{name}: {dimension.get('status')}"

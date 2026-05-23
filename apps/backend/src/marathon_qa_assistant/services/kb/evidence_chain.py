@@ -102,6 +102,7 @@ def build_evidence_chain_payload(
         for item in (bundle.get("evidence_items") or [])
         if isinstance(item, dict)
     ]
+    _apply_runtime_display_boundaries(items, health_payload)
     if not items and answer_source_mode == "model_general_knowledge":
         items.append(build_model_general_knowledge_item())
 
@@ -289,6 +290,34 @@ def _citation_violation_reason(item: Dict[str, Any]) -> str:
     if not _is_located_verified_item(item):
         return "unlocatable_citation"
     return ""
+
+
+def _apply_runtime_display_boundaries(items: List[Dict[str, Any]], health_payload: Dict[str, Any]) -> None:
+    if _runtime_allows_verified_vector_sources(health_payload):
+        return
+    for item in items:
+        if item.get("display_mode") != EvidenceDisplayMode.VERIFIED_SOURCE.value:
+            continue
+        retrieval_mode = str(item.get("retrieval_mode") or "")
+        if retrieval_mode not in {"vector", "rag_sources", "fusion", "similarity", "kb_fallback"}:
+            continue
+        item["display_mode"] = EvidenceDisplayMode.LEGACY_EXPLANATION.value
+        item["source_url"] = ""
+        item["page"] = None
+        item["section"] = ""
+        item["prescription_permission"] = PrescriptionPermission.EXPLANATION_ONLY.value
+        item["allowed_use"] = "explanation"
+        item["user_facing_summary"] = _summary_for_mode(EvidenceDisplayMode.LEGACY_EXPLANATION.value)
+        expert_metadata = item.setdefault("expert_metadata", {})
+        if isinstance(expert_metadata, dict):
+            expert_metadata["runtime_downgrade_reason"] = "runtime_core_prescription_disabled"
+
+
+def _runtime_allows_verified_vector_sources(health_payload: Dict[str, Any]) -> bool:
+    schema_version = str(health_payload.get("index_schema_version") or health_payload.get("source") or "").lower()
+    if schema_version in {"legacy", "mixed", "unknown", ""}:
+        return False
+    return bool(health_payload.get("runtime_core_prescription_enabled"))
 
 
 def _core_permission_violations(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

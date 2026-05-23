@@ -614,3 +614,13 @@ git status --short --branch
 - 医疗红旗仍由风险门 `medical_referral` 处理，不允许被 `model_general_knowledge` 覆盖或继续生成训练负荷调整。
 - Frontend owner 下一轮需要：以顶层 `answer_source_mode` 驱动 EvidenceDrawer 摘要和普通层状态文案；`model_general_knowledge` 是“可回答但无引用”，`needs_evidence` 是“处方证据不足”，两者不能混用。
 - P4 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_api_app.py tests/test_state_models.py tests/test_openapi_contract.py tests/test_evidence_chain_contract.py tests/test_profile_field_gating.py -q`，结果 `71 passed, 2 warnings`；`git diff --check` 针对 P4 后端与测试文件通过。
+
+## 24. RAG Evidence Chain P5 Runtime Health Gate Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/rag-evidence-p5-runtime-health-gates`。
+- `/query` response 现在返回 `rag_health`，普通层可读字段包括 `index_schema_version`、`metadata_completeness`、`runtime_core_prescription_enabled`、`chunks_count`、`faiss_ready`、`ready`。
+- `training_plan_review.dimensions.runtime_kb_boundary` 已新增，用于说明当前 runtime KB 是否只能解释、是否允许写核心处方。
+- 当 runtime schema 是 `legacy/mixed/unknown` 或 `runtime_core_prescription_enabled=false` 时，vector/rag_sources/fusion 命中的 located source 会从 `verified_source` 降级为 `legacy_explanation`，并清空普通层 `source_url/page/section`，避免前端生成可点击 verified badge。
+- Runtime gate 会把降级后的 vector evidence `prescription_permission` 改为 `explanation_only`；核心处方仍只能来自 protocol/action_library 或明确 `needs_evidence`。
+- Frontend owner 下一轮需要：在 EvidenceDrawer 摘要里读取 `rag_health` 与 `runtime_kb_boundary`，用人话显示“当前知识库可解释但不可写核心处方”；不得把 legacy runtime 的 vector source 显示为 verified citation。
+- P5 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_api_app.py tests/test_evidence_chain_contract.py tests/test_openapi_contract.py tests/test_training_plan_review.py tests/test_kb_health.py tests/test_vector_kb_runtime_contract.py -q`，结果 `68 passed, 2 warnings`；`git diff --check` 针对 P5 后端与测试文件通过。

@@ -928,7 +928,19 @@ def _has_calendar_source_plan(structured_plan: Any) -> bool:
     return isinstance(structured_plan, dict) and bool(structured_plan.get("week_plans"))
 
 
-def _calendar_contract_from_plan(structured_plan: Dict[str, Any]) -> Dict[str, Any]:
+def _public_rag_health(health: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    payload = dict(health or get_knowledge_base_health_snapshot() or {})
+    return {
+        "index_schema_version": str(payload.get("index_schema_version") or payload.get("source") or "unknown"),
+        "metadata_completeness": float(payload.get("metadata_completeness") or 0.0),
+        "runtime_core_prescription_enabled": bool(payload.get("runtime_core_prescription_enabled")),
+        "chunks_count": int(payload.get("chunks_count") or 0),
+        "faiss_ready": bool(payload.get("faiss_ready")),
+        "ready": bool(payload.get("ready") or payload.get("ok")),
+    }
+
+
+def _calendar_contract_from_plan(structured_plan: Dict[str, Any], rag_health: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     calendar = generate_daily_schedule(structured_plan, enable_kb_fallback=True)
     calendar_payload = calendar.to_dict() if calendar else None
     daily_schedule_cards = list((calendar_payload or {}).get("days") or [])
@@ -942,6 +954,7 @@ def _calendar_contract_from_plan(structured_plan: Dict[str, Any]) -> Dict[str, A
             structured_training_plan=structured_plan,
             daily_schedule_cards=daily_schedule_cards,
             training_load_summary=training_load_summary,
+            rag_health=rag_health,
         ),
     }
 
@@ -985,13 +998,14 @@ def _build_response_evidence_chain(
     evidence_bundle: Any = None,
     answer_source_mode: str = "",
     answer_text: str = "",
+    rag_health: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     return build_evidence_chain_payload(
         query=query,
         evidence_bundle=evidence_bundle if isinstance(evidence_bundle, dict) else None,
         answer_source_mode=answer_source_mode,
         answer_text=answer_text,
-        health=get_knowledge_base_health_snapshot(),
+        health=rag_health or get_knowledge_base_health_snapshot(),
     )
 
 
@@ -1052,10 +1066,12 @@ async def _build_skeleton_plan_response(
     calendar_payload = monthly_training_calendar.to_dict() if monthly_training_calendar else None
     phases = list((calendar_payload or {}).get("phases") or [])
     training_load_summary = dict((calendar_payload or {}).get("training_load_summary") or {})
+    rag_health = _public_rag_health()
     training_plan_review = build_training_plan_review(
         structured_training_plan=structured_plan,
         daily_schedule_cards=daily_schedule_cards,
         training_load_summary=training_load_summary,
+        rag_health=rag_health,
     )
     report = _compose_skeleton_report(structured_plan, message)
     audit_scores = {
@@ -1082,6 +1098,7 @@ async def _build_skeleton_plan_response(
         evidence_bundle=state.get("evidence_bundle"),
         answer_source_mode=answer_source_mode,
         answer_text=report,
+        rag_health=rag_health,
     )
     _attach_citation_gate_to_trace_and_review(
         workflow_trace=workflow_trace,
@@ -1120,6 +1137,7 @@ async def _build_skeleton_plan_response(
         if isinstance(structured_plan, dict)
         else None,
         answer_source_mode=str(evidence_chain.get("answer_source_mode") or answer_source_mode),
+        rag_health=rag_health,
         workflow_trace=workflow_trace,
         evidence_chain=evidence_chain,
     )
@@ -1144,6 +1162,7 @@ def _query_response_from_state(
     phases: List[Dict[str, Any]] = []
     training_load_summary: Dict[str, Any] = {}
     training_plan_review: Dict[str, Any] = {}
+    rag_health = _public_rag_health()
     if isinstance(structured_report, dict):
         training_explanation_panel = structured_report.get("training_explanation_panel")
         monthly_training_calendar = structured_report.get("monthly_training_calendar")
@@ -1153,7 +1172,7 @@ def _query_response_from_state(
         training_plan_review = dict(structured_report.get("training_plan_review") or {})
 
     if (not monthly_training_calendar or not daily_schedule_cards) and _has_calendar_source_plan(structured_plan):
-        contract = _calendar_contract_from_plan(structured_plan)
+        contract = _calendar_contract_from_plan(structured_plan, rag_health=rag_health)
         monthly_training_calendar = monthly_training_calendar or contract["monthly_training_calendar"]
         daily_schedule_cards = daily_schedule_cards or contract["daily_schedule_cards"]
         phases = phases or contract["phases"]
@@ -1175,6 +1194,7 @@ def _query_response_from_state(
             structured_training_plan=structured_plan,
             daily_schedule_cards=daily_schedule_cards or [],
             training_load_summary=training_load_summary,
+            rag_health=rag_health,
         )
         if isinstance(structured_report, dict):
             structured_report["training_plan_review"] = training_plan_review
@@ -1212,6 +1232,7 @@ def _query_response_from_state(
             evidence_bundle=result.get("evidence_bundle"),
             answer_source_mode=answer_source_mode,
             answer_text=str(result.get("final_report") or result.get("report") or ""),
+            rag_health=rag_health,
         )
     else:
         answer_source_mode = _answer_source_mode_from_review(
@@ -1251,6 +1272,7 @@ def _query_response_from_state(
         if isinstance(structured_plan, dict)
         else None,
         answer_source_mode=answer_source_mode,
+        rag_health=rag_health,
         workflow_trace=workflow_trace,
         evidence_chain=evidence_chain,
     )
@@ -1506,6 +1528,7 @@ async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_A
         build_training_plan_review(
             structured_training_plan=structured_plan,
             daily_schedule_cards=calendar_day_contract,
+            rag_health=_public_rag_health(),
         )
         if isinstance(structured_plan, dict)
         else {}
@@ -1698,6 +1721,7 @@ async def get_training_calendar(request: QueryRequest, http_request: Request):
             structured_training_plan=structured_training_plan,
             daily_schedule_cards=daily_schedule_cards,
             training_load_summary=calendar.training_load_summary,
+            rag_health=_public_rag_health(),
         )
         response = TrainingCalendarResponse(
             year=calendar.year,
