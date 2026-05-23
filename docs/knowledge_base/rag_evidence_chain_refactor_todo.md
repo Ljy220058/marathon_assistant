@@ -95,17 +95,17 @@ python -m pytest tests/test_kb_evidence_binding.py tests/test_openapi_contract.p
 
 ### TODO
 
-- [ ] 新增 `EvidenceChainItem` schema，字段包含 `evidence_id`、`display_mode`、`source_label`、`source_registry_id`、`source_url`、`page`、`section`、`chunk_id`、`text_span`、`evidence_domain`、`knowledge_layer`、`allowed_use`、`prescription_permission`、`retrieval_mode`、`quality_tier`、`review_status`、`field_binding`、`user_facing_summary`、`expert_metadata`。
-- [ ] 新增 `EvidenceChainPayload` schema，字段包含 `items`、`answer_source_mode`、`runtime_index_schema_version`、`runtime_core_prescription_enabled`、`fake_citation_violations`、`core_permission_violations`、`source_path_leak_count`。
-- [ ] 保留旧 `evidence_bundle/evidence_base` 兼容字段，但由 canonical DTO 投影生成。
-- [ ] `model_general_knowledge` 项必须没有 `source_url/page/chunk_id`，且 `display_mode=model_general_knowledge`。
-- [ ] `needs_evidence` 项必须说明缺失原因，不可带 citation label。
+- [x] 新增 `EvidenceChainItem` schema，字段包含 `evidence_id`、`display_mode`、`source_label`、`source_registry_id`、`source_url`、`page`、`section`、`chunk_id`、`text_span`、`evidence_domain`、`knowledge_layer`、`allowed_use`、`prescription_permission`、`retrieval_mode`、`quality_tier`、`review_status`、`field_binding`、`user_facing_summary`、`expert_metadata`。
+- [x] 新增 `EvidenceChainPayload` schema，字段包含 `items`、`answer_source_mode`、`runtime_index_schema_version`、`runtime_core_prescription_enabled`、`fake_citation_violations`、`core_permission_violations`、`source_path_leak_count`。
+- [x] 保留旧 `evidence_bundle/evidence_base` 兼容字段，但由 canonical DTO 投影生成。
+- [x] `model_general_knowledge` 项必须没有 `source_url/page/chunk_id`，且 `display_mode=model_general_knowledge`。
+- [x] `needs_evidence` 项必须说明缺失原因，不可带 citation label。
 
 ### 验收标准
 
-- [ ] `/evidence-tier-reference` 暴露 canonical DTO 字段与 display mode。
-- [ ] `QueryResponse`、`TrainingCalendarResponse`、`PlanDetailResponse` 至少有兼容字段能映射到 canonical DTO。
-- [ ] 旧前端不崩，新前端可以只读 canonical DTO 渲染证据抽屉。
+- [x] `/evidence-tier-reference` 暴露 canonical DTO 字段与 display mode。
+- [x] `QueryResponse`、`TrainingCalendarResponse`、`PlanDetailResponse` 至少有兼容字段能映射到 canonical DTO。
+- [x] 旧前端不崩，新前端可以只读 canonical DTO 渲染证据抽屉。
 
 ### 验证命令
 
@@ -114,6 +114,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_openapi_contract.py tests/test_api_app.py -q
 ```
+
+实际结果：`tests/test_evidence_chain_contract.py tests/test_openapi_contract.py tests/test_api_app.py -q` 通过，结果 `50 passed, 2 warnings`；`compileall` 针对 `evidence_chain.py/models.py/schemas.py/api_app.py` 通过；`git diff --check` 通过。
 
 ## P2: Retrieval Metadata Preservation
 

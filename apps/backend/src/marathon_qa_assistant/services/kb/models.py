@@ -58,6 +58,9 @@ class EvidenceDisplayMode(str, Enum):
     VERIFIED_SOURCE = "verified_source"
     MODEL_GENERAL_KNOWLEDGE = "model_general_knowledge"
     NEEDS_EVIDENCE = "needs_evidence"
+    GRAPH_HINT = "graph_hint"
+    LEGACY_EXPLANATION = "legacy_explanation"
+    REJECTED_SOURCE = "rejected_source"
 
 
 class SourceReviewStatus(str, Enum):

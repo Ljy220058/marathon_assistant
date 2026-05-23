@@ -570,3 +570,14 @@ git status --short --branch
 - Backend owner 下一轮优先做 P0-P2：证据链 inventory、canonical evidence DTO、retrieval metadata preservation。完成前不得宣称证据链已商用 ready。
 - QA/reviewer 下一轮必须验证：fake citation 为 0；legacy runtime 不写核心处方；日卡主课来源和 QA 引用来源不冲突；Graph-only evidence 不显示为 verified source；普通问答无证据时允许模型常识回答但没有假引用。
 - 本轮未开启子 agent；后续继续遵守同一时间最多 1 个子 agent，完成后立刻关闭并记录在 review TODO。
+
+## 20. RAG Evidence Chain P0-P1 Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/rag-evidence-p1-canonical-dto`。
+- P0 已新增 `docs/knowledge_base/reports/evidence_chain_inventory.md`，列清 retrieval、plan、daily card、GraphRAG、frontend EvidenceDrawer 五条证据链，以及字段 owner、普通层/专家层可见边界和 display mode。
+- P1 已新增后端 canonical `evidence_chain` payload builder：`apps/backend/src/marathon_qa_assistant/services/kb/evidence_chain.py`。
+- `QueryResponse`、`PlanDetailResponse`、`TrainingCalendarResponse` 现在都带 `evidence_chain` 字段；旧 `evidence_bundle/evidence_base` 仍保留兼容，不要求前端立即切换。
+- `/evidence-tier-reference` 现在暴露 display modes：`verified_source`、`model_general_knowledge`、`needs_evidence`、`graph_hint`、`legacy_explanation`、`rejected_source`；并暴露 answer source modes：`verified_rag`、`model_general_knowledge`、`needs_evidence`、`medical_referral`、`structured_plan_rule`。
+- Runner 普通层投影会移除 `expert_metadata/source_registry_id/retrieval_mode/score/source_path/local_path/chunk_id/rag_eval/source_quality`，前端普通层不得绕过该投影读取专家字段。
+- 前端 owner 下一步应优先读 `response.evidence_chain.items`；如果不存在，才走旧 `evidence_bundle/evidence_base` 兼容路径。任何前端自行拼接的证据项都必须标为 fallback，不能显示 verified citation。
+- P1 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_evidence_chain_contract.py tests/test_openapi_contract.py -q`，结果 `10 passed`。

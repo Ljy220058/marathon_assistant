@@ -52,6 +52,11 @@ from marathon_qa_assistant.core.kb_bootstrap import (
 )
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
 from marathon_qa_assistant.services.database import get_db
+from marathon_qa_assistant.services.kb.evidence_chain import (
+    ANSWER_SOURCE_MODES,
+    EVIDENCE_CHAIN_DISPLAY_MODES,
+    build_evidence_chain_payload,
+)
 from marathon_qa_assistant.services.training_plan_review import build_training_plan_review
 from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
@@ -678,6 +683,15 @@ _RUNNER_EXPERT_ONLY_NESTED_KEYS = {
     "trace",
     "training_load_factors",
     "raw_text",
+    "expert_metadata",
+    "source_registry_id",
+    "retrieval_mode",
+    "score",
+    "source_path",
+    "local_path",
+    "chunk_id",
+    "rag_eval",
+    "source_quality",
 }
 
 
@@ -748,6 +762,7 @@ def _project_runner_query_response(response: QueryResponse) -> Dict[str, Any]:
     ):
         payload[key] = _drop_expert_keys_deep(payload.get(key))
     payload["training_plan_review"] = _project_runner_training_plan_review(payload.get("training_plan_review") or {})
+    payload["evidence_chain"] = _drop_expert_keys_deep(payload.get("evidence_chain") or {})
     return payload
 
 
@@ -838,6 +853,7 @@ def _project_runner_plan_detail_response(payload: Dict[str, Any]) -> Dict[str, A
     projected["adjustment_history"] = _project_runner_adjustment_history(projected.get("adjustment_history") or [])
     projected["execution_status_summary"] = _drop_expert_keys_deep(projected.get("execution_status_summary") or {})
     projected["training_plan_review"] = _project_runner_training_plan_review(projected.get("training_plan_review") or {})
+    projected["evidence_chain"] = _drop_expert_keys_deep(projected.get("evidence_chain") or {})
     return projected
 
 
@@ -852,6 +868,7 @@ def _project_runner_training_calendar_response(response: TrainingCalendarRespons
     for key in ("days", "phases", "monthly_training_calendar", "daily_schedule_cards", "training_load_summary"):
         payload[key] = _drop_expert_keys_deep(payload.get(key))
     payload["training_plan_review"] = _project_runner_training_plan_review(payload.get("training_plan_review") or {})
+    payload["evidence_chain"] = _drop_expert_keys_deep(payload.get("evidence_chain") or {})
     return payload
 
 
@@ -929,6 +946,38 @@ def _calendar_contract_from_plan(structured_plan: Dict[str, Any]) -> Dict[str, A
     }
 
 
+def _answer_source_mode_from_result(
+    result: Dict[str, Any],
+    structured_plan: Any,
+    generation_status: str,
+) -> str:
+    if generation_status == "medical_referral":
+        return "medical_referral"
+    if isinstance(structured_plan, dict) and structured_plan.get("week_plans"):
+        return "structured_plan_rule"
+    report = str(result.get("final_report") or result.get("report") or "")
+    if "source_type: llm_general_knowledge" in report or "模型通用知识回答" in report:
+        return "model_general_knowledge"
+    bundle = result.get("evidence_bundle") if isinstance(result.get("evidence_bundle"), dict) else {}
+    if bundle.get("evidence_items"):
+        return ""
+    return "model_general_knowledge"
+
+
+def _build_response_evidence_chain(
+    *,
+    query: str,
+    evidence_bundle: Any = None,
+    answer_source_mode: str = "",
+) -> Dict[str, Any]:
+    return build_evidence_chain_payload(
+        query=query,
+        evidence_bundle=evidence_bundle if isinstance(evidence_bundle, dict) else None,
+        answer_source_mode=answer_source_mode,
+        health=get_knowledge_base_health_snapshot(),
+    )
+
+
 async def _build_skeleton_plan_response(
     request: QueryRequest,
     profile: Dict[str, Any],
@@ -978,6 +1027,11 @@ async def _build_skeleton_plan_response(
     state["workflow_trace"] = workflow_trace
     if isinstance(structured_plan, dict):
         structured_plan["workflow_trace"] = workflow_trace
+    evidence_chain = _build_response_evidence_chain(
+        query=request.query,
+        evidence_bundle=state.get("evidence_bundle"),
+        answer_source_mode="structured_plan_rule",
+    )
     save_started = time.perf_counter()
     training_plan_id = _save_plan_if_ready(structured_plan, request, daily_schedule_cards)
     save_elapsed = time.perf_counter() - save_started
@@ -1010,6 +1064,7 @@ async def _build_skeleton_plan_response(
         if isinstance(structured_plan, dict)
         else None,
         workflow_trace=workflow_trace,
+        evidence_chain=evidence_chain,
     )
     record_generation_status(generation_status, duration_sec=total_elapsed)
     return response
@@ -1089,6 +1144,13 @@ def _query_response_from_state(
         structured_report["workflow_trace"] = workflow_trace
     if isinstance(structured_plan, dict):
         structured_plan["workflow_trace"] = workflow_trace
+    evidence_chain = result.get("evidence_chain") if isinstance(result.get("evidence_chain"), dict) else {}
+    if not evidence_chain:
+        evidence_chain = _build_response_evidence_chain(
+            query=request.query,
+            evidence_bundle=result.get("evidence_bundle"),
+            answer_source_mode=_answer_source_mode_from_result(result, structured_plan, generation_status),
+        )
 
     response = QueryResponse(
         report=result.get("final_report", ""),
@@ -1112,6 +1174,7 @@ def _query_response_from_state(
         if isinstance(structured_plan, dict)
         else None,
         workflow_trace=workflow_trace,
+        evidence_chain=evidence_chain,
     )
     record_generation_status(generation_status)
     return response
@@ -1380,6 +1443,11 @@ async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_A
         ),
         "adjustment_history": _build_adjustment_history(plan_id, events),
         "training_plan_review": training_plan_review,
+        "evidence_chain": _build_response_evidence_chain(
+            query=str(plan.get("source_query") or ""),
+            evidence_bundle=(structured_plan.get("evidence_bundle") if isinstance(structured_plan, dict) else None),
+            answer_source_mode="structured_plan_rule" if isinstance(structured_plan, dict) else "",
+        ),
     }
     return _project_plan_detail_response_for_role(response_payload, _response_role(http_request))
 
@@ -1488,6 +1556,36 @@ async def get_evidence_tier_reference():
     """返回证据分层标记的中文映射"""
     return {
         "evidence_tiers": EVIDENCE_TIER_LABELS,
+        "evidence_drawer_contract": {
+            "display_modes": EVIDENCE_CHAIN_DISPLAY_MODES,
+            "answer_source_modes": ANSWER_SOURCE_MODES,
+            "public_fields": [
+                "evidence_id",
+                "display_mode",
+                "source_label",
+                "source_url",
+                "page",
+                "section",
+                "evidence_domain",
+                "prescription_permission",
+                "user_facing_summary",
+            ],
+            "expert_only_fields": [
+                "source_registry_id",
+                "retrieval_mode",
+                "score",
+                "chunk_id",
+                "rag_eval",
+                "source_quality",
+                "expert_metadata",
+            ],
+            "no_fake_citation_rule": "When source_url/page/section are missing, display model_general_knowledge or needs_evidence instead of a citation badge.",
+        },
+        "core_prescription_permissions": {
+            "allowed_domains": ["protocol", "action_library"],
+            "required_permission": "can_write_core",
+            "blocked_sources": ["llm_general_knowledge", "sports_science_reference_without_structured_rule"],
+        },
         "descriptions": {
             "action_library": "课表数据来自动作库直接证据，训练方案经过验证。",
             "protocol_rule": "课表由 HMP 基石协议确定性排课，动作库注册表提供执行细节和替代方案。",
@@ -1536,6 +1634,15 @@ async def get_training_calendar(request: QueryRequest, http_request: Request):
             daily_schedule_cards=daily_schedule_cards,
             training_load_summary=calendar.training_load_summary,
             training_plan_review=training_plan_review,
+            evidence_chain=_build_response_evidence_chain(
+                query=request.query,
+                evidence_bundle=(
+                    structured_training_plan.get("evidence_bundle")
+                    if isinstance(structured_training_plan, dict)
+                    else None
+                ),
+                answer_source_mode="structured_plan_rule",
+            ),
         )
         return _project_training_calendar_response_for_role(response, _response_role(http_request))
     except HTTPException:

@@ -36,6 +36,7 @@ class QueryResponse(BaseModel):
     generation_timings: Dict[str, float] = Field(default_factory=dict)
     half_marathon_protocol_validation: Optional[Dict[str, Any]] = None
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
+    evidence_chain: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ProfileRequest(BaseModel):
@@ -88,6 +89,7 @@ class PlanDetailResponse(BaseModel):
     execution_status_summary: Dict[str, Any]
     adjustment_history: List[Dict[str, Any]]
     training_plan_review: Dict[str, Any] = Field(default_factory=dict)
+    evidence_chain: Dict[str, Any] = Field(default_factory=dict)
 
 
 class OpsMetricsResponse(BaseModel):
@@ -120,6 +122,7 @@ class TrainingCalendarResponse(BaseModel):
     daily_schedule_cards: List[Dict[str, Any]]
     training_load_summary: Dict[str, Any]
     training_plan_review: Dict[str, Any] = Field(default_factory=dict)
+    evidence_chain: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ZoneReference(BaseModel):

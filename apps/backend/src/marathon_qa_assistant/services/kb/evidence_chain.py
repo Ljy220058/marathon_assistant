@@ -1,0 +1,258 @@
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
+from marathon_qa_assistant.services.kb.models import EvidenceDisplayMode, PrescriptionPermission
+
+
+EVIDENCE_CHAIN_DISPLAY_MODES = [
+    EvidenceDisplayMode.VERIFIED_SOURCE.value,
+    EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value,
+    EvidenceDisplayMode.NEEDS_EVIDENCE.value,
+    EvidenceDisplayMode.GRAPH_HINT.value,
+    EvidenceDisplayMode.LEGACY_EXPLANATION.value,
+    EvidenceDisplayMode.REJECTED_SOURCE.value,
+]
+
+ANSWER_SOURCE_MODES = [
+    "verified_rag",
+    "model_general_knowledge",
+    "needs_evidence",
+    "medical_referral",
+    "structured_plan_rule",
+]
+
+CORE_FIELDS = {
+    "workout_type",
+    "main_set",
+    "intensity",
+    "duration",
+    "weekly_quality_count",
+    "long_run_cap",
+    "progression",
+    "risk_downgrade",
+}
+
+
+def build_model_general_knowledge_item(summary: str = "") -> Dict[str, Any]:
+    return {
+        "evidence_id": "model_general_knowledge",
+        "display_mode": EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value,
+        "source_label": "模型常识说明",
+        "source_registry_id": "",
+        "source_url": "",
+        "page": None,
+        "section": "",
+        "chunk_id": "",
+        "text_span": str(summary or "没有可定位的本地证据；当前回答来自模型通用知识。"),
+        "evidence_domain": "llm_general_knowledge",
+        "knowledge_layer": "llm_general_knowledge",
+        "allowed_use": "explanation",
+        "prescription_permission": PrescriptionPermission.BLOCKED_NEEDS_EVIDENCE.value,
+        "retrieval_mode": "none",
+        "quality_tier": "not_source",
+        "review_status": "not_applicable",
+        "field_binding": {},
+        "user_facing_summary": "没有可定位的本地证据；这是模型常识说明，不作为核心训练处方依据。",
+        "expert_metadata": {},
+    }
+
+
+def build_needs_evidence_item(reason: str = "", field_binding: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    binding = dict(field_binding or {})
+    suffix = f"：{reason}" if reason else ""
+    return {
+        "evidence_id": f"needs_evidence:{binding.get('field') or reason or 'unknown'}",
+        "display_mode": EvidenceDisplayMode.NEEDS_EVIDENCE.value,
+        "source_label": "待补证据",
+        "source_registry_id": "",
+        "source_url": "",
+        "page": None,
+        "section": "",
+        "chunk_id": "",
+        "text_span": "",
+        "evidence_domain": "",
+        "knowledge_layer": "",
+        "allowed_use": "core_prescription",
+        "prescription_permission": PrescriptionPermission.BLOCKED_NEEDS_EVIDENCE.value,
+        "retrieval_mode": "none",
+        "quality_tier": "missing",
+        "review_status": "missing",
+        "field_binding": binding,
+        "user_facing_summary": f"当前字段缺少可绑定证据{suffix}，不能显示为已验证处方。",
+        "expert_metadata": {"missing_reason": reason},
+    }
+
+
+def build_evidence_chain_payload(
+    *,
+    query: str = "",
+    evidence_bundle: Optional[Dict[str, Any]] = None,
+    answer_source_mode: str = "",
+    health: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    bundle = evidence_bundle if isinstance(evidence_bundle, dict) else {}
+    health_payload = health if isinstance(health, dict) else bundle.get("health") if isinstance(bundle.get("health"), dict) else {}
+    items = [
+        evidence_chain_item_from_bundle_item(item)
+        for item in (bundle.get("evidence_items") or [])
+        if isinstance(item, dict)
+    ]
+    if not items and answer_source_mode == "model_general_knowledge":
+        items.append(build_model_general_knowledge_item())
+
+    inferred_mode = answer_source_mode if answer_source_mode in ANSWER_SOURCE_MODES else _infer_answer_source_mode(items)
+    return {
+        "query": str(query or bundle.get("query") or ""),
+        "answer_source_mode": inferred_mode,
+        "runtime_index_schema_version": str(health_payload.get("index_schema_version") or health_payload.get("source") or "unknown"),
+        "runtime_core_prescription_enabled": bool(health_payload.get("runtime_core_prescription_enabled")),
+        "items": items,
+        "fake_citation_violations": [],
+        "core_permission_violations": _core_permission_violations(items),
+        "source_path_leak_count": _source_path_leak_count(items),
+    }
+
+
+def evidence_chain_item_from_bundle_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    trace = item.get("trace") if isinstance(item.get("trace"), dict) else {}
+    source_url = str(item.get("source_url") or trace.get("source_url") or "")
+    page = item.get("page")
+    section = str(item.get("section") or trace.get("section") or "")
+    source_file = str(item.get("source_file") or item.get("source") or "")
+    tier = str(item.get("tier") or item.get("evidence_tier") or "")
+    domain = str(item.get("evidence_domain") or trace.get("evidence_domain") or _domain_from_tier(tier))
+    permission = str(item.get("prescription_permission") or trace.get("prescription_permission") or _permission_from_tier(tier))
+    retrieval_mode = str(item.get("retrieval_mode") or trace.get("retrieval_mode") or trace.get("source") or item.get("kind") or "")
+    source_registry_id = str(item.get("source_registry_id") or trace.get("source_registry_id") or "")
+    chunk_id = str(item.get("chunk_id") or "")
+    display_mode = _display_mode_for_item(
+        tier=tier,
+        domain=domain,
+        permission=permission,
+        source_url=source_url,
+        page=page,
+        section=section,
+        kind=str(item.get("kind") or ""),
+    )
+    return {
+        "evidence_id": str(item.get("evidence_id") or chunk_id or source_registry_id or source_file or display_mode),
+        "display_mode": display_mode,
+        "source_label": source_file or source_registry_id or _label_for_mode(display_mode),
+        "source_registry_id": source_registry_id,
+        "source_url": source_url if display_mode == EvidenceDisplayMode.VERIFIED_SOURCE.value else "",
+        "page": page if display_mode == EvidenceDisplayMode.VERIFIED_SOURCE.value else None,
+        "section": section if display_mode == EvidenceDisplayMode.VERIFIED_SOURCE.value else "",
+        "chunk_id": chunk_id,
+        "text_span": str(item.get("text") or item.get("snippet") or "")[:500],
+        "evidence_domain": domain,
+        "knowledge_layer": str(item.get("knowledge_layer") or trace.get("knowledge_layer") or ""),
+        "allowed_use": str(item.get("allowed_use") or trace.get("allowed_use") or ""),
+        "prescription_permission": permission,
+        "retrieval_mode": retrieval_mode,
+        "quality_tier": str(item.get("quality_tier") or trace.get("quality_tier") or ""),
+        "review_status": str(item.get("review_status") or trace.get("review_status") or ""),
+        "field_binding": dict(item.get("field_binding") or {}),
+        "user_facing_summary": _summary_for_mode(display_mode),
+        "expert_metadata": {
+            "source_path": str(item.get("source_path") or ""),
+            "score": float(item.get("score") or item.get("hybrid_score") or 0.0),
+            "trace": trace,
+            "tier": tier,
+        },
+    }
+
+
+def _display_mode_for_item(
+    *,
+    tier: str,
+    domain: str,
+    permission: str,
+    source_url: str,
+    page: Any,
+    section: str,
+    kind: str,
+) -> str:
+    if tier == EvidenceDisplayMode.NEEDS_EVIDENCE.value or permission == PrescriptionPermission.BLOCKED_NEEDS_EVIDENCE.value:
+        return EvidenceDisplayMode.NEEDS_EVIDENCE.value
+    if domain == "llm_general_knowledge":
+        return EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value
+    if kind == "graph" and not (source_url and (page not in (None, "", 0) or section)):
+        return EvidenceDisplayMode.GRAPH_HINT.value
+    if source_url and (page not in (None, "", 0) or section):
+        return EvidenceDisplayMode.VERIFIED_SOURCE.value
+    if tier in {"kb_fallback", "plan_only"} or domain == "sports_science_reference":
+        return EvidenceDisplayMode.LEGACY_EXPLANATION.value
+    return EvidenceDisplayMode.NEEDS_EVIDENCE.value
+
+
+def _infer_answer_source_mode(items: List[Dict[str, Any]]) -> str:
+    modes = {str(item.get("display_mode") or "") for item in items}
+    if EvidenceDisplayMode.VERIFIED_SOURCE.value in modes:
+        return "verified_rag"
+    if EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value in modes:
+        return "model_general_knowledge"
+    if EvidenceDisplayMode.NEEDS_EVIDENCE.value in modes:
+        return "needs_evidence"
+    return "model_general_knowledge" if not items else "needs_evidence"
+
+
+def _core_permission_violations(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    violations = []
+    for item in items:
+        binding = item.get("field_binding") if isinstance(item.get("field_binding"), dict) else {}
+        field = str(binding.get("field") or "")
+        if field in CORE_FIELDS and item.get("prescription_permission") != PrescriptionPermission.CAN_WRITE_CORE.value:
+            violations.append(
+                {
+                    "evidence_id": item.get("evidence_id"),
+                    "field": field,
+                    "prescription_permission": item.get("prescription_permission"),
+                    "display_mode": item.get("display_mode"),
+                }
+            )
+    return violations
+
+
+def _source_path_leak_count(items: List[Dict[str, Any]]) -> int:
+    return sum(1 for item in items if "source_path" in item or "local_path" in item)
+
+
+def _domain_from_tier(tier: str) -> str:
+    if tier == "protocol_rule":
+        return "protocol"
+    if tier == "action_library":
+        return "action_library"
+    if tier == "kb_fallback":
+        return "sports_science_reference"
+    return ""
+
+
+def _permission_from_tier(tier: str) -> str:
+    if tier in {"protocol_rule", "action_library"}:
+        return PrescriptionPermission.CAN_WRITE_CORE.value
+    if tier == "kb_fallback":
+        return PrescriptionPermission.EXPLANATION_ONLY.value
+    return PrescriptionPermission.BLOCKED_NEEDS_EVIDENCE.value
+
+
+def _label_for_mode(display_mode: str) -> str:
+    return {
+        EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value: "模型常识说明",
+        EvidenceDisplayMode.NEEDS_EVIDENCE.value: "待补证据",
+        EvidenceDisplayMode.GRAPH_HINT.value: "关联线索",
+        EvidenceDisplayMode.LEGACY_EXPLANATION.value: "解释性旧知识库来源",
+        EvidenceDisplayMode.REJECTED_SOURCE.value: "已阻断来源",
+    }.get(display_mode, "证据来源")
+
+
+def _summary_for_mode(display_mode: str) -> str:
+    return {
+        EvidenceDisplayMode.VERIFIED_SOURCE.value: "真实来源可定位。",
+        EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value: "模型常识说明，不作为核心训练处方依据。",
+        EvidenceDisplayMode.NEEDS_EVIDENCE.value: "当前字段缺少可绑定证据，不能显示为已验证处方。",
+        EvidenceDisplayMode.GRAPH_HINT.value: "知识图谱关联线索，未绑定可点击引用。",
+        EvidenceDisplayMode.LEGACY_EXPLANATION.value: "旧知识库解释性来源，不能写入核心处方。",
+        EvidenceDisplayMode.REJECTED_SOURCE.value: "该来源已被阻断或隔离。",
+    }.get(display_mode, "证据状态待复核。")
+
