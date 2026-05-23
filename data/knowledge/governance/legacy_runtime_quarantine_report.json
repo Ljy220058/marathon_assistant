@@ -1,0 +1,104 @@
+{
+  "decision_counts": {
+    "explanation_only_legacy": 8,
+    "quarantine": 1
+  },
+  "quarantined_sources": [
+    "10078-60-2017-v60-2017-28.pdf"
+  ],
+  "sources": [
+    {
+      "chunk_count": 58,
+      "decision": "quarantine",
+      "reasons": [
+        "book_review_not_training_evidence",
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "10078-60-2017-v60-2017-28_p0001_c0001",
+      "sample_preview": "Journal of Human Kinetics volume 60/2017, 265-271 DOI: 10.1515/hukin-2017-0142 265 Section IV – Book Review 1 - Department of Theory of Sport and Kinesiology, Academy of Physical Education in Cracow, Poland. 2 - Departme",
+      "source_file": "10078-60-2017-v60-2017-28.pdf"
+    },
+    {
+      "chunk_count": 144,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "2016+-+Nutrition+for+Marathon+Running_p0001_c0001",
+      "sample_preview": "Chapter 3 Nutrition for Marathon Running Karsten Koehler Abstract Marathon runners can uniquely beneﬁt from nutritional strategies that support their training responses and/or maximize their performance during the actual",
+      "source_file": "2016+-+Nutrition+for+Marathon+Running.pdf"
+    },
+    {
+      "chunk_count": 197,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "36b5639a13f6f78e00f1c2ca46b86e854898_p0001_c0001",
+      "sample_preview": "Journal of Human Kinetics volume xx/xxxx, x–x DOI: 10.5114/jhk/205427 x Section II – Exercise Physiology and Sports Medicine 1 College of P.E. and Sport, Beijing Normal University, Beijing, China. 2 College of P.E. and S",
+      "source_file": "36b5639a13f6f78e00f1c2ca46b86e854898.pdf"
+    },
+    {
+      "chunk_count": 91,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "EWM-Training-Guides-Base-Plan_p0001_c0001",
+      "sample_preview": "Training & NUTRITION Guide Base Plan Before starting your marathon training & nutrition plan, use this 12-week training guide to build your base mileage and improve your endurance.",
+      "source_file": "EWM-Training-Guides-Base-Plan.pdf"
+    },
+    {
+      "chunk_count": 101,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "Level2꞉Chapter4꞉BasicTrainingMethodology_English_p0001_c0001",
+      "sample_preview": "The FISA Coaching Development Programme: Handbook – Level II 47 Basic Traininfg Methodology 4 Basic Training Methodology 4.1 Introduction The role of the coach in the development of athletic potential is very interesting",
+      "source_file": "Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf"
+    },
+    {
+      "chunk_count": 125,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "NKF-Hues-Booklet_p0001_c0001",
+      "sample_preview": "Your guide to a functional body of Health",
+      "source_file": "NKF-Hues-Booklet.pdf"
+    },
+    {
+      "chunk_count": 76,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "Periodization for Massive Strength Gains_p0001_c0001",
+      "sample_preview": "Student Publications Student Scholarship Fall 2019 Periodization for Massive Strength Gains Periodization for Massive Strength Gains Benjamin L. Yanes Gettysburg College Follow this and additional works at: https://cupol",
+      "source_file": "Periodization for Massive Strength Gains.pdf"
+    },
+    {
+      "chunk_count": 251,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "fphys-12-715044_p0001_c0001",
+      "sample_preview": "SYSTEMATIC REVIEW published: 24 August 2021 doi: 10.3389/fphys.2021.715044 Frontiers in Physiology | www.frontiersin.org 1 August 2021 | Volume 12 | Article 715044 Edited by: Hamdi Chtourou, University of Sfax, Tunisia R",
+      "source_file": "fphys-12-715044.pdf"
+    },
+    {
+      "chunk_count": 117,
+      "decision": "explanation_only_legacy",
+      "reasons": [
+        "legacy_chunk_missing_v2_metadata"
+      ],
+      "sample_chunk_id": "jhse_Vol_8_N_II_350-366_p0001_c0001",
+      "sample_preview": "VOLUME 8 | ISSUE 2 | 2013 | 350 Applied periodization: a methodological approach FERNANDO NACLERIO1 , JEREMY MOODY2, MARK CHAPMAN3 1Principal Lecturer in Strength and Conditioning and Sports Nutrition. Programme Leader M",
+      "source_file": "jhse_Vol_8_N_II_350-366.pdf"
+    }
+  ],
+  "total_chunks": 1160,
+  "total_sources": 9
+}

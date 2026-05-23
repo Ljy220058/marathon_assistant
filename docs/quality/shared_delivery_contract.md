@@ -540,3 +540,13 @@ git status --short --branch
 - Frontend owner 不得把 `candidate`、`seed_only` 或 source review queue 中 `can_enter_runtime_index=false` 的来源显示为可点击权威证据；这类来源只能显示为“待审核/待补证据”。
 - QA/reviewer 下一轮必须验证：重复 DOI/title/hash 不贡献 coverage，未做 URL/PDF/canonical 检查的来源不能进入 v2 runtime，blocked reasons 不被吞掉。
 - P15 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_source_review.py tests/test_kb_source_registry.py tests/test_kb_governance.py -q`，结果 `21 passed in 0.10s`。
+
+## 17. Knowledge Base P16 Legacy Runtime Quarantine
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-p16-runtime-quarantine`。
+- P16 已新增 `legacy_runtime_quarantine_report.json`，对当前 legacy runtime 的 `9` 个 source / `1160` chunks 做 source 级隔离决策。
+- 当前 `10078-60-2017-v60-2017-28.pdf` 被标记为 `quarantine`，原因 `book_review_not_training_evidence`；其余 legacy source 暂为 `explanation_only_legacy`，原因 `legacy_chunk_missing_v2_metadata`。
+- `vector_store.load_chunks` 会默认读取 quarantine report 并过滤被隔离 source；原始 `data/vector_kb/default/chunks.jsonl` 不删除、不改写，避免破坏其他 agent 或回滚路径。
+- Frontend owner 不得显示被 quarantine source 的 citation；若证据来自 `explanation_only_legacy`，只能作为解释性背景，不能显示为核心处方证据。
+- QA/reviewer 下一轮必须验证：book review 不出现在用户可见证据中，legacy source 不获得 `can_write_core`，quarantine report 有 sample preview 和 reasons。
+- P16 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_runtime_quarantine.py tests/test_vector_kb_runtime_contract.py tests/test_kb_health.py -q`，结果 `13 passed in 0.10s`。

@@ -904,18 +904,18 @@ python -m pytest tests/test_kb_source_registry.py -q
 
 #### TODO
 
-- [ ] 对 `data/vector_kb/default/chunks.jsonl` 的 9 个 source 做逐项审计。
-- [ ] 标记 `allow_runtime_retrieval / explanation_only / quarantine / delete_candidate`。
-- [ ] 将 book review、非训练处方、无关体能理论、乱码严重内容放入 quarantine 清单。
-- [ ] 输出 `legacy_runtime_quarantine_report.json`。
-- [ ] 查询链路对 quarantine source 默认不可检索。
-- [ ] 保留必要迁移记录，避免误删用户或其他 agent 正在使用的数据。
+- [x] 对 `data/vector_kb/default/chunks.jsonl` 的 9 个 source 做逐项审计。
+- [x] 标记 `allow_runtime_retrieval / explanation_only / quarantine / delete_candidate`。
+- [x] 将 book review、非训练处方、无关体能理论、乱码严重内容放入 quarantine 清单。
+- [x] 输出 `legacy_runtime_quarantine_report.json`。
+- [x] 查询链路对 quarantine source 默认不可检索。
+- [x] 保留必要迁移记录，避免误删用户或其他 agent 正在使用的数据。
 
 #### 验收标准
 
-- [ ] 噪声 source 不再出现在用户可见证据中。
-- [ ] Quarantine report 能说明来源、样例文本、隔离原因。
-- [ ] 清洗不破坏已有 API 基础问答路径。
+- [x] 噪声 source 不再出现在用户可见证据中。
+- [x] Quarantine report 能说明来源、样例文本、隔离原因。
+- [x] 清洗不破坏已有 API 基础问答路径。
 
 #### 验证命令
 
@@ -924,6 +924,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_kb_health.py tests/test_api_app.py -q
 ```
+
+实际结果（P16 分支 `codex/kb-p16-runtime-quarantine`）：`tests/test_kb_runtime_quarantine.py tests/test_vector_kb_runtime_contract.py tests/test_kb_health.py -q` 通过，`13 passed in 0.10s`。新增 `legacy_runtime_quarantine_report.json`：当前 legacy runtime `9` 个 source / `1160` chunks；`10078-60-2017-v60-2017-28.pdf` 被标为 `quarantine`，原因 `book_review_not_training_evidence`；其余 `8` 个 source 标为 `explanation_only_legacy`，原因 `legacy_chunk_missing_v2_metadata`。`vector_store.load_chunks` 会默认过滤 quarantine source，不删除原始 chunks 文件。
 
 ### P17：Golden Questions 从模板升级为判分集
 

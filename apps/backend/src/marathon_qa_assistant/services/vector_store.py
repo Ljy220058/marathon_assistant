@@ -21,6 +21,7 @@ from marathon_qa_assistant.core.app_state import (
 )
 from marathon_qa_assistant.services.document_preprocess import normalize_text
 from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
+from marathon_qa_assistant.services.kb.runtime_quarantine import filter_quarantined_chunks
 
 # 引入 LangChain 和 FAISS
 from langchain_community.vectorstores import FAISS
@@ -75,6 +76,7 @@ DEFAULT_TEST_QUESTIONS = [
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EMBEDDING_MODEL = "nomic-embed-text" # 可以根据实际安装的模型替换
+LEGACY_RUNTIME_QUARANTINE_REPORT = BASE_DIR / "data" / "knowledge" / "governance" / "legacy_runtime_quarantine_report.json"
 
 
 def _build_source_metadata(file_path: Path) -> dict:
@@ -474,7 +476,7 @@ def load_chunks(chunks_file: Path) -> list[dict]:
             if not line:
                 continue
             chunks.append(_normalize_chunk_source(json.loads(line)))
-    return chunks
+    return filter_quarantined_chunks(chunks, LEGACY_RUNTIME_QUARANTINE_REPORT)
 
 
 def _vector_artifact_paths(vector_dir: Path) -> dict[str, Path]:
