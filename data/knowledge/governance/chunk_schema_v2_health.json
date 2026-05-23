@@ -1,0 +1,9 @@
+{
+  "absolute_path_leak_count": 0,
+  "core_permission_violation_count": 0,
+  "metadata_complete_count": 750,
+  "metadata_completeness": 1.0,
+  "missing_by_chunk": [],
+  "status": "ok",
+  "total": 750
+}

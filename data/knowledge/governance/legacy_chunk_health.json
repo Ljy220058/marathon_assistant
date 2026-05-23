@@ -1,0 +1,12 @@
+{
+  "is_legacy_index": true,
+  "keys": [
+    "chunk_id",
+    "page",
+    "source_file",
+    "text"
+  ],
+  "legacy_reason": "chunks lack source_registry_id/domain_pack/allowed_use/prescription_permission metadata",
+  "source_file_count": 9,
+  "total": 1160
+}

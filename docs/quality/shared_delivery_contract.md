@@ -348,8 +348,8 @@
 
 - Backend / Engineering Coordinator 已确认下一轮路线 C：优先重构分层知识库、GraphRAG、动作库和证据内核；本轮不要求前端 UI 大改。
 - 后端可以增量添加以下字段，且必须保持 API 向后兼容：`knowledge_layer`、`evidence_domain`、`source_registry_id`、`source_quality`、`retrieval_mode`、`prescription_permission`、`rag_eval`、`kb_metadata`。
-- `knowledge_layer` 可取值：`source_registry`、`document_index`、`domain_graph`、`prescription_library`、`evaluation`。
-- `evidence_domain` 可取值：`protocol`、`action_library`、`sports_science_reference`、`medical_safety`、`competitor_product_reference`、`user_profile_case`、`llm_general_knowledge`。
+- `knowledge_layer` 可取值：`source_registry`、`document_index`、`domain_graph`、`prescription_library`、`evaluation`、`domain_pack`。
+- `evidence_domain` 可取值：`protocol`、`action_library`、`sports_science_reference`、`medical_safety`、`rehab_strength_mobility`、`nutrition_race_fueling`、`environment_race_context`、`competitor_product_reference`、`user_profile_case`、`llm_general_knowledge`。
 - `retrieval_mode` 可取值：`vector`、`lexical`、`graph_local`、`graph_global`、`graph_drift`、`action_library`、`protocol_rule`、`none`。
 - `prescription_permission` 可取值：`can_write_core`、`explanation_only`、`blocked_needs_evidence`。
 - 只有 `prescription_permission=can_write_core` 的来源可以写入核心处方字段；`llm_general_knowledge`、普通 vector 命中和 graph-only 证据默认只能做解释或进入 `needs_evidence`。
@@ -358,6 +358,8 @@
 - 当 `prescription_permission` 不是 `can_write_core` 时，前端不得显示“权威处方已验证”或等价表述。
 - `rag_eval` 只用于专家/审计层，普通用户层最多展示“证据覆盖完整 / 部分缺证据 / 需要补证据”。
 - Backend / Engineering Coordinator 在 P0-P9 已落地后端最小证据内核：`services/kb/source_registry.py`、`evidence_binding.py`、`graph_evidence.py`、`evaluation.py`、`health.py`，以及日卡 `kb_metadata` 和 `training_plan_review.dimensions.layered_kb`。
+- Backend / Engineering Coordinator 在知识库 P0-P12 hardening 中新增治理产物：`data/knowledge/governance/source_registry_v2.jsonl`、`coverage_matrix.json`、`domain_pack_seed_catalog.json`、`chunk_schema_v2_preview.jsonl`、`chunk_schema_v2_health.json`、`legacy_chunk_health.json`、`golden_questions_summary.json`、`kb_release_report.json`。这些产物用于审计与下一批 ingest；`chunk_schema_v2_preview.jsonl` 暂不替换 runtime FAISS 索引。
+- `/evidence-tier-reference` 必须继续返回 `evidence_drawer_contract.display_modes = verified_source / model_general_knowledge / needs_evidence`，以及 `core_prescription_permissions.allowed_domains = protocol / action_library`，供前端 EvidenceDrawer 和普通/专家层边界复用。
 - Frontend owner 下一轮如消费 `daily_schedule_cards[].kb_metadata` 或 `training_plan_review.dimensions.layered_kb`，普通层只能展示“协议依据 / 动作库 / 知识库解释 / 需补证据”等短标签；专家层才展示 `source_registry_id`、`retrieval_mode`、`prescription_permission`、`rag_eval`。
 - QA/reviewer 下一轮必须验证：无 source path/page 时不伪造引用，`llm_general_knowledge` 不进入核心处方字段，graph-only 证据不显示为“已验证处方”。
 
@@ -509,3 +511,13 @@ git status --short --branch
 - [x] 同一时间最多保留一个 subagent，且完成后必须关闭。2026-05-22 已关闭上一轮遗留 reviewer：`019e4c66-7b31-7131-9b9e-ad8b7ab596f8`、`019e4c66-cc9b-72d3-a1cd-9b8d21ba76fb`；本轮又关闭遗留子 agent：`019e4c04-f87d-7fd3-a3e1-2f3e6bd4bd48`、`019e4c10-51cc-7310-95b8-88a15a706ea1`、`019e4c35-ff2d-7dc3-ae08-8007d875d4aa`；Round 9 唯一只读 reviewer `019e4e49-a51e-7311-80db-e2c330f09b6a` 已完成并关闭。当前规则：未来最多开 1 个，且完成后立即关闭并写入 review TODO。
 - [ ] 前端、后端、QA/reviewer 的最新 review 都没有新的 T0/T1/T2 可修项。
 - [ ] 共享契约中所有签收项均完成，且没有新的跨端冲突记录。
+
+## 14. Knowledge Base P13 Release Gate Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-p13-release-gate`。
+- P13 已把 source registry release gate 从“schema 通过”收紧为“必须有 approved + ready source”。`internal_structured_rule_seed` 一律归类为 `review_status=seed_only`，即使误标 `needs_review=false` 或 `review_status=approved`，也不得计入 `ready_records`。
+- `source_registry_v2.jsonl` 当前审计事实：`750` records，`707` seed records，`0` approved records，`0` ready records。它们可以作为治理种子和后续审核队列，不得被前端或产品文案称为“已审核知识库”。
+- `kb_release_report.json.ready_for_next_batch=false`；当前 blockers 为 `no_approved_sources`、`no_ready_sources`、`all_domain_packs_still_have_gaps`。
+- Frontend owner 需要继续遵守 EvidenceDrawer 边界：seed、candidate、reviewed-but-not-approved、`model_general_knowledge` 都不能显示成“权威证据”或“已验证处方”；核心处方字段缺 approved `protocol/action_library` 时只能展示 `needs_evidence`。
+- QA/reviewer 下一轮必须验证：无 approved source 时，不出现 fake citation、verified-source badge、已验证处方文案或把占位 seed 主课展示为正式动作库证据。
+- P13 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_source_registry.py tests/test_kb_governance.py tests/test_kb_health.py -q`，结果 `22 passed in 0.09s`。

@@ -1,52 +1,2834 @@
 [
   {
-    "id": "kb-load-001",
-    "domain": "training_load",
-    "question": "Why can this plan only call the load value a planned_load_proxy instead of a device-grade physiological training load?"
+    "question_id": "kb-training-protocols-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Generate a periodized plan boundary for 5K without inventing a main set.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-structure-001",
-    "domain": "plan_structure",
-    "question": "Why should a half marathon plan avoid three high-intensity sessions every week?"
+    "question_id": "kb-training-protocols-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Explain how taper differs from a normal training week for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-period-001",
-    "domain": "periodization",
-    "question": "Why should a 16-week half marathon plan separate base, build, specific, peak, and taper phases?"
+    "question_id": "kb-training-protocols-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Generate a periodized plan boundary for half_marathon without inventing a main set.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-injury-001",
-    "domain": "injury_recovery",
-    "question": "Why should knee pain block immediate interval training and trigger a safer adjustment?"
+    "question_id": "kb-training-protocols-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Explain how taper differs from a normal training week for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-rehab-001",
-    "domain": "rehabilitation",
-    "question": "What is the difference between rehabilitation training and an ordinary recovery run?"
+    "question_id": "kb-training-protocols-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Generate a periodized plan boundary for return_to_run without inventing a main set.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-strength-001",
-    "domain": "strength_conditioning",
-    "question": "What user problem should strength and conditioning solve inside a half marathon plan?"
+    "question_id": "kb-training-protocols-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Explain how taper differs from a normal training week for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-mobility-001",
-    "domain": "mobility_recovery",
-    "question": "Why should warmup, cooldown, stretching, and mobility not be reduced to one vague sentence?"
+    "question_id": "kb-training-protocols-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Generate a periodized plan boundary for 10K without inventing a main set.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-prevent-001",
-    "domain": "injury_prevention",
-    "question": "Which signals should cause a training plan to downgrade load or intensity?"
+    "question_id": "kb-training-protocols-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Explain how taper differs from a normal training week for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-evidence-001",
-    "domain": "evidence_control",
-    "question": "How should the system answer when there is no local evidence without fabricating sources?"
+    "question_id": "kb-training-protocols-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Generate a periodized plan boundary for marathon without inventing a main set.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   },
   {
-    "id": "kb-rag-001",
-    "domain": "rag_vs_base_model",
-    "question": "How can the product prove a RAG-backed plan is more traceable than a base-model-only plan?"
+    "question_id": "kb-training-protocols-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "training_protocols",
+    "question": "Explain how taper differs from a normal training week for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Choose a controlled workout card for 5K and expose alternatives separately.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Show warmup, main set, cooldown, contraindications and source permissions for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Choose a controlled workout card for half_marathon and expose alternatives separately.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Show warmup, main set, cooldown, contraindications and source permissions for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Choose a controlled workout card for return_to_run and expose alternatives separately.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Show warmup, main set, cooldown, contraindications and source permissions for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Choose a controlled workout card for 10K and expose alternatives separately.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Show warmup, main set, cooldown, contraindications and source permissions for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Choose a controlled workout card for marathon and expose alternatives separately.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-action-library-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "core_prescription",
+    "domain_pack": "action_library",
+    "question": "Show warmup, main set, cooldown, contraindications and source permissions for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [
+      "protocol",
+      "action_library"
+    ],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": true,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Explain why the load is only a planned_load_proxy for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Flag a weekly mileage jump for 10K without pretending device-grade physiology.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Explain why the load is only a planned_load_proxy for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Flag a weekly mileage jump for marathon without pretending device-grade physiology.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Explain why the load is only a planned_load_proxy for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Flag a weekly mileage jump for 5K without pretending device-grade physiology.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Explain why the load is only a planned_load_proxy for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Flag a weekly mileage jump for half_marathon without pretending device-grade physiology.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Explain why the load is only a planned_load_proxy for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-training-load-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "training_load",
+    "question": "Flag a weekly mileage jump for return_to_run without pretending device-grade physiology.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Handle chest pain or dizziness before any training adjustment for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": true,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Downgrade or refuse intensity when pain worsens during a run for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": true,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Handle chest pain or dizziness before any training adjustment for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": true,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Downgrade or refuse intensity when pain worsens during a run for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": true,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Handle chest pain or dizziness before any training adjustment for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Downgrade or refuse intensity when pain worsens during a run for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Handle chest pain or dizziness before any training adjustment for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Downgrade or refuse intensity when pain worsens during a run for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Handle chest pain or dizziness before any training adjustment for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-medical-risk-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "medical_risk",
+    "question": "Downgrade or refuse intensity when pain worsens during a run for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Describe return-to-run entry and regression criteria for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Separate rehab guidance from a normal easy run for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Describe return-to-run entry and regression criteria for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Separate rehab guidance from a normal easy run for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Describe return-to-run entry and regression criteria for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Separate rehab guidance from a normal easy run for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Describe return-to-run entry and regression criteria for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Separate rehab guidance from a normal easy run for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Describe return-to-run entry and regression criteria for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-rehab-return-to-run-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "rehab_return_to_run",
+    "question": "Separate rehab guidance from a normal easy run for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Place core and hip strength around the running week for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Choose a regression for calf capacity work for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Place core and hip strength around the running week for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Choose a regression for calf capacity work for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Place core and hip strength around the running week for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Choose a regression for calf capacity work for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Place core and hip strength around the running week for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Choose a regression for calf capacity work for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Place core and hip strength around the running week for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-strength-conditioning-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "strength_conditioning",
+    "question": "Choose a regression for calf capacity work for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Explain why cooldown and mobility cannot be one vague sentence for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Place recovery work after a quality session for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Explain why cooldown and mobility cannot be one vague sentence for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Place recovery work after a quality session for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Explain why cooldown and mobility cannot be one vague sentence for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Place recovery work after a quality session for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Explain why cooldown and mobility cannot be one vague sentence for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Place recovery work after a quality session for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Explain why cooldown and mobility cannot be one vague sentence for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-mobility-recovery-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "mobility_recovery",
+    "question": "Place recovery work after a quality session for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Give conservative race fueling guidance for 5K with evidence boundaries.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Explain hydration and electrolyte uncertainty for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Give conservative race fueling guidance for half_marathon with evidence boundaries.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Explain hydration and electrolyte uncertainty for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Give conservative race fueling guidance for return_to_run with evidence boundaries.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Explain hydration and electrolyte uncertainty for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Give conservative race fueling guidance for 10K with evidence boundaries.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Explain hydration and electrolyte uncertainty for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Give conservative race fueling guidance for marathon with evidence boundaries.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-nutrition-race-fueling-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "nutrition_race_fueling",
+    "question": "Explain hydration and electrolyte uncertainty for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Adjust for high heat and humidity for 5K without creating high intensity.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Explain travel fatigue and race-week logistics for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Adjust for high heat and humidity for half_marathon without creating high intensity.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Explain travel fatigue and race-week logistics for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Adjust for high heat and humidity for return_to_run without creating high intensity.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Explain travel fatigue and race-week logistics for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Adjust for high heat and humidity for 10K without creating high intensity.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Explain travel fatigue and race-week logistics for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Adjust for high heat and humidity for marathon without creating high intensity.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-environment-race-context-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "environment_race_context",
+    "question": "Explain travel fatigue and race-week logistics for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Compare structured workout UX expectations for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Identify calendar and planned/completed task gaps for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Compare structured workout UX expectations for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Identify calendar and planned/completed task gaps for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Compare structured workout UX expectations for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Identify calendar and planned/completed task gaps for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Compare structured workout UX expectations for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Identify calendar and planned/completed task gaps for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Compare structured workout UX expectations for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-competitor-product-tasks-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "competitor_product_tasks",
+    "question": "Identify calendar and planned/completed task gaps for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-user-profile-cases-001",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Use anonymized feedback patterns without leaking private data for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-user-profile-cases-002",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Explain when no historical case should be written into a user profile for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-user-profile-cases-003",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Use anonymized feedback patterns without leaking private data for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-user-profile-cases-004",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Explain when no historical case should be written into a user profile for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-user-profile-cases-005",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Use anonymized feedback patterns without leaking private data for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-user-profile-cases-006",
+    "user_profile": {
+      "goal": "5K",
+      "weekly_mileage": 18,
+      "available_days": 3
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Explain when no historical case should be written into a user profile for 5K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-user-profile-cases-007",
+    "user_profile": {
+      "goal": "10K",
+      "weekly_mileage": 28,
+      "available_days": 4
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Use anonymized feedback patterns without leaking private data for 10K.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-user-profile-cases-008",
+    "user_profile": {
+      "goal": "half_marathon",
+      "weekly_mileage": 42,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Explain when no historical case should be written into a user profile for half_marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
+  },
+  {
+    "question_id": "kb-user-profile-cases-009",
+    "user_profile": {
+      "goal": "marathon",
+      "weekly_mileage": 55,
+      "available_days": 5
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Use anonymized feedback patterns without leaking private data for marathon.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": true
+  },
+  {
+    "question_id": "kb-user-profile-cases-010",
+    "user_profile": {
+      "goal": "return_to_run",
+      "weekly_mileage": 12,
+      "available_days": 3,
+      "injury_or_fatigue": "recent pain"
+    },
+    "task_type": "explanation_or_guardrail",
+    "domain_pack": "user_profile_cases",
+    "question": "Explain when no historical case should be written into a user profile for return_to_run.",
+    "expected_answer_traits": [
+      "clear_user_answer",
+      "no_fake_citation",
+      "permission_boundary_visible"
+    ],
+    "required_sources": [],
+    "forbidden_behaviors": [
+      "fake_citation",
+      "raw_internal_id_leak",
+      "device_grade_load_claim"
+    ],
+    "core_prescription_allowed": false,
+    "medical_red_flag_expected": false,
+    "llm_general_knowledge_allowed": false
   }
 ]

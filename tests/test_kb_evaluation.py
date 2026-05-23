@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from marathon_qa_assistant.services.kb.evaluation import evaluate_evidence_answer
+from marathon_qa_assistant.services.kb.governance import FIRST_BATCH_DOMAIN_PACKS, validate_golden_questions
 
 
 def test_evaluation_marks_missing_context_and_core_evidence():
@@ -61,18 +62,9 @@ def test_evaluation_distinguishes_unsupported_answer_from_retrieval_miss():
 
 def test_kb_golden_questions_cover_required_domains():
     questions = json.loads(Path("tests/fixtures/kb_golden_questions.json").read_text(encoding="utf-8"))
-    domains = {item["domain"] for item in questions}
+    result = validate_golden_questions(questions)
 
-    assert len(questions) >= 10
-    assert {
-        "training_load",
-        "plan_structure",
-        "periodization",
-        "injury_recovery",
-        "rehabilitation",
-        "strength_conditioning",
-        "mobility_recovery",
-        "injury_prevention",
-        "evidence_control",
-        "rag_vs_base_model",
-    }.issubset(domains)
+    assert len(questions) >= 100
+    assert result["invalid"] == []
+    assert set(FIRST_BATCH_DOMAIN_PACKS).issubset(result["domain_counts"])
+    assert all(result["domain_counts"][domain] >= 10 for domain in FIRST_BATCH_DOMAIN_PACKS)

@@ -1,0 +1,19 @@
+{
+  "domain_counts": {
+    "action_library": 10,
+    "competitor_product_tasks": 10,
+    "environment_race_context": 10,
+    "medical_risk": 10,
+    "mobility_recovery": 10,
+    "nutrition_race_fueling": 10,
+    "rehab_return_to_run": 10,
+    "strength_conditioning": 10,
+    "training_load": 10,
+    "training_protocols": 10,
+    "user_profile_cases": 10
+  },
+  "first_batch_ready": true,
+  "invalid": [],
+  "question_count": 110,
+  "ready": true
+}
