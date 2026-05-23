@@ -64,18 +64,18 @@
 
 ### TODO
 
-- [ ] 梳理 backend chain：`get_context -> retrieve -> build_rag_sources -> build_ranked_evidence -> build_evidence_bundle -> _build_structured_report -> QueryResponse`。
-- [ ] 梳理 plan chain：`build_structured_training_plan_skeleton -> generate_daily_schedule -> field_sources/kb_metadata/action_match -> training_plan_review`。
-- [ ] 梳理 graph chain：`infer_entities -> graph_engine.search_graph -> map_edge_to_evidence -> graph_binding_to_legacy_evidence -> ranked_evidence`。
-- [ ] 梳理 frontend chain：`renderEvidencePreview -> collectEvidenceItems -> buildDayEvidenceItems -> openEvidenceDrawer -> renderEvidenceDrawerItem`。
-- [ ] 输出 `docs/knowledge_base/reports/evidence_chain_inventory.md`，列出每个字段的 owner、可见层级、是否允许普通层展示、是否可写核心处方。
-- [ ] 给每条证据状态定义唯一枚举：`verified_source/model_general_knowledge/needs_evidence/graph_hint/legacy_explanation/rejected_source`。
+- [x] 梳理 backend chain：`get_context -> retrieve -> build_rag_sources -> build_ranked_evidence -> build_evidence_bundle -> _build_structured_report -> QueryResponse`。
+- [x] 梳理 plan chain：`build_structured_training_plan_skeleton -> generate_daily_schedule -> field_sources/kb_metadata/action_match -> training_plan_review`。
+- [x] 梳理 graph chain：`infer_entities -> graph_engine.search_graph -> map_edge_to_evidence -> graph_binding_to_legacy_evidence -> ranked_evidence`。
+- [x] 梳理 frontend chain：`renderEvidencePreview -> collectEvidenceItems -> buildDayEvidenceItems -> openEvidenceDrawer -> renderEvidenceDrawerItem`。
+- [x] 输出 `docs/knowledge_base/reports/evidence_chain_inventory.md`，列出每个字段的 owner、可见层级、是否允许普通层展示、是否可写核心处方。
+- [x] 给每条证据状态定义唯一枚举：`verified_source/model_general_knowledge/needs_evidence/graph_hint/legacy_explanation/rejected_source`。
 
 ### 验收标准
 
-- [ ] 文档能一眼看出 `rag_sources`、`ranked_evidence`、`evidence_bundle`、`evidence_base`、`field_sources` 的关系。
-- [ ] 任何新增证据字段必须能在 inventory 中找到 owner。
-- [ ] 前端 owner 能按文档判断哪些字段普通层可见，哪些只给专家层。
+- [x] 文档能一眼看出 `rag_sources`、`ranked_evidence`、`evidence_bundle`、`evidence_base`、`field_sources` 的关系。
+- [x] 任何新增证据字段必须能在 inventory 中找到 owner。
+- [x] 前端 owner 能按文档判断哪些字段普通层可见，哪些只给专家层。
 
 ### 验证命令
 
@@ -84,6 +84,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_kb_evidence_binding.py tests/test_openapi_contract.py -q
 ```
+
+实际结果：`tests/test_kb_evidence_binding.py tests/test_openapi_contract.py -q` 通过；`git diff --check -- docs/knowledge_base/reports/evidence_chain_inventory.md docs/knowledge_base/rag_evidence_chain_refactor_todo.md` 通过。
 
 ## P1: Canonical Evidence DTO
 
@@ -505,4 +507,3 @@ npm run build
 3. 然后做 P6-P9，统一日卡、GraphRAG、EvidenceDrawer 和 source review。
 4. 接着做 P10-P12，补评估和可观测性。
 5. 最后做 P13-P14，准备 v2 runtime 切换和商用门禁。
-
