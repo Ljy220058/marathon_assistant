@@ -873,18 +873,18 @@ python -m pytest tests/test_kb_evidence_binding.py tests/test_kb_health.py tests
 
 #### TODO
 
-- [ ] 设计 `source_review_queue.jsonl` 或数据库表，记录每个 source 的审核状态。
-- [ ] 每个 source 必须检查：URL 可访问性、license、owner、年份、内容 hash、重复标题/DOI、local file 是否存在。
-- [ ] 对 PDF 增加页数、文本抽取质量、乱码比例、空页比例检查。
-- [ ] 对网页增加 canonical URL、抓取时间、正文抽取质量、robots/许可备注。
-- [ ] `blocked` 来源必须记录 `blocked_reason`，不得无声丢弃。
-- [ ] 审核结果必须能反写 registry，但不得覆盖原始 metadata。
+- [x] 设计 `source_review_queue.jsonl` 或数据库表，记录每个 source 的审核状态。
+- [x] 每个 source 必须检查：URL 可访问性、license、owner、年份、内容 hash、重复标题/DOI、local file 是否存在。
+- [x] 对 PDF 增加页数、文本抽取质量、乱码比例、空页比例检查。
+- [x] 对网页增加 canonical URL、抓取时间、正文抽取质量、robots/许可备注。
+- [x] `blocked` 来源必须记录 `blocked_reason`，不得无声丢弃。
+- [x] 审核结果必须能反写 registry，但不得覆盖原始 metadata。
 
 #### 验收标准
 
-- [ ] 未经过 `reviewed/approved` 状态的来源不能进入正式 v2 index。
-- [ ] 任何 `blocked` 来源都能在报告中解释为什么被排除。
-- [ ] 重复来源不会重复贡献 coverage。
+- [x] 未经过 `reviewed/approved` 状态的来源不能进入正式 v2 index。
+- [x] 任何 `blocked` 来源都能在报告中解释为什么被排除。
+- [x] 重复来源不会重复贡献 coverage。
 
 #### 验证命令
 
@@ -893,6 +893,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_kb_source_registry.py -q
 ```
+
+实际结果（P15 分支 `codex/kb-p15-source-review`）：`tests/test_kb_source_review.py tests/test_kb_source_registry.py tests/test_kb_governance.py -q` 通过，`21 passed in 0.10s`。新增 `source_review_queue.jsonl` 与 `source_review_summary.json`：当前 `750` 条 source 全部 `can_enter_runtime_index=0`；`707` 条为 `seed_only`，`43` 条为 `candidate`；主要阻断原因为 `needs_review/not_approved/local_file_missing/seed_only_not_runtime_source/url_reachability_not_verified`。
 
 ### P16：Runtime KB 噪声隔离与旧索引清洗
 

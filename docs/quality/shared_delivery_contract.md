@@ -531,3 +531,12 @@ git status --short --branch
 - 新增 artifact：`data/knowledge/governance/runtime_index_v2_manifest.json`。当前状态为 `preview_only_not_runtime`，`can_replace_runtime=false`。切换 runtime 前必须构建独立 v2 vector dir，并通过 health、evidence、evaluation gates；不得覆盖 `data/vector_kb/default`。
 - Frontend owner 不能因为后端存在 `chunk_schema_v2_preview` 就显示“运行时已接入 v2 知识库”。普通层只能表达“当前证据链仍需补充审核/运行时仍在 legacy fallback”。
 - P14 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_health.py tests/test_kb_evidence_binding.py tests/test_kb_bootstrap.py tests/test_vector_kb_runtime_contract.py -q`，结果 `14 passed in 0.10s`。
+
+## 16. Knowledge Base P15 Source Review Queue
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-p15-source-review`。
+- P15 已新增 source review workflow：`source_review_queue.jsonl` 记录每个 source 的 `review_status`、结构检查、阻断原因和 `can_enter_runtime_index`；`source_review_summary.json` 汇总状态与 Top blockers。
+- 当前审计事实：`750` 条 source 全部 `can_enter_runtime_index=0`；其中 `707` 条 `seed_only`、`43` 条 `candidate`。主要 blockers：`needs_review`、`not_approved`、`local_file_missing`、`seed_only_not_runtime_source`、`url_reachability_not_verified`。
+- Frontend owner 不得把 `candidate`、`seed_only` 或 source review queue 中 `can_enter_runtime_index=false` 的来源显示为可点击权威证据；这类来源只能显示为“待审核/待补证据”。
+- QA/reviewer 下一轮必须验证：重复 DOI/title/hash 不贡献 coverage，未做 URL/PDF/canonical 检查的来源不能进入 v2 runtime，blocked reasons 不被吞掉。
+- P15 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_source_review.py tests/test_kb_source_registry.py tests/test_kb_governance.py -q`，结果 `21 passed in 0.10s`。
