@@ -25,6 +25,34 @@ def test_vector_hit_becomes_explanation_only_evidence_binding():
     assert binding.score == 0.82
 
 
+def test_v2_vector_hit_preserves_source_registry_and_permission_metadata():
+    binding = evidence_from_vector_hit(
+        {
+            "source_registry_id": "src_protocol_approved",
+            "source_file": "approved-protocol.md",
+            "source_url": "https://example.com/approved-protocol",
+            "page": 4,
+            "section": "week-structure",
+            "chunk_id": "chunk_v2",
+            "text": "A reviewed protocol may define structure boundaries.",
+            "score": 0.91,
+            "evidence_domain": "protocol",
+            "knowledge_layer": "document_index",
+            "domain_pack": "training_protocols",
+            "allowed_use": "core_prescription",
+            "prescription_permission": "can_write_core",
+            "quality_tier": "approved",
+        }
+    )
+
+    assert binding.source_registry_id == "src_protocol_approved"
+    assert binding.evidence_domain.value == "protocol"
+    assert binding.prescription_permission.value == "can_write_core"
+    assert binding.trace["source_url"] == "https://example.com/approved-protocol"
+    assert binding.trace["section"] == "week-structure"
+    assert binding.trace["domain_pack"] == "training_protocols"
+
+
 def test_only_protocol_and_action_library_can_write_core_fields():
     assert permission_for_domain(EvidenceDomain.PROTOCOL).value == "can_write_core"
     assert permission_for_domain(EvidenceDomain.ACTION_LIBRARY).value == "can_write_core"

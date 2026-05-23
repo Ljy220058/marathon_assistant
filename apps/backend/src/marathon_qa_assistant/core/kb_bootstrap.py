@@ -62,6 +62,9 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
             "reason": "",
             "chunks_count": len(chunks),
             "faiss_ready": True,
+            "index_schema_version": str(health.get("index_schema_version") or "unknown"),
+            "metadata_completeness": float(health.get("metadata_completeness") or 0.0),
+            "runtime_core_prescription_enabled": bool(health.get("runtime_core_prescription_enabled")),
             "health_reports": health_reports,
         }
         _LAST_BOOTSTRAP_REPORT = report
@@ -81,6 +84,9 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
         "reason": reason,
         "chunks_count": 0,
         "faiss_ready": False,
+        "index_schema_version": "empty",
+        "metadata_completeness": 0.0,
+        "runtime_core_prescription_enabled": False,
         "health_reports": health_reports,
     }
     _LAST_BOOTSTRAP_REPORT = report
@@ -108,11 +114,26 @@ def get_knowledge_base_health_snapshot() -> Dict[str, Any]:
             "reason": "",
             "chunks_count": len(kb_runtime.KB_CHUNKS),
             "faiss_ready": kb_runtime.KB_MATRIX is not None,
+            "index_schema_version": str(_LAST_BOOTSTRAP_REPORT.get("index_schema_version") or "unknown"),
+            "metadata_completeness": float(_LAST_BOOTSTRAP_REPORT.get("metadata_completeness") or 0.0),
+            "runtime_core_prescription_enabled": bool(_LAST_BOOTSTRAP_REPORT.get("runtime_core_prescription_enabled")),
         }
     if _LAST_BOOTSTRAP_REPORT:
         return {
             key: _LAST_BOOTSTRAP_REPORT.get(key)
-            for key in ("ok", "ready", "mode", "vector_dir", "source", "reason", "chunks_count", "faiss_ready")
+            for key in (
+                "ok",
+                "ready",
+                "mode",
+                "vector_dir",
+                "source",
+                "reason",
+                "chunks_count",
+                "faiss_ready",
+                "index_schema_version",
+                "metadata_completeness",
+                "runtime_core_prescription_enabled",
+            )
         }
     return {
         "ok": False,
@@ -123,6 +144,9 @@ def get_knowledge_base_health_snapshot() -> Dict[str, Any]:
         "reason": "知识库尚未初始化",
         "chunks_count": 0,
         "faiss_ready": False,
+        "index_schema_version": "uninitialized",
+        "metadata_completeness": 0.0,
+        "runtime_core_prescription_enabled": False,
     }
 
 

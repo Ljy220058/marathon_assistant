@@ -1,0 +1,21 @@
+{
+  "approved_records": 0,
+  "can_replace_runtime": false,
+  "chunk_preview_path": "data/knowledge/governance/chunk_schema_v2_preview.jsonl",
+  "core_permission_violation_count": 0,
+  "current_runtime_vector_dir": "data/vector_kb/default",
+  "metadata_completeness": 1.0,
+  "planned_runtime_vector_dir": "data/vector_kb/v2",
+  "preview_chunk_count": 750,
+  "ready_records": 0,
+  "replacement_blockers": [
+    "v2 preview has not been embedded into FAISS",
+    "current runtime index is legacy",
+    "approved_records=0",
+    "ready_records=0"
+  ],
+  "rollback_rule": "build v2 into a separate directory and switch only after health, evidence, and evaluation gates pass",
+  "runtime_index_schema_version": "legacy",
+  "schema_version": "chunk_schema_v2",
+  "status": "preview_only_not_runtime"
+}

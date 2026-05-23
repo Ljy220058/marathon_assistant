@@ -26,6 +26,9 @@ def test_bootstrap_knowledge_base_falls_back_from_user_to_default(monkeypatch):
             "reason": "",
             "chunks_count": 3,
             "faiss_ready": True,
+            "index_schema_version": "chunk_schema_v2",
+            "metadata_completeness": 1.0,
+            "runtime_core_prescription_enabled": True,
         }
 
     def fake_load(path):
@@ -46,6 +49,8 @@ def test_bootstrap_knowledge_base_falls_back_from_user_to_default(monkeypatch):
     assert loaded == [default_dir]
     assert set_calls[0]["chunks"] == [{"chunk_id": "c1"}]
     assert report["health_reports"][0]["source"] == "user"
+    assert report["index_schema_version"] == "chunk_schema_v2"
+    assert report["runtime_core_prescription_enabled"] is True
 
 
 def test_bootstrap_knowledge_base_enters_empty_mode_when_all_candidates_fail(monkeypatch):

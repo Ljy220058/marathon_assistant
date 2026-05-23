@@ -112,6 +112,54 @@ def check_chunk_schema_v2_health(chunks: List[Dict[str, Any]]) -> Dict[str, Any]
     }
 
 
+def summarize_runtime_index_schema(chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    total = len(chunks)
+    if total == 0:
+        return {
+            "total": 0,
+            "index_schema_version": "empty",
+            "metadata_complete_count": 0,
+            "metadata_completeness": 0.0,
+            "legacy_chunk_count": 0,
+            "v2_chunk_count": 0,
+            "mixed_schema": False,
+            "core_permission_violation_count": 0,
+            "runtime_core_prescription_enabled": False,
+        }
+
+    complete_count = 0
+    core_permission_violation_count = 0
+    for item in chunks:
+        if not _missing_fields(item, CHUNK_SCHEMA_V2_REQUIRED_FIELDS):
+            complete_count += 1
+        if (
+            str(item.get("prescription_permission") or "") == "can_write_core"
+            and str(item.get("evidence_domain") or "") not in CORE_ALLOWED_DOMAINS
+        ):
+            core_permission_violation_count += 1
+
+    legacy_count = total - complete_count
+    if complete_count == total:
+        index_schema_version = "chunk_schema_v2"
+    elif complete_count == 0:
+        index_schema_version = "legacy"
+    else:
+        index_schema_version = "mixed"
+
+    return {
+        "total": total,
+        "index_schema_version": index_schema_version,
+        "metadata_complete_count": complete_count,
+        "metadata_completeness": complete_count / total,
+        "legacy_chunk_count": legacy_count,
+        "v2_chunk_count": complete_count,
+        "mixed_schema": index_schema_version == "mixed",
+        "core_permission_violation_count": core_permission_violation_count,
+        "runtime_core_prescription_enabled": index_schema_version == "chunk_schema_v2"
+        and core_permission_violation_count == 0,
+    }
+
+
 def summarize_legacy_chunk_index(chunks: List[Dict[str, Any]] | Path) -> Dict[str, Any]:
     import json
 

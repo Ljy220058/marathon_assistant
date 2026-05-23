@@ -20,6 +20,7 @@ from marathon_qa_assistant.core.app_state import (
     USER_VECTOR_DIR,
 )
 from marathon_qa_assistant.services.document_preprocess import normalize_text
+from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
 
 # 引入 LangChain 和 FAISS
 from langchain_community.vectorstores import FAISS
@@ -152,7 +153,7 @@ def _build_query_variants(question: str) -> List[str]:
 
 def _doc_to_hit(doc: Document, distance: float) -> dict:
     score = round(1.0 / (1.0 + float(distance)), 6)
-    return {
+    hit = {
         "score": score,
         "rank_score": 0.0,
         "chunk_id": doc.metadata.get("chunk_id", "unknown"),
@@ -162,6 +163,27 @@ def _doc_to_hit(doc: Document, distance: float) -> dict:
         "text": doc.page_content,
         "distance": float(distance),
     }
+    for key in (
+        "source_registry_id",
+        "source_url",
+        "local_path",
+        "section",
+        "paragraph_index",
+        "char_start",
+        "char_end",
+        "language",
+        "evidence_domain",
+        "knowledge_layer",
+        "domain_pack",
+        "allowed_use",
+        "prescription_permission",
+        "quality_tier",
+        "exclude_from_training_generation",
+        "needs_review",
+    ):
+        if key in doc.metadata:
+            hit[key] = doc.metadata.get(key)
+    return hit
 
 
 def _merge_ranked_hits(search_runs: List[List[dict]], top_k: int) -> list[dict]:
@@ -383,14 +405,35 @@ def save_outputs(output_dir: Path, chunks: list[dict], vectorizer, matrix, bm25)
     # 准备 Document 对象
     docs = []
     for c in chunks:
-        docs.append(Document(
-            page_content=c["text"],
-            metadata={
+        metadata = {
+            key: value
+            for key, value in {
                 "chunk_id": c["chunk_id"],
                 "source_file": c["source_file"],
                 "source_path": c.get("source_path", ""),
-                "page": c["page"]
-            }
+                "page": c["page"],
+                "source_registry_id": c.get("source_registry_id"),
+                "source_url": c.get("source_url"),
+                "local_path": c.get("local_path"),
+                "section": c.get("section"),
+                "paragraph_index": c.get("paragraph_index"),
+                "char_start": c.get("char_start"),
+                "char_end": c.get("char_end"),
+                "language": c.get("language"),
+                "evidence_domain": c.get("evidence_domain"),
+                "knowledge_layer": c.get("knowledge_layer"),
+                "domain_pack": c.get("domain_pack"),
+                "allowed_use": c.get("allowed_use"),
+                "prescription_permission": c.get("prescription_permission"),
+                "quality_tier": c.get("quality_tier"),
+                "exclude_from_training_generation": c.get("exclude_from_training_generation"),
+                "needs_review": c.get("needs_review"),
+            }.items()
+            if value is not None
+        }
+        docs.append(Document(
+            page_content=c["text"],
+            metadata=metadata,
         ))
         
     faiss_store = FAISS.from_documents(docs, embeddings)
@@ -562,6 +605,8 @@ def probe_vector_kb_health(vector_dir: Path) -> dict[str, Any]:
             "faiss_ready": False,
         }
 
+    schema_summary = summarize_runtime_index_schema(chunks)
+
     if not chunks:
         return {
             "ok": False,
@@ -570,6 +615,7 @@ def probe_vector_kb_health(vector_dir: Path) -> dict[str, Any]:
             "reason": "chunks.jsonl 为空",
             "chunks_count": 0,
             "faiss_ready": False,
+            **schema_summary,
         }
 
     try:
@@ -583,6 +629,7 @@ def probe_vector_kb_health(vector_dir: Path) -> dict[str, Any]:
             "reason": f"向量索引探测失败: {exc}",
             "chunks_count": len(chunks),
             "faiss_ready": False,
+            **schema_summary,
         }
 
     if not faiss_store:
@@ -593,6 +640,7 @@ def probe_vector_kb_health(vector_dir: Path) -> dict[str, Any]:
             "reason": "FAISS 索引不可用",
             "chunks_count": len(chunks),
             "faiss_ready": False,
+            **schema_summary,
         }
 
     return {
@@ -602,6 +650,7 @@ def probe_vector_kb_health(vector_dir: Path) -> dict[str, Any]:
         "reason": "",
         "chunks_count": len(chunks),
         "faiss_ready": True,
+        **schema_summary,
     }
 
 def load_vector_kb(vector_dir: Path):

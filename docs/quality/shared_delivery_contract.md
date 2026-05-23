@@ -521,3 +521,13 @@ git status --short --branch
 - Frontend owner 需要继续遵守 EvidenceDrawer 边界：seed、candidate、reviewed-but-not-approved、`model_general_knowledge` 都不能显示成“权威证据”或“已验证处方”；核心处方字段缺 approved `protocol/action_library` 时只能展示 `needs_evidence`。
 - QA/reviewer 下一轮必须验证：无 approved source 时，不出现 fake citation、verified-source badge、已验证处方文案或把占位 seed 主课展示为正式动作库证据。
 - P13 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_source_registry.py tests/test_kb_governance.py tests/test_kb_health.py -q`，结果 `22 passed in 0.09s`。
+
+## 15. Knowledge Base P14 Runtime Index Boundary
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-p14-runtime-v2-index`。
+- P14 已让 runtime health 区分 `legacy`、`chunk_schema_v2`、`mixed` 和 `empty`。当前 `data/vector_kb/default/chunks.jsonl` 仍是 legacy；它可以继续作为兼容检索 fallback，但不得作为核心处方证据来源。
+- `probe_vector_kb_health`、`bootstrap_knowledge_base` 和 `get_knowledge_base_health_snapshot` 现在会携带 `index_schema_version`、`metadata_completeness`、`runtime_core_prescription_enabled`。
+- Vector hit -> EvidenceBinding 现在会保留 v2 metadata：`source_registry_id`、`evidence_domain`、`knowledge_layer`、`domain_pack`、`allowed_use`、`prescription_permission`、`source_url`、`section`、`quality_tier`。
+- 新增 artifact：`data/knowledge/governance/runtime_index_v2_manifest.json`。当前状态为 `preview_only_not_runtime`，`can_replace_runtime=false`。切换 runtime 前必须构建独立 v2 vector dir，并通过 health、evidence、evaluation gates；不得覆盖 `data/vector_kb/default`。
+- Frontend owner 不能因为后端存在 `chunk_schema_v2_preview` 就显示“运行时已接入 v2 知识库”。普通层只能表达“当前证据链仍需补充审核/运行时仍在 legacy fallback”。
+- P14 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_health.py tests/test_kb_evidence_binding.py tests/test_kb_bootstrap.py tests/test_vector_kb_runtime_contract.py -q`，结果 `14 passed in 0.10s`。

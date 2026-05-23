@@ -1,9 +1,11 @@
 from pathlib import Path
+import json
 
 from marathon_qa_assistant.services.kb.health import (
     check_chunk_schema_v2_health,
     check_evidence_bindings_health,
     summarize_legacy_chunk_index,
+    summarize_runtime_index_schema,
 )
 
 
@@ -96,3 +98,46 @@ def test_legacy_default_chunk_index_is_reported_as_legacy_not_v2():
     assert result["source_file_count"] >= 1
     assert result["is_legacy_index"] is True
     assert "source_registry_id" not in result["keys"]
+
+
+def test_runtime_index_schema_summary_distinguishes_legacy_v2_and_mixed_chunks():
+    legacy = [{"chunk_id": "legacy-1", "source_file": "legacy.pdf", "page": 1, "text": "legacy"}]
+    v2 = {
+        "chunk_id": "v2-1",
+        "source_registry_id": "src_1",
+        "source_file": "source.md",
+        "source_url": "https://example.com/source",
+        "local_path": "data/knowledge/source.md",
+        "page": 1,
+        "section": "intro",
+        "text": "safe text",
+        "language": "en",
+        "evidence_domain": "protocol",
+        "knowledge_layer": "document_index",
+        "domain_pack": "training_protocols",
+        "allowed_use": "core_prescription",
+        "prescription_permission": "can_write_core",
+        "quality_tier": "approved",
+    }
+
+    legacy_summary = summarize_runtime_index_schema(legacy)
+    v2_summary = summarize_runtime_index_schema([v2])
+    mixed_summary = summarize_runtime_index_schema([legacy[0], v2])
+
+    assert legacy_summary["index_schema_version"] == "legacy"
+    assert legacy_summary["runtime_core_prescription_enabled"] is False
+    assert v2_summary["index_schema_version"] == "chunk_schema_v2"
+    assert v2_summary["metadata_completeness"] == 1.0
+    assert v2_summary["runtime_core_prescription_enabled"] is True
+    assert mixed_summary["index_schema_version"] == "mixed"
+    assert mixed_summary["runtime_core_prescription_enabled"] is False
+
+
+def test_runtime_v2_manifest_declares_preview_and_legacy_runtime_boundary():
+    manifest = json.loads(Path("data/knowledge/governance/runtime_index_v2_manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["schema_version"] == "chunk_schema_v2"
+    assert manifest["status"] == "preview_only_not_runtime"
+    assert manifest["metadata_completeness"] == 1.0
+    assert manifest["runtime_index_schema_version"] == "legacy"
+    assert manifest["can_replace_runtime"] is False

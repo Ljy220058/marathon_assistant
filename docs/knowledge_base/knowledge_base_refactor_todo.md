@@ -842,18 +842,18 @@ python -m pytest tests/test_kb_governance.py tests/test_kb_health.py -q
 
 #### TODO
 
-- [ ] 新增 v2 ingest pipeline：`source_registry_v2 -> chunk_schema_v2 -> embedding -> vector_index_v2 -> retrieval`。
-- [ ] v2 chunk 必须包含 `source_registry_id/evidence_domain/knowledge_layer/domain_pack/allowed_use/prescription_permission/page/section`。
-- [ ] legacy index 只能作为兼容 fallback，默认不得用于核心处方证据。
-- [ ] 检索返回对象必须携带 `retrieval_mode`、`source_registry_id`、`prescription_permission`。
-- [ ] 增加 runtime health endpoint 或 artifact，显示当前运行中的 index 是 legacy 还是 v2。
-- [ ] 增加回滚机制：v2 index 构建失败时不覆盖旧索引。
+- [x] 新增 v2 ingest pipeline 的运行时契约边界：`source_registry_v2 -> chunk_schema_v2_preview -> runtime_index_v2_manifest -> future vector_index_v2 -> retrieval`。本轮不覆盖旧 FAISS。
+- [x] v2 chunk 必须包含 `source_registry_id/evidence_domain/knowledge_layer/domain_pack/allowed_use/prescription_permission/page/section`。
+- [x] legacy index 只能作为兼容 fallback，默认不得用于核心处方证据。
+- [x] 检索返回对象必须携带 `retrieval_mode`、`source_registry_id`、`prescription_permission`。
+- [x] 增加 runtime health artifact，显示当前运行中的 index 是 legacy 还是 v2。
+- [x] 增加回滚机制说明：v2 必须构建到独立目录，health/evidence/evaluation gate 通过后才能切换。
 
 #### 验收标准
 
-- [ ] `/query` 或相关 RAG 检索路径能返回 v2 evidence metadata。
-- [ ] legacy chunk 不带权限字段时，不允许进入 `can_write_core`。
-- [ ] health report 能一眼看出 runtime 使用的索引版本和来源数量。
+- [x] `/query` 或相关 RAG 检索路径能返回 v2 evidence metadata。
+- [x] legacy chunk 不带权限字段时，不允许进入 `can_write_core`。
+- [x] health report 能一眼看出 runtime 使用的索引版本和来源数量。
 
 #### 验证命令
 
@@ -862,6 +862,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_kb_evidence_binding.py tests/test_kb_health.py tests/test_api_app.py -q
 ```
+
+实际结果（P14 分支 `codex/kb-p14-runtime-v2-index`）：`tests/test_kb_health.py tests/test_kb_evidence_binding.py tests/test_kb_bootstrap.py tests/test_vector_kb_runtime_contract.py -q` 通过，`14 passed in 0.10s`。新增 `runtime_index_v2_manifest.json`，当前声明 `chunk_schema_v2` 为 `preview_only_not_runtime`，当前 runtime 仍为 `legacy`，`can_replace_runtime=false`，阻断原因为 v2 尚未 embedding 到 FAISS、runtime 仍旧、`approved_records=0`、`ready_records=0`。
 
 ### P15：Source Review Workflow 审核流水线
 
