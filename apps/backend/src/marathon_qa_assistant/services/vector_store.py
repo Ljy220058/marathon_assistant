@@ -30,6 +30,25 @@ from langchain_core.documents import Document
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
+V2_HIT_METADATA_KEYS = (
+    "source_registry_id",
+    "source_url",
+    "local_path",
+    "section",
+    "paragraph_index",
+    "char_start",
+    "char_end",
+    "language",
+    "evidence_domain",
+    "knowledge_layer",
+    "domain_pack",
+    "allowed_use",
+    "prescription_permission",
+    "quality_tier",
+    "review_status",
+    "exclude_from_training_generation",
+    "needs_review",
+)
 
 # 检索增强关键词映射
 QUERY_HINTS = {
@@ -165,24 +184,7 @@ def _doc_to_hit(doc: Document, distance: float) -> dict:
         "text": doc.page_content,
         "distance": float(distance),
     }
-    for key in (
-        "source_registry_id",
-        "source_url",
-        "local_path",
-        "section",
-        "paragraph_index",
-        "char_start",
-        "char_end",
-        "language",
-        "evidence_domain",
-        "knowledge_layer",
-        "domain_pack",
-        "allowed_use",
-        "prescription_permission",
-        "quality_tier",
-        "exclude_from_training_generation",
-        "needs_review",
-    ):
+    for key in V2_HIT_METADATA_KEYS:
         if key in doc.metadata:
             hit[key] = doc.metadata.get(key)
     return hit
@@ -204,6 +206,11 @@ def _merge_ranked_hits(search_runs: List[List[dict]], top_k: int) -> list[dict]:
                 entry["score"] = hit["score"]
             if hit["distance"] < entry["distance"]:
                 entry["distance"] = hit["distance"]
+            for key in V2_HIT_METADATA_KEYS:
+                current = entry.get(key)
+                incoming = hit.get(key)
+                if incoming not in (None, "") and current in (None, ""):
+                    entry[key] = incoming
 
     ranked_hits = sorted(
         merged.values(),
@@ -428,6 +435,7 @@ def save_outputs(output_dir: Path, chunks: list[dict], vectorizer, matrix, bm25)
                 "allowed_use": c.get("allowed_use"),
                 "prescription_permission": c.get("prescription_permission"),
                 "quality_tier": c.get("quality_tier"),
+                "review_status": c.get("review_status"),
                 "exclude_from_training_generation": c.get("exclude_from_training_generation"),
                 "needs_review": c.get("needs_review"),
             }.items()

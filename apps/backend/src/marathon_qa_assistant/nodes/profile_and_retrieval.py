@@ -31,6 +31,27 @@ from marathon_qa_assistant.services.wiki_agent import wiki_agent
 logger = logging.getLogger("workflow_engine")
 
 
+EVIDENCE_METADATA_KEYS = (
+    "source_registry_id",
+    "source_url",
+    "local_path",
+    "section",
+    "paragraph_index",
+    "char_start",
+    "char_end",
+    "language",
+    "evidence_domain",
+    "knowledge_layer",
+    "domain_pack",
+    "allowed_use",
+    "prescription_permission",
+    "quality_tier",
+    "review_status",
+    "exclude_from_training_generation",
+    "needs_review",
+)
+
+
 EXTRACT_PROFILE_SYSTEM = """你是一个训练画像提取器。从用户的自然语言输入中提取以下字段（仅提取明确出现的信息，不要猜测）：
 
 - goal: 目标赛事或目标成绩（如"半马69分""全马3小时"）
@@ -507,6 +528,7 @@ def build_ranked_evidence(
             "evidence_id": eid,
             "kind": "vector",
             "source_file": source,
+            "source_path": str(hit.get("source_path") or ""),
             "page": page,
             "chunk_id": chunk_id,
             "snippet": text[:300],
@@ -525,6 +547,16 @@ def build_ranked_evidence(
                 "fusion_bonus": 0.0,
             },
         }
+        for meta_key in EVIDENCE_METADATA_KEYS:
+            if meta_key in hit:
+                ev[meta_key] = hit.get(meta_key)
+                ev["trace"][meta_key] = hit.get(meta_key)
+        if "prescription_permission" not in ev:
+            ev["prescription_permission"] = "explanation_only"
+            ev["trace"]["prescription_permission"] = "explanation_only"
+        if "evidence_domain" not in ev:
+            ev["evidence_domain"] = "sports_science_reference"
+            ev["trace"]["evidence_domain"] = "sports_science_reference"
         # 以 chunk_id 为核心去重键
         key = chunk_id if chunk_id else f"{source}_{page}"
         evidence_map[key] = ev

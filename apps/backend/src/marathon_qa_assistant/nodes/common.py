@@ -500,23 +500,48 @@ async def get_context(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
 
 
 def build_rag_sources(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    metadata_keys = (
+        "source_registry_id",
+        "source_url",
+        "local_path",
+        "section",
+        "paragraph_index",
+        "char_start",
+        "char_end",
+        "language",
+        "evidence_domain",
+        "knowledge_layer",
+        "domain_pack",
+        "allowed_use",
+        "prescription_permission",
+        "quality_tier",
+        "review_status",
+        "exclude_from_training_generation",
+        "needs_review",
+    )
     sources: List[Dict[str, Any]] = []
     for hit in hits or []:
         text = scan_and_clean_context(str(hit.get("text", "")), input_type="rag")
         source_file = hit.get("source_file", "unknown")
         source_path = hit.get("source_path", "")
-        sources.append(
-            {
-                "source": source_file,
-                "source_file": source_file,
-                "source_path": source_path,
-                "page": int(hit.get("page", 1) or 1),
-                "score": float(hit.get("score", 0.0) or 0.0),
-                "chunk_id": hit.get("chunk_id", ""),
-                "snippet": text[:300],
-                "text": text,
-            }
-        )
+        source = {
+            "source": source_file,
+            "source_file": source_file,
+            "source_path": source_path,
+            "page": int(hit.get("page", 1) or 1),
+            "score": float(hit.get("score", 0.0) or 0.0),
+            "chunk_id": hit.get("chunk_id", ""),
+            "snippet": text[:300],
+            "text": text,
+        }
+        for key in metadata_keys:
+            if key in hit:
+                source[key] = hit.get(key)
+        if "prescription_permission" not in source:
+            source["prescription_permission"] = "explanation_only"
+        if "evidence_domain" not in source:
+            source["evidence_domain"] = "sports_science_reference"
+        sources.append(source)
     return sources
 
 

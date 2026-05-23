@@ -581,3 +581,15 @@ git status --short --branch
 - Runner 普通层投影会移除 `expert_metadata/source_registry_id/retrieval_mode/score/source_path/local_path/chunk_id/rag_eval/source_quality`，前端普通层不得绕过该投影读取专家字段。
 - 前端 owner 下一步应优先读 `response.evidence_chain.items`；如果不存在，才走旧 `evidence_bundle/evidence_base` 兼容路径。任何前端自行拼接的证据项都必须标为 fallback，不能显示 verified citation。
 - P1 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_evidence_chain_contract.py tests/test_openapi_contract.py -q`，结果 `10 passed`。
+
+## 21. RAG Evidence Chain P2 Metadata Preservation Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/rag-evidence-p2-metadata-preservation`。
+- P2 后端已让 v2 metadata 从 vector hit 保留到 `rag_sources`、`ranked_evidence`、`evidence_bundle` 和 canonical `evidence_chain.items`。
+- 已保留的关键字段包括：`source_registry_id`、`source_url`、`local_path`、`section`、`paragraph_index`、`char_start`、`char_end`、`language`、`evidence_domain`、`knowledge_layer`、`domain_pack`、`allowed_use`、`prescription_permission`、`quality_tier`、`review_status`、`exclude_from_training_generation`、`needs_review`。
+- legacy hit 缺 v2 metadata 时后端默认降级为 `evidence_domain=sports_science_reference`、`prescription_permission=explanation_only`，进入 canonical chain 后显示为 `legacy_explanation`，不得被前端显示为“已验证处方来源”。
+- 多 query variant 合并同一 `chunk_id` 时，`_merge_ranked_hits()` 会保留更完整的 metadata，同时仍保留更高 `score` 和更低 `distance`。
+- `source_url` 与 `page/section` 不完整时，canonical chain 不会输出 `display_mode=verified_source`，前端不得自行补 citation badge。
+- Frontend owner 下一轮需要优先消费 `response.evidence_chain.items` 的 `display_mode/source_url/page/section/user_facing_summary`；旧 `evidence_bundle/evidence_base` 仅作 fallback，且 fallback citation 不得显示为 verified。
+- 运行事实仍不变：当前 runtime KB 仍是 legacy，v2 source registry 没有 ready/approved runtime index；P2 只解决 metadata 保真，不代表知识库已达到商用 ready。
+- P2 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_rag_metadata_preservation.py tests/test_evidence_chain_contract.py tests/test_kb_evidence_binding.py tests/test_working_state_audit_loop.py tests/test_openapi_contract.py tests/test_api_app.py -q`，结果 `66 passed, 2 warnings`；`git diff --check` 针对 P2 后端与文档文件通过。

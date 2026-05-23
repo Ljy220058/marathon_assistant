@@ -18,6 +18,27 @@ PROTOCOL_SOURCE_DOCS = (
     "docs/half_marathon_source_audit.md",
 )
 
+EVIDENCE_METADATA_KEYS = (
+    "source_registry_id",
+    "source_url",
+    "local_path",
+    "section",
+    "paragraph_index",
+    "char_start",
+    "char_end",
+    "language",
+    "evidence_domain",
+    "knowledge_layer",
+    "domain_pack",
+    "allowed_use",
+    "prescription_permission",
+    "quality_tier",
+    "review_status",
+    "exclude_from_training_generation",
+    "needs_review",
+    "retrieval_mode",
+)
+
 
 def build_evidence_bundle(
     *,
@@ -125,7 +146,7 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
     if kind == "fusion":
         tier = "kb_fallback"
     text = _scan_and_clean_context(str(source.get("text") or source.get("snippet") or ""))
-    return {
+    item = {
         "evidence_id": str(source.get("evidence_id") or source.get("chunk_id") or ""),
         "citation_label": str(source.get("citation_label") or ""),
         "tier": tier,
@@ -138,13 +159,18 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
         "score": float(source.get("hybrid_score") or source.get("retrieval_score") or source.get("score") or 0.0),
         "trace": dict(source.get("trace") or {"kind": kind}),
     }
+    for key in EVIDENCE_METADATA_KEYS:
+        if key in source:
+            item[key] = source.get(key)
+            item["trace"].setdefault(key, source.get(key))
+    return item
 
 
 def _item_from_rag_source(source: Dict[str, Any]) -> EvidenceBundleItem:
     text = _scan_and_clean_context(str(source.get("text") or source.get("snippet") or ""))
     chunk_id = str(source.get("chunk_id") or "")
     source_file = str(source.get("source_file") or source.get("source") or "unknown")
-    return {
+    item = {
         "evidence_id": f"kb_{chunk_id}" if chunk_id else _stable_evidence_id("kb", source_file, text),
         "citation_label": "",
         "tier": "kb_fallback",
@@ -157,6 +183,11 @@ def _item_from_rag_source(source: Dict[str, Any]) -> EvidenceBundleItem:
         "score": float(source.get("score") or 0.0),
         "trace": {"source": "rag_sources"},
     }
+    for key in EVIDENCE_METADATA_KEYS:
+        if key in source:
+            item[key] = source.get(key)
+            item["trace"].setdefault(key, source.get(key))
+    return item
 
 
 def _protocol_rule_items(structured_training_plan: Dict[str, Any]) -> List[EvidenceBundleItem]:

@@ -125,18 +125,18 @@ python -m pytest tests/test_openapi_contract.py tests/test_api_app.py -q
 
 ### TODO
 
-- [ ] 修改 `build_rag_sources()`，保留 `source_registry_id/source_url/local_path/section/evidence_domain/knowledge_layer/domain_pack/allowed_use/prescription_permission/quality_tier/review_status/needs_review`。
-- [ ] 修改 `build_ranked_evidence()`，vector evidence 不再只保留 legacy 字段。
-- [ ] `_merge_ranked_hits()` 合并时保留最完整 metadata，不因 score 更新丢失字段。
-- [ ] 对 legacy hit 自动补 `evidence_domain=sports_science_reference`、`prescription_permission=explanation_only`、`display_mode=legacy_explanation`。
-- [ ] 如果 `source_url/page/section` 不完整，则 `verified_source=false`。
-- [ ] 增加对 v2 metadata round-trip 的测试。
+- [x] 修改 `build_rag_sources()`，保留 `source_registry_id/source_url/local_path/section/evidence_domain/knowledge_layer/domain_pack/allowed_use/prescription_permission/quality_tier/review_status/needs_review`。
+- [x] 修改 `build_ranked_evidence()`，vector evidence 不再只保留 legacy 字段。
+- [x] `_merge_ranked_hits()` 合并时保留最完整 metadata，不因 score 更新丢失字段。
+- [x] 对 legacy hit 自动补 `evidence_domain=sports_science_reference`、`prescription_permission=explanation_only`、`display_mode=legacy_explanation`。
+- [x] 如果 `source_url/page/section` 不完整，则 `verified_source=false`。
+- [x] 增加对 v2 metadata round-trip 的测试。
 
 ### 验收标准
 
-- [ ] v2 hit 进入 `rag_sources`、`ranked_evidence`、`evidence_bundle` 后 metadata 不丢。
-- [ ] legacy hit 不会被标成 `can_write_core`。
-- [ ] 合并多 query variant 的 hit 时不会丢 `source_registry_id`。
+- [x] v2 hit 进入 `rag_sources`、`ranked_evidence`、`evidence_bundle` 后 metadata 不丢。
+- [x] legacy hit 不会被标成 `can_write_core`。
+- [x] 合并多 query variant 的 hit 时不会丢 `source_registry_id`。
 
 ### 验证命令
 
@@ -145,6 +145,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_vector_store_query_fusion.py tests/test_kb_evidence_binding.py tests/test_working_state_audit_loop.py -q
 ```
+
+实际结果：`tests/test_rag_metadata_preservation.py -q` 通过，结果 `6 passed`；组合回归 `tests/test_rag_metadata_preservation.py tests/test_evidence_chain_contract.py tests/test_kb_evidence_binding.py tests/test_working_state_audit_loop.py tests/test_openapi_contract.py tests/test_api_app.py -q` 通过，结果 `66 passed, 2 warnings`；`git diff --check` 针对 P2 后端与文档文件通过。
 
 ## P3: No Fake Citation Gate
 
