@@ -395,8 +395,12 @@ def _review_runtime_kb_boundary(rag_health: Dict[str, Any]) -> Dict[str, Any]:
     schema_version = str(health.get("index_schema_version") or health.get("source") or "unknown")
     metadata_completeness = health.get("metadata_completeness")
     runtime_core_enabled = bool(health.get("runtime_core_prescription_enabled"))
-    if runtime_core_enabled:
+    commercial_core_enabled = bool(health.get("commercial_core_prescription_enabled", runtime_core_enabled))
+    runtime_status = str(health.get("runtime_status") or "")
+    if commercial_core_enabled:
         status = "core_enabled"
+    elif runtime_core_enabled:
+        status = "runtime_preview_not_commercial"
     elif schema_version in {"legacy", "mixed", "unknown", ""}:
         status = "explanation_only"
     else:
@@ -406,7 +410,10 @@ def _review_runtime_kb_boundary(rag_health: Dict[str, Any]) -> Dict[str, Any]:
         "index_schema_version": schema_version,
         "metadata_completeness": metadata_completeness,
         "runtime_core_prescription_enabled": runtime_core_enabled,
-        "boundary": "vector KB can explain evidence, but cannot write core prescription unless runtime_core_prescription_enabled=true",
+        "commercial_core_prescription_enabled": commercial_core_enabled,
+        "runtime_status": runtime_status,
+        "can_replace_runtime": bool(health.get("can_replace_runtime", commercial_core_enabled)),
+        "boundary": "vector KB can support retrieval, but core prescription is commercial-enabled only after runtime and source-review gates pass",
     }
 
 

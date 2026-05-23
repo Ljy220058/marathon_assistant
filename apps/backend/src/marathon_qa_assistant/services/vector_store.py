@@ -12,12 +12,16 @@ from typing import List, Dict, Any, Tuple
 # 配置日志
 logger = logging.getLogger("vector_kb")
 
+from marathon_qa_assistant.core import app_state as app_state_paths
 from marathon_qa_assistant.core.app_state import (
     BASE_DIR,
+    DATA_DIR,
     DEFAULT_VECTOR_DIR,
     LEGACY_UPLOAD_DOCS_DIR,
+    RUNTIME_DATA_DIR,
     UPLOAD_DOCS_DIR,
     USER_VECTOR_DIR,
+    V2_VECTOR_DIR,
 )
 from marathon_qa_assistant.services.document_preprocess import normalize_text
 from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
@@ -498,14 +502,68 @@ def _vector_artifact_paths(vector_dir: Path) -> dict[str, Path]:
 
 
 def _kb_source_label(vector_dir: Path) -> str:
-    if vector_dir == USER_VECTOR_DIR:
-        return "user"
-    if vector_dir == DEFAULT_VECTOR_DIR:
-        return "default"
+    candidate = Path(vector_dir).absolute()
+    labels = (
+        (USER_VECTOR_DIR, "user"),
+        (app_state_paths.USER_VECTOR_DIR, "user"),
+        (V2_VECTOR_DIR, "v2"),
+        (app_state_paths.V2_VECTOR_DIR, "v2"),
+        (DEFAULT_VECTOR_DIR, "default"),
+        (app_state_paths.DEFAULT_VECTOR_DIR, "default"),
+    )
+    for known_dir, label in labels:
+        if candidate == Path(known_dir).absolute():
+            return label
     return "custom"
 
 
+def _path_is_relative_to(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _trusted_vector_roots() -> tuple[Path, ...]:
+    return tuple(
+        root.absolute()
+        for root in (
+            DEFAULT_VECTOR_DIR,
+            app_state_paths.DEFAULT_VECTOR_DIR,
+            USER_VECTOR_DIR,
+            app_state_paths.USER_VECTOR_DIR,
+            V2_VECTOR_DIR,
+            app_state_paths.V2_VECTOR_DIR,
+            DATA_DIR / "vector_kb",
+            app_state_paths.DATA_DIR / "vector_kb",
+            RUNTIME_DATA_DIR,
+            app_state_paths.RUNTIME_DATA_DIR,
+            BASE_DIR / "vector_kb",
+            app_state_paths.BASE_DIR / "vector_kb",
+            BASE_DIR / "vector_kb_user",
+            app_state_paths.BASE_DIR / "vector_kb_user",
+        )
+    )
+
+
+def _is_trusted_faiss_dir(faiss_dir: Path) -> bool:
+    """Only load pickle-backed FAISS indexes from local vector KB directories."""
+    candidate = Path(faiss_dir).absolute()
+    if candidate.name != "faiss_db":
+        return False
+    vector_dir = candidate.parent
+    return any(
+        vector_dir == root or _path_is_relative_to(vector_dir, root)
+        for root in _trusted_vector_roots()
+    )
+
+
 def _load_faiss_store(faiss_dir: Path, embeddings):
+    if not _is_trusted_faiss_dir(faiss_dir):
+        logger.error("Refusing to load FAISS index outside trusted vector directories: %s", faiss_dir)
+        return None
+
     faiss_index_file = faiss_dir / "index.faiss"
     if not faiss_index_file.exists():
         logger.warning(f"FAISS 索引文件缺失: {faiss_index_file}，将以空库运行。")

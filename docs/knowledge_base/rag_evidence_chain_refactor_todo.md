@@ -6,15 +6,16 @@
 
 ### 本地事实
 
-- 当前运行分支：`codex/kb-rag-evidence-chain-todo`。
+- 当前运行分支：`codex/kb-v2-query-runtime`。
 - 当前工作区存在大量并行前端修改，本轮只新增本 TODO 和必要共享契约，不 stage 或覆盖其他 agent 的前端改动。
-- 当前 runtime KB：`data/vector_kb/default/chunks.jsonl` 有 `1160` 个 legacy chunk，来自 `9` 个 source file，只包含 `chunk_id/page/source_file/text`，没有 `source_registry_id/evidence_domain/knowledge_layer/allowed_use/prescription_permission/source_url/section`。
+- 当前 runtime KB：`data/vector_kb/v2/chunks.jsonl` 已构建为 `/query` 优先检索 runtime，包含 `750` 个 `chunk_schema_v2` chunk；`data/vector_kb/default` 保留为 legacy rollback fallback，不覆盖。
 - 当前 source registry v2：`data/knowledge/governance/source_registry_v2.jsonl` 有 `750` 条，其中 `707` 条 `seed_only`，`43` 条 `candidate`，`approved_records=0`，`ready_records=0`。
 - 当前 release gate：`data/knowledge/governance/kb_release_report.json` 显示 `commercial_release_ready=false`，阻塞项包括 `no_approved_sources`、`no_ready_sources`、`all_domain_packs_still_have_gaps`。
-- 当前 runtime v2 manifest：`data/knowledge/governance/runtime_index_v2_manifest.json` 显示 `status=preview_only_not_runtime`、`runtime_index_schema_version=legacy`、`can_replace_runtime=false`。
+- 当前 runtime v2 manifest：`data/knowledge/governance/runtime_index_v2_manifest.json` 显示 `status=runtime_preview_ready`、`runtime_index_schema_version=chunk_schema_v2`、`runtime_use_enabled=true`、`can_replace_runtime=false`。
 - 当前 legacy quarantine：`data/knowledge/governance/legacy_runtime_quarantine_report.json` 已隔离 `10078-60-2017-v60-2017-28.pdf`，其余 legacy source 只能作为 explanation-only fallback。
 - 当前 golden questions v2：`tests/fixtures/kb_golden_questions_v2.json` 有 `110` 题，并有 `expected_evidence_ids/forbidden_claims/required_safety_behavior/judge_rubric`。
-- 当前相关回归命令已通过：`python -m pytest tests/test_kb_governance.py tests/test_kb_source_review.py tests/test_kb_runtime_quarantine.py tests/test_kb_health.py tests/test_kb_evidence_binding.py tests/test_vector_kb_runtime_contract.py -q`，结果 `32 passed`。
+- 当前 source review 仍未签收商用：`approved_records=0`、`ready_records=0`，因此 v2 runtime 只能作为 `/query` preview retrieval，不得被产品文案或前端显示为“已审核商用知识库”。
+- 当前相关回归命令将以本轮最终 fresh verification 为准；历史命令包括 `tests/test_kb_governance.py tests/test_kb_source_review.py tests/test_kb_runtime_quarantine.py tests/test_kb_health.py tests/test_kb_evidence_binding.py tests/test_vector_kb_runtime_contract.py -q`。
 
 ### 证据链主要断点
 
@@ -225,7 +226,7 @@ python -m pytest tests/test_api_app.py tests/test_state_models.py -q
 
 ### 验收标准
 
-- [x] 当前 legacy runtime 下不会出现 `verified_core_prescription_source`。
+- [x] legacy runtime 和 v2 preview runtime 下都不会出现 `verified_core_prescription_source`。
 - [x] `/health` 与 `/query` 中 runtime 状态一致。
 - [x] runtime 切 v2 前，核心处方仍只来自协议和动作库。
 
@@ -313,7 +314,7 @@ python -m pytest tests/test_kb_graph_evidence.py tests/test_high_risk_contracts.
 ### 验收标准
 
 - [ ] 无真实来源时前端显示“模型常识说明”或“待补证据”，没有假 citation。
-- [ ] 当前 legacy runtime 下 EvidenceDrawer 不显示“已验证处方来源”。
+- [ ] 当前 v2 preview runtime 下 EvidenceDrawer 不显示“已验证商用处方来源”。
 - [ ] 点击日卡依据和点击 QA 引用打开的是同一套 evidence item。
 
 ### 验证命令
@@ -447,18 +448,20 @@ python -m pytest tests/test_openapi_contract.py tests/test_security_guards.py te
 
 ### TODO
 
-- [ ] 构建独立 `data/vector_kb/v2_preview`，不覆盖 default runtime。
-- [ ] v2 preview 必须 `metadata_completeness=1.0`。
+- [x] 构建独立 `data/vector_kb/v2`，不覆盖 default runtime。
+- [x] v2 preview 必须 `metadata_completeness=1.0`。
 - [ ] v2 preview 中 `can_write_core` 只允许 `protocol/action_library` 且 `review_status=approved`。
 - [ ] 切换前跑 golden questions v2、fake citation gate、medical safety gate、load truthfulness gate。
-- [ ] 切换 manifest 必须记录 source count、chunk count、blocked source count、eval delta、rollback path。
-- [ ] default runtime 切换必须是显式配置，不允许脚本默认覆盖。
+- [x] 切换 manifest 必须记录 source count、chunk count、blocked source count、eval delta、rollback path。
+- [x] default runtime 不被覆盖；`data/vector_kb/default` 保留为 rollback fallback。
+- [x] `/query` runtime preview 激活后，`rag_health` 必须公开 `source=v2`、`runtime_status=runtime_preview_ready`、`can_replace_runtime=false`、`commercial_core_prescription_enabled=false`。
 
 ### 验收标准
 
 - [ ] `runtime_index_v2_manifest.can_replace_runtime=true` 前不能替换 default。
-- [ ] v2 preview 失败不会污染 legacy fallback。
+- [x] v2 preview 失败不会污染 legacy fallback。
 - [ ] rollback 可以恢复上一版 runtime。
+- [x] `/query` 可以优先加载 v2 runtime，但前端仍能区分 preview retrieval 与 commercial-approved core prescription。
 
 ### 验证命令
 
@@ -467,6 +470,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_vector_kb_runtime_contract.py tests/test_kb_health.py tests/test_kb_governance.py -q
 ```
+
+本轮执行记录：`tools/kb/build_v2_runtime.py` 已生成 `data/vector_kb/v2`，`runtime_index_v2_manifest.status=runtime_preview_ready`。由于 `approved_records=0`、`ready_records=0`，P13 只签收 `/query` preview runtime 可用，不签收 production cutover 或 commercial evidence release。
 
 ## P14: Commercial Evidence Release Gate
 
@@ -507,7 +512,7 @@ npm run build
 - `model_general_knowledge` 必须显示为“模型常识说明”，不能显示为“权威来源”。
 - `needs_evidence` 必须显示为“待补证据”，不能显示为“已生成训练安排”。
 - `graph_hint` 必须显示为“关联线索”，不能显示为“引用来源”。
-- 当前 runtime 为 legacy 时，普通层不得出现“已审核知识库证据”“已验证处方来源”等文案。
+- 当前 runtime 为 legacy 或 v2 preview 且 `commercial_core_prescription_enabled=false` 时，普通层不得出现“已审核知识库证据”“已验证商用处方来源”等文案。
 - 日卡主课依据必须来自后端 `field_sources` 或 canonical evidence item，不得由前端硬编码 `动作库.pdf` 补来源。
 
 ## 4. 执行顺序建议

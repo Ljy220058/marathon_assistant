@@ -3,19 +3,27 @@
   "can_replace_runtime": false,
   "chunk_preview_path": "data/knowledge/governance/chunk_schema_v2_preview.jsonl",
   "core_permission_violation_count": 0,
-  "current_runtime_vector_dir": "data/vector_kb/default",
+  "current_runtime_vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
   "metadata_completeness": 1.0,
   "planned_runtime_vector_dir": "data/vector_kb/v2",
   "preview_chunk_count": 750,
   "ready_records": 0,
   "replacement_blockers": [
-    "v2 preview has not been embedded into FAISS",
-    "current runtime index is legacy",
     "approved_records=0",
-    "ready_records=0"
+    "ready_records=0",
+    "v2 runtime is enabled for preview retrieval but not commercial-approved core prescription evidence"
   ],
   "rollback_rule": "build v2 into a separate directory and switch only after health, evidence, and evaluation gates pass",
-  "runtime_index_schema_version": "legacy",
+  "runtime_index_schema_version": "chunk_schema_v2",
   "schema_version": "chunk_schema_v2",
-  "status": "preview_only_not_runtime"
+  "status": "runtime_preview_ready",
+  "ok": true,
+  "preview_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\knowledge\\governance\\chunk_schema_v2_preview.jsonl",
+  "runtime_vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
+  "runtime_chunk_count": 750,
+  "runtime_use_enabled": true,
+  "outputs": {
+    "chunks_file": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\chunks.jsonl",
+    "faiss_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\faiss_db"
+  }
 }

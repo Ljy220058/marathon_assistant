@@ -34,6 +34,31 @@ class _FakeIntegratedApp:
         }
 
 
+def test_public_rag_health_marks_v2_runtime_as_preview_not_commercial():
+    health = api_app._public_rag_health(
+        {
+            "source": "v2",
+            "vector_dir": "data/vector_kb/v2",
+            "index_schema_version": "chunk_schema_v2",
+            "metadata_completeness": 1.0,
+            "runtime_core_prescription_enabled": True,
+            "chunks_count": 750,
+            "faiss_ready": True,
+            "ok": True,
+        }
+    )
+
+    assert health["source"] == "v2"
+    assert health["runtime_status"] == "runtime_preview_ready"
+    assert health["runtime_use_enabled"] is True
+    assert health["can_replace_runtime"] is False
+    assert health["approved_records"] == 0
+    assert health["ready_records"] == 0
+    assert health["source_review_ready"] is False
+    assert health["runtime_core_prescription_enabled"] is True
+    assert health["commercial_core_prescription_enabled"] is False
+
+
 def _one_week_calendar_contract_plan():
     return {
         "plan_meta": {
@@ -320,6 +345,7 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
     assert payload["answer_source_mode"] == "structured_plan_rule"
     assert payload["workflow_trace"]["evidence_state"]["answer_source_mode"] == "structured_plan_rule"
     assert payload["rag_health"]["index_schema_version"] == "test"
+    assert payload["rag_health"]["source"] == "test"
     assert payload["rag_health"]["metadata_completeness"] == 0.0
     assert payload["rag_health"]["runtime_core_prescription_enabled"] is False
     boundary = payload["training_plan_review"]["dimensions"]["runtime_kb_boundary"]

@@ -50,6 +50,7 @@ from marathon_qa_assistant.core.kb_bootstrap import (
     ensure_knowledge_base_ready,
     get_knowledge_base_health_snapshot,
 )
+from marathon_qa_assistant.core.app_state import DATA_DIR
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
 from marathon_qa_assistant.services.database import get_db
 from marathon_qa_assistant.services.kb.evidence_chain import (
@@ -928,9 +929,39 @@ def _has_calendar_source_plan(structured_plan: Any) -> bool:
     return isinstance(structured_plan, dict) and bool(structured_plan.get("week_plans"))
 
 
+def _v2_runtime_manifest_overlay(payload: Dict[str, Any]) -> Dict[str, Any]:
+    schema_version = str(payload.get("index_schema_version") or payload.get("source") or "")
+    source = str(payload.get("source") or "")
+    if source != "v2" and schema_version != "chunk_schema_v2":
+        return {}
+    manifest_path = DATA_DIR / "knowledge" / "governance" / "runtime_index_v2_manifest.json"
+    if not manifest_path.exists():
+        return {"runtime_status": "runtime_manifest_missing"}
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"runtime_status": "runtime_manifest_unreadable"}
+    can_replace_runtime = bool(manifest.get("can_replace_runtime"))
+    runtime_core_enabled = bool(payload.get("runtime_core_prescription_enabled"))
+    approved_records = int(manifest.get("approved_records") or 0)
+    ready_records = int(manifest.get("ready_records") or 0)
+    return {
+        "runtime_status": str(manifest.get("status") or ""),
+        "runtime_use_enabled": bool(manifest.get("runtime_use_enabled")),
+        "can_replace_runtime": can_replace_runtime,
+        "approved_records": approved_records,
+        "ready_records": ready_records,
+        "replacement_blockers": list(manifest.get("replacement_blockers") or []),
+        "source_review_ready": approved_records > 0 and ready_records > 0,
+        "commercial_core_prescription_enabled": runtime_core_enabled and can_replace_runtime,
+    }
+
+
 def _public_rag_health(health: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     payload = dict(health or get_knowledge_base_health_snapshot() or {})
-    return {
+    public = {
+        "source": str(payload.get("source") or "unknown"),
+        "vector_dir": str(payload.get("vector_dir") or ""),
         "index_schema_version": str(payload.get("index_schema_version") or payload.get("source") or "unknown"),
         "metadata_completeness": float(payload.get("metadata_completeness") or 0.0),
         "runtime_core_prescription_enabled": bool(payload.get("runtime_core_prescription_enabled")),
@@ -938,6 +969,10 @@ def _public_rag_health(health: Optional[Dict[str, Any]] = None) -> Dict[str, Any
         "faiss_ready": bool(payload.get("faiss_ready")),
         "ready": bool(payload.get("ready") or payload.get("ok")),
     }
+    public.update(_v2_runtime_manifest_overlay(public))
+    if "commercial_core_prescription_enabled" not in public:
+        public["commercial_core_prescription_enabled"] = bool(public["runtime_core_prescription_enabled"])
+    return public
 
 
 def _calendar_contract_from_plan(structured_plan: Dict[str, Any], rag_health: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

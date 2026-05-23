@@ -47,6 +47,7 @@ STAI_RUNS_DIR = ARTIFACTS_DIR / "research_runs" / "stai2026"
 MEXRXBENCH_DIR = RESEARCH_DIR / "mexrxbench"
 
 DEFAULT_VECTOR_DIR = DATA_DIR / "vector_kb" / "default"
+V2_VECTOR_DIR = DATA_DIR / "vector_kb" / "v2"
 USER_PROFILE_PATH = DEFAULT_VECTOR_DIR / "user_profile.json"
 USER_VECTOR_DIR = DATA_DIR / "vector_kb" / "user"
 UPLOAD_DOCS_DIR = DATA_DIR / "uploads" / "seed"
@@ -79,6 +80,7 @@ def get_preferred_vector_dir() -> Path:
     """
     for candidate in (
         USER_VECTOR_DIR,
+        V2_VECTOR_DIR,
         RUNTIME_USER_VECTOR_DIR,
         LEGACY_USER_VECTOR_DIR,
         DEFAULT_VECTOR_DIR,

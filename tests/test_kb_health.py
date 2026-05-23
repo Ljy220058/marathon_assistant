@@ -133,11 +133,14 @@ def test_runtime_index_schema_summary_distinguishes_legacy_v2_and_mixed_chunks()
     assert mixed_summary["runtime_core_prescription_enabled"] is False
 
 
-def test_runtime_v2_manifest_declares_preview_and_legacy_runtime_boundary():
+def test_runtime_v2_manifest_declares_query_preview_runtime_boundary():
     manifest = json.loads(Path("data/knowledge/governance/runtime_index_v2_manifest.json").read_text(encoding="utf-8"))
 
     assert manifest["schema_version"] == "chunk_schema_v2"
-    assert manifest["status"] == "preview_only_not_runtime"
+    assert manifest["status"] == "runtime_preview_ready"
     assert manifest["metadata_completeness"] == 1.0
-    assert manifest["runtime_index_schema_version"] == "legacy"
+    assert manifest["runtime_index_schema_version"] == "chunk_schema_v2"
+    assert manifest["runtime_use_enabled"] is True
+    assert manifest["runtime_chunk_count"] == 750
     assert manifest["can_replace_runtime"] is False
+    assert "approved_records=0" in manifest["replacement_blockers"]

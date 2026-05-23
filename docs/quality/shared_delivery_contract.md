@@ -525,11 +525,11 @@ git status --short --branch
 ## 15. Knowledge Base P14 Runtime Index Boundary
 
 - Backend / Engineering Coordinator 当前分支：`codex/kb-p14-runtime-v2-index`。
-- P14 已让 runtime health 区分 `legacy`、`chunk_schema_v2`、`mixed` 和 `empty`。当前 `data/vector_kb/default/chunks.jsonl` 仍是 legacy；它可以继续作为兼容检索 fallback，但不得作为核心处方证据来源。
+- P14 已让 runtime health 区分 `legacy`、`chunk_schema_v2`、`mixed` 和 `empty`。当前 `data/vector_kb/v2/chunks.jsonl` 可作为 `/query` preview runtime；`data/vector_kb/default/chunks.jsonl` 仍是 legacy rollback fallback，不能作为核心处方证据来源。
 - `probe_vector_kb_health`、`bootstrap_knowledge_base` 和 `get_knowledge_base_health_snapshot` 现在会携带 `index_schema_version`、`metadata_completeness`、`runtime_core_prescription_enabled`。
 - Vector hit -> EvidenceBinding 现在会保留 v2 metadata：`source_registry_id`、`evidence_domain`、`knowledge_layer`、`domain_pack`、`allowed_use`、`prescription_permission`、`source_url`、`section`、`quality_tier`。
-- 新增 artifact：`data/knowledge/governance/runtime_index_v2_manifest.json`。当前状态为 `preview_only_not_runtime`，`can_replace_runtime=false`。切换 runtime 前必须构建独立 v2 vector dir，并通过 health、evidence、evaluation gates；不得覆盖 `data/vector_kb/default`。
-- Frontend owner 不能因为后端存在 `chunk_schema_v2_preview` 就显示“运行时已接入 v2 知识库”。普通层只能表达“当前证据链仍需补充审核/运行时仍在 legacy fallback”。
+- 新增 artifact：`data/knowledge/governance/runtime_index_v2_manifest.json`。当前状态为 `runtime_preview_ready`，`can_replace_runtime=false`。`/query` 可以优先读取独立 v2 vector dir，但 production replacement 仍必须通过 source review、health、evidence、evaluation gates；不得覆盖 `data/vector_kb/default`。
+- Frontend owner 不能因为后端存在 `chunk_schema_v2` runtime 就显示“商用知识库已审核”。普通层只能表达“新知识库预览检索已启用，但来源仍待审核，核心处方仍需协议或动作库确认”。
 - P14 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_health.py tests/test_kb_evidence_binding.py tests/test_kb_bootstrap.py tests/test_vector_kb_runtime_contract.py -q`，结果 `14 passed in 0.10s`。
 
 ## 16. Knowledge Base P15 Source Review Queue
@@ -564,7 +564,7 @@ git status --short --branch
 
 - Backend / Engineering Coordinator 当前分支：`codex/kb-rag-evidence-chain-todo`。
 - 本轮新增设计文档：`docs/knowledge_base/rag_evidence_chain_refactor_todo.md`，范围是 RAG、KB runtime、引用、EvidenceDrawer、日卡依据、GraphRAG、LLM general knowledge fallback 和商用证据链 gate。
-- 当前审计事实保持不变：runtime KB 仍是 legacy；source registry v2 有 `750` 条但 `approved_records=0`、`ready_records=0`；`runtime_index_v2_manifest.can_replace_runtime=false`；因此前端不得显示“已审核知识库证据”“已验证处方来源”或把 seed/candidate/legacy source 当作权威引用。
+- 当前审计事实已更新：runtime KB 可优先加载 v2 preview；source registry v2 有 `750` 条但 `approved_records=0`、`ready_records=0`；`runtime_index_v2_manifest.can_replace_runtime=false`；因此前端不得显示“已审核知识库证据”“已验证处方来源”或把 seed/candidate/v2-preview/legacy source 当作权威商用引用。
 - 新增共同契约方向：后端后续应提供 canonical `evidence_chain.items`；前端 EvidenceDrawer 后续优先消费该 canonical payload，而不是在 `collectEvidenceItems()`、`buildDayEvidenceItems()` 中自行拼接来源。
 - 前端 owner 下一轮需要维护以下展示边界：无 `source_url + page/section` 时不显示 citation badge；`model_general_knowledge` 显示为“模型常识说明”；`needs_evidence` 显示为“待补证据”；`graph_hint` 显示为“关联线索”；普通层不展示 `source_path/local_path/retrieval_score/internal source_registry_id`。
 - Backend owner 下一轮优先做 P0-P2：证据链 inventory、canonical evidence DTO、retrieval metadata preservation。完成前不得宣称证据链已商用 ready。
@@ -591,7 +591,7 @@ git status --short --branch
 - 多 query variant 合并同一 `chunk_id` 时，`_merge_ranked_hits()` 会保留更完整的 metadata，同时仍保留更高 `score` 和更低 `distance`。
 - `source_url` 与 `page/section` 不完整时，canonical chain 不会输出 `display_mode=verified_source`，前端不得自行补 citation badge。
 - Frontend owner 下一轮需要优先消费 `response.evidence_chain.items` 的 `display_mode/source_url/page/section/user_facing_summary`；旧 `evidence_bundle/evidence_base` 仅作 fallback，且 fallback citation 不得显示为 verified。
-- 运行事实仍不变：当前 runtime KB 仍是 legacy，v2 source registry 没有 ready/approved runtime index；P2 只解决 metadata 保真，不代表知识库已达到商用 ready。
+- 运行事实已更新：当前 runtime KB 可优先加载 v2 preview，v2 source registry 仍没有 ready/approved commercial index；P2 只解决 metadata 保真，不代表知识库已达到商用 ready。
 - P2 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_rag_metadata_preservation.py tests/test_evidence_chain_contract.py tests/test_kb_evidence_binding.py tests/test_working_state_audit_loop.py tests/test_openapi_contract.py tests/test_api_app.py -q`，结果 `66 passed, 2 warnings`；`git diff --check` 针对 P2 后端与文档文件通过。
 
 ## 22. RAG Evidence Chain P3 No Fake Citation Gate Update
@@ -622,5 +622,17 @@ git status --short --branch
 - `training_plan_review.dimensions.runtime_kb_boundary` 已新增，用于说明当前 runtime KB 是否只能解释、是否允许写核心处方。
 - 当 runtime schema 是 `legacy/mixed/unknown` 或 `runtime_core_prescription_enabled=false` 时，vector/rag_sources/fusion 命中的 located source 会从 `verified_source` 降级为 `legacy_explanation`，并清空普通层 `source_url/page/section`，避免前端生成可点击 verified badge。
 - Runtime gate 会把降级后的 vector evidence `prescription_permission` 改为 `explanation_only`；核心处方仍只能来自 protocol/action_library 或明确 `needs_evidence`。
-- Frontend owner 下一轮需要：在 EvidenceDrawer 摘要里读取 `rag_health` 与 `runtime_kb_boundary`，用人话显示“当前知识库可解释但不可写核心处方”；不得把 legacy runtime 的 vector source 显示为 verified citation。
+- Frontend owner 下一轮需要：在 EvidenceDrawer 摘要里读取 `rag_health` 与 `runtime_kb_boundary`，用人话显示“新知识库预览检索已启用，但来源仍待审核，核心处方不可宣称商用已审核”；不得把 legacy 或 v2-preview runtime 的 vector source 显示为商用权威处方证据。
 - P5 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_api_app.py tests/test_evidence_chain_contract.py tests/test_openapi_contract.py tests/test_training_plan_review.py tests/test_kb_health.py tests/test_vector_kb_runtime_contract.py -q`，结果 `68 passed, 2 warnings`；`git diff --check` 针对 P5 后端与测试文件通过。
+
+## 25. Knowledge Base V2 Query Runtime Preview Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-v2-query-runtime`。
+- `/query` 的知识库启动顺序已调整为：`data/vector_kb/user`、`data/vector_kb/v2`、`_runtime_data/vector_kb_user`、legacy user、`data/vector_kb/default`、legacy default。目标是让新库构建完成后优先进入 `/query` 检索，同时保留 legacy default 作为回滚 fallback。
+- 新增构建入口：`tools/kb/build_v2_runtime.py` 与 `marathon_qa_assistant.services.kb.runtime_v2.build_v2_runtime_index()`。当前产物为 `data/vector_kb/v2/chunks.jsonl`、`data/vector_kb/v2/faiss_db/index.faiss`、`data/vector_kb/v2/faiss_db/index.pkl`。
+- 当前 v2 runtime 事实：`runtime_chunk_count=750`、`metadata_completeness=1.0`、`runtime_index_schema_version=chunk_schema_v2`、`runtime_use_enabled=true`。
+- 当前 v2 仍不是商用已审核知识库：`approved_records=0`、`ready_records=0`、`can_replace_runtime=false`。`rag_health.runtime_core_prescription_enabled=true` 只表示 schema 与 permission 字段具备技术结构；`rag_health.commercial_core_prescription_enabled=false` 才是前端和产品层判断核心处方是否可宣称商用已审核的边界。
+- `/query`、结构化计划和计划评审可读取 `rag_health.source=v2`、`rag_health.runtime_status=runtime_preview_ready`、`rag_health.can_replace_runtime=false`、`rag_health.source_review_ready=false`、`rag_health.commercial_core_prescription_enabled=false`。
+- Frontend owner 下一轮必须更新 EvidenceDrawer / 状态文案：当 `rag_health.source=v2` 且 `commercial_core_prescription_enabled=false` 时，只能显示“新知识库预览检索已启用 / 来源仍待审核 / 核心处方仍需协议或动作库确认”，不得显示“已审核权威知识库”“商用处方库已启用”或“核心处方已由 v2 知识库验证”。
+- QA/reviewer 下一轮必须验证：`/query` 命中 v2 后不退回旧的“信息不足硬拒答”；普通知识问题无可定位证据时仍可走 `model_general_knowledge`；核心处方证据不足时继续 `needs_evidence`；医疗红旗继续 `medical_referral`。
+- 本轮未开启子 agent；仍遵守同一时间最多 1 个子 agent，完成后必须关闭并记录。

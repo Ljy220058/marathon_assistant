@@ -186,3 +186,27 @@ def test_training_plan_review_flags_missing_strength_and_mobility_gaps():
     assert review["dimensions"]["strength_conditioning"]["status"] == "gap"
     assert review["dimensions"]["mobility_recovery"]["status"] == "gap"
     assert "strength" in review["summary"]["risks"][0].lower() or review["summary"]["risks"]
+
+
+def test_training_plan_review_distinguishes_v2_preview_from_commercial_core_kb():
+    review = build_training_plan_review(
+        structured_training_plan=_review_plan(),
+        daily_schedule_cards=_review_days(),
+        training_load_summary={"source_type": "planned_load_proxy", "not_device_metric": True},
+        rag_health={
+            "source": "v2",
+            "index_schema_version": "chunk_schema_v2",
+            "metadata_completeness": 1.0,
+            "runtime_core_prescription_enabled": True,
+            "commercial_core_prescription_enabled": False,
+            "runtime_status": "runtime_preview_ready",
+            "can_replace_runtime": False,
+        },
+    )
+
+    boundary = review["dimensions"]["runtime_kb_boundary"]
+    assert boundary["status"] == "runtime_preview_not_commercial"
+    assert boundary["runtime_core_prescription_enabled"] is True
+    assert boundary["commercial_core_prescription_enabled"] is False
+    assert boundary["runtime_status"] == "runtime_preview_ready"
+    assert boundary["can_replace_runtime"] is False

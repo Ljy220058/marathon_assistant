@@ -10,6 +10,7 @@ from marathon_qa_assistant.core.app_state import (
     LEGACY_USER_VECTOR_DIR,
     RUNTIME_USER_VECTOR_DIR,
     USER_VECTOR_DIR,
+    V2_VECTOR_DIR,
 )
 from marathon_qa_assistant.core.kb_provider import set_kb_data
 from marathon_qa_assistant.services.vector_store import load_vector_kb, probe_vector_kb_health, retrieve
@@ -21,6 +22,7 @@ _LAST_BOOTSTRAP_REPORT: Dict[str, Any] = {}
 def default_kb_candidate_dirs() -> List[Path]:
     return [
         USER_VECTOR_DIR,
+        V2_VECTOR_DIR,
         RUNTIME_USER_VECTOR_DIR,
         LEGACY_USER_VECTOR_DIR,
         DEFAULT_VECTOR_DIR,
