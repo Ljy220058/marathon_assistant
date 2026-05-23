@@ -559,3 +559,14 @@ git status --short --branch
 - 当前 v2 集合：`110` 题，`ready=true`，`invalid=0`；覆盖核心处方缺证据、医疗红旗、模型常识无假引用和普通 no-fake-citation 场景。
 - QA/reviewer 后续做 P18 RAG-vs-base 时必须使用 v2 fixture，不得只用 v1 schema ready 作为“RAG 更权威”的证据。
 - P17 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_governance.py tests/test_kb_evaluation.py -q`，结果 `16 passed in 0.10s`。
+
+## 19. RAG Evidence Chain TODO Contract
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-rag-evidence-chain-todo`。
+- 本轮新增设计文档：`docs/knowledge_base/rag_evidence_chain_refactor_todo.md`，范围是 RAG、KB runtime、引用、EvidenceDrawer、日卡依据、GraphRAG、LLM general knowledge fallback 和商用证据链 gate。
+- 当前审计事实保持不变：runtime KB 仍是 legacy；source registry v2 有 `750` 条但 `approved_records=0`、`ready_records=0`；`runtime_index_v2_manifest.can_replace_runtime=false`；因此前端不得显示“已审核知识库证据”“已验证处方来源”或把 seed/candidate/legacy source 当作权威引用。
+- 新增共同契约方向：后端后续应提供 canonical `evidence_chain.items`；前端 EvidenceDrawer 后续优先消费该 canonical payload，而不是在 `collectEvidenceItems()`、`buildDayEvidenceItems()` 中自行拼接来源。
+- 前端 owner 下一轮需要维护以下展示边界：无 `source_url + page/section` 时不显示 citation badge；`model_general_knowledge` 显示为“模型常识说明”；`needs_evidence` 显示为“待补证据”；`graph_hint` 显示为“关联线索”；普通层不展示 `source_path/local_path/retrieval_score/internal source_registry_id`。
+- Backend owner 下一轮优先做 P0-P2：证据链 inventory、canonical evidence DTO、retrieval metadata preservation。完成前不得宣称证据链已商用 ready。
+- QA/reviewer 下一轮必须验证：fake citation 为 0；legacy runtime 不写核心处方；日卡主课来源和 QA 引用来源不冲突；Graph-only evidence 不显示为 verified source；普通问答无证据时允许模型常识回答但没有假引用。
+- 本轮未开启子 agent；后续继续遵守同一时间最多 1 个子 agent，完成后立刻关闭并记录在 review TODO。
