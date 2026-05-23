@@ -1,0 +1,33 @@
+{
+  "domain_counts": {
+    "action_library": 10,
+    "competitor_product_tasks": 10,
+    "environment_race_context": 10,
+    "medical_risk": 10,
+    "mobility_recovery": 10,
+    "nutrition_race_fueling": 10,
+    "rehab_return_to_run": 10,
+    "strength_conditioning": 10,
+    "training_load": 10,
+    "training_protocols": 10,
+    "user_profile_cases": 10
+  },
+  "first_batch_ready": true,
+  "invalid": [],
+  "question_count": 110,
+  "ready": true,
+  "rubric_dimensions": [
+    "citation_faithfulness",
+    "core_permission_compliance",
+    "factual_correctness",
+    "load_truthfulness",
+    "medical_safety",
+    "user_actionability"
+  ],
+  "safety_behavior_counts": {
+    "medical_referral_or_risk_refused": 4,
+    "model_general_knowledge_without_fake_citation": 10,
+    "needs_evidence_when_protocol_or_action_library_missing": 20,
+    "no_fake_citation_and_no_core_prescription": 76
+  }
+}

@@ -6,12 +6,15 @@ from marathon_qa_assistant.services.kb.governance import (
     FIRST_BATCH_DOMAIN_PACKS,
     build_default_coverage_matrix,
     build_default_golden_questions,
+    build_default_golden_questions_v2,
     build_evidence_drawer_payload,
     build_kb_release_report,
     build_seed_domain_pack_catalog,
+    golden_question_to_v2,
     summarize_source_readiness,
     top_coverage_gaps,
     validate_golden_questions,
+    validate_golden_questions_v2,
 )
 
 
@@ -38,6 +41,36 @@ def test_golden_questions_cover_100_plus_questions_and_required_fields():
 def test_golden_question_fixture_is_expanded_to_100_plus_items():
     questions = json.loads(Path("tests/fixtures/kb_golden_questions.json").read_text(encoding="utf-8"))
     result = validate_golden_questions(questions)
+
+    assert result["question_count"] >= 100
+    assert result["ready"] is True
+
+
+def test_golden_questions_v2_add_judge_rubric_and_safety_behavior():
+    questions = build_default_golden_questions_v2()
+    result = validate_golden_questions_v2(questions)
+
+    assert len(questions) >= 100
+    assert result["ready"] is True
+    assert result["invalid"] == []
+    assert "citation_faithfulness" in result["rubric_dimensions"]
+    assert result["safety_behavior_counts"]["needs_evidence_when_protocol_or_action_library_missing"] >= 10
+    assert result["safety_behavior_counts"]["medical_referral_or_risk_refused"] >= 1
+
+
+def test_golden_question_v2_blocks_core_without_expected_evidence_ids():
+    item = golden_question_to_v2(build_default_golden_questions()[0])
+    item["expected_evidence_ids"] = []
+
+    result = validate_golden_questions_v2([item])
+
+    assert result["ready"] is False
+    assert "core_prescription_requires_expected_evidence_ids" in result["invalid"][0]["errors"]
+
+
+def test_golden_question_v2_fixture_is_judge_ready():
+    questions = json.loads(Path("tests/fixtures/kb_golden_questions_v2.json").read_text(encoding="utf-8"))
+    result = validate_golden_questions_v2(questions)
 
     assert result["question_count"] >= 100
     assert result["ready"] is True
@@ -75,6 +108,7 @@ def test_generated_governance_artifacts_satisfy_p0_to_p10_minimums():
     chunk_health = json.loads((base / "chunk_schema_v2_health.json").read_text(encoding="utf-8"))
     legacy_chunk_health = json.loads((base / "legacy_chunk_health.json").read_text(encoding="utf-8"))
     release_report = json.loads((base / "kb_release_report.json").read_text(encoding="utf-8"))
+    v2_summary = json.loads((base / "golden_questions_v2_summary.json").read_text(encoding="utf-8"))
 
     assert len(registry) >= 150
     assert all(item.get("review_status") for item in registry)
@@ -94,6 +128,8 @@ def test_generated_governance_artifacts_satisfy_p0_to_p10_minimums():
     assert release_report["ready_records"] == 0
     assert release_report["ready_for_next_batch"] is False
     assert "no_approved_sources" in release_report["readiness_blockers"]
+    assert v2_summary["ready"] is True
+    assert "citation_faithfulness" in v2_summary["rubric_dimensions"]
 
 
 def test_evidence_drawer_payload_never_fakes_citations():

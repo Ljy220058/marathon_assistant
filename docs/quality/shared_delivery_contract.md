@@ -550,3 +550,12 @@ git status --short --branch
 - Frontend owner 不得显示被 quarantine source 的 citation；若证据来自 `explanation_only_legacy`，只能作为解释性背景，不能显示为核心处方证据。
 - QA/reviewer 下一轮必须验证：book review 不出现在用户可见证据中，legacy source 不获得 `can_write_core`，quarantine report 有 sample preview 和 reasons。
 - P16 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_runtime_quarantine.py tests/test_vector_kb_runtime_contract.py tests/test_kb_health.py -q`，结果 `13 passed in 0.10s`。
+
+## 18. Knowledge Base P17 Golden Questions V2
+
+- Backend / Engineering Coordinator 当前分支：`codex/kb-p17-golden-questions-v2`。
+- P17 已新增 `tests/fixtures/kb_golden_questions_v2.json` 和 `golden_questions_v2_summary.json`，把 v1 的字段完整性问题升级为可判分问题集。
+- 每题新增 `expected_evidence_ids`、`forbidden_claims`、`required_safety_behavior` 和 `judge_rubric`。Rubric 维度包括 factual correctness、citation faithfulness、core permission compliance、medical safety、load truthfulness、user actionability。
+- 当前 v2 集合：`110` 题，`ready=true`，`invalid=0`；覆盖核心处方缺证据、医疗红旗、模型常识无假引用和普通 no-fake-citation 场景。
+- QA/reviewer 后续做 P18 RAG-vs-base 时必须使用 v2 fixture，不得只用 v1 schema ready 作为“RAG 更权威”的证据。
+- P17 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest tests/test_kb_governance.py tests/test_kb_evaluation.py -q`，结果 `16 passed in 0.10s`。

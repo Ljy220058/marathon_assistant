@@ -935,18 +935,18 @@ python -m pytest tests/test_kb_health.py tests/test_api_app.py -q
 
 #### TODO
 
-- [ ] 每题新增 `expected_evidence_ids`、`expected_answer_traits`、`forbidden_claims`、`required_safety_behavior`。
-- [ ] 新增 `judge_rubric`：事实正确性、引用忠实度、处方权限、风险边界、可执行性、用户可理解性。
-- [ ] 核心处方题必须指定允许来源类型：`protocol/action_library`。
-- [ ] 医疗红旗题必须指定 `medical_referral` 或 `risk_refused`。
-- [ ] 无本地证据题必须允许 `model_general_knowledge`，但禁止 fake citation。
-- [ ] 生成 `golden_questions_v2_summary.json`，展示每个 domain pack 的题量和风险覆盖。
+- [x] 每题新增 `expected_evidence_ids`、`expected_answer_traits`、`forbidden_claims`、`required_safety_behavior`。
+- [x] 新增 `judge_rubric`：事实正确性、引用忠实度、处方权限、风险边界、可执行性、用户可理解性。
+- [x] 核心处方题必须指定允许来源类型：`protocol/action_library`。
+- [x] 医疗红旗题必须指定 `medical_referral` 或 `risk_refused`。
+- [x] 无本地证据题必须允许 `model_general_knowledge`，但禁止 fake citation。
+- [x] 生成 `golden_questions_v2_summary.json`，展示每个 domain pack 的题量和风险覆盖。
 
 #### 验收标准
 
-- [ ] 每题都有可判定标准，而不是只有 schema 字段。
-- [ ] 至少 100 条题能区分 RAG、裸 LLM、无证据常识回答三种路径。
-- [ ] 评测失败样例能进入 release report。
+- [x] 每题都有可判定标准，而不是只有 schema 字段。
+- [x] 至少 100 条题能区分 RAG、裸 LLM、无证据常识回答三种路径。
+- [x] 评测失败样例能进入 release report。
 
 #### 验证命令
 
@@ -955,6 +955,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_kb_evaluation.py -q
 ```
+
+实际结果（P17 分支 `codex/kb-p17-golden-questions-v2`）：`tests/test_kb_governance.py tests/test_kb_evaluation.py -q` 通过，`16 passed in 0.10s`。新增 `tests/fixtures/kb_golden_questions_v2.json` 与 `golden_questions_v2_summary.json`：`110` 题、`ready=true`、`invalid=0`；安全行为分布为核心处方缺证据 `20`、普通无假引用 `76`、医疗红旗 `4`、模型常识无假引用 `10`。
 
 ### P18：RAG vs Base LLM 对照评测
 
