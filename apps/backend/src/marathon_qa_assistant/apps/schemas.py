@@ -35,6 +35,7 @@ class QueryResponse(BaseModel):
     message: str = ""
     generation_timings: Dict[str, float] = Field(default_factory=dict)
     half_marathon_protocol_validation: Optional[Dict[str, Any]] = None
+    answer_source_mode: str = ""
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
     evidence_chain: Dict[str, Any] = Field(default_factory=dict)
 

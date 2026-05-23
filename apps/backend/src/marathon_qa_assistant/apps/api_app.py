@@ -964,6 +964,21 @@ def _answer_source_mode_from_result(
     return "model_general_knowledge"
 
 
+def _answer_source_mode_from_review(current_mode: str, training_plan_review: Dict[str, Any]) -> str:
+    mode = str(current_mode or "")
+    if mode != "structured_plan_rule":
+        return mode
+    dimensions = training_plan_review.get("dimensions") if isinstance(training_plan_review, dict) else {}
+    evidence_control = dimensions.get("evidence_control") if isinstance(dimensions, dict) else {}
+    if not isinstance(evidence_control, dict):
+        return mode
+    needs_evidence_count = int(evidence_control.get("needs_evidence_count") or 0)
+    core_violations = list(evidence_control.get("core_source_violations") or [])
+    if needs_evidence_count > 0 or core_violations:
+        return "needs_evidence"
+    return mode
+
+
 def _build_response_evidence_chain(
     *,
     query: str,
@@ -988,6 +1003,7 @@ def _attach_citation_gate_to_trace_and_review(
 ) -> None:
     gate = evidence_chain.get("citation_gate") if isinstance(evidence_chain.get("citation_gate"), dict) else {}
     summary = {
+        "answer_source_mode": str(evidence_chain.get("answer_source_mode") or ""),
         "citation_gate_status": str(gate.get("status") or "passed"),
         "fake_citation_count": int(gate.get("fake_citation_count") or 0),
         "fake_citation_violations": list(gate.get("violations") or []),
@@ -1060,10 +1076,11 @@ async def _build_skeleton_plan_response(
     state["workflow_trace"] = workflow_trace
     if isinstance(structured_plan, dict):
         structured_plan["workflow_trace"] = workflow_trace
+    answer_source_mode = _answer_source_mode_from_review("structured_plan_rule", training_plan_review)
     evidence_chain = _build_response_evidence_chain(
         query=request.query,
         evidence_bundle=state.get("evidence_bundle"),
-        answer_source_mode="structured_plan_rule",
+        answer_source_mode=answer_source_mode,
         answer_text=report,
     )
     _attach_citation_gate_to_trace_and_review(
@@ -1102,6 +1119,7 @@ async def _build_skeleton_plan_response(
         half_marathon_protocol_validation=structured_plan.get("half_marathon_protocol_validation")
         if isinstance(structured_plan, dict)
         else None,
+        answer_source_mode=str(evidence_chain.get("answer_source_mode") or answer_source_mode),
         workflow_trace=workflow_trace,
         evidence_chain=evidence_chain,
     )
@@ -1185,12 +1203,26 @@ def _query_response_from_state(
         structured_plan["workflow_trace"] = workflow_trace
     evidence_chain = result.get("evidence_chain") if isinstance(result.get("evidence_chain"), dict) else {}
     if not evidence_chain:
+        answer_source_mode = _answer_source_mode_from_review(
+            _answer_source_mode_from_result(result, structured_plan, generation_status),
+            training_plan_review,
+        )
         evidence_chain = _build_response_evidence_chain(
             query=request.query,
             evidence_bundle=result.get("evidence_bundle"),
-            answer_source_mode=_answer_source_mode_from_result(result, structured_plan, generation_status),
+            answer_source_mode=answer_source_mode,
             answer_text=str(result.get("final_report") or result.get("report") or ""),
         )
+    else:
+        answer_source_mode = _answer_source_mode_from_review(
+            str(
+                evidence_chain.get("answer_source_mode")
+                or _answer_source_mode_from_result(result, structured_plan, generation_status)
+            ),
+            training_plan_review,
+        )
+        evidence_chain["answer_source_mode"] = answer_source_mode
+    answer_source_mode = str(evidence_chain.get("answer_source_mode") or answer_source_mode)
     _attach_citation_gate_to_trace_and_review(
         workflow_trace=workflow_trace,
         training_plan_review=training_plan_review,
@@ -1218,6 +1250,7 @@ def _query_response_from_state(
         half_marathon_protocol_validation=structured_plan.get("half_marathon_protocol_validation")
         if isinstance(structured_plan, dict)
         else None,
+        answer_source_mode=answer_source_mode,
         workflow_trace=workflow_trace,
         evidence_chain=evidence_chain,
     )

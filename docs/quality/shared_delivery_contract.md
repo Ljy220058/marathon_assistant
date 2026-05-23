@@ -603,3 +603,14 @@ git status --short --branch
 - Frontend owner 下一轮需要：优先以 `evidence_chain.items[].display_mode=verified_source` 且有 `source_url` 与 `page/section` 为唯一可点击 citation 条件；`model_general_knowledge` 显示为模型常识说明；`legacy_explanation` 只可在专家层作为背景来源，不可在普通层显示为 verified badge。
 - 当前 gate 只验证编号 citation 和来源定位忠实性；它不证明来源内容本身足够权威，source registry approved/ready 和 RAG-vs-base evaluation 仍由后续 P 阶段完成。
 - P3 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_evidence_chain_contract.py tests/test_api_app.py tests/test_openapi_contract.py tests/test_working_state_audit_loop.py tests/test_kb_governance.py tests/test_rag_metadata_preservation.py -q`，结果 `79 passed, 2 warnings`；`git diff --check` 针对 P3 后端与测试文件通过。
+
+## 23. RAG Evidence Chain P4 Answer Source Mode Update
+
+- Backend / Engineering Coordinator 当前分支：`codex/rag-evidence-p4-answer-source-mode`。
+- `/query` response 现在稳定返回顶层 `answer_source_mode`，枚举继续使用 `verified_rag`、`model_general_knowledge`、`needs_evidence`、`medical_referral`、`structured_plan_rule`。
+- `answer_source_mode` 同步写入 `evidence_chain.answer_source_mode` 和 `workflow_trace.evidence_state.answer_source_mode`，前端 EvidenceDrawer 不需要再从 report Markdown 或 citation 数量推断回答来源状态。
+- 普通知识问答无本地证据时返回 `model_general_knowledge`，允许模型常识回答，但不得生成 citation 或伪造来源。
+- 结构化计划若日卡核心处方出现 `needs_evidence_count>0` 或核心字段来源违规，顶层 `answer_source_mode` 会降为 `needs_evidence`，不会被包装成普通模型常识回答。
+- 医疗红旗仍由风险门 `medical_referral` 处理，不允许被 `model_general_knowledge` 覆盖或继续生成训练负荷调整。
+- Frontend owner 下一轮需要：以顶层 `answer_source_mode` 驱动 EvidenceDrawer 摘要和普通层状态文案；`model_general_knowledge` 是“可回答但无引用”，`needs_evidence` 是“处方证据不足”，两者不能混用。
+- P4 验证命令：`$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; C:\Users\26318\anaconda3\envs\torch2.5.1\python.exe -m pytest tests/test_api_app.py tests/test_state_models.py tests/test_openapi_contract.py tests/test_evidence_chain_contract.py tests/test_profile_field_gating.py -q`，结果 `71 passed, 2 warnings`；`git diff --check` 针对 P4 后端与测试文件通过。

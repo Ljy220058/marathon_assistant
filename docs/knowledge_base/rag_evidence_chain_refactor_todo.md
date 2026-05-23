@@ -187,17 +187,17 @@ python -m pytest tests/test_working_state_audit_loop.py tests/test_kb_governance
 
 ### TODO
 
-- [ ] 在 `/query` response 中新增或稳定返回 `answer_source_mode`：`verified_rag/model_general_knowledge/needs_evidence/medical_referral/structured_plan_rule`。
-- [ ] 普通 QA 无本地证据时必须走 `model_general_knowledge`，不显示“信息不足，请补充上下文”。
-- [ ] 核心训练处方缺 `protocol/action_library` 时必须走 `needs_evidence`，不能由 LLM 常识写主课。
-- [ ] 医疗红旗走 `medical_referral`，不继续生成训练负荷调整。
-- [ ] `answer_source_mode` 同步写入 `workflow_trace` 和前端 EvidenceDrawer 摘要。
+- [x] 在 `/query` response 中新增或稳定返回 `answer_source_mode`：`verified_rag/model_general_knowledge/needs_evidence/medical_referral/structured_plan_rule`。
+- [x] 普通 QA 无本地证据时必须走 `model_general_knowledge`，不显示“信息不足，请补充上下文”。
+- [x] 核心训练处方缺 `protocol/action_library` 时必须走 `needs_evidence`，不能由 LLM 常识写主课。
+- [x] 医疗红旗走 `medical_referral`，不继续生成训练负荷调整。
+- [x] `answer_source_mode` 同步写入 `workflow_trace` 和前端 EvidenceDrawer 摘要。
 
 ### 验收标准
 
-- [ ] 普通知识问答无证据时仍有可执行回答，但没有 citation。
-- [ ] 计划主课缺证据时显示“待补证据”，不是通用回答。
-- [ ] 医疗红旗不会被 `model_general_knowledge` 覆盖。
+- [x] 普通知识问答无证据时仍有可执行回答，但没有 citation。
+- [x] 计划主课缺证据时显示“待补证据”，不是通用回答。
+- [x] 医疗红旗不会被 `model_general_knowledge` 覆盖。
 
 ### 验证命令
 
@@ -206,6 +206,8 @@ $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
 python -m pytest tests/test_api_app.py tests/test_state_models.py -q
 ```
+
+实际结果：`tests/test_api_app.py tests/test_state_models.py tests/test_openapi_contract.py tests/test_evidence_chain_contract.py tests/test_profile_field_gating.py -q` 通过，结果 `71 passed, 2 warnings`；`git diff --check` 针对 P4 后端与测试文件通过。
 
 ## P5: Runtime Health Gates Evidence Display
 

@@ -111,6 +111,41 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
     }
 
 
+def test_query_without_local_evidence_reports_model_general_knowledge_mode(monkeypatch):
+    fake_app = _FakeIntegratedApp(
+        result={
+            "final_report": "## 模型通用知识回答\nsource_type: llm_general_knowledge\n\n轻松跑应能完整说话。",
+            "structured_report": {"summary": "general answer"},
+            "token_usage": {},
+            "audit_scores": {"consistency": 80, "safety": 85, "roi": 60, "summary": "通过"},
+            "guided_questions": [],
+        }
+    )
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "维持健康"})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "轻松跑应该是什么感觉？",
+            "user_id": "default_user",
+            "response_mode": "full",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["answer_source_mode"] == "model_general_knowledge"
+    assert payload["evidence_chain"]["answer_source_mode"] == "model_general_knowledge"
+    assert payload["workflow_trace"]["evidence_state"]["answer_source_mode"] == "model_general_knowledge"
+    assert payload["evidence_chain"]["items"][0]["display_mode"] == "model_general_knowledge"
+    assert "[1]" not in payload["report"]
+    assert "信息不足" not in payload["report"]
+    assert "请补充更具体的目标" not in payload["report"]
+
+
 def test_query_full_plan_backfills_calendar_contract_when_report_omits_it(monkeypatch):
     structured_plan = _one_week_calendar_contract_plan()
     fake_app = _FakeIntegratedApp(
@@ -282,6 +317,55 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
     assert all(isinstance(payload["generation_timings"][key], (int, float)) for key in payload["generation_timings"])
     assert payload["generation_timings"]["total_sec"] >= 0
     assert payload["training_plan_id"]
+    assert payload["answer_source_mode"] == "structured_plan_rule"
+    assert payload["workflow_trace"]["evidence_state"]["answer_source_mode"] == "structured_plan_rule"
+    assert db.get_plan(payload["training_plan_id"]) is not None
+    assert fake_app.calls == []
+
+
+def test_plan_query_with_unmatched_core_workout_reports_needs_evidence_mode(monkeypatch):
+    structured_plan = {
+        "plan_meta": {"goal": "半马 PB", "requested_weeks": 1, "actual_weeks": 1},
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "基础期",
+                "days": [
+                    {"day": "周二", "training_type": "unknown_magic_session", "main_set": ""},
+                ],
+            }
+        ],
+    }
+    fake_app = _FakeIntegratedApp(
+        result={
+            "final_report": "已生成训练计划，但部分主课待补证据。",
+            "structured_training_plan": structured_plan,
+            "structured_report": {"summary": "workflow report without calendar"},
+            "token_usage": {},
+            "audit_scores": {"consistency": 90, "safety": 90, "roi": 70, "summary": "通过"},
+            "guided_questions": [],
+        }
+    )
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+
+    response = client.post(
+        "/query",
+        json={
+            "query": "请完整生成一周半马训练计划",
+            "user_id": "default_user",
+            "response_mode": "full",
+            "timeout_sec": 15,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["answer_source_mode"] == "needs_evidence"
+    assert payload["workflow_trace"]["evidence_state"]["answer_source_mode"] == "needs_evidence"
+    assert payload["training_plan_review"]["dimensions"]["evidence_control"]["needs_evidence_count"] >= 1
+    assert "模型通用知识回答" not in payload["report"]
     assert payload["training_plan_review"]["review_version"] == "training_plan_review.v1"
     assert payload["training_plan_review"]["dimensions"]["training_load"]["source_type"] == "planned_load_proxy"
     assert payload["training_plan_review"]["dimensions"]["training_load"]["not_device_metric"] is True
@@ -297,8 +381,6 @@ def test_plan_query_skeleton_mode_returns_without_integrated_app(tmp_path, monke
         "evidence_control",
         "rag_vs_base_model",
     }
-    assert db.get_plan(payload["training_plan_id"]) is not None
-    assert fake_app.calls == []
 
 
 def test_skeleton_plan_respects_explicit_profile_prompt_weeks_over_stale_profile(tmp_path, monkeypatch):

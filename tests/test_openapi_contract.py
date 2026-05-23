@@ -60,6 +60,7 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
     assert "training_plan_review" in schemas["QueryResponse"]["properties"]
     assert "training_plan_review" in schemas["PlanDetailResponse"]["properties"]
     assert "training_plan_review" in schemas["TrainingCalendarResponse"]["properties"]
+    assert "answer_source_mode" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["PlanDetailResponse"]["properties"]
     assert "evidence_chain" in schemas["TrainingCalendarResponse"]["properties"]
