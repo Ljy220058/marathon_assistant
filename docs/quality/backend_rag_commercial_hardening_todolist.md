@@ -261,21 +261,22 @@ python tools/kb/build_kb_ops_dashboard.py
 
 **Tasks:**
 
-- [ ] Set minimum short-term threshold: each non-core domain pack has at least 3 approved sources.
+- [x] Set minimum short-term threshold: each non-core domain pack has at least 3 approved sources, except privacy-blocked `user_profile_cases`.
 - [ ] Set core threshold: `action_library` at least 10 approved sources or approved structured internal pack entries.
-- [ ] Build `user_profile_cases` only from anonymized, reviewed data.
-- [ ] Do not turn user raw feedback into case library without privacy review.
-- [ ] Add coverage notes for competitor tasks based on real product docs or screenshots only.
-- [ ] Add mobility/recovery and rehab sources separately; do not merge them into generic training advice.
-- [ ] Add nutrition boundary sources without allowing nutritionist to write core training prescriptions.
-- [ ] Regenerate gap report after each batch.
+- [x] Build `user_profile_cases` only from anonymized, reviewed data: kept at 0 instead of creating fake cases.
+- [x] Do not turn user raw feedback into case library without privacy review.
+- [x] Add coverage notes for competitor tasks based on real product docs or screenshots only.
+- [x] Add mobility/recovery and rehab sources separately; do not merge them into generic training advice.
+- [x] Add nutrition boundary sources without allowing nutritionist to write core training prescriptions.
+- [x] Regenerate gap report after each batch.
+- [x] Write P4 report: `docs/quality/reports/domain_pack_coverage_p4_2026-05-25.md`.
 
 **Acceptance Criteria:**
 
-- [ ] `kb_ops_dashboard.json` shows fewer domain gaps.
-- [ ] `user_profile_cases` stays blocked until anonymized export passes privacy tests.
-- [ ] Core prescription sources remain limited to protocol/action_library.
-- [ ] No fake citation is introduced to close a gap.
+- [x] `kb_ops_dashboard.json` shows fewer domain gaps.
+- [x] `user_profile_cases` stays blocked until anonymized export passes privacy tests.
+- [x] Core prescription sources remain limited to protocol/action_library.
+- [x] No fake citation is introduced to close a gap.
 
 **Verification:**
 
