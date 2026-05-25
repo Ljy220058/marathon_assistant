@@ -1,0 +1,17 @@
+{
+  "protocol_id": "protocol_marathon_beginner_base",
+  "type": "structured_training_week",
+  "distance": "marathon",
+  "runner_level": "beginner",
+  "phase": "base",
+  "frequency": "profile.available_days",
+  "volume": "planned_load_proxy_only",
+  "intensity": "phase_and_level_gated",
+  "time_or_duration": "profile.capacity_gated",
+  "long_run_cap": "profile.weekly_mileage_and_history_gated",
+  "quality_session_cap": "max_two_per_week",
+  "rest_day_rule": "at_least_one_rest_or_recovery_day",
+  "progression": "conservative_progression",
+  "contraindications": ["medical_red_flag", "acute_pain"],
+  "prescription_permission": "can_write_core"
+}

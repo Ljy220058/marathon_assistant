@@ -1,0 +1,20 @@
+{
+  "action_id": "action_tempo_base_intermediate_1",
+  "name": "Tempo base intermediate v1",
+  "category": "running_workout",
+  "workout_type": "tempo",
+  "phase_context": "base",
+  "distance_context": ["5K", "10K", "half_marathon", "marathon"],
+  "warmup": "10-15 min easy plus drills when appropriate",
+  "main_set": "controlled tempo main set v1",
+  "cooldown": "8-12 min easy cooldown",
+  "duration_range": "20-120 min, profile gated",
+  "intensity_zone": "easy/threshold/VO2 as action gated",
+  "pace_anchor": "profile calibrated pace, not stale t_pace",
+  "load_proxy_range": "planned_load_proxy",
+  "progression": "only progress when fatigue and pain gates pass",
+  "regression": "reduce duration or convert to easy/cross-training",
+  "contraindications": ["medical_red_flag", "worsening_pain"],
+  "alternative_actions": [],
+  "prescription_permission": "can_write_core"
+}

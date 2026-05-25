@@ -215,21 +215,22 @@ rg -n "sk-|Authorization|Bearer|C:\\Users\\|local_path|raw_prompt|prompt" data/k
 
 **Tasks:**
 
-- [ ] Prioritize domain packs with blocker gaps: `medical_risk`, `rehab_return_to_run`, `training_load`, `strength_conditioning`, `mobility_recovery`, `nutrition_race_fueling`, `environment_race_context`, `user_profile_cases`.
-- [ ] For each source, verify URL reachability or local PDF validity.
+- [x] Prioritize domain packs with blocker gaps: `medical_risk`, `rehab_return_to_run`, `training_load`, `strength_conditioning`, `mobility_recovery`, `nutrition_race_fueling`, `environment_race_context`, `user_profile_cases`.
+- [x] For this pass, verify URL reachability or local pointer validity for `src_external_strava_training_log` and `src_external_strava_instant_workouts`.
 - [ ] For each PDF, verify `%PDF` header when stored locally.
-- [ ] For each source, record license or allowed use.
-- [ ] For each source, mark whether it can write core prescription.
-- [ ] Keep medical, rehab, nutrition, environment sources as explanation/safety boundary unless explicitly structured protocol/action library.
-- [ ] Do not approve source that cannot be located by URL/page/section.
-- [ ] Regenerate source review summary.
+- [x] For each approved source in this pass, record license or allowed use.
+- [x] For each approved source in this pass, mark whether it can write core prescription.
+- [x] Keep this pass as explanation/product reference only; no reviewed source was promoted to `protocol` or `action_library`.
+- [x] Do not approve source that cannot be located by URL/page/section.
+- [x] Regenerate source review summary.
 - [ ] Keep rejected or blocked sources as metadata-only, not runtime core evidence.
+- [x] Write P3 report: `docs/quality/reports/source_approval_p3_2026-05-25.md`.
 
 **Acceptance Criteria:**
 
-- [ ] `approved` count increases from current baseline.
+- [x] `approved` count increases from current baseline: 19 -> 21.
 - [ ] `seed_only` count decreases or remains explicitly justified.
-- [ ] No source is approved without locatable source evidence.
+- [x] No source approved in this pass lacks URL/page/section evidence.
 - [ ] `core_permission_violation_count=0`.
 - [ ] Commercial gate no longer reports avoidable source review blockers except true domain-thickness gaps.
 

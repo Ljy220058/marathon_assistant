@@ -1,17 +1,21 @@
 {
-  "can_enter_runtime_index": 0,
+  "can_enter_runtime_index": 21,
   "status_counts": {
-    "candidate": 43,
-    "seed_only": 707
+    "approved": 21,
+    "candidate": 36,
+    "seed_only": 699
   },
   "top_blocking_reasons": {
-    "local_file_missing": 745,
-    "needs_review": 750,
-    "not_approved": 750,
-    "pdf_text_quality_not_verified": 28,
-    "seed_only_not_runtime_source": 707,
-    "url_reachability_not_verified": 43,
-    "web_canonical_not_verified": 15
+    "download_not_verified": 36,
+    "license_not_checked": 36,
+    "local_file_missing": 730,
+    "missing_locatable_source": 400,
+    "needs_review": 735,
+    "not_approved": 735,
+    "pdf_text_quality_not_verified": 26,
+    "seed_only_not_runtime_source": 699,
+    "url_reachability_not_verified": 36,
+    "web_canonical_not_verified": 10
   },
-  "total": 750
+  "total": 756
 }
