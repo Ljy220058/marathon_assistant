@@ -306,17 +306,18 @@ python -m pytest tests/test_kb_source_gap_report.py tests/test_kb_ops_dashboard.
 
 **Tasks:**
 
-- [ ] Add failing test: `/query` ignores or rejects `ds_api_key` in request body in production mode.
-- [ ] Add compatibility mode only for local dev if required, gated by explicit env var.
-- [ ] Make OpenAI/GPT and DeepSeek keys server-side only by default.
+- [x] Add failing test: `/query` ignores or rejects `ds_api_key` in request body in production mode.
+- [x] Add compatibility mode only for local dev if required, gated by explicit env var: no active compatibility key path was kept.
+- [x] Make OpenAI/GPT and DeepSeek keys server-side only by default.
 - [ ] Ensure `/llm-options` does not reveal key configured state to unauthenticated public users.
-- [ ] Add frontend contract notice: do not send provider keys in `/query`.
+- [x] Add frontend contract notice: do not send provider keys in `/query`.
 - [ ] Keep provider selection and model selection usable without exposing secrets.
-- [ ] Scrub tests that normalize key-in-body as acceptable production behavior.
+- [x] Scrub tests that normalize key-in-body as acceptable production behavior for `/query`.
+- [x] Write P5 report: `docs/quality/reports/provider_secret_p5_2026-05-25.md`.
 
 **Acceptance Criteria:**
 
-- [ ] Production request model has no active `ds_api_key` path.
+- [x] Production request model has no active `ds_api_key` path.
 - [ ] Existing tests prove no key is stored in localStorage and no key is sent in normal query payload.
 - [ ] Provider missing key returns safe provider error, not raw exception.
 - [ ] Public `/llm-options` hides private key configured state unless authenticated.

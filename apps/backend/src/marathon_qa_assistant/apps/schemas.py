@@ -10,7 +10,6 @@ class QueryRequest(BaseModel):
     stream: bool = False
     llm_provider: str = "ollama"
     llm_model: str = ""
-    ds_api_key: str = ""
     response_mode: str = "full"
     timeout_sec: int = Field(default=45, ge=5, le=180)
 

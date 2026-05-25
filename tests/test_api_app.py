@@ -106,7 +106,6 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
             "user_id": "default_user",
             "llm_provider": "deepseek",
             "llm_model": "deepseek-test",
-            "ds_api_key": "sk-test",
             "timeout_sec": 12,
         },
     )
@@ -130,7 +129,6 @@ def test_query_accepts_audit_scores_with_summary(monkeypatch):
         "configurable": {
             "llm_provider": "ds",
             "llm_model": "deepseek-test",
-            "ds_api_key": "sk-test",
             "llm_timeout_sec": 12,
         }
     }

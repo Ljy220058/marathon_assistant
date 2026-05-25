@@ -573,7 +573,6 @@ def _build_llm_config(request: QueryRequest) -> Dict[str, Any]:
         "configurable": {
             "llm_provider": provider,
             "llm_model": _selected_model(request),
-            "ds_api_key": request.ds_api_key,
             "llm_timeout_sec": request.timeout_sec,
         }
     }
