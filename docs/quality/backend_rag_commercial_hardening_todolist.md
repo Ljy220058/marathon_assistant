@@ -121,21 +121,21 @@ rg -n "sk-|Authorization|Bearer|C:\\Users\\|raw_feedback_text" docs/quality data
 
 **Tasks:**
 
-- [ ] Add a failing test: artifact capture defaults to an API-accepted user.
-- [ ] Add a failing test: CLI can override eval user only when backend accepts it or when explicit `--user-id` is passed.
-- [ ] Decide implementation: use `default_user` for local proof, or add `--user-id default_user` default.
-- [ ] Ensure artifact payload does not include provider API key.
-- [ ] Ensure artifact payload includes `llm_provider`, `llm_model`, `response_mode`, and `timeout_sec`.
-- [ ] Ensure artifact summary records `question_count`, `artifact_count`, `paired_question_count`.
-- [ ] Ensure failed `/query` response raises a clear `LiveEvalArtifactConfigError` with HTTP status.
-- [ ] Add regression test for backend 400/401/500 response handling.
+- [x] Add a failing test: artifact capture defaults to an API-accepted user.
+- [x] Add a failing test: CLI can override eval user only when backend accepts it or when explicit `--user-id` is passed.
+- [x] Decide implementation: use `default_user` for local proof, or add `--user-id default_user` default.
+- [x] Ensure artifact payload does not include provider API key.
+- [x] Ensure artifact payload includes `llm_provider`, `llm_model`, `response_mode`, and `timeout_sec`.
+- [x] Ensure artifact summary records `question_count`, `artifact_count`, `paired_question_count`.
+- [x] Ensure failed `/query` response raises a clear `LiveEvalArtifactConfigError` with HTTP status.
+- [x] Add regression test for backend 400/401/500 response handling.
 
 **Acceptance Criteria:**
 
-- [ ] `collect_live_eval_answer_artifacts(... max_questions=1 ...)` can target `/query` with accepted user id.
-- [ ] Missing provider key still fails closed before making network calls.
-- [ ] No key is written into artifact JSONL.
-- [ ] The tool does not silently treat HTTP error JSON as a valid answer.
+- [x] `collect_live_eval_answer_artifacts(... max_questions=1 ...)` can target `/query` with accepted user id.
+- [x] Missing provider key still fails closed before making network calls.
+- [x] No key is written into artifact JSONL.
+- [x] The tool does not silently treat HTTP error JSON as a valid answer.
 
 **Verification:**
 
@@ -162,8 +162,8 @@ python -m pytest tests/test_kb_live_eval_artifacts.py tests/test_kb_live_eval_co
 
 **Tasks:**
 
-- [ ] Confirm fixture has exactly 200 questions and required domain distribution.
-- [ ] Confirm `GPT_API_KEY` or `OPENAI_API_KEY` is present only in environment.
+- [x] Confirm fixture has exactly 200 questions and required domain distribution.
+- [ ] Confirm `GPT_API_KEY` or `OPENAI_API_KEY` is present only in environment. Blocked on 2026-05-25: current shell has no `GPT_API_KEY` / `OPENAI_API_KEY`; see `docs/quality/reports/live_eval_p2_blocker_2026-05-25.md`.
 - [ ] Start backend on the correct local port for `/query`.
 - [ ] Run live artifact capture for 3 questions first.
 - [ ] Inspect the 3-question artifact: one `rag` and one `base_llm` row per question.
