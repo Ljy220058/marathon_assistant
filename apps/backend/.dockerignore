@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+*.log
+.pytest_cache/
+.git/
+.venv/
+venv/
+data/vector_kb/
+data/uploads/
+outputs/
+artifacts/
+node_modules/
+.astro/
+dist/
