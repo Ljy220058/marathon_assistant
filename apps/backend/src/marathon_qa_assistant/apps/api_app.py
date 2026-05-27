@@ -1320,13 +1320,50 @@ def _query_response_from_state(
     record_generation_status(generation_status)
     return response
 
+def _check_database_health() -> bool:
+    """Probe SQLite database connectivity with a lightweight query."""
+    try:
+        db = get_db()
+        conn = db._get_conn()
+        conn.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+
+def _require_expert_token(request: Request):
+    """Validate Bearer token against MARATHON_EXPERT_API_TOKEN env var."""
+    expert_token = os.getenv("MARATHON_EXPERT_API_TOKEN")
+    if not expert_token:
+        raise HTTPException(status_code=501, detail="Expert mode not configured.")
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer ") or auth[len("Bearer "):] != expert_token:
+        raise HTTPException(status_code=403, detail="Expert access required.")
+
+
 @app.get("/health")
 async def health_check():
+    """Public health check — returns minimal status only."""
+    kb_snapshot = get_knowledge_base_health_snapshot()
+    db_ok = _check_database_health()
+    return {
+        "status": "healthy" if (kb_snapshot.get("ready", False) and db_ok) else "degraded",
+        "kb": kb_snapshot.get("ready", False),
+        "db": db_ok,
+    }
+
+
+@app.get("/admin/health")
+async def admin_health_check(request: Request):
+    """Admin health check — full component status. Requires expert token."""
+    _require_expert_token(request)
     return {
         "status": "healthy",
         "provider": os.getenv("LLM_PROVIDER", "ollama"),
         "model": os.getenv("OLLAMA_MODEL", "qwen2.5:latest"),
         "rag": get_knowledge_base_health_snapshot(),
+        "db": _check_database_health(),
+        "request_id": getattr(request.state, "request_id", None),
     }
 
 

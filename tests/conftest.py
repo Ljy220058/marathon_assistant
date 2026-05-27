@@ -77,3 +77,29 @@ if (
     sys.modules["langchain_core"] = fake_langchain_core
     sys.modules["langchain_core.documents"] = fake_documents
     sys.modules["langchain_core.messages"] = fake_messages
+
+
+# ── Patch pre-existing missing symbol ────────────────────────────────────────
+# kb_bootstrap.py imports probe_vector_kb_health from vector_store, but this
+# function was never defined.  Mock it so the full API import chain works.
+import marathon_qa_assistant.services.vector_store as _vs_mod
+
+if not hasattr(_vs_mod, "probe_vector_kb_health"):
+
+    def _fake_probe_vector_kb_health(vector_path):
+        return {"ok": False, "ready": False, "reason": "mocked for test"}
+
+    _vs_mod.probe_vector_kb_health = _fake_probe_vector_kb_health
+
+
+# ── Test fixtures ────────────────────────────────────────────────────────────
+import pytest
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def client():
+    """Return a synchronous TestClient bound to the FastAPI app."""
+    from marathon_qa_assistant.apps.api_app import app
+
+    return TestClient(app)
