@@ -451,6 +451,71 @@ def load_chunks(chunks_file: Path) -> list[dict]:
             chunks.append(_normalize_chunk_source(json.loads(line)))
     return chunks
 
+
+def _infer_vector_source(vector_dir: Path) -> str:
+    """根据目录名给健康报告标出 KB 来源。"""
+    name = vector_dir.name.lower()
+    if name == "v2":
+        return "v2"
+    if name in {"default", "vector_kb"}:
+        return "default"
+    if name == "user" or "user" in str(vector_dir).lower():
+        return "user"
+    return name or "unknown"
+
+
+def probe_vector_kb_health(vector_dir: Path) -> dict:
+    """轻量检查向量 KB 是否可用于 runtime，不触发 embedding 或 FAISS 加载。"""
+    from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
+
+    vector_path = Path(vector_dir)
+    chunks_file = vector_path / "chunks.jsonl"
+    faiss_index = vector_path / "faiss_db" / "index.faiss"
+    source = _infer_vector_source(vector_path)
+
+    if not chunks_file.exists():
+        return {
+            "ok": False,
+            "ready": False,
+            "source": "missing" if not vector_path.exists() else source,
+            "vector_dir": str(vector_path),
+            "reason": f"missing chunks.jsonl: {chunks_file}",
+            "chunks_count": 0,
+            "faiss_ready": False,
+            "index_schema_version": "missing",
+            "metadata_completeness": 0.0,
+            "runtime_core_prescription_enabled": False,
+            "core_permission_violation_count": 0,
+        }
+
+    chunks = load_chunks(chunks_file)
+    schema = summarize_runtime_index_schema(chunks)
+    faiss_ready = faiss_index.exists()
+    ok = bool(chunks) and faiss_ready
+
+    # reason 只在不可用时填写，方便启动日志直接显示阻塞原因。
+    if not chunks:
+        reason = "chunks.jsonl is empty"
+    elif not faiss_ready:
+        reason = f"missing FAISS index.faiss: {faiss_index}"
+    else:
+        reason = ""
+
+    return {
+        "ok": ok,
+        "ready": ok,
+        "source": source,
+        "vector_dir": str(vector_path),
+        "reason": reason,
+        "chunks_count": len(chunks),
+        "faiss_ready": faiss_ready,
+        "index_schema_version": schema["index_schema_version"],
+        "metadata_completeness": schema["metadata_completeness"],
+        "runtime_core_prescription_enabled": schema["runtime_core_prescription_enabled"],
+        "core_permission_violation_count": schema["core_permission_violation_count"],
+    }
+
+
 def load_vector_kb(vector_dir: Path):
     """
     加载向量库，返回 (chunks, vectorizer, matrix, bm25) 结构。
