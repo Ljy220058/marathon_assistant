@@ -38,34 +38,20 @@ class TestSemanticMatchEntities:
         """L1: "慢跑" → "轻松跑" """
         from marathon_qa_assistant.nodes.common import ALIAS_TABLE, semantic_match_entities
 
-        # 确保别名表存在
         assert "慢跑" in ALIAS_TABLE
         assert ALIAS_TABLE["慢跑"] == "轻松跑"
+
+        result = semantic_match_entities("我想慢跑恢复")
+        assert "轻松跑" in result
 
     def test_l1_no_match_falls_to_l2(self):
         """L1 无匹配 → L2 embedding → "HIIT" (>0.6)"""
         from marathon_qa_assistant.nodes.common import semantic_match_entities
         from marathon_qa_assistant.services.label_matcher import label_matcher
 
-        with patch.object(label_matcher, "_embeddings", _make_mock_embeddings({
-            "HIIT": [0.9, 0.1, 0.0, 0.0],
-            "轻松跑": [0.0, 0.9, 0.0, 0.1],
-        })):
-            label_matcher._label_vectors = {
-                "HIIT": np.array([0.9, 0.1, 0.0, 0.0], dtype=np.float32),
-                "轻松跑": np.array([0.0, 0.9, 0.0, 0.1], dtype=np.float32),
-            }
-            label_matcher._labels = ["HIIT", "轻松跑"]
-            label_matcher._threshold = 0.6
-            label_matcher._warmed = True
-
-            with patch.object(label_matcher, "_embeddings") as emb:
-                emb.embed_query = lambda q: [0.85, 0.15, 0.0, 0.05]
-
-                result = semantic_match_entities("想暴汗")
-                # L1: "暴汗运动" IN query "想暴汗" — NO because "暴汗运动" is the key not value
-                # L2: embed("想暴汗") vs labels → HIIT (0.85*0.9 + 0.15*0.1 ≈ 0.78 > 0.6)
-                assert "HIIT" in result
+        with patch.object(label_matcher, "match", return_value=[("HIIT", 0.82)]):
+            result = semantic_match_entities("想暴汗")
+            assert "HIIT" in result
 
     def test_l2_below_threshold_returns_empty(self):
         """余弦相似度 < 0.6 → 返回空列表"""

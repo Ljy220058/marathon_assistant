@@ -10,7 +10,7 @@ try:
 except ImportError:
     OllamaEmbeddings = None  # type: ignore[assignment]
 
-logger = logging.getLogger("workflow_engine")
+logger = logging.getLogger("label_matcher")
 
 _OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
@@ -59,7 +59,7 @@ class LabelMatcher:
         """L2 语义匹配。返回 [(label, cosine_score), ...]，低于 threshold 的被过滤"""
         if not self._warmed:
             return []
-        if not self._label_vectors or not query.strip():
+        if query is None or not self._label_vectors or not query.strip():
             return []
         try:
             query_vec = np.array(self._embeddings.embed_query(query), dtype=np.float32)
