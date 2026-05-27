@@ -30,8 +30,9 @@ else:
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
 _raw = os.getenv("GRAPHRAG_API_KEY")
-if _raw and _raw.strip() and _raw != "default_token_for_dev":
-    AUTH_TOKEN = _raw.strip()
+_stripped = (_raw or "").strip()
+if _stripped and _stripped != "default_token_for_dev":
+    AUTH_TOKEN = _stripped
 else:
     raise RuntimeError(
         "GRAPHRAG_API_KEY environment variable is not set or is using the banned dev default. "

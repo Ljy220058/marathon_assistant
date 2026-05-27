@@ -34,7 +34,7 @@ from marathon_qa_assistant.core.app_state import BASE_DIR
 from marathon_qa_assistant.core.observability import record_llm_provider_error
 try:
     from marathon_qa_assistant.services.knowledge_graph import graph_engine
-except Exception:
+except ImportError:
     class _FallbackGraphEngine:
         nodes: Dict[str, Any] = {}
         edges: List[Dict[str, Any]] = []
@@ -51,7 +51,7 @@ except Exception:
 
 try:
     from marathon_qa_assistant.services.security_guards import InputGuard, OutputGuard
-except Exception:
+except ImportError:
     class InputGuard:
         def check(self, input_text: str, input_type: str = "query"):
             del input_text, input_type
