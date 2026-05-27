@@ -453,6 +453,28 @@ def extract_json_block(content: str, default_data: Dict[str, Any]) -> Dict[str, 
     return merged
 
 
+_KG_ENTITY_LABELS_CACHE: Optional[List[str]] = None
+
+
+def _get_kg_entity_labels() -> List[str]:
+    """从知识图谱中提取 workout_template 和 category 类型节点的标签（缓存）。"""
+    global _KG_ENTITY_LABELS_CACHE
+    if _KG_ENTITY_LABELS_CACHE is not None:
+        return _KG_ENTITY_LABELS_CACHE
+    try:
+        nodes = getattr(graph_engine, "nodes", {}) or {}
+    except Exception:
+        return []
+    labels = []
+    for node_info in nodes.values():
+        ntype = node_info.get("type", "")
+        label = node_info.get("label", "")
+        if ntype in ("workout_template", "category") and label:
+            labels.append(label)
+    _KG_ENTITY_LABELS_CACHE = labels
+    return labels
+
+
 def infer_entities(query: str, selected_entities: Optional[Iterable[str]] = None) -> List[str]:
     entities: List[str] = []
     for item in selected_entities or []:
@@ -474,9 +496,35 @@ def infer_entities(query: str, selected_entities: Optional[Iterable[str]] = None
         if len(entities) >= 5:
             break
 
+    kg_labels = _get_kg_entity_labels()
+    kg_labels.sort(key=lambda x: -len(x))
+    query_lower = (query or "").lower()
+    for label in kg_labels:
+        if len(entities) >= 5:
+            break
+        if label.lower() in query_lower and label not in entities:
+            entities.append(label)
+
     if not entities and query:
         entities.append((query[:24] + "...") if len(query) > 24 else query)
     return entities[:5]
+
+
+def expand_entities_for_kg(entities: List[str]) -> List[str]:
+    """若实体中包含"动作库"，展开为所有 workout_template 和 category 标签。"""
+    if not entities:
+        return entities
+    has_action_library = any("动作库" in e for e in entities)
+    if not has_action_library:
+        return entities
+    kg_labels = _get_kg_entity_labels()
+    expanded = list(entities)
+    for label in kg_labels:
+        if label not in expanded:
+            expanded.append(label)
+        if len(expanded) >= 25:
+            break
+    return expanded
 
 
 async def get_context(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
