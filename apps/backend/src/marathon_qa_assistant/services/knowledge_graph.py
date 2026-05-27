@@ -29,7 +29,14 @@ else:
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
-AUTH_TOKEN = os.getenv("GRAPHRAG_API_KEY", "default_token_for_dev")
+_raw = os.getenv("GRAPHRAG_API_KEY")
+if _raw and _raw.strip() and _raw != "default_token_for_dev":
+    AUTH_TOKEN = _raw.strip()
+else:
+    raise RuntimeError(
+        "GRAPHRAG_API_KEY environment variable is not set or is using the banned dev default. "
+        "Set a real token before starting the server."
+    )
 
 EXACT_RELATION_MAP = {
     "需要": "requires",

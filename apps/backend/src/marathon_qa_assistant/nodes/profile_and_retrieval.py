@@ -8,75 +8,115 @@ except ImportError:
     RunnableConfig = Any
 
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
-from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
-from marathon_qa_assistant.core.kb_bootstrap import get_knowledge_base_health_snapshot
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
-from marathon_qa_assistant.core.training_plan_context import (
-    align_plan_duration_context,
-    derive_plan_duration_weeks,
-)
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     build_rag_sources,
     ensure_usage,
+    expand_entities_for_kg,
     get_context,
     get_graph_context,
     graph_engine,
     infer_entities,
 )
 from marathon_qa_assistant.nodes.routing import evaluate_plan_evidence
-from marathon_qa_assistant.services.wiki_agent import wiki_agent
 
 logger = logging.getLogger("workflow_engine")
 
 
-EVIDENCE_METADATA_KEYS = (
-    "source_registry_id",
-    "source_url",
-    "local_path",
-    "section",
-    "paragraph_index",
-    "char_start",
-    "char_end",
-    "language",
-    "evidence_domain",
-    "knowledge_layer",
-    "domain_pack",
-    "allowed_use",
-    "prescription_permission",
-    "quality_tier",
-    "review_status",
-    "exclude_from_training_generation",
-    "needs_review",
+EXTRACT_PROFILE_SYSTEM = (
+    "你是专业跑步教练 AI 画像提取器。从用户自然语言中提取训练画像字段，"
+    "遵循多步推理流程，内置跑圈领域知识、归一化规则和字段反推逻辑。\n\n"
+    "══════════════════════════\n"
+    "【跑圈黑话词典】\n\n"
+    "识别以下术语并映射到对应字段：\n"
+    "- 破三 / sub3：全马完赛时间 < 3:00:00 → goal: 全马3小时\n"
+    "- BQ：波士顿马拉松报名资格 (Boston Qualifier) → goal: BQ达标，notes 中记录\n"
+    "- 330：全马目标 3 小时 30 分钟 → goal: 全马3小时30分\n"
+    "- sub130：半马目标 1 小时 30 分钟以内 → goal: 半马1小时30分\n"
+    "- 兔子 / pacer：配速员 → notes 中记录角色\n"
+    "- 撞墙：比赛中严重体力不支（通常 30-35 km）→ notes 中记录关注点\n"
+    "- LSD：长距离慢跑 (Long Slow Distance) → training_types 中加入「长距离」\n"
+    "- Tempo / 节奏跑：以乳酸阈值附近配速持续跑 → training_types 中加入「节奏跑」\n"
+    "- 间歇：高强度间歇训练 → training_types 中加入「间歇跑」\n"
+    "- 阈值跑：乳酸阈值跑 → training_types 中加入「无氧阈」\n"
+    "- 法特莱克：变速跑游戏 (Fartlek) → training_types 中加入「法特莱克」\n"
+    "- 配速跑：按目标比赛配速训练 → training_types 中加入「配速跑」\n"
+    "- 轻松跑 / 恢复跑 / E 跑：低强度有氧跑 → training_types 中加入「轻松跑」\n"
+    "- 渐加速 / Progressive：从慢到快逐渐提速 → training_types 中加入「渐加速跑」\n"
+    "- 冲坡：专项上坡冲刺训练 → training_types 中加入「坡道训练」\n"
+    "- 倒金字塔：间歇距离递减/递增组合（如 1200-1000-800-600-400）→ training_types 中加入，notes 记录结构\n"
+    "- 亚索800 / Yasso 800：用 800m 间歇预测全马时间的训练 → training_types 中加入「亚索800」\n"
+    "- 跑量：每周总跑步距离 → weekly_mileage\n"
+    "- 跑休：跑步休息日 → available_days 反向推导休息日\n"
+    "- 步频 / 步幅：每分钟步数 / 每步步长 → notes 中记录\n\n"
+    "══════════════════════════\n"
+    "【多步推理流程】\n\n"
+    "Step 1 — 识别并提取原始字段：从文本中找出所有与训练相关的明确信息"
+    "（目标赛事、当前跑量、配速、可用训练日、痛点等），记入对应字段。\n"
+    "Step 2 — 标注不确定项与缺失项：若某个字段信息模糊、隐含或缺失，"
+    "将其列入 uncertainties 列表，描述模糊原因和可能的解释范围。\n"
+    "Step 3 — 自我追问（内部，≤2 条）：对模糊项生成最多 2 条自我追问，"
+    "尝试从上下文中推断答案。如「用户提到破三但没有说当前跑量，"
+    "能否从训练类型反推经验水平？」\n"
+    "Step 4 — 合并输出最终 JSON：将明确字段、推断字段（标注 confidence）、"
+    "以及无法确定的项（写入 notes）合并输出。\n\n"
+    "══════════════════════════\n"
+    "【归一化规则】\n\n"
+    "- 距离统一为 km。若原文为英里：1 mile = 1.60934 km，保留 1 位小数。\n"
+    "- 配速统一为 min:sec/km（如 5:30/km）。若为 /mile 配速，自动换算"
+    "（min/mile ÷ 1.60934）。不接受「分秒」混合汉字格式。\n"
+    "- 时间表达归一化：「两个月后」→ 当前日期 +60 天 → YYYY-MM-DD；"
+    "「下半年」→ 当年 7 月 1 日；「明年春天」→ 次年 3 月 1 日。"
+    "无法精确到日的，标注 confidence: low。\n"
+    "- 周跑量如果是范围（如「50-60 km」），提取为数字时取中间值，notes 中记录原始范围。\n\n"
+    "══════════════════════════\n"
+    "【字段反推规则】\n\n"
+    "- t_pace 可从 goal 反推（全马目标成绩 → 估算阈值配速），但必须标注 confidence: inferred。\n"
+    "  反推公式：全马目标成绩每公里配速 − 15~20 秒 ≈ 阈值配速。\n"
+    "- experience_level 可从 weekly_mileage 推断：\n"
+    "  < 30 km → 新手 (confidence: inferred)；30-60 km → 中级 (confidence: inferred)；\n"
+    "  > 60 km → 进阶 (confidence: inferred)；> 100 km + 有明确比赛目标 → 精英 (confidence: inferred)。\n"
+    "- 任何 confidence: inferred 的字段，请在 notes 中注明「由系统推断，建议确认」。\n"
+    "- 若用户同时提到多个目标（如「半马130或全马破三」），"
+    "优先提取 target_race_date 更近的目标，备选目标写入 notes。\n\n"
+    "══════════════════════════\n"
+    "【提取字段定义】\n\n"
+    "- goal (string, 可选): 目标赛事或目标成绩。如「半马1小时30分」「全马3小时」「BQ达标」\n"
+    "- experience_level (string, 可选): 经验水平。仅接受：新手 / 中级 / 进阶 / 精英。"
+    "直接从原文提取；若原文无明确表述，可用反推规则但标注 confidence: inferred\n"
+    "- weekly_mileage (number, 可选): 当前周跑量，单位 km。仅接受数字\n"
+    "- lthr (number, 可选): 乳酸阈心率 (bpm)。仅接受数字\n"
+    "- t_pace (string, 可选): 阈值配速，格式 min:sec/km。如「3:50/km」。"
+    "可从 goal 反推但标注 confidence: inferred\n"
+    "- vo2max (number, 可选): 最大摄氧量。仅接受数字\n"
+    "- target_race_date (string, 可选): 比赛日期或距比赛多久。"
+    "优先输出 YYYY-MM-DD，其次保留原文表达\n"
+    "- available_days (string, 可选): 可用训练日。如「周一,周三,周五,周日」\n"
+    "- max_session_minutes (number, 可选): 单次训练最长分钟数\n"
+    "- pace_preference (string, 可选): 用户指定的任何配速偏好\n"
+    "- terrain_preference (string, 可选): 场地偏好。如「田径场」「公园」「跑步机」\n"
+    "- training_types (array, 可选): 用户要求的训练类型列表。"
+    "如 [\"间歇跑\", \"节奏跑\", \"长距离\"]\n"
+    "- notes (string, 可选): 其他值得记录的信息、不确定项、推断说明\n"
+    "- uncertainties (array, 可选): 模糊或缺失的关键字段列表，"
+    "每项格式 {field: 字段名, reason: 模糊原因, possible_values: 可能范围}，最多 2 项\n"
+    "- confidence (string, 可选): 整体提取置信度。high（多字段明确）/ medium（部分推断）/ low（信息稀疏）\n\n"
+    "══════════════════════════\n"
+    "【输出格式】\n\n"
+    "严格输出 JSON 对象，只包含有值的字段（缺失字段省略，不输出 null 或空字符串）。\n"
+    "格式示例：\n"
+    "{\"goal\": \"全马3小时\", \"weekly_mileage\": 60, \"experience_level\": \"进阶\","
+    " \"notes\": \"用户提到破三目标，当前周跑量60km，未提供阈值配速\"}\n\n"
+    "══════════════════════════\n"
+    "【硬性约束】\n\n"
+    "1. 只提取明确出现或可通过简单换算得到的信息，不得编造。\n"
+    "2. 模糊信息写入 notes 或 uncertainties，不得猜测为确定值。\n"
+    "3. uncertainties 最多 2 项，多余的模糊信息直接入 notes。\n"
+    "4. 反推字段必须标注 confidence: inferred。\n"
+    "5. 不要反问用户，不要输出 JSON 以外的任何文字。"
 )
-
-
-EXTRACT_PROFILE_SYSTEM = """你是一个训练画像提取器。从用户的自然语言输入中提取以下字段（仅提取明确出现的信息，不要猜测）：
-
-- goal: 目标赛事或目标成绩（如"半马69分""全马3小时"）
-- experience_level: 经验水平（新手/中级/进阶/精英）
-- weekly_mileage: 当前周跑量（数字，单位 km）
-- recent_four_week_mileage: 最近四周平均周跑量或上个月月跑量（数字，单位 km）
-- last_month_mileage: 上个月月跑量（数字，单位 km）
-- current_half_time: 当前半马 PB 或当前半马成绩（如"1:25:00"）
-- target_half_time: 目标半马成绩（如"1:20:00"）
-- lthr: 乳酸阈心率（数字）
-- t_pace: 阈值配速（如"3:30/km"）
-- target_pace: 目标配速/成绩（如"5:00/km"或"半马1:45"）
-- vo2max: 最大摄氧量（数字）
-- target_race_date: 比赛日期或距比赛还有多久（如"2个月后"）
-- available_days: 可用训练日（如"周一,周三,周五"）
-- injury: 伤病限制（如"无"或"膝盖不适"）
-- recovery_state: 恢复状态（如"正常"或"近期疲劳偏高"）
-- injury_or_fatigue: 伤病/疲劳限制（如"无"或"小腿紧张"）
-- max_session_minutes: 单次训练最长分钟数（数字）
-- pace_preference: 配速偏好（用户指定的任何配速信息）
-- terrain_preference: 场地偏好（田径场/公园/跑步机等）
-- training_types: 用户要求的训练类型列表
-- notes: 其他值得记录的信息
-
-返回一个 JSON 对象，只包含从输入中提取到的字段。不要编造任何未提及的值。"""
 
 
 def _normalize_profile(raw_profile: Dict[str, Any]) -> Dict[str, Any]:
@@ -101,18 +141,10 @@ def _normalize_profile(raw_profile: Dict[str, Any]) -> Dict[str, Any]:
 FIELD_LABELS = {
     "goal": "目标赛事或目标成绩",
     "weekly_mileage": "当前周跑量",
-    "recent_four_week_mileage": "最近四周平均周跑量",
-    "last_month_mileage": "上个月月跑量",
-    "current_half_time": "当前半马 PB",
-    "target_half_time": "目标半马成绩",
     "vo2max": "最大摄氧量 VO₂max",
     "lthr": "乳酸阈心率 (LTHR)",
     "t_pace": "阈值配速 (T-Pace)",
-    "target_pace": "目标配速/成绩",
     "available_days": "可用训练日",
-    "injury": "伤病限制",
-    "recovery_state": "恢复状态",
-    "injury_or_fatigue": "伤病/疲劳限制",
     "max_session_minutes": "单次最长训练时长",
     "pace_preference": "配速偏好",
     "terrain_preference": "场地偏好",
@@ -124,24 +156,32 @@ FIELD_LABELS = {
 FIELD_HINTS = {
     "goal": "如：半马69分、全马3小时",
     "weekly_mileage": "如：80",
-    "recent_four_week_mileage": "如：60",
-    "last_month_mileage": "如：260",
-    "current_half_time": "如：1:25:00",
-    "target_half_time": "如：1:20:00",
     "vo2max": "如：66",
     "lthr": "如：168 (bpm)",
     "t_pace": "如：3:50/km",
-    "target_pace": "如：5:00/km 或 半马1:45",
     "available_days": "如：周一,周三,周五,周日",
-    "injury": "如：无 / 膝盖不适",
-    "recovery_state": "如：正常 / 疲劳偏高",
-    "injury_or_fatigue": "如：无 / 小腿紧张",
     "max_session_minutes": "如：90",
     "pace_preference": "如：强度课2:50-3:00/km，轻松跑4:30/km",
     "terrain_preference": "如：田径场,公园",
     "experience_level": "如：进阶",
     "target_race_date": "如：2个月后",
     "training_types": "如：有氧阈,无氧阈,节奏跑,重复跑,长距离",
+}
+
+# 每个字段对训练计划的价值解释，用于 missing_info_handler 追问生成
+FIELD_VALUE_WHY = {
+    "goal": "确定训练周期长度、专项强度与比赛配速目标",
+    "weekly_mileage": "评估当前负荷基础，决定训练量起点和增幅上限",
+    "vo2max": "衡量有氧能力上限，辅助确定间歇跑配速区间",
+    "lthr": "乳酸阈心率是划分训练强度区的基准，影响所有心率导向训练",
+    "t_pace": "阈值配速是节奏跑、间歇跑、长距离配速的核心参照",
+    "available_days": "决定周训练频率和强度课分布（硬-易-硬交替）",
+    "max_session_minutes": "限制单次训练时长，影响长距离和双练日规划",
+    "pace_preference": "用户主观配速偏好优先于公式推导",
+    "terrain_preference": "场地类型影响训练手段选择（田径场间歇 vs 公园长距离）",
+    "experience_level": "决定训练进阶节奏、恢复需求和伤病风险管控策略",
+    "target_race_date": "倒推训练周期各阶段时间节点和 taper 起点",
+    "training_types": "了解用户偏好或教练要求的训练手段，确保课表覆盖",
 }
 
 
@@ -319,17 +359,8 @@ PROFILE_FIELD_ORDER = [
     "target_race_date",
     "vo2max",
     "weekly_mileage",
-    "recent_four_week_mileage",
-    "last_month_mileage",
-    "current_half_time",
-    "target_half_time",
     "lthr",
     "t_pace",
-    "target_pace",
-    "injury",
-    "recovery_state",
-    "injury_or_fatigue",
-    "pace_preference",
     "available_days",
     "max_session_minutes",
     "terrain_preference",
@@ -370,16 +401,8 @@ def profile_selections_to_save(selections: dict) -> dict:
         "target_race_date": "target_race_date",
         "vo2max": "vo2max",
         "weekly_mileage": "weekly_mileage",
-        "recent_four_week_mileage": "recent_four_week_mileage",
-        "last_month_mileage": "last_month_mileage",
-        "current_half_time": "current_half_time",
-        "target_half_time": "target_half_time",
         "lthr": "lthr",
         "t_pace": "t_pace",
-        "target_pace": "target_pace",
-        "injury": "injury",
-        "recovery_state": "recovery_state",
-        "injury_or_fatigue": "injury_or_fatigue",
         "pace_preference": "pace_preference",
         "available_days": "available_days",
         "max_session_minutes": "max_session_minutes",
@@ -395,48 +418,9 @@ def profile_selections_to_save(selections: dict) -> dict:
             result[profile_key] = ",".join(val)
         else:
             result[profile_key] = str(val)
-    target_race_date = result.get("target_race_date")
-    derived_weeks = derive_plan_duration_weeks(target_race_date)
-    if derived_weeks is not None:
-        result["plan_duration_weeks"] = derived_weeks
     return result
 
-MINIMUM_REQUIRED_FIELDS = ["goal", "weekly_mileage", "available_days"]
-
-ENHANCEMENT_FIELDS = [
-    "vo2max", "lthr", "t_pace", "target_pace", "experience_level",
-    "current_half_time", "target_half_time", "recent_four_week_mileage", "last_month_mileage",
-    "injury", "recovery_state", "injury_or_fatigue",
-    "target_race_date", "max_session_minutes", "pace_preference",
-    "terrain_preference", "training_types",
-]
-
-ENHANCEMENT_FIELD_LABELS = {
-    "vo2max": "最大摄氧量 (VO₂max) — 用于更精准的心率区间推算",
-    "lthr": "乳酸阈心率 (LTHR) — 用于九区心率划分",
-    "t_pace": "阈值配速 (T-Pace) — 用于九区配速划分和强度控制",
-    "target_pace": "目标配速/成绩 — 用于 HMP 目标校准",
-    "experience_level": "经验水平 — 用于训练负荷阶梯校准",
-    "current_half_time": "当前半马 PB — 用于能力差距校准",
-    "target_half_time": "目标半马成绩 — 用于 HMP 目标校准",
-    "recent_four_week_mileage": "最近四周平均周跑量 — 用于容量预算",
-    "last_month_mileage": "上个月月跑量 — 用于估算平均周跑量",
-    "injury": "伤病限制 — 用于风险降级",
-    "recovery_state": "恢复状态 — 用于恢复风险判断",
-    "injury_or_fatigue": "伤病/疲劳限制 — 用于风险降级",
-    "target_race_date": "距比赛天数 — 用于训练周期精确对齐",
-    "max_session_minutes": "单次最长训练时长 — 用于课表时长上限",
-    "pace_preference": "配速偏好 — 用于个性化配速目标",
-    "terrain_preference": "场地偏好 — 用于场地匹配",
-    "training_types": "课表类型偏好 — 用于课表类型优先级",
-}
-
-
 def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> List[str]:
-    """
-    仅检查最小必要字段（硬阻塞）：goal / weekly_mileage / available_days。
-    增强字段（vo2max、lthr 等）缺失不阻塞计划生成，由 _detect_missing_enhancement_fields() 单独检测。
-    """
     missing: List[str] = []
     intent = state.get("intent_type", "")
     query = (state.get("query", "") or "").lower()
@@ -446,7 +430,9 @@ def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> L
 
     has_goal = profile.get("goal") or profile.get("target_race")
     has_weekly = profile.get("weekly_mileage")
-    has_days = profile.get("available_days")
+    has_vo2max = profile.get("vo2max")
+    has_lthr = profile.get("lthr")
+    has_pace = profile.get("t_pace") or profile.get("pace_preference")
 
     query_has_goal = any(kw in query for kw in ["半马", "全马", "10k", "5k", "马拉松", "比赛", "目标", "pb", "分钟", "小时"])
     query_has_pace = any(kw in query for kw in ["配速", "分", "/km"])
@@ -455,6 +441,14 @@ def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> L
         missing.append("goal")
     if not has_weekly:
         missing.append("weekly_mileage")
+    if not has_vo2max:
+        missing.append("vo2max")
+    if not has_lthr:
+        missing.append("lthr")
+    if not has_pace:
+        missing.append("t_pace")
+
+    has_days = profile.get("available_days")
     if not has_days:
         missing.append("available_days")
 
@@ -464,38 +458,60 @@ def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> L
     return missing
 
 
-def _detect_missing_enhancement_fields(state: IntegratedState, profile: Dict[str, Any]) -> List[str]:
-    """检测增强字段缺失（非硬阻塞），用于计划生成后给出补全提示。"""
-    missing: List[str] = []
-    intent = state.get("intent_type", "")
-
-    if intent != "plan":
-        return missing
-
-    for field in ENHANCEMENT_FIELDS:
-        if not profile.get(field):
-            missing.append(field)
-
-    return missing
-
-
-async def _extract_profile_from_query(query: str, config: RunnableConfig, current_usage: dict) -> dict:
+async def _extract_profile_from_query(query: str, config: RunnableConfig, current_usage: dict, max_turns: int = 2) -> dict:
     if not query or len(query) < 20:
         return {}
+    import json
+
+    def _parse_json(text: str) -> dict:
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if 0 <= start < end:
+            return json.loads(text[start:end])
+        return {}
+
     try:
+        # Turn 1: 初步提取
         result, _ = await ai_invoke(
             f"{EXTRACT_PROFILE_SYSTEM}\n\n用户输入：\n{query}\n\n仅返回 JSON 对象。",
-            config,
-            current_usage,
+            config, current_usage,
         )
-        start = result.find("{")
-        end = result.rfind("}") + 1
-        if 0 <= start < end:
-            import json
-            return json.loads(result[start:end])
+        parsed = _parse_json(result)
     except Exception:
-        pass
-    return {}
+        return {}
+
+    if not parsed:
+        return {}
+
+    uncertainties = parsed.get("uncertainties", [])
+    confidence = parsed.get("confidence", "high")
+
+    # Turn 2: 如果有不确定项且置信度非 high，发起自我纠错
+    if uncertainties and max_turns > 1 and confidence != "high":
+        uncertainty_fields = [u.get("field", "") for u in uncertainties if u.get("field")]
+        try:
+            followup_prompt = (
+                f"{EXTRACT_PROFILE_SYSTEM}\n\n"
+                f"上一轮提取结果中以下字段不确定：{', '.join(uncertainty_fields)}。\n"
+                f"请仔细重新分析用户输入，尝试从上下文推断这些字段的值。"
+                f"如果仍无法确定，保持原值并将不确定性写入 notes。\n\n"
+                f"用户输入：\n{query}\n\n仅返回 JSON 对象。"
+            )
+            result2, _ = await ai_invoke(followup_prompt, config, current_usage)
+            parsed2 = _parse_json(result2)
+            if parsed2:
+                # 合并：第二轮结果优先，但保留第一轮中第二轮缺失的字段
+                for key, value in parsed.items():
+                    if key not in parsed2 and key not in ("uncertainties", "confidence"):
+                        parsed2[key] = value
+                parsed = parsed2
+        except Exception:
+            pass
+
+    # 清理内部字段，只保留用户画像字段
+    parsed.pop("uncertainties", None)
+    parsed.pop("confidence", None)
+    return parsed
 
 
 def build_ranked_evidence(
@@ -528,7 +544,6 @@ def build_ranked_evidence(
             "evidence_id": eid,
             "kind": "vector",
             "source_file": source,
-            "source_path": str(hit.get("source_path") or ""),
             "page": page,
             "chunk_id": chunk_id,
             "snippet": text[:300],
@@ -547,16 +562,6 @@ def build_ranked_evidence(
                 "fusion_bonus": 0.0,
             },
         }
-        for meta_key in EVIDENCE_METADATA_KEYS:
-            if meta_key in hit:
-                ev[meta_key] = hit.get(meta_key)
-                ev["trace"][meta_key] = hit.get(meta_key)
-        if "prescription_permission" not in ev:
-            ev["prescription_permission"] = "explanation_only"
-            ev["trace"]["prescription_permission"] = "explanation_only"
-        if "evidence_domain" not in ev:
-            ev["evidence_domain"] = "sports_science_reference"
-            ev["trace"]["evidence_domain"] = "sports_science_reference"
         # 以 chunk_id 为核心去重键
         key = chunk_id if chunk_id else f"{source}_{page}"
         evidence_map[key] = ev
@@ -660,31 +665,17 @@ async def profiler_node(state: IntegratedState, config: RunnableConfig) -> dict:
         if extracted:
             current_profile.update(extracted)
 
-    week_context = align_plan_duration_context(query, current_profile) if intent == "plan" else {}
-    if week_context:
-        current_profile = week_context["aligned_profile"]
-
     save_user_profile(current_profile)
     missing = _detect_missing_fields(state, current_profile)
-    enhancement_missing = _detect_missing_enhancement_fields(state, current_profile)
     status = "画像已同步"
     if missing:
-        status = "画像可用，但缺少最小必要字段（硬阻塞）"
-    elif enhancement_missing:
-        status = f"画像已就绪，{len(enhancement_missing)} 个增强字段待补充（不阻塞生成）"
+        status = "画像可用，但缺少处方关键指标"
     if extracted:
         status += f" (从对话提取 {len(extracted)} 个字段)"
-    if week_context:
-        status += (
-            f" (训练周期对齐为 {week_context['resolved_plan_weeks']} 周，"
-            f"来源: {week_context['resolved_from']})"
-        )
 
     return {
         "user_profile": current_profile,
-        "requested_weeks": week_context.get("requested_weeks"),
         "missing_fields": missing,
-        "enhancement_missing_fields": enhancement_missing,
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": [f"[profiler] {status}"],
     }
@@ -700,12 +691,13 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         hits = await get_context(" ".join(entities), top_k=6)
 
     rag_sources = build_rag_sources(hits)
-
-    # 获取图谱上下文
+    
+    # 获取图谱上下文（展开“动作库”等通用实体为具体标签）
+    kg_entities = expand_entities_for_kg(entities)
     try:
-        graph_res = graph_engine.search_graph(entities, max_hops=2)
+        graph_res = graph_engine.search_graph(kg_entities, max_hops=2)
         graph_edges = graph_res.get("edges", [])
-        graph_context, mermaid_graph = get_graph_context(entities)
+        graph_context, mermaid_graph = get_graph_context(kg_entities)
     except Exception as exc:
         logger.warning(f"Graph Search failed in extraction node: {exc}")
         graph_edges = []
@@ -719,12 +711,6 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         graph_edges=graph_edges,
         entities=entities,
         top_k=5
-    )
-    evidence_bundle = build_evidence_bundle(
-        query=query,
-        rag_sources=rag_sources,
-        ranked_evidence=ranked_evidence,
-        health=get_knowledge_base_health_snapshot(),
     )
 
     evidence_gate = evaluate_plan_evidence(hits, query, state.get("intent_type", "qa"))
@@ -754,7 +740,6 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         "gate_hits": hits,
         "rag_sources": rag_sources,
         "ranked_evidence": ranked_evidence,
-        "evidence_bundle": evidence_bundle,
         "graph_context": graph_context,
         "mermaid_graph": mermaid_graph,
         "token_usage": ensure_usage(state.get("token_usage")),
@@ -762,56 +747,9 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     }
 
 
-def _should_use_wiki_context(query: str, intent_type: str, mode: str, entities: List[str]) -> bool:
-    if intent_type == "plan":
-        return False
-    if not entities:
-        return False
-    lowered = str(query or "").lower()
-    concept_markers = [
-        "什么是",
-        "是什么",
-        "什么意思",
-        "概念",
-        "定义",
-        "原理",
-        "机制",
-        "解释",
-        "介绍",
-        "了解",
-        "why",
-        "what is",
-        "meaning",
-        "definition",
-    ]
-    if mode == "research":
-        return True
-    return any(marker in lowered for marker in concept_markers)
-
-
 async def wiki_search_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    del config
-    query = state.get("query", "")
-    intent_type = state.get("intent_type", "qa")
-    mode = state.get("mode", "team")
-    entities = state.get("selected_entities") or state.get("entities") or infer_entities(query)
-
-    if not _should_use_wiki_context(query, intent_type, mode, entities):
-        return {"wiki_context": "", "reasoning_log": ["[wiki_search] 当前问题不需要外部概念补充"]}
-
-    try:
-        wiki_context = await wiki_agent.search(entities, lang="zh")
-    except Exception as exc:
-        logger.warning(f"Wiki Search failed: {exc}")
-        return {"wiki_context": "", "reasoning_log": ["[wiki_search] 外部概念检索失败，已回退为 KB-only"]}
-
-    if not wiki_context:
-        return {"wiki_context": "", "reasoning_log": ["[wiki_search] 未检索到可用外部概念补充"]}
-
-    return {
-        "wiki_context": wiki_context,
-        "reasoning_log": [f"[wiki_search] 已补充 {len(entities[:3])} 个实体的外部概念信息"],
-    }
+    del state, config
+    return {"wiki_context": "", "reasoning_log": ["[wiki_search] 当前保持 KB-only，本轮未启用外部知识"]}
 
 
 TRAINING_PROFILE_FORM = """📋 **训练画像表单** — 请直接编辑并发送（替换 `_____` 为你的数据）
@@ -843,11 +781,6 @@ def _parse_profile_form(text: str) -> dict:
     field_map = {
         "目标赛事/成绩": "goal",
         "当前最好成绩": "current_pb",
-        "当前半马 PB": "current_half_time",
-        "当前半马成绩": "current_half_time",
-        "目标半马成绩": "target_half_time",
-        "上个月月跑量": "last_month_mileage",
-        "近四周平均周跑量": "recent_four_week_mileage",
         "VO₂max": "vo2max",
         "VO2max": "vo2max",
         "当前周跑量": "weekly_mileage",
@@ -855,12 +788,7 @@ def _parse_profile_form(text: str) -> dict:
         "LTHR": "lthr",
         "阈值配速": "t_pace",
         "T-Pace": "t_pace",
-        "目标配速/成绩": "target_pace",
-        "目标配速": "target_pace",
         "可用训练日": "available_days",
-        "伤病/疲劳限制": "injury_or_fatigue",
-        "伤病限制": "injury",
-        "恢复状态": "recovery_state",
         "单次最长训练": "max_session_minutes",
         "配速偏好": "pace_preference",
         "场地偏好": "terrain_preference",
@@ -890,23 +818,12 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
 
     if intent == "plan":
         missing = state.get("missing_fields", [])
-        if missing:
-            labels = [FIELD_LABELS.get(k, k) for k in missing]
-            return {
-                "final_report": (
-                    "## 需要补充训练画像\n"
-                    "为了生成更稳的训练计划，请先补充以下信息：\n"
-                    + "\n".join(f"- {label}" for label in labels)
-                ),
-                "missing_fields": missing,
-                "missing_info_status": "awaiting_profile",
-                "reasoning_log": [f"[missing_info] 缺少画像字段: {', '.join(labels)}，已发送逐字段填写入口"],
-                "token_usage": ensure_usage(state.get("token_usage")),
-            }
-        # missing is empty → pass through without blocking
+        labels = [FIELD_LABELS.get(k, k) for k in missing]
         return {
+            "final_report": "__FILL_FIELDS__",
+            "missing_fields": missing,
+            "reasoning_log": [f"[missing_info] 缺少画像字段: {', '.join(labels)}，已发送逐字段填写入口"],
             "token_usage": ensure_usage(state.get("token_usage")),
-            "reasoning_log": ["[missing_info] 无缺失字段，放行"],
         }
 
     missing = state.get("missing_fields", [])
@@ -914,22 +831,58 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
     query = state.get("query", "")
     entities = state.get("entities", [])
     category = state.get("category", "coach")
+    profile = state.get("user_profile", {})
+    experience_level = profile.get("experience_level", "")
+
+    # 指标价值速查（取缺失字段的价值解释）
+    value_lines = "\n".join(
+        f"- {FIELD_LABELS.get(f, f)}：{FIELD_VALUE_WHY.get(f, '')}"
+        for f in missing
+    ) if missing else ""
+
+    # 分层语气与侧重点
+    if experience_level in ("精英",):
+        level_context = (
+            "你正在与一位精英跑者对话。请围绕「强度分布与恢复管理」追问，"
+            "语气果断、简洁，直接切入核心指标。可以适当使用专业术语。"
+        )
+    elif experience_level in ("进阶",):
+        level_context = (
+            "你正在与一位进阶跑者对话。请围绕「周期化结构与训练负荷」追问，"
+            "语气专业但平易，可以提及 Tempo、LSD 等常见术语。"
+        )
+    elif experience_level in ("新手", "初级",):
+        level_context = (
+            "你正在与一位新手跑者对话。请围绕「目标设定与时间保护」追问，"
+            "语气积极、鼓励，避免使用专业术语，降低用户心理门槛。"
+        )
+    else:
+        level_context = (
+            "请用专业但亲和的语气帮助用户补充关键信息。"
+        )
 
     if missing:
         prompt = (
             f"用户提问：「{query}」\n"
-            f"当前缺失的画像指标：{', '.join(missing)}\n"
-            f"请不要要求用户补充上下文。请基于模型通用知识先给出保守、可执行的回答，"
-            f"并明确标注 source_type=llm_general_knowledge。不要伪造引用、source path、页码或证据 ID。"
-            f"如果涉及核心处方或训练负荷，请说明这是通用建议而不是已绑定本地证据的个性化处方。"
+            f"用户经验水平：{experience_level or '未知'}\n"
+            f"当前缺失的画像指标：{', '.join(missing)}\n\n"
+            f"这些指标的价值：\n{value_lines}\n\n"
+            f"{level_context}\n\n"
+            f"请生成 2-3 条追问，每条以 • 开头，≤30 字，直接可回答。"
+            f"语气专业但亲和，可加入「哪怕只补充 1-2 项我也能给出更好的建议」降低压力。"
+            f"控制在 150 字以内。不要反问与缺失指标无关的问题。"
         )
     elif not rag_sources:
+        available_entities = "、".join(entities[:3]) if entities else "无特定实体"
         prompt = (
             f"用户提问：「{query}」\n"
-            f"当前知识库中没有检索到相关证据。请不要拒答，也不要要求用户补充上下文。"
-            f"请基于模型通用知识直接回答，给出保守、可执行、不过度承诺的建议，"
-            f"并明确标注 source_type=llm_general_knowledge。不要伪造引用、source path、页码或证据 ID。"
-            f"如果出现胸痛、头晕、中暑等医疗红旗，只给停止训练和专业评估建议，不生成高强度替代训练。"
+            f"已识别实体：{available_entities}\n"
+            f"用户经验水平：{experience_level or '未知'}\n"
+            f"当前知识库中没有检索到相关证据。\n\n"
+            f"{level_context}\n\n"
+            f"请生成 2-3 个具体的追问，引导用户补充更详细的目标、周期或限制条件。"
+            f"每条追问以 • 开头，≤30 字，指向用户可以立即回答的具体数据。"
+            f"控制在 100 字以内。"
         )
     else:
         available_entities = "、".join(entities[:3]) if entities else "无特定实体"
@@ -937,45 +890,69 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
             f"用户提问：「{query}」\n"
             f"已识别实体：{available_entities}\n"
             f"意图分类：{category}\n"
-            f"当前证据不足以生成处方级建议。请不要拒答，也不要要求用户补充上下文。"
-            f"请先基于模型通用知识给出保守回答，并标注 source_type=llm_general_knowledge；"
-            f"不要伪造引用、source path、页码或证据 ID。"
+            f"用户经验水平：{experience_level or '未知'}\n"
+            f"当前证据不足以生成处方级建议。\n\n"
+            f"{level_context}\n\n"
+            f"请生成 2-3 个有具体指向的追问，帮助用户补充训练目标、当前能力、可用时间等关键信息。"
+            f"每条追问以 • 开头，≤30 字，尽可能结合已识别实体（{available_entities}）来追问。"
+            f"控制在 120 字以内。"
         )
 
     try:
         result, usage = await ai_invoke(prompt, config, state.get("token_usage"))
-        content = _format_general_knowledge_answer(result) if result else _static_fallback(missing, rag_sources)
+        content = f"## 需要更多信息\n{result}" if result else _static_fallback(missing, rag_sources, experience_level)
         return {
             "final_report": content,
-            "missing_info_status": "",
-            "reasoning_log": ["[missing_info] 已通过 LLM 生成模型通用知识回答"],
+            "reasoning_log": ["[missing_info] 已通过 LLM 生成缺失信息引导"],
             "token_usage": usage,
         }
     except Exception:
-        content = _static_fallback(missing, rag_sources)
+        content = _static_fallback(missing, rag_sources, experience_level)
         return {
             "final_report": content,
-            "missing_info_status": "",
             "reasoning_log": ["[missing_info] 已生成缺失信息引导 (LLM 回退到静态模板)"],
             "token_usage": ensure_usage(state.get("token_usage")),
         }
 
 
-def _format_general_knowledge_answer(answer: str) -> str:
-    body = str(answer or "").strip()
-    if not body:
-        body = (
-            "在缺少本地证据绑定时，先采用保守训练原则：降低强度、优先恢复、观察疲劳和疼痛，"
-            "并避免把单次状态波动解读为长期能力变化。"
+def _static_fallback(missing: list, rag_sources: list, experience_level: str = "") -> str:
+    # 分层语气
+    if experience_level in ("精英",):
+        tone_hint = "简洁直接"
+    elif experience_level in ("进阶",):
+        tone_hint = "专业平易"
+    elif experience_level in ("新手", "初级",):
+        tone_hint = "鼓励亲和"
+    else:
+        tone_hint = "专业但亲和"
+
+    if missing:
+        value_lines = "\n".join(
+            f"- **{FIELD_LABELS.get(f, f)}**：{FIELD_VALUE_WHY.get(f, '训练计划的关键参考指标')}"
+            for f in missing
+        )
+        return (
+            f"## 需要补充一些关键信息\n\n"
+            f"为了给你生成更科学的训练处方（{tone_hint}），还需要了解：\n\n"
+            f"{value_lines}\n\n"
+            f"> 哪怕只补充 1-2 项，我也能给出比现在更贴合你的建议。\n\n"
+            f"直接回复这些指标的数值即可，我会据此重新生成计划。"
+        )
+    elif not rag_sources:
+        return (
+            "## 知识库证据不足\n\n"
+            "当前本地知识库中没有检索到足够的训练科学证据，"
+            "系统不会在缺乏依据的情况下猜测处方级建议。\n\n"
+            "**你可以尝试：**\n"
+            "- 上传相关的 PDF 训练指南、动作库或研究资料后再试\n"
+            "- 补充更详细的训练目标、当前能力或可用时间（帮助系统更精准检索）\n"
+            "- 换一种方式描述你的问题（更具体的关键词能命中更多资料）"
         )
     return (
-        "## 模型通用知识回答\n"
-        "source_type: llm_general_knowledge\n\n"
-        f"{body}\n\n"
-        "说明：这不是已绑定本地 RAG 证据的核心训练处方；不得伪造引用、页码或证据 ID。"
+        "## 信息不足\n\n"
+        "当前问题缺少足够的上下文来生成可靠建议。\n\n"
+        "请尝试补充：\n"
+        "- 你的训练目标（如备赛什么项目、目标成绩）\n"
+        "- 当前训练状态（如周跑量、配速范围）\n"
+        "- 具体限制或关注点（如可用训练日、伤病顾虑）"
     )
-
-
-def _static_fallback(missing: list, rag_sources: list) -> str:
-    del missing, rag_sources
-    return _format_general_knowledge_answer("")
