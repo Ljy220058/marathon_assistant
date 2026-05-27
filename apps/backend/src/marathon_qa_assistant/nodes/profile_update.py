@@ -105,6 +105,15 @@ _FIELD_LABEL_MAP = {
     "target_race_date": "比赛日期",
     "available_days": "可用训练日",
     "max_session_minutes": "单次最长训练",
+    "target_pace": "配速目标",
+    "recent_four_week_mileage": "近四周平均周跑量",
+    "last_month_mileage": "上个月月跑量",
+    "current_half_time": "当前半马 PB",
+    "target_half_time": "目标半马成绩",
+    "injury": "伤病限制",
+    "recovery_state": "恢复状态",
+    "injury_or_fatigue": "伤病/疲劳限制"
+
 }
 
 NUMERIC_FIELDS = {"lthr", "weekly_mileage", "vo2max", "max_session_minutes"}
