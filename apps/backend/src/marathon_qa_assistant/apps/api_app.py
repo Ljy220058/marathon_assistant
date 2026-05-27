@@ -65,6 +65,10 @@ from marathon_qa_assistant.services.workout_template_retriever import (
     ZONE_LABELS_DETAIL,
     EVIDENCE_TIER_LABELS,
 )
+from marathon_qa_assistant.core.logging_middleware import (
+    RequestIDMiddleware,
+    setup_structured_logging,
+)
 from marathon_qa_assistant.apps.schemas import (
     DayDetailResponse,
     EventScheduleRequest,
@@ -92,6 +96,9 @@ async def _lifespan(app_instance: FastAPI):
 
 
 app = FastAPI(title="Marathon QA Assistant API", version="1.0.0", lifespan=_lifespan)
+
+setup_structured_logging()
+app.add_middleware(RequestIDMiddleware)
 
 _RATE_LIMIT_BUCKETS: Dict[Tuple[str, str, str], List[float]] = {}
 _RATE_LIMITED_PREFIXES = ("/query", "/feedback", "/training-calendar", "/plans", "/profile")
