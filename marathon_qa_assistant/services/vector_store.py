@@ -192,6 +192,52 @@ def split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
         start = end - chunk_overlap
     return chunks
 
+
+_SENTENCE_BOUNDARIES = [
+    re.compile(r'。'),
+    re.compile(r'\n\n'),
+    re.compile(r'[，；]'),
+    re.compile(r'[）》〗]'),
+]
+
+
+def _find_best_split(text: str, chunk_size: int) -> int:
+    if len(text) <= chunk_size:
+        return len(text)
+    window = text[:chunk_size]
+    for pattern in _SENTENCE_BOUNDARIES:
+        matches = list(pattern.finditer(window))
+        if matches:
+            return matches[-1].end()
+    return chunk_size
+
+
+def split_text_sentence_aware(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
+    if chunk_size <= 0:
+        raise ValueError("chunk_size 必须大于 0")
+    if chunk_overlap < 0:
+        raise ValueError("chunk_overlap 不能小于 0")
+    if chunk_overlap >= chunk_size:
+        raise ValueError("chunk_overlap 必须小于 chunk_size")
+    text = text.strip()
+    if not text:
+        return []
+    chunks = []
+    position = 0
+    length = len(text)
+    while position < length:
+        remaining = text[position:]
+        cut = _find_best_split(remaining, chunk_size)
+        chunk = text[position:position + cut].strip()
+        if chunk:
+            chunks.append(chunk)
+        if position + cut >= length:
+            break
+        position = position + cut - chunk_overlap
+        if position < 0:
+            position = 0
+    return chunks
+
 def collect_chunks(input_dir: Path | List[Path], chunk_size: int, chunk_overlap: int) -> tuple[list[dict], list[dict]]:
     """从目录或文件列表中收集所有文本分片"""
     all_chunks = []
@@ -216,9 +262,49 @@ def collect_chunks(input_dir: Path | List[Path], chunk_size: int, chunk_overlap:
         try:
             pages = load_pages(file_path)
             page_count = len(pages)
+
+            if file_path.stem == "动作库":
+                from marathon_qa_assistant.services.exercise_parser import parse_action_library
+
+                full_text = "\n".join(raw_page for _, raw_page in pages)
+                parsed_entries = parse_action_library(full_text)
+
+                for entry in parsed_entries:
+                    parts = [f"name：{entry['name']}"]
+                    if entry.get("categories"):
+                        parts.append(f"categories：{' , '.join(entry['categories'])}")
+                    if entry.get("content"):
+                        parts.append(f"content：{entry['content']}")
+                    if entry.get("objective"):
+                        parts.append(f"objective：{entry['objective']}")
+                    text = "\n".join(parts)
+
+                    import hashlib
+                    name_hash = hashlib.sha1(
+                        entry["name"].encode("utf-8")
+                    ).hexdigest()[:8]
+                    chunk_id = f"动作库_{name_hash}"
+
+                    all_chunks.append({
+                        "chunk_id": chunk_id,
+                        "source_file": source_meta["source_file"],
+                        "source_path": source_meta["source_path"],
+                        "page": entry.get("page", 0),
+                        "text": text,
+                    })
+                    chunk_count += 1
+
+                file_stats.append({
+                    "source_file": source_meta["source_file"],
+                    "source_path": source_meta["source_path"],
+                    "pages": page_count,
+                    "chunks": chunk_count,
+                })
+                continue
+
             for page_num, raw_page in pages:
                 cleaned_page = normalize_text(raw_page)
-                page_chunks = split_text(cleaned_page, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+                page_chunks = split_text_sentence_aware(cleaned_page, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
                 for idx, chunk_text in enumerate(page_chunks, start=1):
                     chunk_id = f"{file_path.stem}_p{page_num:04d}_c{idx:04d}"
                     all_chunks.append(
