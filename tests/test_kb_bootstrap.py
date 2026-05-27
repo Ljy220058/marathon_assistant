@@ -200,3 +200,14 @@ def test_bootstrap_knowledge_base_enters_empty_mode_when_all_candidates_fail(mon
     assert "default:缺少产物" in report["reason"]
     assert set_calls[0]["chunks"] == []
     assert set_calls[0]["matrix"] is None
+
+
+def test_real_project_v2_vector_kb_health_is_preview_ready():
+    # 真实 v2 artifact 必须能被 runtime health gate 识别为 preview-ready。
+    report = kb_bootstrap.probe_vector_kb_health(kb_bootstrap.V2_VECTOR_DIR)
+
+    assert report["ok"] is True
+    assert report["source"] == "v2"
+    assert report["chunks_count"] == 750
+    assert report["index_schema_version"] == "chunk_schema_v2"
+    assert report["metadata_completeness"] == 1.0
