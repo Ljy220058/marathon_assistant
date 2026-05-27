@@ -455,6 +455,50 @@ def extract_json_block(content: str, default_data: Dict[str, Any]) -> Dict[str, 
 
 _KG_ENTITY_LABELS_CACHE: Optional[List[str]] = None
 
+ALIAS_TABLE: dict[str, str] = {
+    "高强度间歇": "HIIT",
+    "间歇训练": "HIIT",
+    "暴汗运动": "HIIT",
+    "慢跑": "轻松跑",
+    "恢复跑": "轻松跑",
+    "减脂跑": "轻松跑",
+    "有氧慢跑": "轻松跑",
+    "核心": "核心力量",
+    "核心训练": "核心力量",
+    "腰腹": "核心力量",
+    "爆发力": "复合速度训练",
+    "冲刺": "重复跑",
+    "短距离冲刺": "重复跑",
+    "跑姿": "马克操（跑姿步伐操）",
+    "马克操": "马克操（跑姿步伐操）",
+    "步伐训练": "马克操（跑姿步伐操）",
+    "滚泡沫轴": "泡沫轴放松",
+    "筋膜放松": "泡沫轴放松",
+    "按摩": "泡沫轴放松",
+    "拉伸": "灵活度训练",
+    "柔韧性": "灵活度训练",
+    "爬坡": "冲坡训练 ≥300m",
+    "冲坡": "冲坡训练 ≥300m",
+    "上坡跑": "冲坡训练 ≥300m",
+    "长距离慢跑": "长距离",
+    "LSD": "长距离",
+    "lsd": "长距离",
+    "节奏": "节奏渐进跑",
+    "变速跑": "法特莱克",
+    "法特莱克跑": "法特莱克",
+    "阈值": "Lactate-Threshold",
+    "阈值跑": "Lactate-Threshold",
+    "乳酸阈": "Lactate-Threshold",
+    "力量": "Strength",
+    "举铁": "Strength",
+    "热身": "Warm-up",
+    "激活": "Activation",
+    "摄氧量": "VO2max",
+    "最大摄氧量": "VO2max",
+}
+
+_EXPAND_TRIGGERS = {"动作库", "训练动作", "训练库", "exercise"}
+
 
 def _get_kg_entity_labels() -> List[str]:
     """从知识图谱中提取 workout_template 和 category 类型节点的标签（缓存）。"""
@@ -511,11 +555,15 @@ def infer_entities(query: str, selected_entities: Optional[Iterable[str]] = None
 
 
 def expand_entities_for_kg(entities: List[str]) -> List[str]:
-    """若实体中包含"动作库"，展开为所有 workout_template 和 category 标签。"""
+    """若实体中包含展开触发词，展开为所有 workout_template 和 category 标签。"""
     if not entities:
         return entities
-    has_action_library = any("动作库" in e for e in entities)
-    if not has_action_library:
+    has_trigger = any(
+        t.lower() in e.lower()
+        for t in _EXPAND_TRIGGERS
+        for e in entities
+    )
+    if not has_trigger:
         return entities
     kg_labels = _get_kg_entity_labels()
     expanded = list(entities)
@@ -525,6 +573,31 @@ def expand_entities_for_kg(entities: List[str]) -> List[str]:
         if len(expanded) >= 25:
             break
     return expanded
+
+
+def semantic_match_entities(query: str) -> List[str]:
+    """L1 别名精确匹配 + L2 embedding 语义兜底 → 返回 KG 标准标签列表。"""
+    if not query or not query.strip():
+        return []
+    result: List[str] = []
+    query_lower = query.lower()
+
+    # L1: 别名表精确匹配
+    for alias, standard in ALIAS_TABLE.items():
+        if alias.lower() in query_lower and standard not in result:
+            result.append(standard)
+
+    # L2: embedding 语义兜底
+    try:
+        from marathon_qa_assistant.services.label_matcher import label_matcher
+        l2_matches = label_matcher.match(query)
+        for label, _score in l2_matches:
+            if label not in result:
+                result.append(label)
+    except Exception:
+        pass  # L2 失败不阻断
+
+    return result
 
 
 async def get_context(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
