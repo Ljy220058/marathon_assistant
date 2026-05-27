@@ -2,6 +2,11 @@
   "status": "blocked",
   "global_blockers": [
     "action_library",
+    "ai_rag_evidence_explanation",
+    "endurance_training_protocols",
+    "hci_health_recommender_systems",
+    "load_injury_safety",
+    "nutrition_hydration_race_fueling",
     "training_protocols",
     "user_profile_cases"
   ],
@@ -554,8 +559,10 @@
       }
     },
     "nutritionist_node": {
-      "status": "partial",
-      "blocking_domains": [],
+      "status": "blocked",
+      "blocking_domains": [
+        "nutrition_hydration_race_fueling"
+      ],
       "domain_names": [
         "nutrition_race_fueling",
         "nutrition_hydration_race_fueling"
@@ -891,8 +898,12 @@
       }
     },
     "research_analyst_node": {
-      "status": "covered",
-      "blocking_domains": [],
+      "status": "blocked",
+      "blocking_domains": [
+        "endurance_training_protocols",
+        "load_injury_safety",
+        "nutrition_hydration_race_fueling"
+      ],
       "domain_names": [
         "endurance_training_protocols",
         "load_injury_safety",

@@ -86,8 +86,8 @@ def _domain_summary(row: Dict[str, Any], chunk_stats: Dict[str, Dict[str, Any]])
 def _expert_status(expert: str, domains: Dict[str, Dict[str, Any]]) -> tuple[str, List[str]]:
     blocking = []
     for domain, summary in domains.items():
-        # gap 是硬阻塞；核心专家还要额外卡 can_write_core 领域的来源覆盖率。
-        if summary["status"] == "gap":
+        # gap/runtime_only 都不能视为治理覆盖完成，避免只因 chunks 存在就误报 covered。
+        if summary["status"] in {"gap", "runtime_only"}:
             blocking.append(domain)
             continue
         if expert in CORE_EXPERTS and summary["can_write_core"] and summary["source_coverage_ratio"] < MIN_SOURCE_RATIO_FOR_CORE:
@@ -140,7 +140,8 @@ def build_expert_coverage_report(coverage_rows: List[Dict[str, Any]], chunks: Li
     global_blockers = sorted(
         domain
         for domain, summary in domain_summaries.items()
-        if summary["status"] == "gap" or (summary["can_write_core"] and summary["source_coverage_ratio"] < MIN_SOURCE_RATIO_FOR_CORE)
+        if summary["status"] in {"gap", "runtime_only"}
+        or (summary["can_write_core"] and summary["source_coverage_ratio"] < MIN_SOURCE_RATIO_FOR_CORE)
     )
     return {
         "status": "blocked" if global_blockers else "partial",

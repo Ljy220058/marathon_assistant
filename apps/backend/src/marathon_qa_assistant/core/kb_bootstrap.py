@@ -21,8 +21,8 @@ _LAST_BOOTSTRAP_REPORT: Dict[str, Any] = {}
 
 def default_kb_candidate_dirs() -> List[Path]:
     return [
-        USER_VECTOR_DIR,
         V2_VECTOR_DIR,
+        USER_VECTOR_DIR,
         RUNTIME_USER_VECTOR_DIR,
         LEGACY_USER_VECTOR_DIR,
         DEFAULT_VECTOR_DIR,

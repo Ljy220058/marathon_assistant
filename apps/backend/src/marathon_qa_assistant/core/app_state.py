@@ -79,8 +79,8 @@ def get_preferred_vector_dir() -> Path:
     Monorepo 新路径优先，旧根目录路径保留一轮兼容。
     """
     for candidate in (
-        USER_VECTOR_DIR,
         V2_VECTOR_DIR,
+        USER_VECTOR_DIR,
         RUNTIME_USER_VECTOR_DIR,
         LEGACY_USER_VECTOR_DIR,
         DEFAULT_VECTOR_DIR,
