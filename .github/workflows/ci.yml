@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-cov ruff
+
+      - name: Lint with ruff
+        run: ruff check src/ --select E,F,W --ignore E501
+
+      - name: Test with pytest + coverage
+        env:
+          PYTHONPATH: src
+          PYTHONUTF8: "1"
+          GRAPHRAG_API_KEY: ci_test_token
+        run: |
+          python -m pytest ../../tests/ \
+            --cov=src/marathon_qa_assistant \
+            --cov-report=term-missing \
+            --cov-report=json \
+            --cov-fail-under=50 \
+            -v
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: apps/backend/coverage.json
+
+  repo-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Check repo hygiene
+        run: python tools/dev/check_repo.py
+
+      - name: Check for banned patterns
+        run: |
+          ! rg -q "default_token_for_dev" --no-ignore --glob '!.git' --glob '!todolist.md' --glob '!archive/**' --glob '!docs/**' .
+          ! rg -q 'sk-[A-Za-z0-9]{20,}' --no-ignore --glob '!.git' .
+          ! rg -q 'Authorization:\s*Bearer' --no-ignore --glob '!.git' .
+          ! rg -q 'C:\\Users\\' --no-ignore --glob '!.git' --glob '!docs/**' .
