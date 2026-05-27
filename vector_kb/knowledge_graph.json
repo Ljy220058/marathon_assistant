@@ -5480,6 +5480,586 @@
       "source_chunks": [
         "decision_graph_registry_v1"
       ]
+    },
+    "78741b2c2a68": {
+      "label": "灵活度训练​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_29e6fe46"
+      ],
+      "properties": {
+        "categories": [
+          "Mobility",
+          "Recovery",
+          "Flexibility ​"
+        ],
+        "objective": "松解→改善关节活动度→激活肌肉，可在跑步前（作为专项热身）或休息日（针对日常用"
+      }
+    },
+    "04b288eca9b8": {
+      "label": "Mobility",
+      "type": "category",
+      "source_chunks": []
+    },
+    "60f105dc8fc2": {
+      "label": "Recovery",
+      "type": "category",
+      "source_chunks": []
+    },
+    "ef93481dc7a8": {
+      "label": "Flexibility ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "70de2083169b": {
+      "label": "马克操（跑姿步伐操）​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_dc4771af"
+      ],
+      "properties": {
+        "categories": [
+          "Technique",
+          "Drills",
+          "Warm-up ​"
+        ],
+        "objective": "优化跑姿力学，提升神经协调性与步频步幅配合。​"
+      }
+    },
+    "209c502795b2": {
+      "label": "Technique",
+      "type": "category",
+      "source_chunks": []
+    },
+    "9c93108882ca": {
+      "label": "Drills",
+      "type": "category",
+      "source_chunks": []
+    },
+    "f55ea5abb91d": {
+      "label": "Warm-up ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "3dd815f5da63": {
+      "label": "泡沫轴放松​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_485ba602"
+      ],
+      "properties": {
+        "categories": [
+          "Recovery",
+          "Self-Massage",
+          "Mobility ​"
+        ],
+        "objective": "筋膜松解，降低肌肉张力，加速恢复。​"
+      }
+    },
+    "516dfc3c61d2": {
+      "label": "Self-Massage",
+      "type": "category",
+      "source_chunks": []
+    },
+    "68005fca522e": {
+      "label": "Mobility ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "2108c55fbc25": {
+      "label": "动态激活​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_590bea9b"
+      ],
+      "properties": {
+        "categories": [
+          "Activation",
+          "Warm-up",
+          "Pre-run ​"
+        ],
+        "objective": "快速提升心率与肌肉温度，激活神经系统，为从静止到运动做过渡。​"
+      }
+    },
+    "93be45b0a9c1": {
+      "label": "Activation",
+      "type": "category",
+      "source_chunks": []
+    },
+    "051535db2e78": {
+      "label": "Warm-up",
+      "type": "category",
+      "source_chunks": []
+    },
+    "9bbb6c1d81f1": {
+      "label": "Pre-run ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "7bef47079ca6": {
+      "label": "Tabata​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_ec4c64c4"
+      ],
+      "properties": {
+        "categories": [
+          "HIIT",
+          "Strength",
+          "Conditioning ​"
+        ],
+        "objective": "提升高强度无氧代谢能力与心肺恢复效率。​"
+      }
+    },
+    "8e544caf3b9a": {
+      "label": "HIIT",
+      "type": "category",
+      "source_chunks": []
+    },
+    "78e50071a92e": {
+      "label": "Strength",
+      "type": "category",
+      "source_chunks": []
+    },
+    "50a28d57fbce": {
+      "label": "Conditioning ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "a391e6d0dbb0": {
+      "label": "力量激活（大重量训练） ​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_eae4bef3"
+      ],
+      "properties": {
+        "categories": [
+          "Strength",
+          "Power",
+          "Gym ​"
+        ],
+        "objective": "增强神经募集能力，提升最大力量与跑步经济性。​"
+      }
+    },
+    "f6a2027b95a9": {
+      "label": "Power",
+      "type": "category",
+      "source_chunks": []
+    },
+    "439fff819895": {
+      "label": "Gym ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "5b3462b62d15": {
+      "label": "核心训练​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_23c0e19e"
+      ],
+      "properties": {
+        "categories": [
+          "Core",
+          "Stability",
+          "Strength ​"
+        ],
+        "objective": "增强躯干稳定性，在疲劳状态下维持正确跑姿。​"
+      }
+    },
+    "df474a2c3379": {
+      "label": "Core",
+      "type": "category",
+      "source_chunks": []
+    },
+    "abd12857309f": {
+      "label": "Stability",
+      "type": "category",
+      "source_chunks": []
+    },
+    "b13ca94352b9": {
+      "label": "Strength ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "e9de725fa8b9": {
+      "label": "轻松跑​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_7321dba7"
+      ],
+      "properties": {
+        "categories": [
+          "Aerobic",
+          "Base",
+          "Recovery ​"
+        ],
+        "objective": "建立有氧基础，促进血液循环与代谢废物排出。​"
+      }
+    },
+    "79926824d7c3": {
+      "label": "Aerobic",
+      "type": "category",
+      "source_chunks": []
+    },
+    "e3fdcfcdbc55": {
+      "label": "Base",
+      "type": "category",
+      "source_chunks": []
+    },
+    "97191caa11ee": {
+      "label": "Recovery ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "6d02241a28c7": {
+      "label": "有氧阈值训练（最大脂肪氧化训练）​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_c8b25aee"
+      ],
+      "properties": {
+        "categories": [
+          "Aerobic",
+          "Steady-State",
+          "Endurance ​"
+        ],
+        "objective": "在75–85%HRmax区间提升脂代谢效率与有氧耐力，提升最大脂肪氧化率​"
+      }
+    },
+    "2bf5f8ea063c": {
+      "label": "Steady-State",
+      "type": "category",
+      "source_chunks": []
+    },
+    "cb4421c046cf": {
+      "label": "Endurance ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "92e080a4d1c6": {
+      "label": "跑走结合​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_0666655a"
+      ],
+      "properties": {
+        "categories": [
+          "Recovery",
+          "Active-Rest ​"
+        ],
+        "objective": "极低强度的排酸与主动恢复，缓解精神与肌肉疲劳。​"
+      }
+    },
+    "3c432a3e8492": {
+      "label": "Active-Rest ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "892ab1e470f7": {
+      "label": "长距离​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_ae5cd264"
+      ],
+      "properties": {
+        "categories": [
+          "Long-Run",
+          "Endurance",
+          "Marathon-Spec ​"
+        ],
+        "objective": "提升肌纤维和中枢神经耐疲劳性，训练长通过程中的能量代谢管理。​"
+      }
+    },
+    "55419a89f553": {
+      "label": "Long-Run",
+      "type": "category",
+      "source_chunks": []
+    },
+    "0ada01bb91cf": {
+      "label": "Endurance",
+      "type": "category",
+      "source_chunks": []
+    },
+    "15828c46fa6c": {
+      "label": "Marathon-Spec ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "e0818b3fbfde": {
+      "label": "节奏渐进跑​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_d58d9b5a"
+      ],
+      "properties": {
+        "categories": [
+          "Aerobic Endurance",
+          "long-run",
+          "marathon",
+          "tempo​"
+        ],
+        "objective": "训练在疲劳累积状态下维持配速的能力，从有氧区平滑过渡到混氧区。​"
+      }
+    },
+    "3fc9a25fdb11": {
+      "label": "Aerobic Endurance",
+      "type": "category",
+      "source_chunks": []
+    },
+    "cd99190d6a21": {
+      "label": "long-run",
+      "type": "category",
+      "source_chunks": []
+    },
+    "f55801c3ade0": {
+      "label": "marathon",
+      "type": "category",
+      "source_chunks": []
+    },
+    "cc1d4e2fdc8f": {
+      "label": "tempo​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "58ecca907680": {
+      "label": "长距离无氧阈值​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_e45a6e5d"
+      ],
+      "properties": {
+        "categories": [
+          "Threshold",
+          "Lactate-Threshold",
+          "Tempo ​"
+        ],
+        "objective": "提高乳酸清除效率，提升维持高强度巡航速度的能力。​"
+      }
+    },
+    "ffc2a0765361": {
+      "label": "Threshold",
+      "type": "category",
+      "source_chunks": []
+    },
+    "72943563cfe7": {
+      "label": "Lactate-Threshold",
+      "type": "category",
+      "source_chunks": []
+    },
+    "938075184c2c": {
+      "label": "Tempo ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "5c3ed99f6889": {
+      "label": "短距离无氧阈值​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_23324f21"
+      ],
+      "properties": {
+        "categories": [
+          "Threshold",
+          "Cruise-Intervals",
+          "Speed-Endurance ​"
+        ],
+        "objective": "分割刺激阈值配速，减轻心理压力，强化高配速下的动作经济性。​"
+      }
+    },
+    "5da913090a91": {
+      "label": "Cruise-Intervals",
+      "type": "category",
+      "source_chunks": []
+    },
+    "bea2574cf25c": {
+      "label": "Speed-Endurance ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "bda1d127b835": {
+      "label": "法特莱克​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_6a0ecd22"
+      ],
+      "properties": {
+        "categories": [
+          "Fartlek",
+          "Mix",
+          "Threshold ​"
+        ],
+        "objective": "模拟比赛配速变化，提升身体对乳酸浓度波动的适应与清除能力。​"
+      }
+    },
+    "7f5166ffb676": {
+      "label": "Fartlek",
+      "type": "category",
+      "source_chunks": []
+    },
+    "83bffcb61020": {
+      "label": "Mix",
+      "type": "category",
+      "source_chunks": []
+    },
+    "d940e0107f4b": {
+      "label": "Threshold ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "82ac62ece066": {
+      "label": "混合长距离阈值​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_c3a03e10"
+      ],
+      "properties": {
+        "categories": [
+          "Threshold",
+          "Marathon-Pace",
+          "Endurance ​"
+        ],
+        "objective": "深度刺激糖原消耗，模拟马拉松后半程的肌肉耐力需求。​"
+      }
+    },
+    "551b6ea4a3c8": {
+      "label": "Marathon-Pace",
+      "type": "category",
+      "source_chunks": []
+    },
+    "7c752dd9947a": {
+      "label": "摄氧量间歇​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_ba7e6c3b"
+      ],
+      "properties": {
+        "categories": [
+          "VO2max",
+          "Intervals",
+          "Hard ​"
+        ],
+        "objective": "提升最大摄氧量（VO2max）上限，增强心肺泵血功能。​"
+      }
+    },
+    "f2e02c119178": {
+      "label": "VO2max",
+      "type": "category",
+      "source_chunks": []
+    },
+    "201ea0745d8d": {
+      "label": "Intervals",
+      "type": "category",
+      "source_chunks": []
+    },
+    "c3ebe2b3bf1b": {
+      "label": "Hard ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "afcad56a1020": {
+      "label": "冲坡训练 ≥300m​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_bdab92c6"
+      ],
+      "properties": {
+        "categories": [
+          "Hills",
+          "Strength-Endurance",
+          "VO2max ​"
+        ],
+        "objective": "增强腿部专项力量与抗乳酸能力，改善跑步力学。​"
+      }
+    },
+    "39096127de88": {
+      "label": "Hills",
+      "type": "category",
+      "source_chunks": []
+    },
+    "cecf3394bbb1": {
+      "label": "Strength-Endurance",
+      "type": "category",
+      "source_chunks": []
+    },
+    "d1cb2ca0b2b0": {
+      "label": "VO2max ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "d7ef6e47a966": {
+      "label": "重复跑​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_c1a9b5cb"
+      ],
+      "properties": {
+        "categories": [
+          "Anaerobic",
+          "Speed",
+          "Lactate-Tolerance ​"
+        ],
+        "objective": "提升无氧做功容量，增强身体对极高浓度乳酸的耐受度（痛苦耐受）。​"
+      }
+    },
+    "115f9e069919": {
+      "label": "Anaerobic",
+      "type": "category",
+      "source_chunks": []
+    },
+    "2e1dade643f9": {
+      "label": "Speed",
+      "type": "category",
+      "source_chunks": []
+    },
+    "6f260b3f4c65": {
+      "label": "Lactate-Tolerance ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "d31ace6a07bc": {
+      "label": "短距离冲坡速度训练​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_c8d58ffa"
+      ],
+      "properties": {
+        "categories": [
+          "Speed",
+          "Power",
+          "Hills ​"
+        ],
+        "objective": "募集高阈值运动单位（快肌纤维），发展爆发力与神经驱动效率。​"
+      }
+    },
+    "7286b4efb580": {
+      "label": "Hills ​",
+      "type": "category",
+      "source_chunks": []
+    },
+    "5b6345c01297": {
+      "label": "复合速度训练​",
+      "type": "workout_template",
+      "source_chunks": [
+        "动作库_c689ddb2"
+      ],
+      "properties": {
+        "categories": [
+          "Speed",
+          "Simulation",
+          "Kick ​"
+        ],
+        "objective": "训练疲劳状态下的冲刺能力（Final Kick），巩固高速运动模式。​"
+      }
+    },
+    "dcca5d999a11": {
+      "label": "Simulation",
+      "type": "category",
+      "source_chunks": []
+    },
+    "a32ecb114050": {
+      "label": "Kick ​",
+      "type": "category",
+      "source_chunks": []
     }
   },
   "edges": [
@@ -12453,6 +13033,762 @@
         "chunk_id": "decision_graph_registry_v1",
         "text_span": "重复跑模板 8x400m -> 高质量课间隔至少 48 小时",
         "confidence": 0.98
+      }
+    },
+    {
+      "source": "78741b2c2a68",
+      "target": "04b288eca9b8",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_29e6fe46",
+        "text_span": "name：灵活度训练​\ncategories：Mobility , Recovery , Flexibility ​\ncontent：​\n（一）肌肉静态松解：针对肩颈紧张肌群​\n每个动作以 “静态拉伸 + 呼吸配合” 为主​\n（二）关节活动度改善：重点激活胸椎与肩胛骨​\na. 胸椎关节放松：\ni.\n泡沫轴被动打开：躺姿，泡沫轴垫于胸椎下方，双手抱头，吸气收腹、吐气打开胸腔，停留 \n5-8 秒 / ",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "78741b2c2a68",
+      "target": "60f105dc8fc2",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_29e6fe46",
+        "text_span": "name：灵活度训练​\ncategories：Mobility , Recovery , Flexibility ​\ncontent：​\n（一）肌肉静态松解：针对肩颈紧张肌群​\n每个动作以 “静态拉伸 + 呼吸配合” 为主​\n（二）关节活动度改善：重点激活胸椎与肩胛骨​\na. 胸椎关节放松：\ni.\n泡沫轴被动打开：躺姿，泡沫轴垫于胸椎下方，双手抱头，吸气收腹、吐气打开胸腔，停留 \n5-8 秒 / ",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "78741b2c2a68",
+      "target": "ef93481dc7a8",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_29e6fe46",
+        "text_span": "name：灵活度训练​\ncategories：Mobility , Recovery , Flexibility ​\ncontent：​\n（一）肌肉静态松解：针对肩颈紧张肌群​\n每个动作以 “静态拉伸 + 呼吸配合” 为主​\n（二）关节活动度改善：重点激活胸椎与肩胛骨​\na. 胸椎关节放松：\ni.\n泡沫轴被动打开：躺姿，泡沫轴垫于胸椎下方，双手抱头，吸气收腹、吐气打开胸腔，停留 \n5-8 秒 / ",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "70de2083169b",
+      "target": "209c502795b2",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_dc4771af",
+        "text_span": "name：马克操（跑姿步伐操）​\ncategories：Technique , Drills , Warm-up ​\ncontent：a. A字跳（A Skip / 抬腿提膝）：单脚支撑，膝盖伸直；另一条腿向上摆动提膝，直到大腿与地面\n平行、小腿与地面垂直。随后利用臀部肌肉将脚向下并在重心正下方着地。\nb. 带下压A式：动作同A字跳，但强调脚掌落地时的爆发力与速度。强化臀部发力快速下压，缩短\n触地",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "70de2083169b",
+      "target": "9c93108882ca",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_dc4771af",
+        "text_span": "name：马克操（跑姿步伐操）​\ncategories：Technique , Drills , Warm-up ​\ncontent：a. A字跳（A Skip / 抬腿提膝）：单脚支撑，膝盖伸直；另一条腿向上摆动提膝，直到大腿与地面\n平行、小腿与地面垂直。随后利用臀部肌肉将脚向下并在重心正下方着地。\nb. 带下压A式：动作同A字跳，但强调脚掌落地时的爆发力与速度。强化臀部发力快速下压，缩短\n触地",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "70de2083169b",
+      "target": "f55ea5abb91d",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_dc4771af",
+        "text_span": "name：马克操（跑姿步伐操）​\ncategories：Technique , Drills , Warm-up ​\ncontent：a. A字跳（A Skip / 抬腿提膝）：单脚支撑，膝盖伸直；另一条腿向上摆动提膝，直到大腿与地面\n平行、小腿与地面垂直。随后利用臀部肌肉将脚向下并在重心正下方着地。\nb. 带下压A式：动作同A字跳，但强调脚掌落地时的爆发力与速度。强化臀部发力快速下压，缩短\n触地",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "3dd815f5da63",
+      "target": "60f105dc8fc2",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_485ba602",
+        "text_span": "name：泡沫轴放松​\ncategories：Recovery , Self-Massage , Mobility ​\nobjective：筋膜松解，降低肌肉张力，加速恢复。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "3dd815f5da63",
+      "target": "516dfc3c61d2",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_485ba602",
+        "text_span": "name：泡沫轴放松​\ncategories：Recovery , Self-Massage , Mobility ​\nobjective：筋膜松解，降低肌肉张力，加速恢复。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "3dd815f5da63",
+      "target": "68005fca522e",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_485ba602",
+        "text_span": "name：泡沫轴放松​\ncategories：Recovery , Self-Massage , Mobility ​\nobjective：筋膜松解，降低肌肉张力，加速恢复。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "2108c55fbc25",
+      "target": "93be45b0a9c1",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_590bea9b",
+        "text_span": "name：动态激活​\ncategories：Activation , Warm-up , Pre-run ​\ncontent：3组高抬腿，后踢腿，放松后蹬跑​20 运动/10恢复 × 8 组。\nobjective：快速提升心率与肌肉温度，激活神经系统，为从静止到运动做过渡。​\n5. 热身",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "2108c55fbc25",
+      "target": "051535db2e78",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_590bea9b",
+        "text_span": "name：动态激活​\ncategories：Activation , Warm-up , Pre-run ​\ncontent：3组高抬腿，后踢腿，放松后蹬跑​20 运动/10恢复 × 8 组。\nobjective：快速提升心率与肌肉温度，激活神经系统，为从静止到运动做过渡。​\n5. 热身",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "2108c55fbc25",
+      "target": "9bbb6c1d81f1",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_590bea9b",
+        "text_span": "name：动态激活​\ncategories：Activation , Warm-up , Pre-run ​\ncontent：3组高抬腿，后踢腿，放松后蹬跑​20 运动/10恢复 × 8 组。\nobjective：快速提升心率与肌肉温度，激活神经系统，为从静止到运动做过渡。​\n5. 热身",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "7bef47079ca6",
+      "target": "8e544caf3b9a",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ec4c64c4",
+        "text_span": "name：Tabata​\ncategories：HIIT , Strength , Conditioning ​\ncontent：​\n（A动作20s+10s休息 +B动作20s+10s休息）*4，每两个动作，在一首歌4分钟完成，一共四首\n歌\na. 徒手蹲 + 开合跳​\nb. 交叉摸脚 + 仰面交叉摸脚​\nc. 垫步肘触膝 + 仰卧肘触膝​\nd. 弓箭步 + 俯身登山​\ne. 抡臂前踢腿 + 滑冰跳",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "7bef47079ca6",
+      "target": "78e50071a92e",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ec4c64c4",
+        "text_span": "name：Tabata​\ncategories：HIIT , Strength , Conditioning ​\ncontent：​\n（A动作20s+10s休息 +B动作20s+10s休息）*4，每两个动作，在一首歌4分钟完成，一共四首\n歌\na. 徒手蹲 + 开合跳​\nb. 交叉摸脚 + 仰面交叉摸脚​\nc. 垫步肘触膝 + 仰卧肘触膝​\nd. 弓箭步 + 俯身登山​\ne. 抡臂前踢腿 + 滑冰跳",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "7bef47079ca6",
+      "target": "50a28d57fbce",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ec4c64c4",
+        "text_span": "name：Tabata​\ncategories：HIIT , Strength , Conditioning ​\ncontent：​\n（A动作20s+10s休息 +B动作20s+10s休息）*4，每两个动作，在一首歌4分钟完成，一共四首\n歌\na. 徒手蹲 + 开合跳​\nb. 交叉摸脚 + 仰面交叉摸脚​\nc. 垫步肘触膝 + 仰卧肘触膝​\nd. 弓箭步 + 俯身登山​\ne. 抡臂前踢腿 + 滑冰跳",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "a391e6d0dbb0",
+      "target": "78e50071a92e",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_eae4bef3",
+        "text_span": "name：力量激活（大重量训练） ​\ncategories：Strength , Power , Gym ​\ncontent：​\nobjective：增强神经募集能力，提升最大力量与跑步经济性。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "a391e6d0dbb0",
+      "target": "f6a2027b95a9",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_eae4bef3",
+        "text_span": "name：力量激活（大重量训练） ​\ncategories：Strength , Power , Gym ​\ncontent：​\nobjective：增强神经募集能力，提升最大力量与跑步经济性。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "a391e6d0dbb0",
+      "target": "439fff819895",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_eae4bef3",
+        "text_span": "name：力量激活（大重量训练） ​\ncategories：Strength , Power , Gym ​\ncontent：​\nobjective：增强神经募集能力，提升最大力量与跑步经济性。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5b3462b62d15",
+      "target": "df474a2c3379",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_23c0e19e",
+        "text_span": "name：核心训练​\ncategories：Core , Stability , Strength ​\ncontent：​\nobjective：增强躯干稳定性，在疲劳状态下维持正确跑姿。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5b3462b62d15",
+      "target": "abd12857309f",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_23c0e19e",
+        "text_span": "name：核心训练​\ncategories：Core , Stability , Strength ​\ncontent：​\nobjective：增强躯干稳定性，在疲劳状态下维持正确跑姿。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5b3462b62d15",
+      "target": "b13ca94352b9",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_23c0e19e",
+        "text_span": "name：核心训练​\ncategories：Core , Stability , Strength ​\ncontent：​\nobjective：增强躯干稳定性，在疲劳状态下维持正确跑姿。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e9de725fa8b9",
+      "target": "79926824d7c3",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_7321dba7",
+        "text_span": "name：轻松跑​\ncategories：Aerobic , Base , Recovery ​\ncontent：40-60min，在 60% - 70%HRmax​​\n\nobjective：建立有氧基础，促进血液循环与代谢废物排出。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e9de725fa8b9",
+      "target": "e3fdcfcdbc55",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_7321dba7",
+        "text_span": "name：轻松跑​\ncategories：Aerobic , Base , Recovery ​\ncontent：40-60min，在 60% - 70%HRmax​​\n\nobjective：建立有氧基础，促进血液循环与代谢废物排出。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e9de725fa8b9",
+      "target": "97191caa11ee",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_7321dba7",
+        "text_span": "name：轻松跑​\ncategories：Aerobic , Base , Recovery ​\ncontent：40-60min，在 60% - 70%HRmax​​\n\nobjective：建立有氧基础，促进血液循环与代谢废物排出。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "6d02241a28c7",
+      "target": "79926824d7c3",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c8b25aee",
+        "text_span": "name：有氧阈值训练（最大脂肪氧化训练）​\ncategories：Aerobic , Steady-State , Endurance ​\ncontent：a. 3-4*3000/2min​\nb. 5-6*2000/2min​\nc. 3*3000+3+2000(配速比3000快10s)​\nd. 上下坡交替跑15km​\n\ne. 5000+3*2000​\nf. （3min有氧阈+2min慢跑+2mi",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "6d02241a28c7",
+      "target": "2bf5f8ea063c",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c8b25aee",
+        "text_span": "name：有氧阈值训练（最大脂肪氧化训练）​\ncategories：Aerobic , Steady-State , Endurance ​\ncontent：a. 3-4*3000/2min​\nb. 5-6*2000/2min​\nc. 3*3000+3+2000(配速比3000快10s)​\nd. 上下坡交替跑15km​\n\ne. 5000+3*2000​\nf. （3min有氧阈+2min慢跑+2mi",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "6d02241a28c7",
+      "target": "cb4421c046cf",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c8b25aee",
+        "text_span": "name：有氧阈值训练（最大脂肪氧化训练）​\ncategories：Aerobic , Steady-State , Endurance ​\ncontent：a. 3-4*3000/2min​\nb. 5-6*2000/2min​\nc. 3*3000+3+2000(配速比3000快10s)​\nd. 上下坡交替跑15km​\n\ne. 5000+3*2000​\nf. （3min有氧阈+2min慢跑+2mi",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "92e080a4d1c6",
+      "target": "60f105dc8fc2",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_0666655a",
+        "text_span": "name：跑走结合​\ncategories：Recovery , Active-Rest ​\ncontent：1小时，跑累了就走，跑姿不能变形或者刻意慢​​\n\nobjective：极低强度的排酸与主动恢复，缓解精神与肌肉疲劳。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "92e080a4d1c6",
+      "target": "3c432a3e8492",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_0666655a",
+        "text_span": "name：跑走结合​\ncategories：Recovery , Active-Rest ​\ncontent：1小时，跑累了就走，跑姿不能变形或者刻意慢​​\n\nobjective：极低强度的排酸与主动恢复，缓解精神与肌肉疲劳。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "892ab1e470f7",
+      "target": "55419a89f553",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ae5cd264",
+        "text_span": "name：长距离​\ncategories：Long-Run , Endurance , Marathon-Spec ​\ncontent：a. 21–25km​\nb. 21-25km最后2-4km半马目标配速​\nc. 21-25km中间2-4km半马目标配速​\nobjective：提升肌纤维和中枢神经耐疲劳性，训练长通过程中的能量代谢管理。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "892ab1e470f7",
+      "target": "0ada01bb91cf",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ae5cd264",
+        "text_span": "name：长距离​\ncategories：Long-Run , Endurance , Marathon-Spec ​\ncontent：a. 21–25km​\nb. 21-25km最后2-4km半马目标配速​\nc. 21-25km中间2-4km半马目标配速​\nobjective：提升肌纤维和中枢神经耐疲劳性，训练长通过程中的能量代谢管理。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "892ab1e470f7",
+      "target": "15828c46fa6c",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ae5cd264",
+        "text_span": "name：长距离​\ncategories：Long-Run , Endurance , Marathon-Spec ​\ncontent：a. 21–25km​\nb. 21-25km最后2-4km半马目标配速​\nc. 21-25km中间2-4km半马目标配速​\nobjective：提升肌纤维和中枢神经耐疲劳性，训练长通过程中的能量代谢管理。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e0818b3fbfde",
+      "target": "3fc9a25fdb11",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_d58d9b5a",
+        "text_span": "name：节奏渐进跑​\ncategories：Aerobic Endurance , long-run , marathon , tempo​\ncontent：8km有氧跑+6km最大脂肪氧化心率+4km半马目标配速​​\n\nobjective：训练在疲劳累积状态下维持配速的能力，从有氧区平滑过渡到混氧区。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e0818b3fbfde",
+      "target": "cd99190d6a21",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_d58d9b5a",
+        "text_span": "name：节奏渐进跑​\ncategories：Aerobic Endurance , long-run , marathon , tempo​\ncontent：8km有氧跑+6km最大脂肪氧化心率+4km半马目标配速​​\n\nobjective：训练在疲劳累积状态下维持配速的能力，从有氧区平滑过渡到混氧区。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e0818b3fbfde",
+      "target": "f55801c3ade0",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_d58d9b5a",
+        "text_span": "name：节奏渐进跑​\ncategories：Aerobic Endurance , long-run , marathon , tempo​\ncontent：8km有氧跑+6km最大脂肪氧化心率+4km半马目标配速​​\n\nobjective：训练在疲劳累积状态下维持配速的能力，从有氧区平滑过渡到混氧区。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "e0818b3fbfde",
+      "target": "cc1d4e2fdc8f",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_d58d9b5a",
+        "text_span": "name：节奏渐进跑​\ncategories：Aerobic Endurance , long-run , marathon , tempo​\ncontent：8km有氧跑+6km最大脂肪氧化心率+4km半马目标配速​​\n\nobjective：训练在疲劳累积状态下维持配速的能力，从有氧区平滑过渡到混氧区。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "58ecca907680",
+      "target": "ffc2a0765361",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_e45a6e5d",
+        "text_span": "name：长距离无氧阈值​\ncategories：Threshold , Lactate-Threshold , Tempo ​\ncontent：a. 10-12*1000无氧阈，慢跑90s恢复​\nb. 5*2000，2min慢跑恢复​\nc. 1200*6-7（比赛）​\n\nd. 3km无氧阈穿插1km慢跑+2*2km无氧阈穿插1km慢跑​\ne. （1000无氧阈+400慢跑）*6​\nf. 2*20",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "58ecca907680",
+      "target": "72943563cfe7",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_e45a6e5d",
+        "text_span": "name：长距离无氧阈值​\ncategories：Threshold , Lactate-Threshold , Tempo ​\ncontent：a. 10-12*1000无氧阈，慢跑90s恢复​\nb. 5*2000，2min慢跑恢复​\nc. 1200*6-7（比赛）​\n\nd. 3km无氧阈穿插1km慢跑+2*2km无氧阈穿插1km慢跑​\ne. （1000无氧阈+400慢跑）*6​\nf. 2*20",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "58ecca907680",
+      "target": "938075184c2c",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_e45a6e5d",
+        "text_span": "name：长距离无氧阈值​\ncategories：Threshold , Lactate-Threshold , Tempo ​\ncontent：a. 10-12*1000无氧阈，慢跑90s恢复​\nb. 5*2000，2min慢跑恢复​\nc. 1200*6-7（比赛）​\n\nd. 3km无氧阈穿插1km慢跑+2*2km无氧阈穿插1km慢跑​\ne. （1000无氧阈+400慢跑）*6​\nf. 2*20",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5c3ed99f6889",
+      "target": "ffc2a0765361",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_23324f21",
+        "text_span": "name：短距离无氧阈值​\ncategories：Threshold , Cruise-Intervals , Speed-Endurance ​\ncontent：a. 15-20*400/45s​\nb. 15-20*600​\nc. 12-15*800，​\n原地恢复​\n\nobjective：分割刺激阈值配速，减轻心理压力，强化高配速下的动作经济性。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5c3ed99f6889",
+      "target": "5da913090a91",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_23324f21",
+        "text_span": "name：短距离无氧阈值​\ncategories：Threshold , Cruise-Intervals , Speed-Endurance ​\ncontent：a. 15-20*400/45s​\nb. 15-20*600​\nc. 12-15*800，​\n原地恢复​\n\nobjective：分割刺激阈值配速，减轻心理压力，强化高配速下的动作经济性。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5c3ed99f6889",
+      "target": "bea2574cf25c",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_23324f21",
+        "text_span": "name：短距离无氧阈值​\ncategories：Threshold , Cruise-Intervals , Speed-Endurance ​\ncontent：a. 15-20*400/45s​\nb. 15-20*600​\nc. 12-15*800，​\n原地恢复​\n\nobjective：分割刺激阈值配速，减轻心理压力，强化高配速下的动作经济性。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "bda1d127b835",
+      "target": "7f5166ffb676",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_6a0ecd22",
+        "text_span": "name：法特莱克​\ncategories：Fartlek , Mix , Threshold ​\ncontent：a. （800m有氧阈值 + 400m无氧阈值+400m慢跑）*6-8​\nb. (7min有氧+1min无氧)+(6min有氧+2min无氧)+...+(4min有氧+4min无氧)​\nc. 30s快30s慢10-20组（5000/1500比赛）​\nd. 60s快/60s慢10-20",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "bda1d127b835",
+      "target": "83bffcb61020",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_6a0ecd22",
+        "text_span": "name：法特莱克​\ncategories：Fartlek , Mix , Threshold ​\ncontent：a. （800m有氧阈值 + 400m无氧阈值+400m慢跑）*6-8​\nb. (7min有氧+1min无氧)+(6min有氧+2min无氧)+...+(4min有氧+4min无氧)​\nc. 30s快30s慢10-20组（5000/1500比赛）​\nd. 60s快/60s慢10-20",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "bda1d127b835",
+      "target": "d940e0107f4b",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_6a0ecd22",
+        "text_span": "name：法特莱克​\ncategories：Fartlek , Mix , Threshold ​\ncontent：a. （800m有氧阈值 + 400m无氧阈值+400m慢跑）*6-8​\nb. (7min有氧+1min无氧)+(6min有氧+2min无氧)+...+(4min有氧+4min无氧)​\nc. 30s快30s慢10-20组（5000/1500比赛）​\nd. 60s快/60s慢10-20",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "82ac62ece066",
+      "target": "ffc2a0765361",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c3a03e10",
+        "text_span": "name：混合长距离阈值​\ncategories：Threshold , Marathon-Pace , Endurance ​\ncontent：a. 3*3.2有氧阈+4*1.6无氧阈\nb. 1600m@5000比赛配速+1.6km有氧阈+1200m@5000比赛配速+1.6km有氧阈+800m@5000比\n赛配速+1.6km有氧阈+800m@5000比赛配速+1.6km有氧阈​​\n\nobjec",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "82ac62ece066",
+      "target": "551b6ea4a3c8",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c3a03e10",
+        "text_span": "name：混合长距离阈值​\ncategories：Threshold , Marathon-Pace , Endurance ​\ncontent：a. 3*3.2有氧阈+4*1.6无氧阈\nb. 1600m@5000比赛配速+1.6km有氧阈+1200m@5000比赛配速+1.6km有氧阈+800m@5000比\n赛配速+1.6km有氧阈+800m@5000比赛配速+1.6km有氧阈​​\n\nobjec",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "82ac62ece066",
+      "target": "cb4421c046cf",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c3a03e10",
+        "text_span": "name：混合长距离阈值​\ncategories：Threshold , Marathon-Pace , Endurance ​\ncontent：a. 3*3.2有氧阈+4*1.6无氧阈\nb. 1600m@5000比赛配速+1.6km有氧阈+1200m@5000比赛配速+1.6km有氧阈+800m@5000比\n赛配速+1.6km有氧阈+800m@5000比赛配速+1.6km有氧阈​​\n\nobjec",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "7c752dd9947a",
+      "target": "f2e02c119178",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ba7e6c3b",
+        "text_span": "name：摄氧量间歇​\ncategories：VO2max , Intervals , Hard ​\ncontent：a. 8-9*800 \nb. 6-8*600+6-8*400,10*600​\nc. 15-18*400 ​\nd. （10*400）*2，大组间慢跑1-2km后补水原地休息，最后1km冷身​\ne. 1200+5*400+800+5*400​\nf. 马克操+400轻快跑激活（在速度更快",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "7c752dd9947a",
+      "target": "201ea0745d8d",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ba7e6c3b",
+        "text_span": "name：摄氧量间歇​\ncategories：VO2max , Intervals , Hard ​\ncontent：a. 8-9*800 \nb. 6-8*600+6-8*400,10*600​\nc. 15-18*400 ​\nd. （10*400）*2，大组间慢跑1-2km后补水原地休息，最后1km冷身​\ne. 1200+5*400+800+5*400​\nf. 马克操+400轻快跑激活（在速度更快",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "7c752dd9947a",
+      "target": "c3ebe2b3bf1b",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_ba7e6c3b",
+        "text_span": "name：摄氧量间歇​\ncategories：VO2max , Intervals , Hard ​\ncontent：a. 8-9*800 \nb. 6-8*600+6-8*400,10*600​\nc. 15-18*400 ​\nd. （10*400）*2，大组间慢跑1-2km后补水原地休息，最后1km冷身​\ne. 1200+5*400+800+5*400​\nf. 马克操+400轻快跑激活（在速度更快",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "afcad56a1020",
+      "target": "39096127de88",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_bdab92c6",
+        "text_span": "name：冲坡训练 ≥300m​\ncategories：Hills , Strength-Endurance , VO2max ​\nobjective：增强腿部专项力量与抗乳酸能力，改善跑步力学。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "afcad56a1020",
+      "target": "cecf3394bbb1",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_bdab92c6",
+        "text_span": "name：冲坡训练 ≥300m​\ncategories：Hills , Strength-Endurance , VO2max ​\nobjective：增强腿部专项力量与抗乳酸能力，改善跑步力学。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "afcad56a1020",
+      "target": "d1cb2ca0b2b0",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_bdab92c6",
+        "text_span": "name：冲坡训练 ≥300m​\ncategories：Hills , Strength-Endurance , VO2max ​\nobjective：增强腿部专项力量与抗乳酸能力，改善跑步力学。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "d7ef6e47a966",
+      "target": "115f9e069919",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c1a9b5cb",
+        "text_span": "name：重复跑​\ncategories：Anaerobic , Speed , Lactate-Tolerance ​\ncontent：​\na. 5-6*300（800专项）​\nb. 800无氧阈热身+8*400（配速比摄氧量训练快5-10s）​\nc. 6*200m+6*100m（1500-3000配速）​​\n\nobjective：提升无氧做功容量，增强身体对极高浓度乳酸的耐受度（痛苦耐受）。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "d7ef6e47a966",
+      "target": "2e1dade643f9",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c1a9b5cb",
+        "text_span": "name：重复跑​\ncategories：Anaerobic , Speed , Lactate-Tolerance ​\ncontent：​\na. 5-6*300（800专项）​\nb. 800无氧阈热身+8*400（配速比摄氧量训练快5-10s）​\nc. 6*200m+6*100m（1500-3000配速）​​\n\nobjective：提升无氧做功容量，增强身体对极高浓度乳酸的耐受度（痛苦耐受）。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "d7ef6e47a966",
+      "target": "6f260b3f4c65",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c1a9b5cb",
+        "text_span": "name：重复跑​\ncategories：Anaerobic , Speed , Lactate-Tolerance ​\ncontent：​\na. 5-6*300（800专项）​\nb. 800无氧阈热身+8*400（配速比摄氧量训练快5-10s）​\nc. 6*200m+6*100m（1500-3000配速）​​\n\nobjective：提升无氧做功容量，增强身体对极高浓度乳酸的耐受度（痛苦耐受）。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "d31ace6a07bc",
+      "target": "2e1dade643f9",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c8d58ffa",
+        "text_span": "name：短距离冲坡速度训练​\ncategories：Speed , Power , Hills ​\ncontent：a. 5*60加速跑+5*40放松后蹬跑​\nb. 5-10*200+5-10*100​​\n\nobjective：募集高阈值运动单位（快肌纤维），发展爆发力与神经驱动效率。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "d31ace6a07bc",
+      "target": "f6a2027b95a9",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c8d58ffa",
+        "text_span": "name：短距离冲坡速度训练​\ncategories：Speed , Power , Hills ​\ncontent：a. 5*60加速跑+5*40放松后蹬跑​\nb. 5-10*200+5-10*100​​\n\nobjective：募集高阈值运动单位（快肌纤维），发展爆发力与神经驱动效率。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "d31ace6a07bc",
+      "target": "7286b4efb580",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c8d58ffa",
+        "text_span": "name：短距离冲坡速度训练​\ncategories：Speed , Power , Hills ​\ncontent：a. 5*60加速跑+5*40放松后蹬跑​\nb. 5-10*200+5-10*100​​\n\nobjective：募集高阈值运动单位（快肌纤维），发展爆发力与神经驱动效率。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5b6345c01297",
+      "target": "2e1dade643f9",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c689ddb2",
+        "text_span": "name：复合速度训练​\ncategories：Speed , Simulation , Kick ​\ncontent：a. 4*400+4*250（前50用来渐加速到最大速度）​\nb. 3*250（前50用来渐加速到最大速度）+10*400节奏重复跑注意力放在节奏而不是速度上​\nobjective：训练疲劳状态下的冲刺能力（Final Kick），巩固高速运动模式。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5b6345c01297",
+      "target": "dcca5d999a11",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c689ddb2",
+        "text_span": "name：复合速度训练​\ncategories：Speed , Simulation , Kick ​\ncontent：a. 4*400+4*250（前50用来渐加速到最大速度）​\nb. 3*250（前50用来渐加速到最大速度）+10*400节奏重复跑注意力放在节奏而不是速度上​\nobjective：训练疲劳状态下的冲刺能力（Final Kick），巩固高速运动模式。​",
+        "confidence": 1.0
+      }
+    },
+    {
+      "source": "5b6345c01297",
+      "target": "a32ecb114050",
+      "relation": "has_category",
+      "canonical_relation": "has_category",
+      "evidence": {
+        "source": "动作库.pdf",
+        "chunk_id": "动作库_c689ddb2",
+        "text_span": "name：复合速度训练​\ncategories：Speed , Simulation , Kick ​\ncontent：a. 4*400+4*250（前50用来渐加速到最大速度）​\nb. 3*250（前50用来渐加速到最大速度）+10*400节奏重复跑注意力放在节奏而不是速度上​\nobjective：训练疲劳状态下的冲刺能力（Final Kick），巩固高速运动模式。​",
+        "confidence": 1.0
       }
     }
   ],

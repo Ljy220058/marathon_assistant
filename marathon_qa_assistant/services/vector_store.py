@@ -2,6 +2,7 @@ import argparse
 import json
 import pickle
 import os
+import re
 import time
 import shutil
 import logging
@@ -194,10 +195,10 @@ def split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
 
 
 _SENTENCE_BOUNDARIES = [
-    re.compile(r'。'),
-    re.compile(r'\n\n'),
-    re.compile(r'[，；]'),
-    re.compile(r'[）》〗]'),
+    re.compile('。'),
+    re.compile('\n\n'),
+    re.compile('[，；]'),
+    re.compile('[）》」]'),
 ]
 
 
