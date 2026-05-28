@@ -83,20 +83,25 @@ def _one_week_calendar_contract_plan():
     }
 
 
-def test_query_rejects_unsupported_user_id():
+def test_query_rejects_unsupported_user_id(monkeypatch):
+    """多用户模式：未认证时接受任意 user_id，不再拒绝非默认 ID。"""
+    fake_app = _FakeIntegratedApp()
+    monkeypatch.setattr(api_app, "integrated_app", fake_app)
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "维持健康"})
+    monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
+
     response = client.post(
         "/query",
         json={"query": "帮我分析乳酸阈训练", "user_id": "alice"},
     )
 
-    assert response.status_code == 400
-    assert "仅支持单用户画像" in response.json()["detail"]
+    assert response.status_code == 200
 
 
 def test_query_accepts_audit_scores_with_summary(monkeypatch):
     fake_app = _FakeIntegratedApp()
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "维持健康"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "维持健康"})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
 
     response = client.post(
@@ -145,7 +150,7 @@ def test_query_without_local_evidence_reports_model_general_knowledge_mode(monke
         }
     )
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "维持健康"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "维持健康"})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
 
     response = client.post(
@@ -189,7 +194,7 @@ def test_query_full_plan_backfills_calendar_contract_when_report_omits_it(monkey
         }
     )
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马 PB"})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
 
     response = client.post(
@@ -244,7 +249,7 @@ def test_query_response_records_fake_citation_gate_in_trace_and_plan_review(monk
         }
     )
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马 PB"})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
 
     response = client.post(
@@ -378,7 +383,7 @@ def test_plan_query_with_unmatched_core_workout_reports_needs_evidence_mode(monk
         }
     )
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马 PB"})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
 
     response = client.post(
@@ -658,7 +663,7 @@ def test_empty_skeleton_query_with_single_goal_field_still_generates_plan(tmp_pa
     db = _Database(tmp_path / "plans.db")
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
     monkeypatch.setattr(api_app, "get_db", lambda: db)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "完成首马"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "完成首马"})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
     monkeypatch.setattr(
         api_app,
@@ -797,7 +802,7 @@ def test_plan_query_full_timeout_falls_back_to_skeleton(tmp_path, monkeypatch):
     db = _Database(tmp_path / "plans.db")
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
     monkeypatch.setattr(api_app, "get_db", lambda: db)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "完成首马", "weekly_mileage": 25})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "完成首马", "weekly_mileage": 25})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
     monkeypatch.setattr(
         api_app,
@@ -830,7 +835,7 @@ def test_plan_query_full_error_falls_back_to_error_skeleton(tmp_path, monkeypatc
     db = _Database(tmp_path / "plans.db")
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
     monkeypatch.setattr(api_app, "get_db", lambda: db)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马完赛", "weekly_mileage": 28})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马完赛", "weekly_mileage": 28})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
     monkeypatch.setattr(
         api_app,
@@ -874,7 +879,7 @@ def test_plan_query_provider_error_message_does_not_leak_raw_details(tmp_path, m
     db = _Database(tmp_path / "plans.db")
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
     monkeypatch.setattr(api_app, "get_db", lambda: db)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马完赛", "weekly_mileage": 28})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马完赛", "weekly_mileage": 28})
     monkeypatch.setattr(api_app, "ensure_knowledge_base_ready", lambda: False)
 
     response = client.post(
@@ -1310,7 +1315,7 @@ def test_runner_role_training_calendar_projection_trims_daily_audit_fields(monke
     structured_plan = _one_week_calendar_contract_plan()
     fake_app = _FakeIntegratedApp(result={"structured_training_plan": structured_plan})
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马 PB"})
     monkeypatch.setenv("MARATHON_API_TOKEN", "runner-token")
 
     response = client.post(
@@ -1457,7 +1462,7 @@ def test_training_calendar_response_exposes_full_calendar_and_daily_card_contrac
     structured_plan = _one_week_calendar_contract_plan()
     fake_app = _FakeIntegratedApp(result={"structured_training_plan": structured_plan})
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马 PB"})
 
     response = client.post(
         "/training-calendar",
@@ -1495,7 +1500,7 @@ def test_training_calendar_response_exposes_full_calendar_and_daily_card_contrac
 def test_training_calendar_error_does_not_leak_raw_exception(monkeypatch):
     fake_app = _FakeIntegratedApp(error=RuntimeError("database sk-secret should not leak"))
     monkeypatch.setattr(api_app, "integrated_app", fake_app)
-    monkeypatch.setattr(api_app, "load_user_profile", lambda: {"goal": "半马 PB"})
+    monkeypatch.setattr(api_app, "load_user_profile", lambda user_id=None: {"goal": "半马 PB"})
 
     response = client.post(
         "/training-calendar",

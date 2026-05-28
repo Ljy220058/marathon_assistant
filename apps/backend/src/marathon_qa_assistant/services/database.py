@@ -52,18 +52,6 @@ MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
 
 
 SCHEMA_SQL = """
--- 多用户支持：API token → user_id 映射表
-CREATE TABLE IF NOT EXISTS users (
-    id              TEXT PRIMARY KEY,
-    display_name    TEXT NOT NULL,
-    api_token_hash  TEXT NOT NULL UNIQUE,
-    is_active       INTEGER NOT NULL DEFAULT 1,
-    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_users_token_hash ON users(api_token_hash);
-
 CREATE TABLE IF NOT EXISTS sync_state (
     id                  TEXT PRIMARY KEY,
     user_id             TEXT NOT NULL DEFAULT 'default_user',
@@ -240,6 +228,43 @@ class _Database:
                 "protocol_recheck_json": "TEXT",
             },
         )
+        # 多用户支持：users 表独立迁移，避免 executescript 冲突
+        if not self._table_exists(conn, "users"):
+            conn.execute(
+                """
+                CREATE TABLE users (
+                    id              TEXT PRIMARY KEY,
+                    display_name    TEXT NOT NULL,
+                    api_token_hash  TEXT NOT NULL UNIQUE,
+                    is_active       INTEGER NOT NULL DEFAULT 1,
+                    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+                """
+            )
+            conn.execute("CREATE INDEX idx_users_token_hash ON users(api_token_hash)")
+        else:
+            self._ensure_columns(
+                conn,
+                "users",
+                {
+                    "display_name": "TEXT NOT NULL DEFAULT ''",
+                    "api_token_hash": "TEXT",
+                    "is_active": "INTEGER NOT NULL DEFAULT 1",
+                    "created_at": "TEXT",
+                    "updated_at": "TEXT",
+                },
+            )
+            # Ensure unique constraint on api_token_hash via index
+            existing_indexes = {
+                row["name"]
+                for row in conn.execute("PRAGMA index_list(users)").fetchall()
+            }
+            if "idx_users_token_hash" not in existing_indexes:
+                try:
+                    conn.execute("CREATE UNIQUE INDEX idx_users_token_hash ON users(api_token_hash)")
+                except Exception:
+                    pass
         conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:

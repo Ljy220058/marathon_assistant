@@ -84,7 +84,7 @@ DEFAULT_TEST_QUESTIONS = [
 ]
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBEDDING_MODEL = "bge-m3" # 可以根据实际安装的模型替换
+EMBEDDING_MODEL = "nomic-embed-text:latest" # bge-m3 对某些文本返回 NaN，改用 nomic
 
 
 def _build_source_metadata(file_path: Path) -> dict:

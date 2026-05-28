@@ -196,13 +196,9 @@ def _configured_api_token() -> str:
 
 
 def _auth_enabled() -> bool:
-    """判断是否启用 API 认证：数据库有用户记录或配置了旧版 token。"""
-    if _configured_api_token():
-        return True
-    try:
-        return get_db().has_any_user()
-    except Exception:
-        return False
+    """判断是否强制 API 认证：仅当显式配置了 MARATHON_API_TOKEN 时启用。
+    数据库用户表用于 token→user 映射，不自动开启强制认证。"""
+    return bool(_configured_api_token())
 
 
 def _request_api_token(request: Request) -> str:
