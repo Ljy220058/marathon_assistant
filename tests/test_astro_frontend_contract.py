@@ -57,6 +57,38 @@ def test_astro_frontend_entry_is_split_into_scripts_and_style_domains():
     assert expected_styles.issubset(style_names)
 
 
+def test_p0_1_frontend_split_contract_dom_ids_and_data_attrs():
+    """P0.1 — 前端拆分前契约加固：验证关键 DOM id 和 data attribute 仍然存在。"""
+    source = _index_source()
+    index_text = FRONTEND_INDEX.read_text(encoding="utf-8")
+
+    # 关键 DOM id
+    required_ids = [
+        "runQuery",
+        "calendar",
+        "dayModal",
+        "evidenceDrawer",
+        "statusPanel",
+        "adjustmentHistory",
+    ]
+    for dom_id in required_ids:
+        assert f'id="{dom_id}"' in index_text, f"Missing DOM id: {dom_id}"
+
+    # 关键 data attribute
+    required_data_attrs = [
+        "data-plan-generation-entry",
+        "data-evidence-open",
+        "data-modal-feedback-action",
+        "data-calendar-view",
+    ]
+    for attr in required_data_attrs:
+        assert attr in source, f"Missing data attribute: {attr}"
+
+    # 脚本入口存在
+    assert '<script src="../scripts/app.js"></script>' in index_text
+    assert FRONTEND_SCRIPTS.joinpath("app.js").exists()
+
+
 def test_astro_workspace_smoke_covers_guarded_frontend_entry_points():
     smoke = FRONTEND_ROOT / "scripts" / "smoke-workspace.mjs"
     source = smoke.read_text(encoding="utf-8")
