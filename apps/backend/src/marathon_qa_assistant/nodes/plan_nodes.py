@@ -75,27 +75,52 @@ def _compute_pace_zones(profile: dict) -> dict:
         t_pace_sec = None
         goal = str(profile.get('goal', '') or '').strip()
         race_pace_sec = None
-        m_half = re.search(r'半马\s*(\d+)\s*分', goal)
-        if m_half:
-            total_min = int(m_half.group(1))
-            race_pace_sec = total_min * 60 / 21.0975
-        m_full = re.search(r'全马\s*(\d+)\s*小时\s*(\d+)\s*分', goal)
-        if not m_full:
-            m_full = re.search(r'全马\s*(\d+)\s*[时分]\s*(\d+)\s*[分]', goal)
-        if not m_full:
-            m_full = re.search(r'全马\s*(\d{3})\s*$', goal)
-            if m_full:
-                hour = int(m_full.group(1)[:1])
-                minute = int(m_full.group(1)[1:])
-                race_pace_sec = (hour * 60 + minute) * 60 / 42.195
-        if m_full and not race_pace_sec:
-            hour = int(m_full.group(1))
-            minute = int(m_full.group(2))
+        race_type = None  # "full" | "half"
+
+        # ── P0-3: 时间在前、赛事在后的模式 ──
+        # "3小时30分全马" / "3小时30分 马拉松"
+        m_time_first_full = re.search(r'(\d+)\s*小时\s*(\d+)\s*分[^a-z0-9]*(?:全马|马拉松|marathon|全马)', goal, re.I)
+        if m_time_first_full:
+            hour = int(m_time_first_full.group(1))
+            minute = int(m_time_first_full.group(2))
             race_pace_sec = (hour * 60 + minute) * 60 / 42.195
+            race_type = "full"
+        else:
+            # "1小时30分半马" / "1小时30分 半程"
+            m_time_first_half = re.search(r'(\d+)\s*小时\s*(\d+)\s*分[^a-z0-9]*(?:半马|半程|half)', goal, re.I)
+            if m_time_first_half:
+                hour = int(m_time_first_half.group(1))
+                minute = int(m_time_first_half.group(2))
+                race_pace_sec = (hour * 60 + minute) * 60 / 21.0975
+                race_type = "half"
+
+        # ── 赛事在前、时间在后的模式（原有）──
+        if race_pace_sec is None:
+            m_half = re.search(r'半马\s*(\d+)\s*分', goal)
+            if m_half:
+                total_min = int(m_half.group(1))
+                race_pace_sec = total_min * 60 / 21.0975
+                race_type = "half"
+        if race_pace_sec is None:
+            m_full = re.search(r'全马\s*(\d+)\s*小时\s*(\d+)\s*分', goal)
+            if not m_full:
+                m_full = re.search(r'全马\s*(\d+)\s*[时分]\s*(\d+)\s*[分]', goal)
+            if not m_full:
+                m_full = re.search(r'全马\s*(\d{3})\s*$', goal)
+                if m_full:
+                    hour = int(m_full.group(1)[:1])
+                    minute = int(m_full.group(1)[1:])
+                    race_pace_sec = (hour * 60 + minute) * 60 / 42.195
+            if m_full and not race_pace_sec:
+                hour = int(m_full.group(1))
+                minute = int(m_full.group(2))
+                race_pace_sec = (hour * 60 + minute) * 60 / 42.195
+            if m_full:
+                race_type = "full"
 
         if race_pace_sec:
             from marathon_qa_assistant.core.physiology import seconds_to_pace
-            if '半马' in goal:
+            if race_type == "half":
                 t_pace_str = seconds_to_pace(race_pace_sec - 9)
             else:
                 t_pace_str = seconds_to_pace(race_pace_sec - 20)

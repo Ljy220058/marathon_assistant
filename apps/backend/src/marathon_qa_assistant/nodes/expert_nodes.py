@@ -22,13 +22,37 @@ from marathon_qa_assistant.nodes.common import (
 
 
 def _profile_summary(profile: Dict[str, Any]) -> str:
-    return (
-        f"经验水平: {profile.get('experience_level', '未知')}\n"
-        f"目标: {profile.get('goal', '未知')}\n"
-        f"周跑量: {profile.get('weekly_mileage', 0)} km\n"
-        f"LTHR: {profile.get('lthr', 0)}\n"
-        f"T-Pace: {profile.get('t_pace', '') or '未设置'}"
-    )
+    # P1-8: 扩展画像摘要，纳入体重、性别、饮食等字段
+    nutrition = profile.get("nutrition_profile") or {}
+    lines = [
+        f"经验水平: {profile.get('experience_level', '未知')}",
+        f"目标: {profile.get('goal', '未知')}",
+        f"周跑量: {profile.get('weekly_mileage', 0)} km",
+    ]
+    # P1-8: 体重
+    weight = profile.get('weight_kg') or nutrition.get('weight_kg')
+    if weight:
+        lines.append(f"体重: {weight} kg")
+    # P1-8: 性别
+    sex = profile.get('sex') or nutrition.get('sex')
+    if sex:
+        lines.append(f"性别: {sex}")
+    # P1-8: 饮食偏好
+    diet = profile.get('diet_type') or nutrition.get('diet_preference')
+    if diet:
+        lines.append(f"饮食类型: {diet}")
+    # P1-8: 出汗率
+    sweat = profile.get('sweat_rate') or nutrition.get('sweat_rate')
+    if sweat:
+        lines.append(f"出汗率: {sweat}")
+    # P1-8: 胃肠敏感度
+    gi = profile.get('gi_sensitivity') or nutrition.get('gi_sensitivity')
+    if gi:
+        lines.append(f"胃肠敏感度: {gi}")
+
+    lines.append(f"LTHR: {profile.get('lthr', 0)}")
+    lines.append(f"T-Pace: {profile.get('t_pace', '') or '未设置'}")
+    return "\n".join(lines)
 
 
 def _format_wiki_context(wiki_context: str) -> str:

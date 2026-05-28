@@ -478,13 +478,13 @@ def _resolve_macrocycle(profile: Dict[str, Any], total_weeks: int) -> Macrocycle
 
 def _phase_to_load_level(phase_name: str, week_in_phase: int, phase_weeks: int) -> str:
     phase_name = str(phase_name or "")
-    if "减量" in phase_name or "调整" in phase_name:
+    if any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         return "taper"
-    if "巅峰" in phase_name:
+    if any(kw in phase_name for kw in ("巅峰", "Peak", "peak")):
         return "high"
-    if "建设" in phase_name and phase_weeks >= 3 and week_in_phase == phase_weeks:
+    if any(kw in phase_name for kw in ("建设", "Build", "build")) and phase_weeks >= 3 and week_in_phase == phase_weeks:
         return "high"
-    if "基础" in phase_name and phase_weeks >= 3 and week_in_phase == phase_weeks:
+    if any(kw in phase_name for kw in ("基础", "Base", "base")) and phase_weeks >= 3 and week_in_phase == phase_weeks:
         return "medium"
     return "medium" if week_in_phase > 1 else "low"
 
@@ -495,6 +495,7 @@ def _is_half_year_plan(total_weeks: int) -> bool:
 
 def _phase_family(phase_name: str) -> str:
     text = str(phase_name or "")
+    # 半马 HMP 阶段模型
     if "基础期-1" in text:
         return "base_1"
     if "基础期-2" in text:
@@ -503,12 +504,15 @@ def _phase_family(phase_name: str) -> str:
         return "build_1"
     if "建设期-2" in text:
         return "build_2"
-    if "巅峰" in text:
+    # 全马阶段模型 (Base / Build / Peak / Taper) + 半马共享关键词
+    if any(kw in text for kw in ("巅峰", "Peak", "peak")):
         return "peak"
-    if "减量" in text or "调整" in text:
+    if any(kw in text for kw in ("减量", "调整", "Taper", "taper")):
         return "taper"
-    if "基础" in text:
+    if any(kw in text for kw in ("基础", "Base", "base")):
         return "base"
+    if any(kw in text for kw in ("建设", "Build", "build")):
+        return "build"
     return "build"
 
 
@@ -522,11 +526,20 @@ def _resolve_training_slots(available_days: List[str]) -> Tuple[str, Optional[st
 
 
 def _resolve_goal_race_type(goal: Any) -> str:
+    """从 goal 文本解析赛事类型。
+
+    注意："全程" 有时指 "全马"（全程马拉松），但也有语境歧义；
+    优先看更明确的标识（全马/马拉松等），再回落看半马。
+    当全马和半马关键词同时出现时，"全马" 优先（全马是更特定目标）。
+    """
     text = str(goal or "").lower()
-    if "半马" in text or "半程" in text or "half" in text or "21k" in text or "21.1" in text:
-        return "half_marathon"
-    if "全马" in text or "全程" in text or "马拉松" in text or "marathon" in text or "42k" in text or "42.2" in text:
+    has_full = "全马" in text or "马拉松" in text or "marathon" in text or "42k" in text or "42.2" in text or "全程" in text
+    has_half = "半马" in text or "半程" in text or "half" in text or "21k" in text or "21.1" in text
+    # P0-3: 全马优先于半马，避免 "先半马后全马" 的描述被误判为半马
+    if has_full:
         return "marathon"
+    if has_half:
+        return "half_marathon"
     return "general"
 
 
@@ -810,25 +823,25 @@ def _build_quality_session(
             ],
         }
         options = options_by_phase.get(phase_family, options_by_phase["build_1"])
-    elif "减量" in phase_name or "调整" in phase_name:
+    elif any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         options = [
             ("节奏跑", f"{20 + (week_index % 2) * 5}分钟，配速{threshold_pace}/km", "保留节奏感，但总负荷下降。"),
             ("间歇跑", f"{4 + (week_index % 2)}×400m，配速{interval_pace}/km，组间慢跑200m", "以短间歇维持步频与速度感。"),
         ]
-    elif "基础" in phase_name:
+    elif any(kw in phase_name for kw in ("基础", "Base", "base")):
         options = [
             ("有氧阈值训练", f"3×2000m，配速{slower_threshold_pace}/km，组间慢跑400m", "以有氧阈值训练建立脂肪代谢基础，保持低强度高有氧刺激。"),
             ("节奏跑", f"{20 + (week_index % 3) * 5}分钟，配速{threshold_pace}/km", "以稳定阈值持续跑温和提升有氧基础。"),
             ("渐进跑", f"{40 + (week_index % 3) * 5}分钟，从{_format_pace(threshold_pace_seconds + 45)}/km渐进至{threshold_pace}/km", "通过渐进跑温和引入强度元素，不急于堆高强度。"),
             ("法特莱克", f"35分钟，配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km自由变速", "以速度游戏方式在不同强度间切换，低心理压力高有氧刺激。"),
         ]
-    elif race_type == "half_marathon" and "减量" not in phase_name and "调整" not in phase_name:
+    elif race_type == "half_marathon" and not any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         options = [
             ("无氧阈跑", f"3×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "半马目标优先建立阈值耐受和专项节奏感。"),
             ("节奏跑", f"25分钟，配速{threshold_pace}/km", "围绕半马专项配速感做连续输出。"),
             ("间歇跑", f"5×800m，配速{interval_pace}/km，组间慢跑200m", "用较短间歇保持速度储备，避免首周过量。"),
         ]
-    elif race_type == "marathon" and "减量" not in phase_name and "调整" not in phase_name:
+    elif race_type == "marathon" and not any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         options = [
             ("马拉松配速跑", f"2×15分钟，配速{marathon_pace}/km，组间轻松跑5分钟", "全马目标优先建立可持续专项配速感。"),
             ("渐进跑", f"50分钟，从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "用渐进节奏连接有氧基础与全马专项耐力。"),
@@ -909,7 +922,7 @@ def _build_secondary_session(
                 "峰值阶段保留更明确的恢复窗口。",
             )
 
-    if not allow_quality or "减量" in mesocycle.name or "调整" in mesocycle.name:
+    if not allow_quality or any(kw in mesocycle.name for kw in ("减量", "调整", "Taper", "taper")):
         return (
             "轻松跑",
             f"{40 + (week_index % 3) * 5}分钟，配速{easy_pace}/km",
@@ -964,7 +977,7 @@ def _build_long_run_main_set(
         if race_type == "marathon":
             cap = 185 if total_weeks >= 24 else 170
         minutes = min(cap, base_minutes + week_index * 3)
-        if "巅峰" in mesocycle.name:
+        if any(kw in mesocycle.name for kw in ("巅峰", "Peak", "peak")):
             minutes = min(cap, base_minutes + 35 + (week_index % 3) * 5)
         phase_weeks = mesocycle.weeks
         week_in_phase = week_index - mesocycle.start_week + 1
@@ -981,7 +994,7 @@ def _build_long_run_main_set(
         suffix = "，后段保持稳定有氧并练习补给" if race_type == "marathon" else "，最后15分钟接近半马专项舒适配速"
         return f"{minutes}分钟，配速{easy_range}/km{suffix}"
 
-    if "减量" in mesocycle.name or "调整" in mesocycle.name:
+    if any(kw in mesocycle.name for kw in ("减量", "调整", "Taper", "taper")):
         minutes = max(60, base_minutes - 20)
         suffix = ""
     elif race_type == "half_marathon":
@@ -990,7 +1003,7 @@ def _build_long_run_main_set(
     elif race_type == "marathon":
         minutes = min(160, base_minutes + 15 + week_index * 4)
         suffix = "，后段保持稳定有氧并练习补给"
-    elif "巅峰" in mesocycle.name:
+    elif any(kw in mesocycle.name for kw in ("巅峰", "Peak", "peak")):
         minutes = min(150, base_minutes + 15)
         suffix = ""
     else:

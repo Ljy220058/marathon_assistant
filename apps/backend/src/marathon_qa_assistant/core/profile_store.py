@@ -1,13 +1,72 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .app_state import USER_PROFILE_PATH
 from .physiology import calculate_hr_zones, calculate_pace_zones, is_zone_empty
 
 logger = logging.getLogger("workflow_engine")
+
+
+def _extract_target_hmp_seconds(profile: Dict[str, Any]) -> int:
+    """从画像字段中提取目标半马配速（秒/km）。"""
+    # 直接字段 target_hmp（格式如 "4:16"）
+    hmp_raw = profile.get("target_hmp", "")
+    if hmp_raw:
+        sec = _parse_pace_seconds(hmp_raw)
+        if sec:
+            return sec
+
+    # target_pace（格式如 "4:16/km" 或 "4:16"）
+    target_pace = str(profile.get("target_pace") or "").strip()
+    if target_pace:
+        sec = _parse_pace_seconds(target_pace)
+        if sec:
+            return sec
+
+    # target_half_time（格式如 "1:30:00"），反算配速
+    target_half = str(profile.get("target_half_time") or "").strip()
+    if target_half:
+        total_sec = _parse_duration_seconds(target_half)
+        if total_sec and total_sec > 0:
+            return round(total_sec / 21.0975)
+
+    # 从 goal 文本推断
+    goal = str(profile.get("goal") or "").strip()
+    if goal:
+        # 尝试匹配 "半马 SUB 1:30" 等
+        m = re.search(r"半马\s*(?:sub\s*)?(\d{1,2}):(\d{2})", goal)
+        if m:
+            total_sec = int(m.group(1)) * 60 + int(m.group(2))
+            return round(total_sec / 21.0975)
+
+    return 0
+
+
+def _parse_pace_seconds(text: str) -> Optional[int]:
+    """解析 'M:SS' 或 'M:SS/km' 格式为秒数。"""
+    text = str(text or "").strip().replace("/km", "").replace("/公里", "")
+    m = re.search(r"(\d+)\s*[:：]\s*(\d{1,2})", text)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2))
+    return None
+
+
+def _parse_duration_seconds(text: str) -> Optional[int]:
+    """解析 'H:MM:SS' 或 'M:SS' 格式为总秒数。"""
+    text = str(text or "").strip().replace("：", ":")
+    parts = text.split(":")
+    try:
+        if len(parts) == 3:
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        if len(parts) == 2:
+            return int(parts[0]) * 60 + int(parts[1])
+    except (ValueError, IndexError):
+        pass
+    return None
 
 
 def _get_user_profile_path(user_id: str = "default_user") -> Path:
@@ -92,6 +151,7 @@ def _coerce_number(value: Any, default: float = 0) -> float:
 def sync_user_zones(profile: Dict[str, Any]) -> bool:
     """
     根据 LTHR 和 T-Pace 同步心率和配速区间。
+    如果提供了目标 HMP，Z5（马拉松专项区）以 HMP 为中心排列。
     如果数据有变动，返回 True。
     """
     changed = False
@@ -110,9 +170,16 @@ def sync_user_zones(profile: Dict[str, Any]) -> bool:
     if t_pace:
         pace_zones = profile.get("pace_zones", {})
         if is_zone_empty(pace_zones, expected_count=9):
-            profile["pace_zones"] = calculate_pace_zones(t_pace)
+            target_hmp = _extract_target_hmp_seconds(profile)
+            profile["pace_zones"] = calculate_pace_zones(t_pace, target_hmp_seconds=target_hmp)
             changed = True
-            logger.info(f"已自动计算 9区配速区间 (T-Pace: {t_pace})")
+            if target_hmp:
+                logger.info(
+                    f"已自动计算 9区配速区间 (T-Pace: {t_pace}, "
+                    f"Z5 以目标 HMP 为中心: {target_hmp}s/km)"
+                )
+            else:
+                logger.info(f"已自动计算 9区配速区间 (T-Pace: {t_pace})")
 
     return changed
 
@@ -156,7 +223,10 @@ def save_user_profile(profile: Dict[str, Any], user_id: str = "default_user") ->
         if lthr > 40:
             profile["hr_zones"] = calculate_hr_zones(lthr)
         if profile.get("t_pace"):
-            profile["pace_zones"] = calculate_pace_zones(profile["t_pace"])
+            target_hmp = _extract_target_hmp_seconds(profile)
+            profile["pace_zones"] = calculate_pace_zones(
+                profile["t_pace"], target_hmp_seconds=target_hmp
+            )
 
         profile_path = _get_user_profile_path(user_id)
         profile_path.parent.mkdir(parents=True, exist_ok=True)

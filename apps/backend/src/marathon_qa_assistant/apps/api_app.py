@@ -441,6 +441,17 @@ def _extract_profile_suggestions(text: str) -> Dict[str, Any]:
     if goal_match:
         suggestions["goal"] = goal_match.group(1).strip()
 
+    # P1-8: 提取体重
+    weight_match = re.search(r"(\d{2,3}(?:\.\d+)?)\s*kg", content, re.I)
+    if weight_match:
+        suggestions["weight_kg"] = float(weight_match.group(1))
+
+    # P1-8: 提取性别
+    if re.search(r"[性性别]别\s*[:：]?\s*男", content, re.I) or re.search(r"我是?\s*男[生性人]", content, re.I):
+        suggestions["sex"] = "男"
+    elif re.search(r"[性性别]别\s*[:：]?\s*女", content, re.I) or re.search(r"我是?\s*女[生性人]", content, re.I):
+        suggestions["sex"] = "女"
+
     return suggestions
 
 
@@ -1378,6 +1389,66 @@ async def admin_deactivate_user(user_id: str, request: Request):
 @app.get("/ops/metrics", response_model=OpsMetricsResponse)
 async def get_ops_metrics():
     return metrics_snapshot()
+
+
+# -------- ACWR Training Load endpoint (P2-3) ---------------------------------
+
+from marathon_qa_assistant.services.training_load import (
+    calculate_acwr,
+    acute_load,
+    chronic_load,
+    classify_risk,
+    compute_acwr_summary,
+)
+
+
+@app.get("/training-load")
+async def get_training_load(
+    loads: str = "",
+    acute_window: int = 7,
+    chronic_window: int = 28,
+):
+    """计算 ACWR 训练负荷比。
+
+    Query params:
+      - loads: 逗号分隔的每日负荷值，最近的排在最后。
+        例: ?loads=120,135,110,140,0,125,130,...
+      - acute_window: 急性窗口天数（默认 7）
+      - chronic_window: 慢性窗口天数（默认 28）
+
+    返回 ACWR 摘要，含风险等级和安全阈值参考。
+    参考 Gabbett 2016: Br J Sports Med. 2016;50(5):273-280.
+    """
+    if not loads:
+        # 返回模板响应，提示如何使用
+        return {
+            "acwr": None,
+            "risk_level": "insufficient_data",
+            "acute_load": None,
+            "chronic_load": None,
+            "note": "请通过 ?loads=120,135,... 提供每日负荷数据（逗号分隔，最近的在末尾）。",
+            "method": "acwr_gabbett_2016",
+            "reference": "Gabbett TJ. Br J Sports Med. 2016;50(5):273-280.",
+            "risk_thresholds": {
+                "undertraining": "< 0.8",
+                "safe": "0.8 - 1.3",
+                "elevated": "1.3 - 1.5",
+                "high_risk": "> 1.5",
+            },
+        }
+
+    try:
+        daily_loads = [float(v.strip()) for v in loads.split(",") if v.strip()]
+    except ValueError:
+        return {
+            "error": "loads 格式错误，需为逗号分隔的数字，如 ?loads=120,135,110",
+        }
+
+    return compute_acwr_summary(
+        daily_loads,
+        acute_window=acute_window,
+        chronic_window=chronic_window,
+    )
 
 
 # -------- include routers (extracted in P1.3) ---------------------------------

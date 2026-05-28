@@ -24,6 +24,12 @@ const PROFILE_FIELD_MAP = {
   vo2max: { key: "vo2max", label: "VO₂max", type: "number" },
   terrain_preference: { key: "terrain_preference", label: "场地偏好", type: "text" },
   training_types: { key: "training_types", label: "训练类型偏好", type: "text" },
+  // P1-8: 新增营养与体质相关字段
+  weight: { key: "weight_kg", draftKey: "weight", label: "体重", type: "text" },
+  sex: { key: "sex", draftKey: "sex", label: "性别", type: "text" },
+  dietType: { key: "diet_type", draftKey: "dietType", label: "饮食类型", type: "text" },
+  sweatRate: { key: "sweat_rate", draftKey: "sweatRate", label: "出汗率", type: "text" },
+  giSensitivity: { key: "gi_sensitivity", draftKey: "giSensitivity", label: "胃肠敏感度", type: "text" },
 };
 
 /**
@@ -137,6 +143,12 @@ export function buildCanonicalProfile(options = {}) {
     terrain_preference: "",
     training_types: "",
     notes: "",
+    // P1-8: 新增营养与体质字段
+    weight_kg: "",
+    sex: "",
+    diet_type: "",
+    sweat_rate: "",
+    gi_sensitivity: "",
   };
 
   // Merge order: draft (lowest) → latestProfile → DOM (highest for active editing)

@@ -83,8 +83,15 @@ def seconds_to_pace(seconds: int) -> str:
     return f"{minutes}:{remaining_seconds:02d}"
 
 
-def calculate_pace_zones(t_pace_str: str) -> Dict[str, str]:
-    """基于 T-Pace 自动计算 9 区配速范围。"""
+def calculate_pace_zones(
+    t_pace_str: str,
+    target_hmp_seconds: int = 0,
+) -> Dict[str, str]:
+    """基于 T-Pace 自动计算 9 区配速范围。
+
+    如果提供了 target_hmp_seconds（目标半马配速，秒/km），Z5 马拉松专项区
+    将以 HMP 为中心（±6 秒），而非从 T-Pace 推导，确保 Z5 与目标比赛配速一致。
+    """
     t_seconds = pace_to_seconds(t_pace_str)
     if t_seconds <= 0:
         return {}
@@ -92,13 +99,22 @@ def calculate_pace_zones(t_pace_str: str) -> Dict[str, str]:
     def pace_range(slower_ratio: float, faster_ratio: float) -> str:
         return f"{seconds_to_pace(t_seconds * slower_ratio)}-{seconds_to_pace(t_seconds * faster_ratio)}"
 
+    # 如果提供了目标 HMP，Z5 围绕 HMP 排列（±6 秒）
+    # 这样进阶跑者的马拉松配速区直接对应目标比赛配速，偏差可控在 5-8 秒/km 内
+    if target_hmp_seconds > 0:
+        z5_lower = target_hmp_seconds - 6  # 稍快于 HMP（下限）
+        z5_upper = target_hmp_seconds + 6  # 稍慢于 HMP（上限）
+        z5_range = f"{seconds_to_pace(z5_upper)}-{seconds_to_pace(z5_lower)}"
+    else:
+        z5_range = pace_range(0.99, 0.95)
+
     # 采用用户确认的 T-Pace 九区映射
     return {
         "Z1": pace_range(1.30, 1.15),
         "Z2": pace_range(1.15, 1.08),
         "Z3": pace_range(1.08, 1.02),
         "Z4": pace_range(1.02, 0.99),
-        "Z5": pace_range(0.99, 0.95),
+        "Z5": z5_range,
         "Z6": pace_range(0.95, 0.92),
         "Z7": pace_range(0.92, 0.90),
         "Z8": pace_range(0.90, 0.85),
