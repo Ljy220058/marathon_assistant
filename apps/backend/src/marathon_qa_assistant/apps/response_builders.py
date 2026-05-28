@@ -81,6 +81,17 @@ def _safe_workflow_error_summary(exc: Exception) -> str:
     return "模型服务暂不可用"
 
 
+def _build_llm_config(request: QueryRequest) -> Dict[str, Any]:
+    provider = _normalize_provider(request.llm_provider)
+    return {
+        "configurable": {
+            "llm_provider": provider,
+            "llm_model": _selected_model(request),
+            "llm_timeout_sec": request.timeout_sec,
+        }
+    }
+
+
 # -------- report / skeleton helpers ------------------------------------------
 
 def _compose_skeleton_report(structured_plan: Dict[str, Any], status_message: str) -> str:
