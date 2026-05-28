@@ -1,0 +1,309 @@
+{
+  "audit_id": "license_audit_20260528_d_papers",
+  "commercial_policy": {
+    "blocked": "no copied abstracts/full text without manual commercial license verification",
+    "candidate_sources_only": true,
+    "default": "link_only_or_original_summary_only"
+  },
+  "generated_at": "2026-05-28",
+  "source_batch": "data\\knowledge\\external_candidates\\expert_sources_20260528_d_papers.jsonl",
+  "source_count": 17,
+  "sources": [
+    {
+      "audit_note": "No Crossref license URL returned; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/35418513/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [],
+      "crossref_publisher": "Human Kinetics",
+      "declared_license_status": "link_only",
+      "doi": "10.1123/ijspp.2021-0435",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "35418513",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_distance_training_periodization_2022",
+      "title": "Training Periodization, Methods, Intensity Distribution, and Volume in Highly Trained and Elite Distance Runners: A Systematic Review"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/38165636/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "https://creativecommons.org/licenses/by/4.0",
+        "https://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "link_only",
+      "doi": "10.1007/s40279-023-01978-y",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "38165636",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_strength_running_economy_2024",
+      "title": "Effect of Strength Training Programs in Middle- and Long-Distance Runners' Economy at Different Running Speeds: A Systematic Review with Meta-analysis"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/38627351/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "https://creativecommons.org/licenses/by/4.0",
+        "https://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "link_only",
+      "doi": "10.1007/s40279-024-02018-z",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "38627351",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_strength_methods_distance_runners_2024",
+      "title": "The Effect of Strength Training Methods on Middle-Distance and Long-Distance Runners' Athletic Performance: A Systematic Review with Meta-analysis"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/36370207/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "https://creativecommons.org/licenses/by/4.0",
+        "https://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "summary_allowed",
+      "doi": "10.1186/s40798-022-00511-1",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "36370207",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_heavy_vs_plyometric_running_2022",
+      "title": "Heavy Resistance Training Versus Plyometric Training for Improving Running Economy and Running Time Trial Performance: A Systematic Review and Meta-analysis"
+    },
+    {
+      "audit_note": "No Crossref license URL returned; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/26069301/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [],
+      "crossref_publisher": "BMJ",
+      "declared_license_status": "link_only",
+      "doi": "10.1136/bjsports-2015-094915",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "26069301",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_heat_competing_consensus_bjsm_2015",
+      "title": "Consensus recommendations on training and competing in the heat"
+    },
+    {
+      "audit_note": "Publisher-specific or unclear license; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/32144023/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [
+        "https://www.elsevier.com/tdm/userlicense/1.0/",
+        "https://www.elsevier.com/legal/tdmrep-license"
+      ],
+      "crossref_publisher": "Elsevier BV",
+      "declared_license_status": "link_only",
+      "doi": "10.1016/j.jsams.2020.02.008",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "32144023",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_heat_illness_sports_epidemiology_2020",
+      "title": "Epidemiology of exertional heat illnesses in organised sports: A systematic review"
+    },
+    {
+      "audit_note": "No Crossref license URL returned; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/31891914/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [],
+      "crossref_publisher": "Human Kinetics",
+      "declared_license_status": "link_only",
+      "doi": "10.1123/ijsnem.2019-0300",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "31891914",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_hot_environment_nutrition_2020",
+      "title": "Sports Dietitians Australia Position Statement: Nutrition for Exercise in Hot Environments"
+    },
+    {
+      "audit_note": "Creative Commons non-commercial license detected; block commercial text reuse.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/33862272/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [
+        "https://www.elsevier.com/tdm/userlicense/1.0/",
+        "https://www.elsevier.com/legal/tdmrep-license",
+        "http://creativecommons.org/licenses/by-nc-nd/4.0/"
+      ],
+      "crossref_publisher": "Elsevier BV",
+      "declared_license_status": "summary_allowed",
+      "doi": "10.1016/j.jshs.2021.04.001",
+      "license_audit_status": "noncommercial_reuse_blocked",
+      "pmid": "33862272",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_running_injury_systematic_review_2021",
+      "title": "A systematic review of running-related musculoskeletal injuries in runners"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/39141251/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "https://creativecommons.org/licenses/by/4.0",
+        "https://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "link_only",
+      "doi": "10.1007/s40279-024-02051-y",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "39141251",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_tibial_bone_stress_return_running_2024",
+      "title": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review"
+    },
+    {
+      "audit_note": "No Crossref license URL returned; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/29925502/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [],
+      "crossref_publisher": "BMJ",
+      "declared_license_status": "link_only",
+      "doi": "10.1136/bjsports-2018-099397",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "29925502",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_patellofemoral_pain_consensus_2018",
+      "title": "2018 Consensus statement on exercise therapy and physical interventions to treat patellofemoral pain"
+    },
+    {
+      "audit_note": "Publisher-specific or unclear license; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/22994651/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [
+        "http://www.springer.com/tdm"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "link_only",
+      "doi": "10.2165/11635400-000000000-00000",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "22994651",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_it_band_runners_review_2012",
+      "title": "Iliotibial band syndrome in runners: a systematic review"
+    },
+    {
+      "audit_note": "Creative Commons non-commercial license detected; block commercial text reuse.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/36481573/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [
+        "https://www.elsevier.com/tdm/userlicense/1.0/",
+        "https://www.elsevier.com/legal/tdmrep-license",
+        "http://creativecommons.org/licenses/by-nc-nd/4.0/"
+      ],
+      "crossref_publisher": "Elsevier BV",
+      "declared_license_status": "summary_allowed",
+      "doi": "10.1016/j.jshs.2022.12.002",
+      "license_audit_status": "noncommercial_reuse_blocked",
+      "pmid": "36481573",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_stress_fracture_biomechanics_2023",
+      "title": "Biomechanics associated with tibial stress fracture in runners: A systematic review and meta-analysis"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/36615805/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
+      "crossref_publisher": "MDPI AG",
+      "declared_license_status": "summary_allowed",
+      "doi": "10.3390/nu15010148",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "36615805",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_caffeine_endurance_running_2022",
+      "title": "Effects of Caffeine Intake on Endurance Running Performance and Time to Exhaustion: A Systematic Review and Meta-Analysis"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/33388079/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "http://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Informa UK Limited",
+      "declared_license_status": "summary_allowed",
+      "doi": "10.1186/s12970-020-00383-4",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "33388079",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_issn_caffeine_position_2021",
+      "title": "International society of sports nutrition position stand: caffeine and exercise performance"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/28919842/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "http://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Informa UK Limited",
+      "declared_license_status": "summary_allowed",
+      "doi": "10.1186/s12970-017-0189-4",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "28919842",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_issn_nutrient_timing_2017",
+      "title": "International society of sports nutrition position stand: nutrient timing"
+    },
+    {
+      "audit_note": "Publisher-specific or unclear license; keep link-only and do not reuse text.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/28044281/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": false,
+      "crossref_license_urls": [
+        "http://www.springer.com/tdm"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "link_only",
+      "doi": "10.1007/s40279-016-0672-0",
+      "license_audit_status": "unknown_link_only",
+      "pmid": "28044281",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_mental_fatigue_performance_2017",
+      "title": "The Effects of Mental Fatigue on Physical Performance: A Systematic Review"
+    },
+    {
+      "audit_note": "Creative Commons attribution-style license detected; summary reuse may be allowed with attribution, but keep text reuse gated.",
+      "canonical_url": "https://pubmed.ncbi.nlm.nih.gov/35708888/",
+      "commercial_knowledge_use": "metadata_and_original_summary_only",
+      "commercial_text_reuse_allowed": true,
+      "crossref_license_urls": [
+        "https://creativecommons.org/licenses/by/4.0",
+        "https://creativecommons.org/licenses/by/4.0"
+      ],
+      "crossref_publisher": "Springer Science and Business Media LLC",
+      "declared_license_status": "link_only",
+      "doi": "10.1007/s40279-022-01706-y",
+      "license_audit_status": "commercial_summary_allowed_with_attribution",
+      "pmid": "35708888",
+      "required_boundary": "Do not copy publisher abstract/full text into commercial library unless license is manually verified.",
+      "source_registry_id": "src_paper_d_sleep_loss_performance_2022",
+      "title": "Effects of Acute Sleep Loss on Physical Performance: A Systematic and Meta-Analytical Review"
+    }
+  ],
+  "status_counts": {
+    "commercial_summary_allowed_with_attribution": 8,
+    "noncommercial_reuse_blocked": 2,
+    "unknown_link_only": 7
+  }
+}

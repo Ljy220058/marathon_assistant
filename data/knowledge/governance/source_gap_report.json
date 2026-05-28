@@ -1973,6 +1973,129 @@
     }
   },
   "redaction_policy": "machine paths, raw prompts, and private health text are omitted",
+  "release_work_queue": [
+    {
+      "can_write_core": false,
+      "domain_pack": "user_profile_cases",
+      "gap_status": "gap",
+      "needed_rule_count": 100,
+      "needed_source_count": 100,
+      "next_action": "collect_privacy_reviewed_user_profile_cases",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "privacy_reviewed",
+      "subdomain": "anonymized feedback cases"
+    },
+    {
+      "can_write_core": true,
+      "domain_pack": "action_library",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 15,
+      "next_action": "add_reviewed_core_sources_and_rules",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "warmup/main/cooldown/alternative/contraindication"
+    },
+    {
+      "can_write_core": true,
+      "domain_pack": "training_protocols",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 15,
+      "next_action": "add_reviewed_core_sources_and_rules",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "5K/10K/HM/FM/low-mileage/return/taper"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "environment_race_context",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "heat/humidity/cold/altitude/hills/travel"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "medical_risk",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "red flags/pain/sleep/fatigue/heat"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "mobility_recovery",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "warmup/cooldown/mobility/sleep/easy-day"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "nutrition_race_fueling",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "pre/during/post/hydration/electrolyte/supplement"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "rehab_return_to_run",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "ITB/PF/Achilles/knee/shin/hamstring"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "strength_conditioning",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "core/hip/calf/single-leg/posterior-chain"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "training_load",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 9,
+      "next_action": "add_authoritative_explanation_sources",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "reviewed",
+      "subdomain": "load proxy/progression/intensity/recovery"
+    },
+    {
+      "can_write_core": false,
+      "domain_pack": "competitor_product_tasks",
+      "gap_status": "partial",
+      "needed_rule_count": 0,
+      "needed_source_count": 8,
+      "next_action": "add_official_product_docs_or_public_pages",
+      "release_gate_impact": "full_commercial_release",
+      "required_quality_tier": "official_product_docs",
+      "subdomain": "TrainingPeaks/Garmin/Strava/Runna task evidence"
+    }
+  ],
   "report_schema_version": "source_gap_report_v1",
   "total_source_records": 766
 }

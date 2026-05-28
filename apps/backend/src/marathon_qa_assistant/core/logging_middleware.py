@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import time
 from uuid import uuid4
 from datetime import datetime, timezone
@@ -34,6 +35,13 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
+def _log_client_ip(client_ip: str) -> str:
+    # 生产环境可关闭客户端 IP 记录，降低日志中的个人信息暴露。
+    if str(os.getenv("MARATHON_LOG_CLIENT_IP") or "1").strip() == "0":
+        return "redacted"
+    return client_ip
+
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("X-Request-ID", str(uuid4()))
@@ -54,7 +62,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 "path": request.url.path,
                 "status_code": response.status_code,
                 "duration_ms": duration_ms,
-                "client_ip": request.client.host if request.client else "",
+                "client_ip": _log_client_ip(request.client.host if request.client else ""),
             },
         )
         return response

@@ -58,9 +58,13 @@ def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
     def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
         set_calls.append({"chunks": list(chunks), "vectorizer": vectorizer, "matrix": matrix, "bm25": bm25})
 
+    monkeypatch.setenv("GRAPHRAG_API_KEY", "ci_test_token")
+    warm_calls = []
+
     monkeypatch.setattr(kb_bootstrap, "probe_vector_kb_health", fake_probe)
     monkeypatch.setattr(kb_bootstrap, "load_vector_kb", fake_load)
     monkeypatch.setattr(kb_bootstrap, "set_kb_data", fake_set)
+    monkeypatch.setattr(kb_bootstrap.label_matcher, "warm_up", lambda labels: warm_calls.append(list(labels)))
 
     report = kb_bootstrap.bootstrap_knowledge_base()
 
@@ -70,6 +74,9 @@ def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
     assert report["index_schema_version"] == "chunk_schema_v2"
     assert report["chunks_count"] == 1
     assert set_calls[0]["chunks"] == [{"chunk_id": "v2"}]
+    assert warm_calls
+    assert "轻松跑" in warm_calls[0]
+    assert "高强度间歇" in warm_calls[0]
 
 
 def test_bootstrap_knowledge_base_loads_v2_before_runtime_user_legacy(monkeypatch):

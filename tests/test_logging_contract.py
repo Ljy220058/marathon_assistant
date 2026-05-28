@@ -52,3 +52,11 @@ def test_formatter_handles_exception():
         assert parsed["level"] == "ERROR"
         assert "exception" in parsed
         assert "boom" in parsed["exception"]
+
+
+def test_client_ip_can_be_redacted(monkeypatch):
+    from marathon_qa_assistant.core.logging_middleware import _log_client_ip
+
+    monkeypatch.setenv("MARATHON_LOG_CLIENT_IP", "0")
+
+    assert _log_client_ip("127.0.0.1") == "redacted"

@@ -1,7 +1,40 @@
 import json
+import pickle
 from pathlib import Path
 
+import faiss
+
 from marathon_qa_assistant.services import vector_store
+
+
+def test_save_outputs_rejects_chunks_without_non_empty_text(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_from_documents(docs, embeddings):
+        calls.append((docs, embeddings))
+        raise AssertionError("FAISS.from_documents must not run without valid documents")
+
+    monkeypatch.setattr(vector_store, "get_embeddings", lambda: object())
+    monkeypatch.setattr(vector_store.FAISS, "from_documents", fake_from_documents)
+
+    chunks = [
+        {
+            "chunk_id": "blank-1",
+            "source_file": "blank.md",
+            "page": 1,
+            "text": "   ",
+        }
+    ]
+
+    try:
+        vector_store.save_outputs(tmp_path, chunks, None, None, None)
+    except ValueError as exc:
+        assert "no non-empty documents" in str(exc)
+        assert "blank-1" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for chunks without non-empty text")
+
+    assert calls == []
 
 
 def _write_vector_dir(path: Path, chunks: list[dict]) -> None:
@@ -114,3 +147,35 @@ def test_load_faiss_store_allows_configured_vector_dir(monkeypatch, tmp_path):
     assert vector_store._load_faiss_store(vector_dir / "faiss_db", object()) == "faiss-store"
     assert calls
     assert calls[0][1] is True
+
+
+def test_load_faiss_store_falls_back_to_memory_deserialization_for_trusted_dir(monkeypatch, tmp_path):
+    vector_dir = tmp_path / "v2"
+    _write_vector_dir(vector_dir, [])
+    monkeypatch.setattr(vector_store, "V2_VECTOR_DIR", vector_dir)
+    (vector_dir / "faiss_db" / "index.faiss").write_bytes(b"index-bytes")
+    with (vector_dir / "faiss_db" / "index.pkl").open("wb") as handle:
+        pickle.dump(("docstore", {0: "doc-0"}), handle)
+
+    def fake_load_local(path, embeddings, allow_dangerous_deserialization=False):
+        raise RuntimeError("simulated Windows unicode path failure")
+
+    def fake_deserialize_index(index_bytes):
+        return f"index:{bytes(index_bytes).decode()}"
+
+    class FakeFaissStore:
+        def __init__(self, embedding_function, index, docstore, index_to_docstore_id):
+            self.embedding_function = embedding_function
+            self.index = index
+            self.docstore = docstore
+            self.index_to_docstore_id = index_to_docstore_id
+
+    monkeypatch.setattr(vector_store.FAISS, "load_local", fake_load_local)
+    monkeypatch.setattr(vector_store.FAISS, "__init__", FakeFaissStore.__init__)
+    monkeypatch.setattr(faiss, "deserialize_index", fake_deserialize_index)
+
+    store = vector_store._load_faiss_store(vector_dir / "faiss_db", type("Emb", (), {"embed_query": lambda self, text: []})())
+
+    assert store.index == "index:index-bytes"
+    assert store.docstore == "docstore"
+    assert store.index_to_docstore_id == {0: "doc-0"}

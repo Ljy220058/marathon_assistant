@@ -39,6 +39,9 @@ class LabelMatcher:
     def warm_up(self, labels: List[str], threshold: float = 0.6) -> None:
         """启动时调用。batch embed 所有 KG 标签，缓存向量"""
         self._threshold = threshold
+        self._label_vectors = {}
+        self._labels = []
+        self._warmed = False
         if not labels:
             self._warmed = True
             return

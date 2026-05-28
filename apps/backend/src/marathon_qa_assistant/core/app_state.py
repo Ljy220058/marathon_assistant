@@ -8,7 +8,8 @@ ROOT_MARKERS = (".git", "apps", "data", "marathon_qa_assistant", "vector_kb")
 
 
 def _looks_like_repo_root(path: Path) -> bool:
-    return any((path / marker).exists() for marker in ROOT_MARKERS)
+    # 优先识别马拉松助手项目根，避免父级 git 仓库把 data 路径带偏。
+    return (path / "apps").exists() and (path / "data").exists()
 
 
 def _walk_for_repo_root(start: Path) -> Path | None:

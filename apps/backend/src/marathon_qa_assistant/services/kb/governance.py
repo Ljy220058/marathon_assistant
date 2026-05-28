@@ -32,6 +32,8 @@ FIRST_BATCH_DOMAIN_PACKS = [
     "user_profile_cases",
 ]
 
+FIRST_BATCH_CORE_SCOPE = ["training_protocols", "action_library"]
+
 GOLDEN_QUESTION_REQUIRED_FIELDS = {
     "question_id",
     "user_profile",
@@ -119,6 +121,83 @@ def build_default_coverage_matrix() -> List[CoverageRow]:
 
 def coverage_matrix_to_dicts(rows: Sequence[CoverageRow]) -> List[Dict[str, Any]]:
     return [asdict(row) for row in rows]
+
+
+def _domain_next_action(row: CoverageRow) -> str:
+    if row.domain_pack == "user_profile_cases":
+        return "collect_privacy_reviewed_user_profile_cases"
+    if row.can_write_core:
+        return "add_reviewed_core_sources_and_rules"
+    if row.minimum_quality_tier == "official_product_docs":
+        return "add_official_product_docs_or_public_pages"
+    return "add_authoritative_explanation_sources"
+
+
+def _release_gate_impact(row: CoverageRow) -> str:
+    if row.can_write_core and row.gap_status == "gap":
+        return "core_domain_gate"
+    return "full_commercial_release"
+
+
+def _actionable_domain_gaps(rows: Sequence[CoverageRow]) -> List[Dict[str, Any]]:
+    gaps: List[Dict[str, Any]] = []
+    for row in rows:
+        needed_sources = max(0, row.target_source_count - row.current_source_count)
+        needed_rules = max(0, row.target_rule_count - row.current_rule_count)
+        needed_questions = max(0, row.target_question_count - row.current_question_count)
+        if row.gap_status == "covered" and not needed_sources and not needed_rules and not needed_questions:
+            continue
+        gaps.append(
+            {
+                "domain_pack": row.domain_pack,
+                "subdomain": row.subdomain,
+                "gap_status": row.gap_status,
+                "can_write_core": row.can_write_core,
+                "minimum_quality_tier": row.minimum_quality_tier,
+                "current_source_count": row.current_source_count,
+                "target_source_count": row.target_source_count,
+                "needed_source_count": needed_sources,
+                "current_rule_count": row.current_rule_count,
+                "target_rule_count": row.target_rule_count,
+                "needed_rule_count": needed_rules,
+                "current_question_count": row.current_question_count,
+                "target_question_count": row.target_question_count,
+                "needed_question_count": needed_questions,
+                "release_gate_impact": _release_gate_impact(row),
+                "next_action": _domain_next_action(row),
+            }
+        )
+    gap_rank = {"gap": 0, "partial": 1, "covered": 2}
+    return sorted(
+        gaps,
+        key=lambda item: (
+            item["release_gate_impact"] != "core_domain_gate",
+            gap_rank.get(str(item["gap_status"]), 9),
+            -item["needed_source_count"],
+            item["domain_pack"],
+        ),
+    )
+
+
+def _domain_gap_summary(rows: Sequence[CoverageRow]) -> Dict[str, int]:
+    actionable = _actionable_domain_gaps(rows)
+    return {
+        "total_domain_packs": len(rows),
+        "covered_domain_packs": sum(1 for row in rows if row.gap_status == "covered"),
+        "partial_domain_packs": sum(1 for row in rows if row.gap_status == "partial"),
+        "gap_domain_packs": sum(1 for row in rows if row.gap_status == "gap"),
+        "domain_packs_with_source_deficits": sum(1 for item in actionable if item["needed_source_count"] > 0),
+        "domain_packs_with_rule_deficits": sum(1 for item in actionable if item["needed_rule_count"] > 0),
+    }
+
+
+def _evaluation_gate_summary(blocking: Dict[str, int]) -> Dict[str, Any]:
+    blocking_count = sum(int(value) for value in blocking.values())
+    return {
+        "pass": blocking_count == 0,
+        "blocking_violation_count": blocking_count,
+        "checks": dict(sorted(blocking.items())),
+    }
 
 
 def top_coverage_gaps(rows: Sequence[CoverageRow], limit: int = 10) -> List[Dict[str, Any]]:
@@ -619,6 +698,41 @@ def summarize_source_readiness(registry_records: Sequence[SourceRecord | Dict[st
     }
 
 
+def _first_batch_release_gate(
+    *,
+    coverage_rows: Sequence[CoverageRow],
+    golden_question_summary: Dict[str, Any],
+    source_readiness: Dict[str, Any],
+    blocking: Dict[str, int],
+) -> Dict[str, Any]:
+    rows_by_domain = {row.domain_pack: row for row in coverage_rows}
+    blockers: List[str] = []
+    blocking_domains: List[str] = []
+    if any(value > 0 for value in blocking.values()):
+        blockers.append("blocking_violations")
+    if not golden_question_summary.get("ready"):
+        blockers.append("golden_questions_not_ready")
+    if source_readiness["approved_records"] <= 0:
+        blockers.append("no_approved_sources")
+    if source_readiness["ready_records"] <= 0:
+        blockers.append("no_ready_sources")
+    if source_readiness["ready_core_records"] <= 0:
+        blockers.append("no_ready_core_sources")
+    for domain_pack in FIRST_BATCH_CORE_SCOPE:
+        row = rows_by_domain.get(domain_pack)
+        if row is None or row.gap_status != "covered" or row.current_source_count <= 0:
+            blocking_domains.append(domain_pack)
+    if blocking_domains:
+        blockers.append("first_batch_scope_has_domain_gaps")
+    return {
+        "first_batch_scope": list(FIRST_BATCH_CORE_SCOPE),
+        "first_batch_release_ready": not blockers,
+        "first_batch_ready_domain_packs": list(FIRST_BATCH_CORE_SCOPE) if not blockers else [],
+        "first_batch_blockers": sorted(set(blockers)),
+        "first_batch_blocking_domain_packs": blocking_domains,
+    }
+
+
 def build_kb_release_report(
     *,
     sources_added: int,
@@ -663,6 +777,13 @@ def build_kb_release_report(
     if all_domain_packs_still_have_gaps:
         readiness_blockers.append("all_domain_packs_still_have_gaps")
     ready = not readiness_blockers
+    # first_batch 只表达受限试运行状态，不能驱动完整商业替换。
+    first_batch_gate = _first_batch_release_gate(
+        coverage_rows=coverage_rows,
+        golden_question_summary=golden_question_summary,
+        source_readiness=source_readiness,
+        blocking=blocking,
+    )
     return {
         "sources_added": sources_added,
         "chunks_added": chunks_added,
@@ -673,7 +794,10 @@ def build_kb_release_report(
         "blocked_records": source_readiness["blocked_records"],
         "ready_records": source_readiness["ready_records"],
         "coverage_matrix_delta": coverage_matrix_to_dicts(coverage_rows),
+        "domain_gap_summary": _domain_gap_summary(coverage_rows),
+        "actionable_domain_gaps": _actionable_domain_gaps(coverage_rows),
         "golden_question_pass": bool(golden_question_summary.get("ready")),
+        "evaluation_gate_summary": _evaluation_gate_summary(blocking),
         "core_prescription_violations": blocking["core_permission_violations"],
         "fake_citation_violations": blocking["fake_citation_violations"],
         "medical_safety_violations": blocking["medical_safety_violations"],
@@ -686,4 +810,5 @@ def build_kb_release_report(
         "blocking_domain_gaps": blocking_domain_gaps,
         "all_domain_packs_still_have_gaps": all_domain_packs_still_have_gaps,
         "still_worth_fixing": still_worth_fixing,
+        **first_batch_gate,
     }

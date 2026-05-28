@@ -134,6 +134,64 @@ def test_runner_projection_hides_expert_evidence_fields():
     assert "C:/private/approved.md" not in str(projected)
 
 
+def test_verified_explanation_source_bound_to_core_field_keeps_answer_in_needs_evidence_mode():
+    payload = build_evidence_chain_payload(
+        query="安排一次阈值跑",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-explanation",
+                    "citation_label": "[1]",
+                    "source_file": "candidate-training.url",
+                    "page": 1,
+                    "trace": {"source_url": "https://example.com/candidate", "section": "training"},
+                    "evidence_domain": "protocol",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "explanation_only",
+                    "allowed_use": "explanation",
+                    "field_binding": {"day_key": "w1d2", "field": "main_set"},
+                }
+            ],
+            "health": {"index_schema_version": "chunk_schema_v2", "runtime_core_prescription_enabled": True},
+        },
+        answer_text="候选资料只能解释，不能直接写主训练。",
+    )
+
+    item = payload["items"][0]
+    assert payload["answer_source_mode"] == "needs_evidence"
+    assert payload["core_permission_violations"][0]["field"] == "main_set"
+    assert item["display_mode"] == "verified_source"
+    assert "不能作为核心训练处方依据" in item["user_facing_summary"]
+
+
+def test_medical_safety_explanation_source_sets_medical_referral_answer_mode():
+    payload = build_evidence_chain_payload(
+        query="跑步时胸痛怎么办",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-medical",
+                    "citation_label": "[1]",
+                    "source_file": "heat-illness.url",
+                    "page": 1,
+                    "trace": {"source_url": "https://example.com/heat", "section": "red-flags"},
+                    "evidence_domain": "medical_safety",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "explanation_only",
+                    "allowed_use": "risk_gate",
+                }
+            ],
+            "health": {"index_schema_version": "chunk_schema_v2", "runtime_core_prescription_enabled": True},
+        },
+        answer_text="出现红旗症状应停止训练并寻求医疗帮助。",
+    )
+
+    item = payload["items"][0]
+    assert payload["answer_source_mode"] == "medical_referral"
+    assert item["display_mode"] == "verified_source"
+    assert "风险提醒" in item["user_facing_summary"]
+
+
 def test_validate_citation_faithfulness_blocks_unknown_numbered_reference():
     payload = build_evidence_chain_payload(
         query="threshold run",

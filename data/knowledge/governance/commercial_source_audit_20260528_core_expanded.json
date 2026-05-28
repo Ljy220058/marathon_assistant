@@ -1,0 +1,151 @@
+{
+  "authority_tier_counts": {
+    "consensus_statement": 3,
+    "hospital_university": 7,
+    "official_guideline": 4,
+    "peer_reviewed": 37,
+    "peer_reviewed_consensus": 5,
+    "professional_association": 9,
+    "public_health_agency": 12
+  },
+  "batch_counts": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl": 6,
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_c.jsonl": 30,
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_d_papers.jsonl": 17,
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_e_core_papers.jsonl": 24
+  },
+  "batch_files": [
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl",
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_c.jsonl",
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_d_papers.jsonl",
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_e_core_papers.jsonl"
+  ],
+  "candidate_permission_boundary_counts": {
+    "candidate": 77
+  },
+  "candidate_source_count": 77,
+  "commercial_risk_counts": {
+    "copyright_risk": 58,
+    "geographic_applicability_risk": 14,
+    "medical_advice_risk": 62,
+    "stale_evidence_risk": 20
+  },
+  "coverage_ready": true,
+  "deep_link_issue_source_ids": [],
+  "domain_gaps": [],
+  "duplicate_canonical_urls": [],
+  "duplicate_owner_title_pairs": [],
+  "license_status_counts": {
+    "link_only": 70,
+    "summary_allowed": 7
+  },
+  "missing_required_audit_metadata": {},
+  "not_selected_reasons": {},
+  "per_domain_counts": {
+    "action_library": 13,
+    "environment_race_context": 6,
+    "medical_risk": 8,
+    "mobility_recovery": 4,
+    "nutrition_race_fueling": 8,
+    "rehab_return_to_run": 11,
+    "strength_conditioning": 6,
+    "training_protocols": 21
+  },
+  "required_audit_metadata": [
+    "accessed_at",
+    "date_basis",
+    "canonical_url",
+    "authority_tier",
+    "selection_reason",
+    "gap_target"
+  ],
+  "selected_for_review_source_ids": [],
+  "source_ids_by_batch": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl": [
+      "src_commercial_acsm_exercise_testing_prescription_2021",
+      "src_commercial_acsm_nutrition_athletic_performance",
+      "src_commercial_cdc_heat_health_athletes",
+      "src_commercial_mayoclinic_runners_knee",
+      "src_commercial_medlineplus_chest_pain",
+      "src_commercial_rrca_running_coach_manual"
+    ],
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_c.jsonl": [
+      "src_commercial_c_aaos_stress_fractures",
+      "src_commercial_c_acsm_fitt_vp_prescription",
+      "src_commercial_c_airnow_aqi_activity",
+      "src_commercial_c_bwh_return_to_running_program",
+      "src_commercial_c_bwh_strength_training_runners",
+      "src_commercial_c_cdc_adult_strength_guidelines",
+      "src_commercial_c_cdc_heart_attack_symptoms",
+      "src_commercial_c_cdc_heat_athletes_deeplink",
+      "src_commercial_c_cdc_heat_illness_symptoms",
+      "src_commercial_c_cdc_niosh_sleep_tips",
+      "src_commercial_c_cdc_sleep_recovery",
+      "src_commercial_c_cdc_travel_heat_illnesses",
+      "src_commercial_c_epa_air_quality_activity",
+      "src_commercial_c_ioc_load_injury_consensus_2016",
+      "src_commercial_c_ioc_sports_nutrition_consensus_2010",
+      "src_commercial_c_issn_ultramarathon_nutrition_2019",
+      "src_commercial_c_jospt_achilles_tendinopathy_cpg",
+      "src_commercial_c_jospt_patellofemoral_pain_cpg",
+      "src_commercial_c_mass_general_return_to_running",
+      "src_commercial_c_mayoclinic_stress_fractures",
+      "src_commercial_c_medlineplus_heart_attack",
+      "src_commercial_c_mgh_marathon_recovery",
+      "src_commercial_c_mgh_running_injury_prevention",
+      "src_commercial_c_nsca_runner_strength",
+      "src_commercial_c_rrca_training_tips",
+      "src_commercial_c_rrca_workout_vocabulary",
+      "src_commercial_c_sports_medicine_training_errors_2012",
+      "src_commercial_c_ukathletics_endurance_resources",
+      "src_commercial_c_world_athletics_nutrition_runners",
+      "src_commercial_c_world_athletics_training_distance"
+    ],
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_d_papers.jsonl": [
+      "src_paper_d_caffeine_endurance_running_2022",
+      "src_paper_d_distance_training_periodization_2022",
+      "src_paper_d_heat_competing_consensus_bjsm_2015",
+      "src_paper_d_heat_illness_sports_epidemiology_2020",
+      "src_paper_d_heavy_vs_plyometric_running_2022",
+      "src_paper_d_hot_environment_nutrition_2020",
+      "src_paper_d_issn_caffeine_position_2021",
+      "src_paper_d_issn_nutrient_timing_2017",
+      "src_paper_d_it_band_runners_review_2012",
+      "src_paper_d_mental_fatigue_performance_2017",
+      "src_paper_d_patellofemoral_pain_consensus_2018",
+      "src_paper_d_running_injury_systematic_review_2021",
+      "src_paper_d_sleep_loss_performance_2022",
+      "src_paper_d_strength_methods_distance_runners_2024",
+      "src_paper_d_strength_running_economy_2024",
+      "src_paper_d_stress_fracture_biomechanics_2023",
+      "src_paper_d_tibial_bone_stress_return_running_2024"
+    ],
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_e_core_papers.jsonl": [
+      "src_paper_e_core_acute_effects_of_interval_training_on_running_kinematics_37075554",
+      "src_paper_e_core_applied_physiology_of_marathon_running_3890068",
+      "src_paper_e_core_benefits_on_hematological_and_biochemical_parameters_of_a_35010758",
+      "src_paper_e_core_crossing_the_golden_training_divide_the_science_and_34021488",
+      "src_paper_e_core_does_lactate_guided_threshold_interval_training_within_a_36900796",
+      "src_paper_e_core_effects_of_running_specific_strength_training_endurance_training_36078489",
+      "src_paper_e_core_exercise_induced_muscle_damage_after_a_high_intensity_37998313",
+      "src_paper_e_core_functional_vs_running_low_volume_high_intensity_interval_31427872",
+      "src_paper_e_core_high_intensity_interval_training_solutions_to_the_programming_23832851",
+      "src_paper_e_core_impact_of_running_exercise_on_intervertebral_disc_a_38204324",
+      "src_paper_e_core_interval_training_for_performance_a_scientific_and_empirical_11219499",
+      "src_paper_e_core_longer_disciplined_tapers_improve_marathon_performance_for_recreational_34651125",
+      "src_paper_e_core_optimizing_strength_training_for_running_and_cycling_endurance_23914932",
+      "src_paper_e_core_performance_effects_of_periodized_carbohydrate_restriction_in_endurance_34001184",
+      "src_paper_e_core_physiological_and_performance_adaptations_to_high_intensity_interval_23899754",
+      "src_paper_e_core_running_and_the_association_with_anthropometric_and_training_26098073",
+      "src_paper_e_core_strength_training_improves_running_economy_durability_and_fatigued_40016936",
+      "src_paper_e_core_the_effect_of_periodization_and_training_intensity_distribution_29182410",
+      "src_paper_e_core_the_scientific_basis_for_high_intensity_interval_training_11772161",
+      "src_paper_e_core_the_training_characteristics_of_world_class_distance_runners_35362850",
+      "src_paper_e_core_training_behaviors_and_periodization_outline_of_omnivorous_vegetarian_37049635",
+      "src_paper_e_core_training_for_intense_exercise_performance_high_intensity_or_20840557",
+      "src_paper_e_core_training_intensity_distribution_on_middle_and_long_distance_34749417",
+      "src_paper_e_core_what_is_best_practice_for_training_intensity_and_20861519"
+    ]
+  },
+  "unique_canonical_url_count": 77
+}

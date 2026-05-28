@@ -1,9 +1,12 @@
 """test_label_matcher.py — L1 alias + L2 embedding semantic matching"""
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import numpy as np
+
+os.environ.setdefault("GRAPHRAG_API_KEY", "ci_test_token")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -52,6 +55,41 @@ class TestSemanticMatchEntities:
         with patch.object(label_matcher, "match", return_value=[("HIIT", 0.82)]):
             result = semantic_match_entities("想暴汗")
             assert "HIIT" in result
+
+    def test_entity_extraction_merges_semantic_entities(self):
+        from marathon_qa_assistant.nodes import profile_and_retrieval as module
+
+        async def fake_get_context(query, top_k=4):
+            return []
+
+        class FakeGraphEngine:
+            @staticmethod
+            def search_graph(entities, max_hops=2):
+                assert "HIIT" in entities
+                assert "轻松跑" in entities
+                return {"edges": []}
+
+        state = {
+            "query": "想暴汗后慢跑恢复",
+            "selected_entities": [],
+            "intent_type": "qa",
+            "token_usage": {},
+        }
+
+        with patch.object(module, "get_context", side_effect=fake_get_context), \
+            patch.object(module, "semantic_match_entities", return_value=["HIIT", "轻松跑"]), \
+            patch.object(module, "graph_engine", FakeGraphEngine()), \
+            patch.object(module, "get_graph_context", return_value=("", "flowchart TD\n  Empty[No Graph]")):
+            result = __import__("asyncio").run(module.entity_extraction_node(state, {}))
+
+        assert "HIIT" in result["entities"]
+        assert "轻松跑" in result["entities"]
+        assert result["selected_entities"] == result["entities"]
+
+    def test_vector_store_uses_bge_m3_embedding_model(self):
+        from marathon_qa_assistant.services import vector_store
+
+        assert vector_store.EMBEDDING_MODEL == "bge-m3"
 
     def test_l2_below_threshold_returns_empty(self):
         """余弦相似度 < 0.6 → 返回空列表"""

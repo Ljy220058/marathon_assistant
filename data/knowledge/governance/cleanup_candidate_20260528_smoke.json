@@ -1,0 +1,422 @@
+{
+  "vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\cleanup_candidate_20260528",
+  "top_k": 5,
+  "question_count": 5,
+  "results": [
+    {
+      "question": "如何定义并安排周期化训练以支持长期跑步表现提升？",
+      "answer": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only. Monitoring fatigue state with heart rate-based and subjective methods during intensified training in recreational runners. Domain pack: load_injury_safety. Permission: explanation_only. Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+      "citations": [
+        {
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "score": 0.540883
+        },
+        {
+          "source_file": "safety_fatigue_recreational_runners_2024.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+          "score": 0.536548
+        },
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.533788
+        },
+        {
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0020",
+          "score": 0.533529
+        },
+        {
+          "source_file": "train_app_data_marathon_2021.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_app_data_marathon_2021_0007",
+          "score": 0.533333
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.540883,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "text": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.8488277196884155
+        },
+        {
+          "score": 0.536548,
+          "chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+          "source_file": "safety_fatigue_recreational_runners_2024.metadata",
+          "source_path": "data/knowledge/governance/src_safety_fatigue_recreational_runners_2024.metadata",
+          "page": 1,
+          "text": "Monitoring fatigue state with heart rate-based and subjective methods during intensified training in recreational runners. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.8637652397155762
+        },
+        {
+          "score": 0.533788,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.8734041452407837
+        },
+        {
+          "score": 0.533529,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0020",
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "text": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.8743119239807129
+        },
+        {
+          "score": 0.533333,
+          "chunk_id": "chunkv2_src_train_app_data_marathon_2021_0007",
+          "source_file": "train_app_data_marathon_2021.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_app_data_marathon_2021.pdf",
+          "page": 1,
+          "text": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.8750008940696716
+        }
+      ]
+    },
+    {
+      "question": "马拉松训练期如何进行营养与补给规划？",
+      "answer": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only. A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only. ISSN Position Stand: Nutritional Considerations for Single-Stage Ultra-Marathon Training and Racing. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+      "citations": [
+        {
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0020",
+          "score": 0.66733
+        },
+        {
+          "source_file": "nutrition_carb_during_exercise_2014.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0021",
+          "score": 0.647614
+        },
+        {
+          "source_file": "nutrition_ultramarathon_issn_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_ultramarathon_issn_2019_0017",
+          "score": 0.619131
+        },
+        {
+          "source_file": "nutrition_issn_review_2018.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_issn_review_2018_0018",
+          "score": 0.59738
+        },
+        {
+          "source_file": "nutrition_acsm_position_2016.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0015",
+          "score": 0.585289
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.66733,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0020",
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "text": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.4985083341598511
+        },
+        {
+          "score": 0.647614,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0021",
+          "source_file": "nutrition_carb_during_exercise_2014.metadata",
+          "source_path": "data/knowledge/governance/src_nutrition_carb_during_exercise_2014.metadata",
+          "page": 1,
+          "text": "A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.5441306829452515
+        },
+        {
+          "score": 0.619131,
+          "chunk_id": "chunkv2_src_nutrition_ultramarathon_issn_2019_0017",
+          "source_file": "nutrition_ultramarathon_issn_2019.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_ultramarathon_issn_2019.pdf",
+          "page": 1,
+          "text": "ISSN Position Stand: Nutritional Considerations for Single-Stage Ultra-Marathon Training and Racing. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.615167498588562
+        },
+        {
+          "score": 0.59738,
+          "chunk_id": "chunkv2_src_nutrition_issn_review_2018_0018",
+          "source_file": "nutrition_issn_review_2018.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_issn_review_2018.pdf",
+          "page": 1,
+          "text": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.6739773750305176
+        },
+        {
+          "score": 0.585289,
+          "chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0015",
+          "source_file": "nutrition_acsm_position_2016.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_acsm_position_2016.pdf",
+          "page": 1,
+          "text": "Position of the Academy of Nutrition and Dietetics, Dietitians of Canada, and ACSM: Nutrition and Athletic Performance. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.708558201789856
+        }
+      ]
+    },
+    {
+      "question": "过度训练常见风险信号有哪些，如何识别？",
+      "answer": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury. Domain pack: load_injury_safety. Permission: explanation_only. Training Errors and Running Related Injuries: A Systematic Review. Domain pack: load_injury_safety. Permission: explanation_only. IOC consensus statement on load in sport and risk of injury. Domain pack: training_load. Permission: explanation_only.",
+      "citations": [
+        {
+          "source_file": "safety_ioc_load_injury_2016.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_ioc_load_injury_2016_0011",
+          "score": 0.584884
+        },
+        {
+          "source_file": "safety_training_errors_2012.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_training_errors_2012_0009",
+          "score": 0.58041
+        },
+        {
+          "source_file": "external_ioc_load_injury_2016.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_ioc_load_injury_2016_0036",
+          "score": 0.57399
+        },
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.571248
+        },
+        {
+          "source_file": "safety_fatigue_recreational_runners_2024.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+          "score": 0.569892
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.584884,
+          "chunk_id": "chunkv2_src_safety_ioc_load_injury_2016_0011",
+          "source_file": "safety_ioc_load_injury_2016.metadata",
+          "source_path": "data/knowledge/governance/src_safety_ioc_load_injury_2016.metadata",
+          "page": 1,
+          "text": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7097412347793579
+        },
+        {
+          "score": 0.58041,
+          "chunk_id": "chunkv2_src_safety_training_errors_2012_0009",
+          "source_file": "safety_training_errors_2012.metadata",
+          "source_path": "data/knowledge/governance/src_safety_training_errors_2012.metadata",
+          "page": 1,
+          "text": "Training Errors and Running Related Injuries: A Systematic Review. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7229199409484863
+        },
+        {
+          "score": 0.57399,
+          "chunk_id": "chunkv2_src_external_ioc_load_injury_2016_0036",
+          "source_file": "external_ioc_load_injury_2016.url",
+          "source_path": "data/knowledge/external_candidates/external_ioc_load_injury_2016.url",
+          "page": 1,
+          "text": "IOC consensus statement on load in sport and risk of injury. Domain pack: training_load. Permission: explanation_only.",
+          "distance": 0.7421920895576477
+        },
+        {
+          "score": 0.571248,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7505537271499634
+        },
+        {
+          "score": 0.569892,
+          "chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+          "source_file": "safety_fatigue_recreational_runners_2024.metadata",
+          "source_path": "data/knowledge/governance/src_safety_fatigue_recreational_runners_2024.metadata",
+          "page": 1,
+          "text": "Monitoring fatigue state with heart rate-based and subjective methods during intensified training in recreational runners. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7547187209129333
+        }
+      ]
+    },
+    {
+      "question": "高温环境下训练有哪些安全建议？",
+      "answer": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only. Monitoring fatigue state with heart rate-based and subjective methods during intensified training in recreational runners. Domain pack: load_injury_safety. Permission: explanation_only. The Current State of Subjective Training Load Monitoring: a Practical Perspective and Call to Action. Domain pack: load_injury_safety. Permission: explanation_only.",
+      "citations": [
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.573369
+        },
+        {
+          "source_file": "safety_fatigue_recreational_runners_2024.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+          "score": 0.567837
+        },
+        {
+          "source_file": "safety_subjective_load_2018.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_subjective_load_2018_0012",
+          "score": 0.566499
+        },
+        {
+          "source_file": "train_low_intensity_2025.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_low_intensity_2025_0003",
+          "score": 0.56435
+        },
+        {
+          "source_file": "external_ioc_load_injury_2016.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_ioc_load_injury_2016_0036",
+          "score": 0.564025
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.573369,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7440787553787231
+        },
+        {
+          "score": 0.567837,
+          "chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+          "source_file": "safety_fatigue_recreational_runners_2024.metadata",
+          "source_path": "data/knowledge/governance/src_safety_fatigue_recreational_runners_2024.metadata",
+          "page": 1,
+          "text": "Monitoring fatigue state with heart rate-based and subjective methods during intensified training in recreational runners. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7610673308372498
+        },
+        {
+          "score": 0.566499,
+          "chunk_id": "chunkv2_src_safety_subjective_load_2018_0012",
+          "source_file": "safety_subjective_load_2018.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\load_injury_safety\\safety_subjective_load_2018.pdf",
+          "page": 1,
+          "text": "The Current State of Subjective Training Load Monitoring: a Practical Perspective and Call to Action. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7652273178100586
+        },
+        {
+          "score": 0.56435,
+          "chunk_id": "chunkv2_src_train_low_intensity_2025_0003",
+          "source_file": "train_low_intensity_2025.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_low_intensity_2025.pdf",
+          "page": 1,
+          "text": "Why low-intensity endurance training for athletes?. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7719513177871704
+        },
+        {
+          "score": 0.564025,
+          "chunk_id": "chunkv2_src_external_ioc_load_injury_2016_0036",
+          "source_file": "external_ioc_load_injury_2016.url",
+          "source_path": "data/knowledge/external_candidates/external_ioc_load_injury_2016.url",
+          "page": 1,
+          "text": "IOC consensus statement on load in sport and risk of injury. Domain pack: training_load. Permission: explanation_only.",
+          "distance": 0.7729714512825012
+        }
+      ]
+    },
+    {
+      "question": "力量训练与耐力训练如何在同一训练计划中平衡？",
+      "answer": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only. Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only. Recent advances in training intensity distribution theory for cyclic endurance sports. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+      "citations": [
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.58121
+        },
+        {
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "score": 0.567478
+        },
+        {
+          "source_file": "train_tid_theory_2025.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_tid_theory_2025_0002",
+          "score": 0.566924
+        },
+        {
+          "source_file": "train_app_data_marathon_2021.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_app_data_marathon_2021_0007",
+          "score": 0.566833
+        },
+        {
+          "source_file": "train_low_intensity_2025.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_low_intensity_2025_0003",
+          "score": 0.559138
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.58121,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7205479145050049
+        },
+        {
+          "score": 0.567478,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "text": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7621830701828003
+        },
+        {
+          "score": 0.566924,
+          "chunk_id": "chunkv2_src_train_tid_theory_2025_0002",
+          "source_file": "train_tid_theory_2025.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_tid_theory_2025.pdf",
+          "page": 1,
+          "text": "Recent advances in training intensity distribution theory for cyclic endurance sports. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7639044523239136
+        },
+        {
+          "score": 0.566833,
+          "chunk_id": "chunkv2_src_train_app_data_marathon_2021_0007",
+          "source_file": "train_app_data_marathon_2021.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_app_data_marathon_2021.pdf",
+          "page": 1,
+          "text": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7641882300376892
+        },
+        {
+          "score": 0.559138,
+          "chunk_id": "chunkv2_src_train_low_intensity_2025_0003",
+          "source_file": "train_low_intensity_2025.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_low_intensity_2025.pdf",
+          "page": 1,
+          "text": "Why low-intensity endurance training for athletes?. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7884684801101685
+        }
+      ]
+    }
+  ]
+}

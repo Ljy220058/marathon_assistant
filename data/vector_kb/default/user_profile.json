@@ -1,6 +1,6 @@
 {
   "experience_level": "进阶",
-  "weekly_mileage": 50,
+  "weekly_mileage": 80.4,
   "goal": "半马1:08:59",
   "injury_history": [
     "踝关节",
@@ -54,7 +54,10 @@
     "Z9": "2:46-2:26"
   },
   "verified_facts": {},
-  "training_types": "节奏跑,摄氧量,长距离,间歇跑,重复跑",
+  "training_types": [
+    "轻松跑",
+    "渐加速跑"
+  ],
   "vo2max": 65,
   "available_days": "周一,周二,周四,周六,周日",
   "pace_preference": "1:08:59",
@@ -65,5 +68,6 @@
   "recovery_state": "No injury, moderate fatigue, sleep average",
   "injury_or_fatigue": true,
   "current_half_time": "1:11:00",
-  "recent_four_week_mileage": "100 km"
+  "recent_four_week_mileage": "100 km",
+  "notes": "用户提到当前周跑量为 50km，换算成 km 后为 80.4km；膝盖疼痛可能需要调整训练计划。"
 }

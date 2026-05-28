@@ -13,6 +13,7 @@ from marathon_qa_assistant.core.app_state import (
     V2_VECTOR_DIR,
 )
 from marathon_qa_assistant.core.kb_provider import set_kb_data
+from marathon_qa_assistant.services.label_matcher import label_matcher
 from marathon_qa_assistant.services.vector_store import load_vector_kb, probe_vector_kb_health, retrieve
 
 
@@ -55,6 +56,16 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
             continue
 
         set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
+        try:
+            from marathon_qa_assistant.services.knowledge_graph import graph_engine
+            labels = []
+            for node_info in getattr(graph_engine, "nodes", {}).values():
+                label = node_info.get("label", "")
+                if node_info.get("type", "") in ("workout", "template", "category") and label:
+                    labels.append(label)
+            label_matcher.warm_up(labels)
+        except Exception:
+            pass
         report = {
             "ok": True,
             "ready": True,

@@ -19,6 +19,7 @@ from marathon_qa_assistant.nodes.common import (
     get_graph_context,
     graph_engine,
     infer_entities,
+    semantic_match_entities,
 )
 from marathon_qa_assistant.nodes.routing import evaluate_plan_evidence
 
@@ -685,6 +686,9 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     del config
     query = state.get("query", "")
     entities = infer_entities(query, state.get("selected_entities"))
+    for entity in semantic_match_entities(query):
+        if entity not in entities:
+            entities.append(entity)
 
     hits = await get_context(query, top_k=6)  # 稍微多取一点以便后续融合排序
     if not hits and entities:

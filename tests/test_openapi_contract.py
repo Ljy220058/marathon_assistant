@@ -8,13 +8,16 @@ def test_openapi_exposes_core_training_plan_endpoints():
     assert "/query" in paths
     assert "/feedback" in paths
     assert "/plans/{plan_id}" in paths
+    assert "/plans/{plan_id}/feedback/{feedback_id}/actions" in paths
 
     query_post = paths["/query"]["post"]
     feedback_post = paths["/feedback"]["post"]
+    feedback_action_post = paths["/plans/{plan_id}/feedback/{feedback_id}/actions"]["post"]
     plan_get = paths["/plans/{plan_id}"]["get"]
 
     assert query_post["responses"]["200"]["content"]["application/json"]["schema"]
     assert feedback_post["responses"]["200"]["content"]["application/json"]["schema"]
+    assert feedback_action_post["responses"]["200"]["content"]["application/json"]["schema"]
     assert plan_get["responses"]["200"]["content"]["application/json"]["schema"]
 
 
@@ -27,6 +30,8 @@ def test_openapi_uses_named_schemas_for_public_contracts():
         "QueryResponse",
         "FeedbackRequest",
         "FeedbackResponse",
+        "FeedbackActionRequest",
+        "FeedbackActionResponse",
         "PlanDetailResponse",
         "OpsMetricsResponse",
         "SavePlanRequest",
@@ -50,6 +55,12 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
         "plan_diff",
         "generation_status",
     }
+    assert "feedback_replan" in schemas["FeedbackResponse"]["properties"]
+    assert "schedule_constraints" in schemas["FeedbackRequest"]["properties"]
+    assert set(schemas["FeedbackActionRequest"]["required"]) >= {"action"}
+    assert "feedback_replan" in schemas["FeedbackActionResponse"]["properties"]
+    assert "affected_events" in schemas["FeedbackActionResponse"]["properties"]
+    assert "plan_diff" in schemas["FeedbackActionResponse"]["properties"]
     assert set(schemas["PlanDetailResponse"]["required"]) >= {
         "plan",
         "structured_training_plan",

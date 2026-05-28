@@ -124,10 +124,13 @@ def test_generated_governance_artifacts_satisfy_p0_to_p10_minimums():
         for item in registry
     )
     assert not any("????" in item.get("metadata", {}).get("purpose", "") and item["needs_review"] is False for item in registry)
-    assert release_report["approved_records"] == 0
-    assert release_report["ready_records"] == 0
+    assert release_report["approved_records"] > 0
+    assert release_report["ready_records"] > 0
     assert release_report["ready_for_next_batch"] is False
-    assert "no_approved_sources" in release_report["readiness_blockers"]
+    assert release_report["commercial_release_ready"] is False
+    assert "all_domain_packs_still_have_gaps" in release_report["readiness_blockers"]
+    assert release_report["domain_gap_summary"]["domain_packs_with_source_deficits"] > 0
+    assert release_report["actionable_domain_gaps"]
     assert v2_summary["ready"] is True
     assert "citation_faithfulness" in v2_summary["rubric_dimensions"]
 
@@ -297,3 +300,133 @@ def test_release_report_blocks_next_batch_on_safety_or_citation_violations():
     assert clean["still_worth_fixing"] == []
     assert blocked["ready_for_next_batch"] is False
     assert blocked["fake_citation_violations"] == 1
+
+
+def _approved_core_source() -> dict:
+    return {
+        "title": "Approved Protocol",
+        "source_file": "approved-protocol.md",
+        "evidence_domain": "protocol",
+        "knowledge_layer": "source_registry",
+        "allowed_use": "core_prescription",
+        "prescription_permission": "can_write_core",
+        "needs_review": False,
+        "review_status": "approved",
+    }
+
+
+def test_release_report_explains_domain_source_and_rule_deficits():
+    questions = validate_golden_questions(build_default_golden_questions())
+    rows = build_default_coverage_matrix()
+
+    report = build_kb_release_report(
+        sources_added=35,
+        chunks_added=750,
+        coverage_rows=rows,
+        golden_question_summary=questions,
+        registry_records=[_approved_core_source()],
+        violations={
+            "fake_citation_violations": 0,
+            "core_permission_violations": 0,
+            "medical_safety_violations": 0,
+            "metadata_completeness_violations": 0,
+            "evaluation_regression_without_explanation": 0,
+        },
+    )
+
+    assert report["commercial_release_ready"] is False
+    assert "all_domain_packs_still_have_gaps" in report["readiness_blockers"]
+    assert report["domain_gap_summary"]["total_domain_packs"] == len(rows)
+    assert report["domain_gap_summary"]["domain_packs_with_source_deficits"] > 0
+    user_profile_gap = next(
+        item for item in report["actionable_domain_gaps"] if item["domain_pack"] == "user_profile_cases"
+    )
+    assert user_profile_gap["needed_source_count"] == 100
+    assert user_profile_gap["needed_rule_count"] == 100
+    assert user_profile_gap["release_gate_impact"] == "full_commercial_release"
+    assert user_profile_gap["next_action"] == "collect_privacy_reviewed_user_profile_cases"
+
+
+def test_release_report_includes_evaluation_gate_summary():
+    questions = validate_golden_questions(build_default_golden_questions())
+
+    report = build_kb_release_report(
+        sources_added=35,
+        chunks_added=750,
+        coverage_rows=build_default_coverage_matrix(),
+        golden_question_summary=questions,
+        registry_records=[_approved_core_source()],
+        violations={
+            "fake_citation_violations": 0,
+            "core_permission_violations": 0,
+            "medical_safety_violations": 0,
+            "metadata_completeness_violations": 0,
+            "evaluation_regression_without_explanation": 2,
+        },
+    )
+
+    assert report["evaluation_gate_summary"]["pass"] is False
+    assert report["evaluation_gate_summary"]["blocking_violation_count"] == 2
+    assert report["evaluation_gate_summary"]["checks"]["evaluation_regression_without_explanation"] == 2
+    assert "blocking_violations" in report["readiness_blockers"]
+
+
+def test_first_batch_gate_can_pass_while_full_commercial_release_stays_blocked():
+    questions = validate_golden_questions(build_default_golden_questions())
+    scoped_domains = {"training_protocols", "action_library"}
+    rows = [
+        replace(
+            row,
+            current_source_count=row.target_source_count,
+            current_rule_count=row.target_rule_count,
+            current_question_count=row.target_question_count,
+            gap_status="covered",
+        )
+        if row.domain_pack in scoped_domains
+        else row
+        for row in build_default_coverage_matrix()
+    ]
+
+    report = build_kb_release_report(
+        sources_added=35,
+        chunks_added=750,
+        coverage_rows=rows,
+        golden_question_summary=questions,
+        registry_records=[_approved_core_source()],
+        violations={
+            "fake_citation_violations": 0,
+            "core_permission_violations": 0,
+            "medical_safety_violations": 0,
+            "metadata_completeness_violations": 0,
+            "evaluation_regression_without_explanation": 0,
+        },
+    )
+
+    assert report["first_batch_release_ready"] is True
+    assert report["first_batch_ready_domain_packs"] == ["training_protocols", "action_library"]
+    assert report["first_batch_blockers"] == []
+    assert report["commercial_release_ready"] is False
+
+
+def test_first_batch_gate_blocks_when_core_scope_has_gap():
+    questions = validate_golden_questions(build_default_golden_questions())
+    rows = build_default_coverage_matrix()
+
+    report = build_kb_release_report(
+        sources_added=35,
+        chunks_added=750,
+        coverage_rows=rows,
+        golden_question_summary=questions,
+        registry_records=[_approved_core_source()],
+        violations={
+            "fake_citation_violations": 0,
+            "core_permission_violations": 0,
+            "medical_safety_violations": 0,
+            "metadata_completeness_violations": 0,
+            "evaluation_regression_without_explanation": 0,
+        },
+    )
+
+    assert report["first_batch_release_ready"] is False
+    assert "first_batch_scope_has_domain_gaps" in report["first_batch_blockers"]
+    assert report["first_batch_blocking_domain_packs"] == ["training_protocols", "action_library"]

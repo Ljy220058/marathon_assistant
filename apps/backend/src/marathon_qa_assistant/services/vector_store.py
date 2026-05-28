@@ -12,8 +12,10 @@ from typing import List, Dict, Any, Tuple
 # 配置日志
 logger = logging.getLogger("vector_kb")
 
-from marathon_qa_assistant.core.app_state import BASE_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
+from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, DEFAULT_VECTOR_DIR, LEGACY_DEFAULT_VECTOR_DIR, LEGACY_USER_VECTOR_DIR, RUNTIME_USER_VECTOR_DIR, USER_VECTOR_DIR, V2_VECTOR_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
 from marathon_qa_assistant.services.document_preprocess import normalize_text
+from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
+from marathon_qa_assistant.services.kb.runtime_quarantine import filter_quarantined_chunks
 
 # 引入 LangChain 和 FAISS
 from langchain_community.vectorstores import FAISS
@@ -22,6 +24,7 @@ from langchain_core.documents import Document
 
 SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
+LEGACY_RUNTIME_QUARANTINE_REPORT = DATA_DIR / "knowledge" / "governance" / "legacy_runtime_quarantine_report.json"
 
 # 检索增强关键词映射
 QUERY_HINTS = {
@@ -81,7 +84,7 @@ DEFAULT_TEST_QUESTIONS = [
 ]
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBEDDING_MODEL = "nomic-embed-text" # 可以根据实际安装的模型替换
+EMBEDDING_MODEL = "bge-m3" # 可以根据实际安装的模型替换
 
 
 def _build_source_metadata(file_path: Path) -> dict:
@@ -398,19 +401,45 @@ def save_outputs(output_dir: Path, chunks: list[dict], vectorizer, matrix, bm25)
     embeddings = get_embeddings()
     logger.info(f"正在构建 FAISS 向量库: {faiss_dir}")
     
-    # 准备 Document 对象
+    # 准备 Document 对象，过滤空文本以避开 Ollama 空 embedding 导致的 FAISS 构建失败。
     docs = []
+    skipped_empty_text_chunk_ids = []
     for c in chunks:
-        docs.append(Document(
-            page_content=c["text"],
-            metadata={
-                "chunk_id": c["chunk_id"],
-                "source_file": c["source_file"],
-                "source_path": c.get("source_path", ""),
-                "page": c["page"]
-            }
-        ))
-        
+        text = str(c.get("text") or "")
+        if not text.strip():
+            skipped_empty_text_chunk_ids.append(str(c.get("chunk_id") or ""))
+            continue
+        metadata = {
+            "chunk_id": c.get("chunk_id", ""),
+            "source_file": c.get("source_file", ""),
+            "source_path": c.get("source_path") or c.get("local_path", ""),
+            "page": c.get("page", 1),
+        }
+        for key in (
+            "source_registry_id",
+            "source_url",
+            "local_path",
+            "section",
+            "language",
+            "evidence_domain",
+            "knowledge_layer",
+            "domain_pack",
+            "allowed_use",
+            "prescription_permission",
+            "quality_tier",
+        ):
+            if key in c:
+                metadata[key] = c.get(key)
+        docs.append(Document(page_content=text, metadata=metadata))
+
+    if not docs:
+        raise ValueError(
+            "Cannot build FAISS index: no non-empty documents after filtering chunks. "
+            f"skipped_empty_text_chunk_ids={skipped_empty_text_chunk_ids}"
+        )
+    if skipped_empty_text_chunk_ids:
+        logger.warning("跳过空文本分片，避免 Ollama 返回空 embedding: %s", skipped_empty_text_chunk_ids)
+
     faiss_store = FAISS.from_documents(docs, embeddings)
     faiss_dir_str = str(faiss_dir)
     
@@ -449,7 +478,126 @@ def load_chunks(chunks_file: Path) -> list[dict]:
             if not line:
                 continue
             chunks.append(_normalize_chunk_source(json.loads(line)))
-    return chunks
+    # 只在运行时屏蔽已隔离来源，不删除原始 chunks 以便后续审计。
+    return filter_quarantined_chunks(chunks, LEGACY_RUNTIME_QUARANTINE_REPORT)
+
+def _trusted_vector_dirs() -> list[Path]:
+    return [
+        USER_VECTOR_DIR,
+        V2_VECTOR_DIR,
+        RUNTIME_USER_VECTOR_DIR,
+        LEGACY_USER_VECTOR_DIR,
+        DEFAULT_VECTOR_DIR,
+        LEGACY_DEFAULT_VECTOR_DIR,
+    ]
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    try:
+        return left.absolute() == right.absolute()
+    except Exception:
+        return str(left) == str(right)
+
+
+def _is_trusted_faiss_dir(faiss_dir: Path) -> bool:
+    vector_dir = Path(faiss_dir).parent
+    return any(_same_path(vector_dir, trusted_dir) for trusted_dir in _trusted_vector_dirs())
+
+
+def _kb_source_label(vector_dir: Path) -> str:
+    path = Path(vector_dir)
+    labels = [
+        (USER_VECTOR_DIR, "user"),
+        (V2_VECTOR_DIR, "v2"),
+        (RUNTIME_USER_VECTOR_DIR, "runtime_user"),
+        (LEGACY_USER_VECTOR_DIR, "legacy_user"),
+        (DEFAULT_VECTOR_DIR, "default"),
+        (LEGACY_DEFAULT_VECTOR_DIR, "legacy_default"),
+    ]
+    for candidate, label in labels:
+        if _same_path(path, candidate):
+            return label
+    return "external"
+
+
+def _load_faiss_store(faiss_dir: Path, embeddings):
+    # 反序列化 FAISS pkl 有风险，只允许项目配置的知识库目录加载。
+    if not _is_trusted_faiss_dir(faiss_dir):
+        logger.warning(f"拒绝加载未受信任的 FAISS 目录: {faiss_dir}")
+        return None
+    try:
+        return FAISS.load_local(str(faiss_dir), embeddings, allow_dangerous_deserialization=True)
+    except Exception as exc:
+        logger.warning("常规 FAISS 加载失败，尝试内存反序列化兜底: %s", exc)
+        return _load_faiss_store_from_files(faiss_dir, embeddings)
+
+
+def _load_faiss_store_from_files(faiss_dir: Path, embeddings):
+    import faiss
+    import numpy as np
+
+    index_file = Path(faiss_dir) / "index.faiss"
+    pkl_file = Path(faiss_dir) / "index.pkl"
+    # 用 Python 文件读取绕过 FAISS C++ fopen 对 Windows 中文路径的兼容问题。
+    index_bytes = index_file.read_bytes()
+    with pkl_file.open("rb") as handle:
+        docstore, index_to_docstore_id = pickle.load(handle)
+    index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
+    return FAISS(
+        embedding_function=embeddings.embed_query,
+        index=index,
+        docstore=docstore,
+        index_to_docstore_id=index_to_docstore_id,
+    )
+
+
+def probe_vector_kb_health(vector_dir: Path) -> dict:
+    vector_dir = Path(vector_dir)
+    chunks_file = vector_dir / "chunks.jsonl"
+    faiss_dir = vector_dir / "faiss_db"
+    faiss_index_file = faiss_dir / "index.faiss"
+    report = {
+        "ok": False,
+        "ready": False,
+        "vector_dir": str(vector_dir),
+        "source": _kb_source_label(vector_dir),
+        "reason": "",
+        "chunks_count": 0,
+        "faiss_ready": False,
+        "index_schema_version": "missing",
+        "metadata_completeness": 0.0,
+        "runtime_core_prescription_enabled": False,
+    }
+    if not chunks_file.exists():
+        report["reason"] = f"未找到 chunks 文件: {chunks_file}"
+        return report
+    if not faiss_index_file.exists():
+        report["reason"] = f"FAISS 索引文件缺失: {faiss_index_file}"
+        return report
+
+    chunks = load_chunks(chunks_file)
+    schema_summary = summarize_runtime_index_schema(chunks)
+    report.update(
+        {
+            "chunks_count": len(chunks),
+            "index_schema_version": schema_summary["index_schema_version"],
+            "metadata_completeness": float(schema_summary["metadata_completeness"]),
+            "runtime_core_prescription_enabled": bool(schema_summary["runtime_core_prescription_enabled"]),
+        }
+    )
+    try:
+        embeddings = get_embeddings()
+        faiss_store = _load_faiss_store(faiss_dir, embeddings)
+    except Exception as exc:
+        report["reason"] = f"FAISS 加载失败: {exc}"
+        return report
+
+    if faiss_store is None:
+        report["reason"] = "FAISS 不可用"
+        return report
+    report.update({"ok": True, "ready": True, "faiss_ready": True, "reason": ""})
+    return report
+
 
 def load_vector_kb(vector_dir: Path):
     """

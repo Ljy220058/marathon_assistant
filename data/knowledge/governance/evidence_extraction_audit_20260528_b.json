@@ -1,0 +1,18 @@
+{
+  "blocked_sources": {},
+  "evidence_count": 6,
+  "library_counts": {
+    "commercial_core_prescription_library": 2,
+    "commercial_nutrition_library": 1,
+    "commercial_rehab_return_to_run_library": 1,
+    "commercial_risk_gate_library": 2
+  },
+  "required_evidence_fields": [
+    "claim",
+    "canonical_url",
+    "section",
+    "applicable_to",
+    "contraindications"
+  ],
+  "source_count": 6
+}

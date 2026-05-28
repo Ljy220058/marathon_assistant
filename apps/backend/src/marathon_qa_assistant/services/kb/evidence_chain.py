@@ -162,7 +162,7 @@ def evidence_chain_item_from_bundle_item(item: Dict[str, Any]) -> Dict[str, Any]
         "quality_tier": str(item.get("quality_tier") or trace.get("quality_tier") or ""),
         "review_status": str(item.get("review_status") or trace.get("review_status") or ""),
         "field_binding": dict(item.get("field_binding") or {}),
-        "user_facing_summary": _summary_for_mode(display_mode),
+        "user_facing_summary": _summary_for_mode(display_mode, item),
         "expert_metadata": {
             "source_path": str(item.get("source_path") or ""),
             "score": float(item.get("score") or item.get("hybrid_score") or 0.0),
@@ -196,6 +196,12 @@ def _display_mode_for_item(
 
 
 def _infer_answer_source_mode(items: List[Dict[str, Any]]) -> str:
+    if _core_permission_violations(items):
+        return "needs_evidence"
+    domains = {str(item.get("evidence_domain") or "") for item in items}
+    allowed_uses = {str(item.get("allowed_use") or "") for item in items}
+    if domains & {"medical_safety", "environment_race_context"} or "risk_gate" in allowed_uses:
+        return "medical_referral"
     modes = {str(item.get("display_mode") or "") for item in items}
     if EvidenceDisplayMode.VERIFIED_SOURCE.value in modes:
         return "verified_rag"
@@ -369,7 +375,15 @@ def _label_for_mode(display_mode: str) -> str:
     }.get(display_mode, "证据来源")
 
 
-def _summary_for_mode(display_mode: str) -> str:
+def _summary_for_mode(display_mode: str, item: Optional[Dict[str, Any]] = None) -> str:
+    item = item or {}
+    permission = str(item.get("prescription_permission") or "")
+    domain = str(item.get("evidence_domain") or "")
+    allowed_use = str(item.get("allowed_use") or "")
+    if display_mode == EvidenceDisplayMode.VERIFIED_SOURCE.value and permission != PrescriptionPermission.CAN_WRITE_CORE.value:
+        if domain in {"medical_safety", "environment_race_context"} or allowed_use == "risk_gate":
+            return "可定位风险提醒来源，只能用于停止训练、转诊或环境风险解释。"
+        return "可定位解释性来源，不能作为核心训练处方依据。"
     return {
         EvidenceDisplayMode.VERIFIED_SOURCE.value: "真实来源可定位。",
         EvidenceDisplayMode.MODEL_GENERAL_KNOWLEDGE.value: "模型常识说明，不作为核心训练处方依据。",

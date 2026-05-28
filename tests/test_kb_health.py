@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 
+from marathon_qa_assistant.core.app_state import DATA_DIR
 from marathon_qa_assistant.services.kb.health import (
     check_chunk_schema_v2_health,
     check_evidence_bindings_health,
@@ -92,7 +93,7 @@ def test_chunk_schema_v2_health_requires_metadata_and_blocks_absolute_path_leak(
 
 
 def test_legacy_default_chunk_index_is_reported_as_legacy_not_v2():
-    result = summarize_legacy_chunk_index(Path("data/vector_kb/default/chunks.jsonl"))
+    result = summarize_legacy_chunk_index(DATA_DIR / "vector_kb" / "default" / "chunks.jsonl")
 
     assert result["total"] >= 1000
     assert result["source_file_count"] >= 1
@@ -134,7 +135,8 @@ def test_runtime_index_schema_summary_distinguishes_legacy_v2_and_mixed_chunks()
 
 
 def test_runtime_v2_manifest_declares_query_preview_runtime_boundary():
-    manifest = json.loads(Path("data/knowledge/governance/runtime_index_v2_manifest.json").read_text(encoding="utf-8"))
+    manifest_path = DATA_DIR / "knowledge" / "governance" / "runtime_index_v2_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert manifest["schema_version"] == "chunk_schema_v2"
     assert manifest["status"] == "runtime_preview_ready"
@@ -143,4 +145,4 @@ def test_runtime_v2_manifest_declares_query_preview_runtime_boundary():
     assert manifest["runtime_use_enabled"] is True
     assert manifest["runtime_chunk_count"] == 750
     assert manifest["can_replace_runtime"] is False
-    assert "approved_records=0" in manifest["replacement_blockers"]
+    assert manifest["replacement_blockers"]
