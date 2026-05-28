@@ -10,6 +10,19 @@ const quickActions = [
     meta: "画像 + 比赛日",
     prompt: PLAN_GENERATION_PROMPT,
   },
+  {
+    label: "向 AI 教练提问",
+    meta: "自由问答",
+    prompt: "请回答我的跑步训练相关问题。",
+  },
+];
+
+const suggestedQuestions = [
+  "如何预防膝盖疼？",
+  "跑前吃什么？",
+  "什么是轻松跑？",
+  "新手如何安排一周训练？",
+  "跑后肌肉酸痛怎么恢复？",
 ];
 
 const planningCards = [
@@ -19,16 +32,66 @@ const planningCards = [
 ];
 
 const profileFields = [
-  ["goal", "目标", "半马完赛 / 全马 PB / 健康跑"],
-  ["experience", "经验", "新手 / 进阶 / 有比赛经验"],
-  ["lastMonthMileage", "上个月月跑量", "例如 300 km"],
-  ["currentHalfTime", "当前半马 PB", "例如 1:25"],
-  ["raceDate", "比赛日期", "例如 2026-10-18"],
-  ["availableDays", "可训练日", "例如 周二、周四、周六、周日"],
-  ["longRun", "最长训练", "例如 90 分钟或 16 km"],
-  ["targetPace", "目标配速/成绩", "例如 半马 1:45 或 5:00/km"],
-  ["limitations", "伤病/疲劳限制", "例如 膝盖不适，近期疲劳偏高"],
+  [
+    "goal", "目标", "半马完赛 / 全马 PB / 健康跑",
+    "你想通过训练达到什么目标？例如：完成第一个 5 公里、半马完赛、全马 PB。"
+  ],
+  [
+    "experience", "经验", "新手 / 进阶 / 有比赛经验",
+    "你的跑步经验水平。新手表示刚开始规律跑步或从未参加过比赛。"
+  ],
+  [
+    "lastMonthMileage", "上个月月跑量", "例如 300 km",
+    "过去 4 周的跑步总距离。新手如果不清楚，可以估算每周跑几次、每次跑多远。"
+  ],
+  [
+    "currentHalfTime", "当前半马 PB", "例如 1:25（可选）",
+    "你最近半程马拉松的最好成绩。新手或从未参加过比赛可留空。"
+  ],
+  [
+    "raceDate", "比赛日期", "例如 2026-10-18",
+    "你计划参加比赛的日期。如果没有具体赛事，可以填写一个目标日期。"
+  ],
+  [
+    "availableDays", "可训练日", "例如 周二、周四、周六、周日",
+    "你每周哪些天可以安排训练？建议每周至少 2-3 天。"
+  ],
+  [
+    "longRun", "最长训练", "例如 90 分钟或 16 km",
+    "你现在能连续跑的最长时间或距离。这是判断训练起点的关键信息。"
+  ],
+  [
+    "targetPace", "目标配速/成绩", "例如 半马 1:45 或 5:00/km（可选）",
+    "你希望在比赛中达到的配速或完赛时间。新手可先不填，以完赛为目标。"
+  ],
+  [
+    "limitations", "伤病/疲劳限制", "例如 膝盖不适，近期疲劳偏高",
+    "是否有旧伤、慢性疼痛或近期明显疲劳？这会影响训练安全和强度安排。"
+  ],
+  // P1-8: 新增营养与体质相关画像字段
+  [
+    "weight", "体重", "例如 78 kg（可选）",
+    "你的体重。用于营养建议和能量消耗估算。"
+  ],
+  [
+    "sex", "性别", "男 / 女（可选）",
+    "你的性别。用于基础代谢和营养建议参考。"
+  ],
+  [
+    "dietType", "饮食类型", "均衡 / 素食 / 低碳水 / 高蛋白（可选）",
+    "你的日常饮食习惯偏好。影响营养建议的生成方向。"
+  ],
+  [
+    "sweatRate", "出汗率", "少 / 中等 / 多（可选）",
+    "你运动时的出汗情况。用于补水策略建议。"
+  ],
+  [
+    "giSensitivity", "胃肠敏感度", "低 / 中等 / 高（可选）",
+    "你在运动中对食物和水分的胃肠耐受程度。影响赛前和赛中补给建议。"
+  ],
 ];
+
+const advancedProfileFields = new Set(["currentHalfTime", "targetPace", "weight", "sex", "dietType", "sweatRate", "giSensitivity"]);
 ---
 
 <!doctype html>
@@ -215,7 +278,12 @@ const profileFields = [
                 <p class="section-kicker">计划入口</p>
                 <h2>训练日历</h2>
               </div>
-              <span class="pill muted-pill">跑者视图</span>
+              <div>
+                <div class="segmented-control" role="tablist" aria-label="提问模式" id="queryModeSwitch">
+                  <button type="button" class="segmented-control-button active" role="tab" aria-selected="true" data-query-mode="plan">训练日历</button>
+                  <button type="button" class="segmented-control-button" role="tab" aria-selected="false" data-query-mode="qa">自由问答</button>
+                </div>
+              </div>
             </div>
             <div id="workspaceFlow" class="workspace-flow" data-workspace-state="profile" aria-label="训练计划主流程">
               <button class="workspace-flow-step is-current" type="button" data-open-drawer-section="profile">
@@ -241,6 +309,14 @@ const profileFields = [
               id="queryInput"
               placeholder="补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用侧栏画像生成。"
             ></textarea>
+            <div id="suggestedQuestions" class="suggested-questions" data-suggested-questions hidden>
+              <span class="muted">常见问题：</span>
+              {
+                suggestedQuestions.map((q) => (
+                  <button type="button" class="suggested-question-chip" data-question={q}>{q}</button>
+                ))
+              }
+            </div>
             <div class="model-controls" hidden data-expert-only>
               <div class="model-switch">
                 <span class="field-label">模型来源</span>
@@ -317,6 +393,7 @@ const profileFields = [
               <span class="report-panel-affordance">按需查看</span>
               </summary>
               <div id="report" class="empty-state">还没有结果。填写我的情况或补充说明后，可以生成训练日历。</div>
+              <div id="evidenceSourceIndicator" class="evidence-source-indicator" data-evidence-source-indicator hidden aria-live="polite"></div>
             </details>
 
             <aside class="panel metrics-panel" hidden data-expert-only>
@@ -351,10 +428,20 @@ const profileFields = [
             </div>
             <div class="profile-grid">
               {
-                profileFields.map(([id, label, placeholder]) => (
-                  <label class="profile-field" for={`profile-${id}`}>
-                    <span>{label}</span>
+                profileFields.map(([id, label, placeholder, helpText]) => (
+                  <label
+                    class={`profile-field ${advancedProfileFields.has(id) ? 'profile-field-advanced' : ''}`}
+                    for={`profile-${id}`}
+                    data-profile-field-wrapper={id}
+                  >
+                    <span>
+                      {label}
+                      {helpText ? (
+                        <span class="profile-field-help-icon" tabindex="0" role="tooltip" aria-label={helpText} data-tooltip={helpText}>?</span>
+                      ) : null}
+                    </span>
                     <input id={`profile-${id}`} data-profile-field={id} placeholder={placeholder} />
+                    {helpText ? <small class="profile-field-help-text">{helpText}</small> : null}
                   </label>
                 ))
               }
@@ -372,11 +459,12 @@ const profileFields = [
             <div id="profileNlpConfirmation" class="nlp-confirmation-banner" data-profile-nlp-confirmation hidden></div>
             <div class="toolbar profile-toolbar">
               <div class="button-row">
+                <button id="beginnerQuickFill" class="secondary-button beginner-button">我是新手</button>
                 <button id="saveProfileDraft" class="secondary-button">保存画像草稿</button>
                 <button id="buildProfilePrompt" class="secondary-button">写入补充说明</button>
                 <button id="runProfilePlan" class="primary-button" data-plan-generation-entry>生成训练日历</button>
               </div>
-              <span class="muted">画像会用于生成训练计划、强度区间和训练安排解释。</span>
+              <span class="muted">点击「我是新手」可一键填充合理默认值，隐藏高级字段，降低上手门槛。</span>
             </div>
           </section>
 

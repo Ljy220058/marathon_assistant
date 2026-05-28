@@ -5442,11 +5442,59 @@ async function requestQueryPayload(query, { planLike, controller, retry = false 
   throw lastError || new Error("请求失败。");
 }
 
+function renderEvidenceSourceIndicator(response) {
+  const el = $("evidenceSourceIndicator");
+  if (!el) return;
+  const answerSourceMode = String(response?.answer_source_mode || "").trim();
+  const hasEvidenceChain = Array.isArray(response?.evidence_chain);
+  if (!answerSourceMode && !hasEvidenceChain) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  let statusClass = "source-none";
+  let icon = "-";
+  let label = "未绑定外部证据";
+
+  switch (answerSourceMode) {
+    case "verified_source":
+      statusClass = "source-verified";
+      icon = "✓"; // checkmark
+      label = "有科学证据支持";
+      break;
+    case "model_general_knowledge":
+      statusClass = "source-model-knowledge";
+      icon = "i";
+      label = "基于模型通用知识";
+      break;
+    case "blocked_needs_evidence":
+      statusClass = "source-blocked";
+      icon = "!";
+      label = "证据不足，建议仅供参考";
+      break;
+    default:
+      if (hasEvidenceChain) {
+        statusClass = "source-verified";
+        icon = "✓";
+        label = "有科学证据支持";
+      } else if (String(response?.report || "").length > 50) {
+        statusClass = "source-none";
+        icon = "-";
+        label = "未绑定外部证据";
+      }
+      break;
+  }
+
+  el.className = `evidence-source-indicator ${statusClass}`;
+  el.innerHTML = `<span class="evidence-source-indicator-icon">${icon}</span><span>${label}</span>`;
+}
+
 function renderQueryPayload(payload) {
   state.lastResponse = payload;
   renderReport(payload);
   renderCalendar(payload);
   renderEvidencePreview(payload);
+  renderEvidenceSourceIndicator(payload);
   updateWorkspaceFlow("calendar", "训练日历已生成。优先查看周重点，再点开单日卡片反馈调整。");
   setActiveDrawerSection("calendar");
   syncPlanProgressFromPayload(payload);
@@ -5957,6 +6005,139 @@ document.addEventListener("keydown", (event) => {
 });
 $("loadMeta").addEventListener("click", () => loadMeta());
 $("clearResult").addEventListener("click", clearResult);
+// ── P2-1: Mode toggle (训练日历 / 自由问答) ──
+const queryModeButtons = Array.from(document.querySelectorAll("[data-query-mode]"));
+let currentQueryMode = "plan";
+const suggestedQuestionsEl = $("suggestedQuestions");
+
+queryModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    queryModeButtons.forEach((item) => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    currentQueryMode = button.dataset.queryMode || "plan";
+    updateQueryModeUi();
+  });
+});
+
+function updateQueryModeUi() {
+  const isQa = currentQueryMode === "qa";
+  if (suggestedQuestionsEl) {
+    suggestedQuestionsEl.hidden = !isQa;
+  }
+  if (queryInput) {
+    queryInput.placeholder = isQa
+      ? "向 AI 教练提问，例如：如何预防膝盖疼？跑前应该吃什么？"
+      : "补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用侧栏画像生成。";
+  }
+  const runQueryBtn = $("runQuery");
+  if (runQueryBtn) {
+    runQueryBtn.textContent = isQa ? "向教练提问" : "生成训练日历";
+    runQueryBtn.title = isQa ? "提交问题给 AI 教练" : "根据画像生成训练日历";
+  }
+  const queryHintEl = $("queryHint");
+  if (queryHintEl) {
+    queryHintEl.textContent = isQa ? "准备向 AI 教练提问" : "准备好后生成训练日历";
+  }
+}
+
+// ── P2-1: Suggested question click ──
+if (suggestedQuestionsEl) {
+  suggestedQuestionsEl.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-question]");
+    if (chip && queryInput) {
+      queryInput.value = chip.dataset.question || "";
+      queryInput.focus();
+    }
+  });
+}
+
+// ── P2-1: Quick action template switching ──
+document.addEventListener("click", (event) => {
+  const quickBtn = event.target.closest("[data-prompt]");
+  if (quickBtn && queryInput) {
+    const prompt = quickBtn.dataset.prompt || "";
+    if (prompt.includes("自由问答") || prompt.includes("跑步训练相关问题")) {
+      // Switch to Q&A mode
+      if (currentQueryMode !== "qa") {
+        const qaModeBtn = document.querySelector("[data-query-mode=\"qa\"]");
+        if (qaModeBtn) qaModeBtn.click();
+      } else {
+        updateQueryModeUi();
+      }
+    } else if (prompt.includes("训练日历") || prompt.includes("训练计划")) {
+      if (currentQueryMode !== "plan") {
+        const planModeBtn = document.querySelector("[data-query-mode=\"plan\"]");
+        if (planModeBtn) planModeBtn.click();
+      } else {
+        updateQueryModeUi();
+      }
+    }
+  }
+});
+
+// ── P2-2: "我是新手" button ──
+const beginnerButton = $("beginnerQuickFill");
+const BEGINNER_DEFAULTS = {
+  goal: "健康跑 / 完成第一个 5K 或半马",
+  experience: "新手",
+  lastMonthMileage: "50 km",
+  raceDate: "",
+  availableDays: "周一、周三、周五、周六",
+  longRun: "40 分钟",
+  limitations: "暂无严重伤病",
+};
+
+function applyBeginnerDefaults() {
+  Object.entries(BEGINNER_DEFAULTS).forEach(([key, value]) => {
+    const input = document.querySelector(`[data-profile-field="${key}"]`);
+    if (input) input.value = value;
+  });
+  // Hide advanced fields for beginners
+  document.querySelectorAll(".profile-field-advanced").forEach((el) => {
+    el.classList.add("hidden-by-experience");
+  });
+  // Update derived metrics
+  if (typeof updateProfileDerivedMetrics === "function") {
+    updateProfileDerivedMetrics();
+  }
+  // Save draft
+  if (typeof saveProfileDraft === "function") {
+    saveProfileDraft();
+  }
+  const profileStatusEl = $("profileStatus");
+  if (profileStatusEl) {
+    profileStatusEl.textContent = "新手画像已填充";
+    profileStatusEl.className = "pill muted-pill";
+  }
+}
+
+if (beginnerButton) {
+  beginnerButton.addEventListener("click", applyBeginnerDefaults);
+}
+
+// ── P2-2: Profile experience-level changes ──
+function syncAdvancedFieldVisibility() {
+  const experienceInput = document.querySelector("[data-profile-field=\"experience\"]");
+  if (!experienceInput) return;
+  const value = String(experienceInput.value || "").trim().toLowerCase();
+  const isBeginner = value === "新手" || value === "beginner" || value.includes("新手");
+  document.querySelectorAll(".profile-field-advanced").forEach((el) => {
+    if (isBeginner) {
+      el.classList.add("hidden-by-experience");
+    } else {
+      el.classList.remove("hidden-by-experience");
+    }
+  });
+}
+
+document.querySelectorAll("[data-profile-field=\"experience\"]").forEach((input) => {
+  input.addEventListener("input", syncAdvancedFieldVisibility);
+  input.addEventListener("change", syncAdvancedFieldVisibility);
+});
+
 $("saveProfileDraft").addEventListener("click", saveProfileDraft);
 $("buildProfilePrompt").addEventListener("click", buildProfilePrompt);
 $("runProfilePlan").addEventListener("click", async () => {

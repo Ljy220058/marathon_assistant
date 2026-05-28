@@ -18,6 +18,17 @@
     }));
   }
 
+  // ── P2-6: Parse answer source mode for display ──
+  function getAnswerSourceModeInfo(response) {
+    const mode = String(response?.answer_source_mode || "").trim();
+    const configs = {
+      verified_source: { className: "source-verified", label: "有科学证据支持", icon: "✓" },
+      model_general_knowledge: { className: "source-model-knowledge", label: "基于模型通用知识", icon: "i" },
+      blocked_needs_evidence: { className: "source-blocked", label: "证据不足，建议仅供参考", icon: "!" },
+    };
+    return configs[mode] || { className: "source-none", label: "未绑定外部证据", icon: "-" };
+  }
+
   function resolveEvidenceItemsForDrawer(day, response) {
     // 收集某个训练日关联的所有证据条目
     const items = [];
@@ -84,5 +95,11 @@
     }
   }
 
-  window.__evidenceDrawer = { openEvidenceDrawer, closeEvidenceDrawer, resolveEvidenceItemsForDrawer, normalizeEvidencePages };
+  window.__evidenceDrawer = {
+    openEvidenceDrawer,
+    closeEvidenceDrawer,
+    resolveEvidenceItemsForDrawer,
+    normalizeEvidencePages,
+    getAnswerSourceModeInfo,
+  };
 })();
