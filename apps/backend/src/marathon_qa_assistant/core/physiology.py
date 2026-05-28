@@ -101,12 +101,13 @@ def calculate_pace_zones(
 
     # 如果提供了目标 HMP，Z5 围绕 HMP 排列（±6 秒）
     # 这样进阶跑者的马拉松配速区直接对应目标比赛配速，偏差可控在 5-8 秒/km 内
+    # P2: 无目标 HMP 时返回占位提示，避免从 T-Pace 推导出无意义的默认值
     if target_hmp_seconds > 0:
         z5_lower = target_hmp_seconds - 6  # 稍快于 HMP（下限）
         z5_upper = target_hmp_seconds + 6  # 稍慢于 HMP（上限）
         z5_range = f"{seconds_to_pace(z5_upper)}-{seconds_to_pace(z5_lower)}"
     else:
-        z5_range = pace_range(0.99, 0.95)
+        z5_range = "设置目标配速后自动计算"
 
     # 采用用户确认的 T-Pace 九区映射
     return {

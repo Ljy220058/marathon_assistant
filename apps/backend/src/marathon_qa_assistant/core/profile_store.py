@@ -17,14 +17,15 @@ def _extract_target_hmp_seconds(profile: Dict[str, Any]) -> int:
     hmp_raw = profile.get("target_hmp", "")
     if hmp_raw:
         sec = _parse_pace_seconds(hmp_raw)
-        if sec:
+        if sec and sec >= 130:  # P2: 拒绝不合理的快速配速（< 2:10/km）
             return sec
 
     # target_pace（格式如 "4:16/km" 或 "4:16"）
     target_pace = str(profile.get("target_pace") or "").strip()
     if target_pace:
         sec = _parse_pace_seconds(target_pace)
-        if sec:
+        # P2: 配速必须 >= 130s/km（2:10/km），否则视为无效/错误数据并回退到后续字段
+        if sec and sec >= 130:
             return sec
 
     # target_half_time（格式如 "1:30:00"），反算配速
@@ -37,10 +38,11 @@ def _extract_target_hmp_seconds(profile: Dict[str, Any]) -> int:
     # 从 goal 文本推断
     goal = str(profile.get("goal") or "").strip()
     if goal:
-        # 尝试匹配 "半马 SUB 1:30" 等
+        # 尝试匹配 "半马 SUB 1:30"、"半马 1:30" 等（H:MM 格式表示小时:分钟）
         m = re.search(r"半马\s*(?:sub\s*)?(\d{1,2}):(\d{2})", goal)
         if m:
-            total_sec = int(m.group(1)) * 60 + int(m.group(2))
+            # P2: H:MM 格式 — group(1) 为小时，group(2) 为分钟
+            total_sec = int(m.group(1)) * 3600 + int(m.group(2)) * 60
             return round(total_sec / 21.0975)
 
     return 0
@@ -169,17 +171,23 @@ def sync_user_zones(profile: Dict[str, Any]) -> bool:
     t_pace = profile.get("t_pace", "")
     if t_pace:
         pace_zones = profile.get("pace_zones", {})
-        if is_zone_empty(pace_zones, expected_count=9):
-            target_hmp = _extract_target_hmp_seconds(profile)
-            profile["pace_zones"] = calculate_pace_zones(t_pace, target_hmp_seconds=target_hmp)
-            changed = True
-            if target_hmp:
-                logger.info(
-                    f"已自动计算 9区配速区间 (T-Pace: {t_pace}, "
-                    f"Z5 以目标 HMP 为中心: {target_hmp}s/km)"
-                )
-            else:
-                logger.info(f"已自动计算 9区配速区间 (T-Pace: {t_pace})")
+        target_hmp = _extract_target_hmp_seconds(profile)
+        needs_pace_sync = is_zone_empty(pace_zones, expected_count=9)
+        has_target = target_hmp > 0
+        # P2: 即使区间非空，若有 HMP 目标或之前无目标时也应重算，确保 Z5 联动更新
+        if needs_pace_sync or has_target:
+            new_pace_zones = calculate_pace_zones(t_pace, target_hmp_seconds=target_hmp)
+            # 仅当计算结果与现有区间不同时才写入，避免 load 时不必要的磁盘写回
+            if new_pace_zones != pace_zones:
+                profile["pace_zones"] = new_pace_zones
+                changed = True
+                if target_hmp:
+                    logger.info(
+                        f"已自动计算 9区配速区间 (T-Pace: {t_pace}, "
+                        f"Z5 以目标 HMP 为中心: {target_hmp}s/km)"
+                    )
+                else:
+                    logger.info(f"已自动计算 9区配速区间 (T-Pace: {t_pace}, 暂无目标 HMP)")
 
     return changed
 
