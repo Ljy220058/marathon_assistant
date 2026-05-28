@@ -236,6 +236,7 @@ const profileFields = [
               </button>
             </div>
             <p id="workspaceNextAction" class="workspace-next-action">先完善画像，或直接补充目标赛事后生成训练日历。</p>
+            <div id="workspaceSceneStatus" data-workspace-scene-status aria-live="polite"></div>
             <textarea
               id="queryInput"
               placeholder="补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用侧栏画像生成。"
@@ -368,6 +369,7 @@ const profileFields = [
                 <strong data-derived-plan-weeks>-</strong>
               </div>
             </div>
+            <div id="profileNlpConfirmation" class="nlp-confirmation-banner" data-profile-nlp-confirmation hidden></div>
             <div class="toolbar profile-toolbar">
               <div class="button-row">
                 <button id="saveProfileDraft" class="secondary-button">保存画像草稿</button>
@@ -427,6 +429,10 @@ const profileFields = [
             <div id="adjustmentHistory" class="adjustment-history empty-state" data-adjustment-history hidden>
               调整历史会在反馈保存后显示。
             </div>
+            <div id="adaptiveExplanation" class="adaptive-explanation-card empty-state" data-adaptive-explanation hidden>
+              提交训练反馈后，这里会显示计划调整说明。
+            </div>
+            <div id="monthCalendarGrid" class="calendar-month-grid" data-month-calendar-grid hidden></div>
             <div class="calendar-toolbar" aria-label="日历视图切换">
               <div class="segmented-control" role="tablist" aria-label="训练日历视图">
                 <button type="button" class="segmented-control-button active" role="tab" aria-selected="true" data-calendar-view="week">按周</button>
@@ -476,6 +482,15 @@ const profileFields = [
             <div id="evidencePreview" class="evidence-list">
               <div class="empty-state">生成计划后，这里会按需展示训练依据来源。</div>
             </div>
+            <section id="glossaryTerms" class="glossary-section" data-glossary-terms hidden>
+              <div class="panel-heading">
+                <p class="section-kicker">参考术语</p>
+                <h2>半马训练专业术语</h2>
+              </div>
+              <div id="glossaryTermsContent" class="glossary-term-list">
+                <div class="empty-state">生成计划后会自动展示相关术语。</div>
+              </div>
+            </section>
           </details>
         </section>
       </div>
@@ -524,6 +539,24 @@ const profileFields = [
       </form>
     </dialog>
 
+    <div id="calendarDetailDrawerBackdrop" class="calendar-detail-drawer-backdrop" data-calendar-detail-backdrop></div>
+    <aside id="calendarDetailDrawer" class="calendar-detail-drawer" data-calendar-detail-drawer aria-hidden="true" aria-label="训练日详情">
+      <div class="calendar-detail-drawer-handle" aria-hidden="true"></div>
+      <button class="calendar-detail-close" type="button" data-calendar-detail-close aria-label="关闭详情">x</button>
+      <div id="calendarDetailContent"></div>
+    </aside>
+
+    <script src="../scripts/apiClient.js"></script>
+    <script src="../scripts/calendarRenderer.js"></script>
+    <script src="../scripts/evidenceDrawer.js"></script>
+    <script src="../scripts/feedbackModal.js"></script>
+    <script src="../scripts/statusPanel.js"></script>
+    <script src="../scripts/profileState.js"></script>
+    <script src="../scripts/riskRules.js"></script>
+    <script src="../scripts/adaptationEngine.js"></script>
+    <script src="../scripts/workspaceScenes.js"></script>
+    <script src="../scripts/progressComponents.js"></script>
+    <script src="../scripts/feedbackComponents.js"></script>
     <script src="../scripts/app.js"></script>
   </body>
 </html>

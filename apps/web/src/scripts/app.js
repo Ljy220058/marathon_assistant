@@ -5988,6 +5988,375 @@ if (savedBase) {
 localStorage.removeItem("marathon_ds_api_key");
 dsApiKeyStatus.textContent = "API Key 仅在当前会话内使用；更推荐在服务端配置 DEEPSEEK_API_KEY / DS_API_KEY。";
 
+// ── Integration: Month Calendar View [product-calendar][P1] ──
+
+function renderMonthCalendarGrid(days) {
+  const grid = document.getElementById("monthCalendarGrid");
+  if (!grid) return;
+  if (!days || !days.length) {
+    grid.hidden = true;
+    return;
+  }
+  // Only show month grid in month view
+  if (state.calendarView !== "month") {
+    grid.hidden = true;
+    return;
+  }
+  grid.hidden = false;
+
+  // Group days by month
+  const monthMap = new Map();
+  days.forEach((day, index) => {
+    const date = parseTrainingDate(day);
+    if (!date) return;
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (!monthMap.has(monthKey)) {
+      monthMap.set(monthKey, { key: monthKey, year: date.getFullYear(), month: date.getMonth(), days: [] });
+    }
+    monthMap.get(monthKey).days.push({ day, index, date });
+  });
+
+  if (!monthMap.size) {
+    grid.hidden = true;
+    return;
+  }
+
+  const monthEntries = Array.from(monthMap.values()).sort((a, b) => a.key.localeCompare(b.key));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+  const dayNames = ["日", "一", "二", "三", "四", "五", "六"];
+
+  let html = "";
+
+  monthEntries.forEach((monthData) => {
+    const firstDay = new Date(monthData.year, monthData.month, 1);
+    const lastDay = new Date(monthData.year, monthData.month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    const dayMap = new Map();
+    monthData.days.forEach(({ day, index, date }) => {
+      const dayNum = date.getDate();
+      if (!dayMap.has(dayNum)) dayMap.set(dayNum, []);
+      dayMap.get(dayNum).push({ day, index });
+    });
+
+    const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+    html += `<div class="calendar-month-nav">
+      <button type="button" data-month-prev disabled>←</button>
+      <strong>${monthData.year}年${monthNames[monthData.month]}</strong>
+      <button type="button" data-month-next disabled>→</button>
+    </div>`;
+    html += `<div class="calendar-month-header">${dayNames.map((d) => `<span>${d}</span>`).join("")}</div>`;
+    html += `<div class="calendar-month-grid">`;
+
+    // Empty cells before the first day
+    for (let i = 0; i < startDayOfWeek; i++) {
+      html += `<div class="calendar-month-cell empty" aria-hidden="true"></div>`;
+    }
+
+    for (let d = 1; d <= totalDays; d++) {
+      const dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const isToday = dateStr === todayStr;
+      const entries = dayMap.get(d) || [];
+      const mainEntry = entries[0];
+      const day = mainEntry ? mainEntry.day : null;
+      const index = mainEntry ? mainEntry.index : -1;
+      const isRest = day ? isRestDay(day) : true;
+      const isQuality = day ? isQualityTraining(day) : false;
+      const needsRecheck = day ? requiresProtocolRecheck(day) : false;
+      const hasRace = day ? /race|比赛|赛事/i.test(String(day.training_title || day.main_set || "")) : false;
+      const trainingLabel = day ? displayTrainingTitle(day) : "";
+      const indicatorClass = hasRace ? "race" : needsRecheck ? "recheck" : isQuality ? "quality" : isRest ? "rest" : "default";
+
+      html += `<button class="calendar-month-cell${isToday ? " today" : ""}${entries.length ? "" : " empty"}"
+        type="button"
+        data-month-day-index="${index}"
+        ${!entries.length ? "disabled" : ""}
+        aria-label="${dateStr}${trainingLabel ? "：" + trainingLabel : ""}">
+        <span class="month-day-number">${d}</span>
+        ${trainingLabel ? `<span class="month-day-label">${escapeHtml(trainingLabel.substring(0, 12))}</span>` : ""}
+        <span class="month-day-indicator ${indicatorClass}" aria-hidden="true"></span>
+      </button>`;
+    }
+    html += `</div>`;
+  });
+
+  grid.innerHTML = html;
+
+  // Wire up month day click → open day modal or detail drawer
+  grid.querySelectorAll("[data-month-day-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const dayIndex = parseInt(button.dataset.monthDayIndex, 10);
+      if (isNaN(dayIndex)) return;
+      const response = state.lastResponse;
+      if (!response) return;
+      const days = normalizeCalendarDays(response);
+      const day = days[dayIndex];
+      if (!day) return;
+      if (window.innerWidth <= 768) {
+        openCalendarDetailDrawer(day, dayIndex);
+      } else {
+        openDayModal(day, null, button);
+      }
+    });
+  });
+}
+
+// ── Integration: Calendar Detail Drawer (mobile) [product-calendar][P1] ──
+
+const calendarDetailDrawer = document.getElementById("calendarDetailDrawer");
+const calendarDetailBackdrop = document.getElementById("calendarDetailDrawerBackdrop");
+const calendarDetailContent = document.getElementById("calendarDetailContent");
+
+function openCalendarDetailDrawer(day, index) {
+  if (!calendarDetailDrawer || !calendarDetailContent) return;
+  calendarDetailContent.innerHTML = buildDayModalHtml(day);
+  calendarDetailDrawer.classList.add("open");
+  calendarDetailDrawer.setAttribute("aria-hidden", "false");
+  if (calendarDetailBackdrop) calendarDetailBackdrop.classList.add("open");
+  // Wire up tab switching inside drawer
+  calendarDetailContent.querySelectorAll("[data-day-modal-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectDayModalTab(button.dataset.dayModalTab, { focus: true });
+    });
+  });
+}
+
+function closeCalendarDetailDrawer() {
+  if (!calendarDetailDrawer) return;
+  calendarDetailDrawer.classList.remove("open");
+  calendarDetailDrawer.setAttribute("aria-hidden", "true");
+  if (calendarDetailBackdrop) calendarDetailBackdrop.classList.remove("open");
+}
+
+if (calendarDetailBackdrop) {
+  calendarDetailBackdrop.addEventListener("click", closeCalendarDetailDrawer);
+}
+document.querySelector("[data-calendar-detail-close]")?.addEventListener("click", closeCalendarDetailDrawer);
+
+// ── Integration: Workspace Scene Status [product-workspace][P1] ──
+
+function updateWorkspaceSceneStatus() {
+  const container = document.getElementById("workspaceSceneStatus");
+  if (!container) return;
+
+  const hasPlan = Boolean(state.lastResponse && normalizeCalendarDays(state.lastResponse).length);
+  const hasProfile = Boolean(state.latestProfile && Object.keys(state.latestProfile).length > 1);
+  const hasRecentAdjustment = Boolean(state.lastFeedbackResult);
+
+  let scene = "first_time";
+  if (hasRecentAdjustment) scene = "post_feedback";
+  else if (hasPlan) scene = "in_cycle";
+  else if (hasProfile) scene = "free_explore";
+
+  let statusHtml = "";
+  if (hasPlan) {
+    const days = normalizeCalendarDays(state.lastResponse);
+    const primaryIndex = primaryTrainingDayIndex(days);
+    const primaryDay = days[primaryIndex];
+    const statusSummary = frontendStatusFromDays(days);
+    const todayLabel = primaryDay ? trainingDayLabel(primaryDay) : "查看日历";
+    const todayType = primaryDay ? (isRestDay(primaryDay) ? "恢复日" : "训练日") : "";
+    statusHtml = `
+      <div class="workspace-scene-status" data-workspace-scene="${scene}" aria-label="工作台状态">
+        <div class="workspace-scene-head">
+          <p class="section-kicker">当前状态</p>
+          <h3>${escapeHtml(todayLabel)}${todayType ? " · " + escapeHtml(todayType) : ""}</h3>
+          <span>风险等级：${escapeHtml(statusLabel(statusSummary.risk_level))} · 完成度：${escapeHtml(statusSummary.completion_rate)}%</span>
+        </div>
+        <div class="workspace-scene-items">
+          <div><span>风险状态</span><strong>${escapeHtml(statusLabel(statusSummary.risk_level))}</strong></div>
+          <div><span>本周完成</span><strong>${escapeHtml(statusSummary.completion_rate)}%</strong></div>
+          <div><span>漏反馈</span><strong>${escapeHtml(statusSummary.missed_feedback_count)} 天</strong></div>
+          <div><span>建议</span><strong>${escapeHtml(statusSummary.next_training_recommendation || "按计划执行")}</strong></div>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = statusHtml;
+}
+
+// ── Integration: Glossary Terms [product-evidence][P1] ──
+
+function renderGlossaryTermsPanel(response) {
+  const glossarySection = document.getElementById("glossaryTerms");
+  const glossaryContent = document.getElementById("glossaryTermsContent");
+  if (!glossarySection || !glossaryContent) return;
+
+  const terms = getHmpGlossaryTerms(response);
+  if (!terms.length) {
+    glossarySection.hidden = true;
+    return;
+  }
+  glossarySection.hidden = false;
+  glossaryContent.innerHTML = terms.slice(0, 9).map((item) => `
+    <article>
+      <strong>${escapeHtml(item.term || item.name || item.id || "HMP 术语")}</strong>
+      <p>${escapeHtml(item.short_definition || item.definition || item.description || "暂无定义。")}</p>
+      <em>${escapeHtml(item.training_effect || item.training_impact || item.impact || "用于统一训练解释口径。")}</em>
+    </article>
+  `).join("");
+}
+
+// ── Integration: Adaptive Explanation after Feedback [product-explanation][P1] ──
+
+function renderAdaptiveExplanationAfterFeedback(feedbackResult) {
+  const container = document.getElementById("adaptiveExplanation");
+  if (!container) return;
+
+  if (!feedbackResult) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  const fb = feedbackResult.feedback || feedbackResult;
+  const riskLevel = fb.risk_gate?.product_status || fb.risk_gate?.status || "normal";
+  const riskClass = `adaptive-risk-${riskLevel}`;
+  const adjustmentText = fb.rationale || fb.next_day_adjustment || fb.adaptive_adjustment?.rationale || "";
+  const affectedCount = Array.isArray(feedbackResult.affected_events) ? feedbackResult.affected_events.length : 0;
+
+  container.className = `adaptive-explanation-card ${riskClass}`;
+  container.innerHTML = `
+    <div class="adaptive-explanation-head">
+      <div>
+        <p class="section-kicker">计划调整</p>
+        <h3>${riskLevel === "medical_referral" ? "需要专业评估" : riskLevel === "deescalate" ? "计划已调整" : "反馈已记录"}</h3>
+      </div>
+      <span class="adaptive-risk-badge">${escapeHtml(statusLabel(riskLevel))}</span>
+    </div>
+    <div class="adaptive-risk-banner">
+      <p>${escapeHtml(adjustmentText || "系统已根据你的反馈评估当前状态。查看日历确认调整后的安排。")}</p>
+    </div>
+    ${affectedCount ? `
+      <div class="adaptive-detail-list">
+        <div><dt>影响范围</dt><dd>${escapeHtml(affectedCount)} 个后续训练日</dd></div>
+        <div><dt>下次训练</dt><dd>${escapeHtml(fb.next_day_adjustment || "查看日历确认")}</dd></div>
+      </div>
+    ` : ""}
+    <div class="adaptive-next-actions">
+      <strong>建议下一步</strong>
+      <ul>
+        <li>查看更新后的训练日历确认调整内容。</li>
+        <li>下次训练后及时记录反馈，持续评估恢复状态。</li>
+        ${riskLevel === "deescalate" ? "<li>如连续两次降级，考虑减少本周训练次数。</li>" : ""}
+      </ul>
+    </div>
+  `;
+}
+
+// ── Integration: NLP Profile Confirmation [product-profile][P1] ──
+
+function showNlpProfileConfirmation(changes = []) {
+  const container = document.getElementById("profileNlpConfirmation");
+  if (!container || !changes.length) {
+    if (container) container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  container.innerHTML = `
+    <h4>检测到画像变更</h4>
+    <p>系统从你的输入中提取到以下画像信息。请确认是否更新：</p>
+    <ul class="nlp-field-changes">
+      ${changes.map((change) => `
+        <li>
+          <span class="nlp-field-name">${escapeHtml(change.label || change.field)}</span>
+          ${change.oldValue ? `<span class="nlp-old-value">${escapeHtml(change.oldValue)}</span>` : ""}
+          <span class="nlp-new-value">${escapeHtml(change.newValue)}</span>
+        </li>
+      `).join("")}
+    </ul>
+    <div class="nlp-confirmation-actions">
+      <button class="primary-button compact-button" data-nlp-confirm>确认更新</button>
+      <button class="secondary-button compact-button" data-nlp-dismiss>忽略</button>
+    </div>
+  `;
+
+  container.querySelector("[data-nlp-confirm]")?.addEventListener("click", () => {
+    changes.forEach((change) => {
+      const input = document.querySelector(`[data-profile-field="${change.draftKey}"]`) ||
+                    document.querySelector(`[data-profile-editor-field="${change.field}"]`);
+      if (input) input.value = change.newValue;
+    });
+    saveProfileDraft();
+    container.hidden = true;
+  });
+
+  container.querySelector("[data-nlp-dismiss]")?.addEventListener("click", () => {
+    container.hidden = true;
+  });
+}
+
+// ── Integration: Feedback Detail Form Binding [product-feedback][P1] ──
+
+function initFeedbackDetailForm(container) {
+  if (!container) return;
+  // Progressive step navigation
+  container.querySelectorAll("[data-feedback-next]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const currentStep = button.closest("[data-feedback-step]");
+      const allSteps = Array.from(container.querySelectorAll("[data-feedback-step]"));
+      const currentIndex = allSteps.indexOf(currentStep);
+      if (currentIndex >= 0 && currentIndex < allSteps.length - 1) {
+        currentStep.hidden = true;
+        allSteps[currentIndex + 1].hidden = false;
+        const progressLabel = container.querySelector("[data-feedback-progress]");
+        if (progressLabel) progressLabel.textContent = `${currentIndex + 2}/${allSteps.length} 完成`;
+        allSteps[currentIndex + 1].querySelector("input, select, textarea")?.focus();
+      }
+    });
+  });
+
+  container.querySelectorAll("[data-feedback-prev]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const currentStep = button.closest("[data-feedback-step]");
+      const allSteps = Array.from(container.querySelectorAll("[data-feedback-step]"));
+      const currentIndex = allSteps.indexOf(currentStep);
+      if (currentIndex > 0) {
+        currentStep.hidden = true;
+        allSteps[currentIndex - 1].hidden = false;
+        const progressLabel = container.querySelector("[data-feedback-progress]");
+        if (progressLabel) progressLabel.textContent = `${currentIndex}/${allSteps.length} 完成`;
+      }
+    });
+  });
+
+  // Quick preset buttons
+  container.querySelectorAll("[data-feedback-quick]").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      const presetKey = radio.value === "已完成" ? "feedback_done" : radio.value === "部分完成" ? "feedback_partial" : "feedback_skipped";
+      const preset = FEEDBACK_QUICK_PRESETS[presetKey];
+      if (preset && container.closest(".day-modal")) {
+        applyFeedbackPreset(container.closest(".day-modal"), preset);
+      }
+    });
+  });
+}
+
+// ── Integration: Calendar View Update Hook ──
+
+// Override renderCalendar to also handle month view
+const _originalRenderCalendar = renderCalendar;
+renderCalendar = function(response) {
+  _originalRenderCalendar(response);
+  if (state.calendarView === "month") {
+    const days = normalizeCalendarDays(response);
+    renderMonthCalendarGrid(days);
+  }
+  updateWorkspaceSceneStatus();
+  renderGlossaryTermsPanel(response);
+};
+
+// ── Integration: Feedback Result Hook ──
+
+const _originalBuildFeedbackResultHtml = buildFeedbackResultHtml;
+buildFeedbackResultHtml = function(payload, affectedDays) {
+  const html = _originalBuildFeedbackResultHtml(payload, affectedDays);
+  renderAdaptiveExplanationAfterFeedback(payload);
+  return html;
+};
+
 async function bootstrap() {
   moveWorkspaceSectionsToDrawer();
   syncSideDrawerViewportState();
@@ -5999,6 +6368,7 @@ async function bootstrap() {
     loadProfileDraft(),
   ]);
   renderPlanHistory();
+  updateWorkspaceSceneStatus();
 }
 
 bootstrap();
