@@ -148,7 +148,8 @@ class GoogleCalendarProvider:
                 self._credentials = creds
                 self._persist_credentials()
             except Exception as exc:
-                logger.warning(f"刷新 Google token 失败: {exc}")
+                # 只输出错误类型，不输出 token 内容
+                logger.warning(f"刷新 Google token 失败: {type(exc).__name__}")
                 return None
         elif not creds.valid:
             return None
