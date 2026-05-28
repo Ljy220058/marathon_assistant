@@ -180,6 +180,7 @@ async def ai_invoke(
 ) -> Tuple[str, Dict[str, int]]:
     llm_settings = _extract_llm_settings(config)
     provider = llm_settings["provider"]
+    logger.debug("[ai_invoke] provider=%s model=%s prompt_len=%d", provider, llm_settings["model"], len(prompt))
     last_error: Optional[Exception] = None
     for attempt in range(max_retries):
         try:
@@ -199,7 +200,10 @@ async def ai_invoke(
                 base_url=base_url,
             )
             response = await active_llm.ainvoke([HumanMessage(content=prompt)], config=config)
-            return str(getattr(response, "content", "") or "").strip(), update_token_usage(current_usage, response)
+            content = str(getattr(response, "content", "") or "").strip()
+            usage = update_token_usage(current_usage, response)
+            logger.debug("[ai_invoke] Ollama response content_len=%d usage=%s", len(content), usage)
+            return content, usage
         except LLMProviderError as exc:
             if exc.error_code in {"rate_limited", "provider_5xx", "network_error", "timeout"} and attempt < max_retries - 1:
                 wait = 2 ** attempt

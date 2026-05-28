@@ -1,4 +1,7 @@
+import logging
 from typing import Any, Dict
+
+logger = logging.getLogger("workflow_graph")
 
 try:
     from langgraph.graph import END, START, StateGraph
@@ -28,11 +31,29 @@ class FallbackIntegratedApp:
 
     async def _run_node(self, name: str, state: Dict[str, Any], config=None) -> Dict[str, Any]:
         handler = self.node_handlers[name]
-        output = await handler(state, config)
+        # P0-1 diagnostics: trace node entry
+        draft_before = str(state.get("draft_plan", ""))[:50]
+        final_before = str(state.get("final_report", ""))[:50]
+        token_before = {k: state.get("token_usage", {}).get(k, 0) for k in ("prompt_tokens", "completion_tokens", "total_tokens")}
+        logger.debug("[trace] ENTER %s | draft=%s | final=%s | tokens=%s", name, draft_before, final_before, token_before)
+        try:
+            output = await handler(state, config)
+        except Exception as exc:
+            logger.error("[trace] EXCEPTION in %s: %s", name, exc, exc_info=True)
+            raise
+        logger.debug("[trace] OUTPUT %s | type=%s | keys=%s", name, type(output).__name__, list(output.keys()) if isinstance(output, dict) else "NOT_DICT")
         if isinstance(output, dict):
+            draft_out = str(output.get("draft_plan", ""))[:80]
+            final_out = str(output.get("final_report", ""))[:80]
+            logger.debug("[trace] OUTPUT %s | draft=%s | final=%s", name, draft_out, final_out)
             state.update(output)
-            return output
-        return {}
+        else:
+            logger.warning("[trace] OUTPUT %s is not dict, skipping merge", name)
+        draft_after = str(state.get("draft_plan", ""))[:50]
+        final_after = str(state.get("final_report", ""))[:50]
+        token_after = {k: state.get("token_usage", {}).get(k, 0) for k in ("prompt_tokens", "completion_tokens", "total_tokens")}
+        logger.debug("[trace] AFTER %s | draft=%s | final=%s | tokens=%s", name, draft_after, final_after, token_after)
+        return output
 
     def _next_node(self, current: str, state: Dict[str, Any]) -> str:
         if current == "security_gate":
@@ -76,12 +97,14 @@ class FallbackIntegratedApp:
         return END
 
     async def astream(self, input_state: Dict[str, Any], config=None):
-        state = dict(input_state)
+        state = input_state  # P0-1 fix: use same reference so ainvoke sees mutations
         current = "security_gate"
         while current != END:
             output = await self._run_node(current, state, config=config)
             yield {current: output}
-            current = self._next_node(current, state)
+            next_node = self._next_node(current, state)
+            logger.debug("[trace] ROUTE %s -> %s | is_approved=%s iter=%s wf=%s", current, next_node, state.get("is_approved"), state.get("iteration_count"), state.get("workflow_kind"))
+            current = next_node
 
     async def ainvoke(self, input_state: Dict[str, Any], config=None):
         state = dict(input_state)

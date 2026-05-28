@@ -100,8 +100,7 @@ async def execute_query(request: QueryRequest, http_request: Request):
                 _response_role(http_request),
             )
         # P1-2: 非计划查询也返回 200，附带错误信息和回退报告
-        from marathon_qa_assistant.apps.response_builders import _query_response_from_state
-        from marathon_qa_assistant.core.working_state import build_working_state
+        from marathon_qa_assistant.apps.response_builders import _query_response_from_state as _rb_query_response
         error_state = build_working_state(query=request.query, mode=request.mode, user_profile=profile)
         error_state["final_report"] = (
             f"## 查询处理遇到问题\n\n"
