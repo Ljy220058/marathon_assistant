@@ -57,6 +57,24 @@ $env:PYTHONPATH="apps/backend/src"; python -m py_compile apps/backend/src/marath
 $env:PYTHONPATH="apps/backend/src"; python -m pytest tests/test_training_plan_skeleton.py tests/test_api_cli_startup_contract.py -q
 ```
 
+## 6. 系统要求
+
+### 最低配置
+- **CPU**: 4 核以上
+- **内存**: 8GB RAM
+- **存储**: 5GB 可用空间（模型 + 向量库）
+
+### 推荐配置（LLM 实时推理）
+- **GPU**: NVIDIA GPU 6GB+ VRAM（运行 qwen2.5:latest 等 7B 模型）
+- **或**: DeepSeek API Key（设置 `DS_API_KEY` 环境变量使用云端推理）
+- **内存**: 16GB RAM
+
+### CPU-only 环境说明
+在仅有 CPU 的环境下：
+- LLM 推理可能超时（qwen2.5/llama3 在 CPU 上生成复杂训练计划需要 >60 秒）
+- 可使用 `response_mode: "skeleton"` 获得规则驱动的骨架训练计划（无需 LLM）
+- 或配置 `DS_API_KEY` 环境变量使用 DeepSeek 云端 API 获得完整 AI 教练体验
+
 ## 7. 快速启动
 
 ### 准备工作

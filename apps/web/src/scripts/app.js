@@ -29,6 +29,9 @@ const state = {
   activeFocusTrap: null,
   lastSideDrawerTrigger: null,
   lastRequestId: "",
+  // 缓存 /health 和 /llm-options 响应，用于 LLM 状态提示条
+  lastHealthData: null,
+  lastLlmOptionsData: null,
 };
 
 const FEEDBACK_QUICK_PRESETS = {
@@ -132,6 +135,7 @@ const clearDsApiKeyButton = $("clearDsApiKey");
 const dsApiKeyStatus = $("dsApiKeyStatus");
 const healthBox = $("health");
 const navHealth = $("navHealth");
+const llmStatusBanner = $("llmStatusBanner");
 const reportBox = $("report");
 const resultBadge = $("resultBadge");
 const cancelQueryButton = $("cancelQuery");
@@ -857,13 +861,23 @@ function explainApiError(error, base = getApiBase()) {
   return `${base} 返回错误：${message || "未知错误"}`;
 }
 
-function renderHealth(status, model, provider, error) {
+// renderHealth 接收完整 /health 响应或 error 信息
+function renderHealth(status, model, provider, error, fullData) {
+  // 缓存 health 数据供 LLM 状态提示条使用
+  if (fullData) {
+    state.lastHealthData = fullData;
+  } else if (!error) {
+    state.lastHealthData = { status, model, provider };
+  } else {
+    state.lastHealthData = null;
+  }
   if (error) {
     healthBox.className = "status-note error";
     navHealth.className = "nav-health error";
     healthBox.textContent = `离线：${explainApiError(error)}`;
     navHealth.textContent = "服务离线";
     navHealth.hidden = false;
+    renderLlmStatusHint();
     return;
   }
   healthBox.className = "status-note ok";
@@ -871,6 +885,65 @@ function renderHealth(status, model, provider, error) {
   healthBox.textContent = `在线：${status} / ${provider || "unknown"} / ${model || "unknown"}`;
   navHealth.textContent = "服务在线";
   navHealth.hidden = true;
+  renderLlmStatusHint();
+}
+
+// 根据 /health 和 /llm-options 数据在页面顶部显示 LLM 状态提示条
+function renderLlmStatusHint() {
+  if (!llmStatusBanner) return;
+  const health = state.lastHealthData;
+  const llmOpts = state.lastLlmOptionsData;
+
+  // 后端不可达
+  if (!health) {
+    llmStatusBanner.className = "llm-status-banner llm-status-warning";
+    llmStatusBanner.textContent = "后端服务不可用，无法生成训练计划。请确认本地服务已启动（端口 8010）。";
+    llmStatusBanner.hidden = false;
+    return;
+  }
+
+  // DeepSeek API key 是否已配置
+  let dsKeyConfigured = false;
+  if (llmOpts && Array.isArray(llmOpts.providers)) {
+    const dsProvider = llmOpts.providers.find((p) => p.id === "ds");
+    if (dsProvider && dsProvider.api_key_configured) {
+      dsKeyConfigured = true;
+    }
+  }
+
+  // 构建提示消息
+  let message = "";
+  let cssClass = "llm-status-banner";
+
+  if (health.ollama === false) {
+    // Ollama 不可达
+    message = "本地 LLM 不可用，可使用云端 API 或骨架模式生成训练计划。";
+    cssClass += " llm-status-warning";
+    if (dsKeyConfigured) {
+      message += " DeepSeek 云端 API 已配置，可在侧栏设置中切换模型来源。";
+    }
+  } else if (health.ollama === true && health.status === "degraded") {
+    // Ollama 可用但整体状态降级（如 KB/DB 问题，但仍可能是 LLM 慢的提示）
+    message = "本地 LLM 响应较慢，建议使用 DeepSeek 云端 API 获得更快体验。";
+    cssClass += " llm-status-info";
+    if (dsKeyConfigured) {
+      message += " DeepSeek 云端 API 已配置，可在侧栏设置中切换模型来源。";
+    }
+  } else if (health.ollama === true && health.status === "healthy") {
+    // 一切正常：仅在 DS key 已配置时提示可切换
+    if (dsKeyConfigured) {
+      message = "DeepSeek 云端 API 已配置。若本地 LLM 响应较慢，可在侧栏设置中切换至云端推理。";
+      cssClass += " llm-status-info";
+    }
+  }
+
+  if (message) {
+    llmStatusBanner.className = cssClass;
+    llmStatusBanner.textContent = message;
+    llmStatusBanner.hidden = false;
+  } else {
+    llmStatusBanner.hidden = true;
+  }
 }
 
 async function loadLlmOptions() {
@@ -900,6 +973,9 @@ async function loadLlmOptions() {
     llmProviderInput.dataset.models = JSON.stringify(modelsByProvider);
     llmProviderInput.dataset.providerConfig = JSON.stringify(configByProvider);
     renderModelOptions(savedModel || data.default?.model || defaultsByProvider[llmProviderInput.value] || "");
+    // 缓存 llm-options 数据供 LLM 状态提示条使用
+    state.lastLlmOptionsData = data;
+    renderLlmStatusHint();
   } catch (error) {
     llmProviderInput.value = localStorage.getItem("marathon_llm_provider") || "ollama";
     llmProviderInput.dataset.models = JSON.stringify({
@@ -915,6 +991,8 @@ async function loadLlmOptions() {
       ds: { api_key_configured: false, api_key_config_visible: true },
     });
     renderModelOptions(localStorage.getItem("marathon_llm_model") || "");
+    state.lastLlmOptionsData = null;
+    renderLlmStatusHint();
   }
 }
 
@@ -5273,7 +5351,8 @@ async function detectApiBase() {
       state.apiBase = base;
       state.lastQueryBase = base;
       localStorage.setItem("marathon-api-base", base);
-      renderHealth(data.status, data.model, data.provider);
+      // 传入完整 health 数据以支持 LLM 状态提示条
+      renderHealth(data.status, data.model, data.provider, null, data);
       return true;
     } catch {}
   }
@@ -5283,7 +5362,8 @@ async function detectApiBase() {
 async function ping({ autoDetect = false } = {}) {
   try {
     const data = await apiFetch("/health", { timeoutMs: 2500 });
-    renderHealth(data.status, data.model, data.provider);
+    // 传入完整 health 数据以支持 LLM 状态提示条
+    renderHealth(data.status, data.model, data.provider, null, data);
   } catch (error) {
     if (autoDetect && await detectApiBase()) {
       return;

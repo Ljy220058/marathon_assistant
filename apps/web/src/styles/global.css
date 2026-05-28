@@ -18,3 +18,65 @@
 @import "./progress-components.css";
 @import "./feedback-components.css";
 @import "./workspace-scenes.css";
+
+/* ── LLM Status Banner ── */
+.llm-status-banner {
+  position: sticky;
+  top: 64px;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 24px;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  border-bottom: 1px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.llm-status-banner.llm-status-warning {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.06);
+  color: var(--warning);
+}
+
+.llm-status-banner.llm-status-info {
+  border-color: rgba(96, 165, 250, 0.24);
+  background: rgba(96, 165, 250, 0.06);
+  color: var(--accent-2);
+}
+
+.llm-status-banner.llm-status-good {
+  border-color: rgba(52, 211, 153, 0.24);
+  background: rgba(52, 211, 153, 0.06);
+  color: var(--success);
+}
+
+.llm-status-banner[data-dismissible] {
+  padding-right: 48px;
+}
+
+.llm-status-banner-dismiss {
+  position: absolute;
+  right: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(165, 173, 189, 0.24);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.llm-status-banner-dismiss:hover {
+  border-color: var(--muted);
+  color: var(--text);
+}
