@@ -1272,17 +1272,50 @@ async def health_check():
 
 @app.get("/admin/health")
 async def admin_health_check(request: Request):
-    """Admin health check — full component status. Requires expert token."""
+    """Admin health check — full component status including KB, DB, Ollama, and model info.
+
+    Requires expert token.  Returns never-null status field.
+    """
     _require_expert_token(request)
-    kb_snapshot = get_knowledge_base_health_snapshot()
-    db_ok = _check_database_health()
+
+    # 收集各组件健康状态，用 try/except 确保 status 永不为 null
+    kb_snapshot: Dict[str, Any] = {}
+    db_ok: bool = False
+    ollama_ok: bool = False
+
+    try:
+        kb_snapshot = get_knowledge_base_health_snapshot()
+    except Exception:
+        kb_snapshot = {"ready": False, "reason": "KB health check failed"}
+
+    try:
+        db_ok = _check_database_health()
+    except Exception:
+        db_ok = False
+
+    try:
+        ollama_ok = await check_ollama_status()
+    except Exception:
+        ollama_ok = False
+
+    kb_ready = bool(kb_snapshot.get("ready", False)) if isinstance(kb_snapshot, dict) else False
+    all_ok = kb_ready and db_ok and ollama_ok
+
+    # 根据 LLM_PROVIDER 决定模型名称
+    provider = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
+    if provider in ("ds", "deepseek"):
+        model = os.getenv("DS_MODEL", os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro"))
+    elif provider in ("openai", "gpt"):
+        model = os.getenv("OPENAI_MODEL", "gpt-5.5")
+    else:
+        model = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
+
     return {
-        "status": "healthy" if (kb_snapshot.get("ready", False) and db_ok) else "degraded",
-        "provider": os.getenv("LLM_PROVIDER", "ollama"),
-        "model": os.getenv("OLLAMA_MODEL", "qwen2.5:latest"),
-        "rag": kb_snapshot,
+        "status": "healthy" if all_ok else "degraded",
+        "kb": kb_ready,
         "db": db_ok,
-        "request_id": getattr(request.state, "request_id", None),
+        "ollama": ollama_ok,
+        "model": model,
     }
 
 
