@@ -45,7 +45,7 @@ jobs:
             --cov=src/marathon_qa_assistant \
             --cov-report=term-missing \
             --cov-report=json \
-            --cov-fail-under=50 \
+            --cov-fail-under=70 \
             -v
 
       - name: Upload coverage artifact
@@ -76,3 +76,27 @@ jobs:
           ! rg -q 'sk-[A-Za-z0-9]{20,}' --no-ignore --glob '!.git' .
           ! rg -q 'Authorization:\s*Bearer' --no-ignore --glob '!.git' .
           ! rg -q 'C:\\Users\\' --no-ignore --glob '!.git' --glob '!docs/**' .
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build check
+        run: npm run build
+
+      - name: Security audit
+        run: npm audit --production --audit-level=high

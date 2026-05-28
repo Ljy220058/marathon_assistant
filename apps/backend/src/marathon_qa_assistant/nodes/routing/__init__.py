@@ -105,6 +105,13 @@ def after_planner_route(state: IntegratedState):
     return "executor"
 
 
+def after_executor_route(state: IntegratedState):
+    """训练计划生成后，若包含长距离训练日 (>=90min)，先路由到营养师再审计。"""
+    if state.get("needs_nutrition_review") and not state.get("nutritionist_done"):
+        return "nutritionist"
+    return "critic_auditor"
+
+
 def after_therapist_route(state: IntegratedState):
     if state.get("category") == "nutritionist" and not state.get("nutritionist_done"):
         return "nutritionist"

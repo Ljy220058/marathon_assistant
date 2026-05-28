@@ -987,6 +987,8 @@ class IntegratedState(TypedDict):
     validation_result: Dict[str, Any]
     repair_suggestions: List[Dict[str, Any]]
     repair_attempts: int
+    nutritionist_done: bool
+    needs_nutrition_review: bool
 
 
 WorkingState = IntegratedState

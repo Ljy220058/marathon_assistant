@@ -1,5 +1,5 @@
 {
-  "experience_level": "进阶",
+  "experience_level": "中级",
   "weekly_mileage": 80.4,
   "goal": "半马1:08:59",
   "injury_history": [
@@ -69,5 +69,12 @@
   "injury_or_fatigue": true,
   "current_half_time": "1:11:00",
   "recent_four_week_mileage": "100 km",
-  "notes": "用户提到当前周跑量为 50km，换算成 km 后为 80.4km；膝盖疼痛可能需要调整训练计划。"
+  "notes": "用户提到膝盖疼痛，当前周跑量为 50 km（换算为 80.4 km），可能需要调整训练计划以减轻膝盖负担",
+  "nutrition_profile": {
+    "weight_kg": 65.0,
+    "diet_preference": "无偏好",
+    "allergies": [],
+    "daily_calories": 2500,
+    "hydration_strategy": "运动中每 20 分钟饮水 150-250ml"
+  }
 }

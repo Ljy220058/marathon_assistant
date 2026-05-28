@@ -70,6 +70,8 @@ def build_working_state(
         "validation_result": {},
         "repair_suggestions": [],
         "repair_attempts": 0,
+        "nutritionist_done": False,
+        "needs_nutrition_review": False,
     }
 
 

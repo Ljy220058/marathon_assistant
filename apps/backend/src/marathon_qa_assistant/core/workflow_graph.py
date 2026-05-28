@@ -10,6 +10,7 @@ except ImportError:
 from marathon_qa_assistant.core.state_models import IntegratedState
 from marathon_qa_assistant.nodes.routing import (
     after_critic_auditor_route,
+    after_executor_route,
     after_planner_route,
     after_profile_update_route,
     after_router_route,
@@ -152,7 +153,11 @@ def build_integrated_app(node_handlers):
         after_planner_route,
         {"executor": "executor", "missing_info_handler": "missing_info_handler"},
     )
-    workflow.add_edge("executor", "critic_auditor")
+    workflow.add_conditional_edges(
+        "executor",
+        after_executor_route,
+        {"nutritionist": "nutritionist", "critic_auditor": "critic_auditor"},
+    )
     workflow.add_edge("coach", "therapist")
     workflow.add_edge("research_analyst", "therapist")
     workflow.add_edge("adaptive_coach", "therapist")

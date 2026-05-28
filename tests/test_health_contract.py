@@ -10,8 +10,8 @@ def test_public_health_returns_minimal_info(client: TestClient):
     resp = client.get("/health")
     assert resp.status_code in (200, 503)
     data = resp.json()
-    # Must only contain: status, kb, db
-    assert set(data.keys()) <= {"status", "kb", "db"}
+    # Must only contain: status, kb, db, ollama
+    assert set(data.keys()) <= {"status", "kb", "db", "ollama"}
     # Must NOT leak provider/model
     assert "provider" not in data
     assert "model" not in data

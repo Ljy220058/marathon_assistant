@@ -52,6 +52,18 @@ MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
 
 
 SCHEMA_SQL = """
+-- 多用户支持：API token → user_id 映射表
+CREATE TABLE IF NOT EXISTS users (
+    id              TEXT PRIMARY KEY,
+    display_name    TEXT NOT NULL,
+    api_token_hash  TEXT NOT NULL UNIQUE,
+    is_active       INTEGER NOT NULL DEFAULT 1,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_token_hash ON users(api_token_hash);
+
 CREATE TABLE IF NOT EXISTS sync_state (
     id                  TEXT PRIMARY KEY,
     user_id             TEXT NOT NULL DEFAULT 'default_user',
@@ -314,6 +326,64 @@ class _Database:
         if hasattr(self._local, "conn") and self._local.conn:
             self._local.conn.close()
             self._local.conn = None
+
+    # ---- 用户管理 ----
+
+    @staticmethod
+    def _hash_api_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def generate_api_token() -> str:
+        return f"mara-{uuid.uuid4().hex}"
+
+    def create_user(self, display_name: str) -> Dict[str, Any]:
+        user_id = f"user-{uuid.uuid4().hex[:12]}"
+        token = self.generate_api_token()
+        conn = self._get_conn()
+        conn.execute(
+            "INSERT INTO users (id, display_name, api_token_hash) VALUES (?, ?, ?)",
+            (user_id, display_name, self._hash_api_token(token)),
+        )
+        conn.commit()
+        return {"user_id": user_id, "display_name": display_name, "api_token": token}
+
+    def get_user_by_token(self, token: str) -> Optional[Dict[str, Any]]:
+        if not token:
+            return None
+        row = self._get_conn().execute(
+            "SELECT * FROM users WHERE api_token_hash = ? AND is_active = 1",
+            (self._hash_api_token(token),),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_users(self) -> list:
+        rows = self._get_conn().execute(
+            "SELECT id, display_name, is_active, created_at FROM users ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def deactivate_user(self, user_id: str) -> bool:
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE users SET is_active = 0, updated_at = datetime('now') WHERE id = ?",
+            (user_id,),
+        )
+        conn.commit()
+        return conn.total_changes > 0
+
+    def has_any_user(self) -> bool:
+        row = self._get_conn().execute(
+            "SELECT COUNT(*) as cnt FROM users WHERE is_active = 1"
+        ).fetchone()
+        return (row["cnt"] if row else 0) > 0
+
+    def ensure_default_user(self) -> str:
+        """初始化时确保至少有一个默认用户。"""
+        if self.has_any_user():
+            return "existing_users_found"
+        result = self.create_user("默认用户")
+        return result["user_id"]
 
     # ---- sync_state 表操作 ----
 

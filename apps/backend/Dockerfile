@@ -33,12 +33,16 @@ COPY src/ ./src/
 RUN chown -R marathon:marathon /app
 USER marathon
 
+ARG API_KEY=""
+ENV API_KEY=${API_KEY}
+
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONUTF8=1
 
 EXPOSE 8000
 
+# /health 已覆盖 KB + DB + Ollama 三项依赖探测，返回 healthy/degraded
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" || exit 1
 

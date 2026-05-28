@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 import asyncio
 import time
@@ -91,9 +92,28 @@ from marathon_qa_assistant.apps.schemas import (
 DEFAULT_API_USER_ID = "default_user"
 
 
+def _resolve_user_id(request: Request) -> str:
+    """从请求状态获取已认证的 user_id；未认证时返回默认用户。"""
+    uid = getattr(request.state, "user_id", None)
+    return str(uid) if uid else DEFAULT_API_USER_ID
+
+
+def _authenticated_user(request: Request) -> str:
+    """获取已认证 user_id；未认证时直接拒绝。"""
+    uid = getattr(request.state, "user_id", None)
+    if not uid:
+        raise HTTPException(status_code=401, detail="API 访问需要有效凭据。")
+    return str(uid)
+
+
 @asynccontextmanager
 async def _lifespan(app_instance: FastAPI):
     app_instance.state.rag_bootstrap = bootstrap_knowledge_base()
+    # 确保至少有一个默认用户（首次启动时自动创建）
+    try:
+        get_db().ensure_default_user()
+    except Exception:
+        pass
     yield
 
 
@@ -171,7 +191,18 @@ def _prune_rate_limit_buckets(now: float) -> None:
 
 
 def _configured_api_token() -> str:
+    """保留向后兼容：检查是否配置了旧版单 token。"""
     return os.getenv("MARATHON_API_TOKEN", "").strip()
+
+
+def _auth_enabled() -> bool:
+    """判断是否启用 API 认证：数据库有用户记录或配置了旧版 token。"""
+    if _configured_api_token():
+        return True
+    try:
+        return get_db().has_any_user()
+    except Exception:
+        return False
 
 
 def _request_api_token(request: Request) -> str:
@@ -179,6 +210,25 @@ def _request_api_token(request: Request) -> str:
     if auth.lower().startswith("bearer "):
         return auth[7:].strip()
     return request.headers.get("X-Marathon-API-Key", "").strip()
+
+
+def _lookup_user_by_request(request: Request) -> Optional[str]:
+    """从请求 token 查找用户；返回 user_id 或 None。"""
+    token = _request_api_token(request)
+    if not token:
+        return None
+    # 优先尝试数据库查找
+    try:
+        user = get_db().get_user_by_token(token)
+        if user:
+            return str(user["id"])
+    except Exception:
+        pass
+    # 向后兼容：旧的单 token 模式
+    configured = _configured_api_token()
+    if configured and hmac.compare_digest(token, configured):
+        return DEFAULT_API_USER_ID
+    return None
 
 
 def _configured_expert_api_token() -> str:
@@ -202,18 +252,18 @@ def _response_role(request: Request) -> str:
     if requested == "expert":
         if _request_has_expert_response_access(request):
             return "expert"
-        if not _configured_api_token() and not _configured_expert_api_token():
+        if not _auth_enabled() and not _configured_expert_api_token():
             return "expert"
         raise HTTPException(status_code=403, detail="专家响应需要有效专家凭据。")
     if requested:
         raise HTTPException(status_code=400, detail="无效 response role。")
-    if _configured_api_token() or _configured_expert_api_token():
+    if _auth_enabled() or _configured_expert_api_token():
         return "runner"
     return "expert"
 
 
 def _requires_api_token(request: Request) -> bool:
-    if not _configured_api_token():
+    if not _auth_enabled():
         return False
     if request.method.upper() == "OPTIONS":
         return False
@@ -266,14 +316,15 @@ async def _rate_limit_middleware(request: Request, call_next):
 async def _api_token_middleware(request: Request, call_next):
     if not _requires_api_token(request):
         return await call_next(request)
-    expected = _configured_api_token()
-    supplied = _request_api_token(request)
-    if not supplied or not hmac.compare_digest(supplied, expected):
+
+    user_id = _lookup_user_by_request(request)
+    if not user_id:
         return JSONResponse(
             {"detail": "API 访问需要有效凭据。"},
             status_code=401,
             headers={"WWW-Authenticate": "Bearer"},
         )
+    request.state.user_id = user_id
     return await call_next(request)
 
 
@@ -306,11 +357,11 @@ async def _request_observability_middleware(request: Request, call_next):
     return response
 
 def _require_default_user(user_id: str):
-    if user_id != DEFAULT_API_USER_ID:
-        raise HTTPException(
-            status_code=400,
-            detail=f"当前 API 仅支持单用户画像，user_id 必须为 {DEFAULT_API_USER_ID!r}。",
-        )
+    """向后兼容：开发模式下允许 default_user，生产模式下由 token 中间件保证 user_id。"""
+    if not _auth_enabled():
+        return
+    # 生产模式：不做额外校验，token 中间件已经设置了正确的 user_id
+    # 保留此函数以保持最小 diff
 
 
 def _load_structured_plan(plan_row: Dict[str, Any]) -> Dict[str, Any]:
@@ -338,15 +389,15 @@ def _normalize_frontend_feedback(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _save_profile_patch(patch: Dict[str, Any]) -> Dict[str, Any]:
-    profile = load_user_profile()
+def _save_profile_patch(patch: Dict[str, Any], user_id: str = DEFAULT_API_USER_ID) -> Dict[str, Any]:
+    profile = load_user_profile(user_id)
     profile.update(patch or {})
     sync_user_zones(profile)
-    save_user_profile(profile)
+    save_user_profile(profile, user_id)
     return profile
 
 
-def _profile_zones(profile: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+def _profile_zones(profile: Dict[str, Any], user_id: str = DEFAULT_API_USER_ID) -> Dict[str, Dict[str, str]]:
     working = dict(profile or {})
     sync_user_zones(working)
     return {
@@ -553,7 +604,26 @@ _DAY_NAME_ALIASES = {
     "星期日": "Sunday",
     "周天": "Sunday",
     "星期天": "Sunday",
+    "礼拜一": "Monday",
+    "礼拜二": "Tuesday",
+    "礼拜三": "Wednesday",
+    "礼拜四": "Thursday",
+    "礼拜五": "Friday",
+    "礼拜六": "Saturday",
+    "礼拜天": "Sunday",
 }
+
+# 全局约束模式：(正则, 语义)
+_GLOBAL_CONSTRAINT_PATTERNS: List[Tuple[re.Pattern, str, callable]] = [
+    (re.compile(r"本周(完全|都)?没空|这周(都)?不行|整周不可用"), "blocked_entire_week",
+     lambda: {"unavailable_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "scope": "blocked_entire_week"}),
+    (re.compile(r"仅(周末|周六日|周六周日)有空|只有(周末|周六日|周六周日)能跑|只能(周末|周六日)"), "weekend_only",
+     lambda: {"unavailable_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "scope": "weekend_only"}),
+    (re.compile(r"只能(晨跑|早上跑|早晨跑)|只有(早上|早晨)能跑"), "morning_only",
+     lambda: {"time_window": "morning"}),
+    (re.compile(r"只能(晚上跑|夜跑)|只有(晚上|傍晚)能跑"), "evening_only",
+     lambda: {"time_window": "evening"}),
+]
 
 
 def _parse_schedule_constraints(raw_text: str = "", feedback: Optional[Dict[str, Any]] = None, override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -574,10 +644,24 @@ def _parse_schedule_constraints(raw_text: str = "", feedback: Optional[Dict[str,
     for token, normalized in _DAY_NAME_ALIASES.items():
         if token in notes and normalized not in unavailable:
             unavailable.append(normalized)
+    # 全局约束识别
+    time_window = str(raw_constraints.get("time_window") or "").strip()
+    scope = str(raw_constraints.get("scope") or "this_week")
+    for pattern, pattern_scope, handler in _GLOBAL_CONSTRAINT_PATTERNS:
+        if pattern.search(notes):
+            result = handler()
+            if "unavailable_days" in result and not unavailable:
+                unavailable = result["unavailable_days"]
+            if result.get("scope"):
+                scope = result["scope"]
+            if result.get("time_window"):
+                time_window = time_window or result["time_window"]
+
     return {
         "unavailable_days": unavailable,
         "reason": str(raw_constraints.get("reason") or raw_constraints.get("notes") or notes or "").strip(),
-        "scope": str(raw_constraints.get("scope") or "this_week"),
+        "scope": scope,
+        "time_window": time_window,
     }
 
 
@@ -601,14 +685,29 @@ def _event_original_payload(event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _recovery_suggestion(reason: str) -> Dict[str, Any]:
-    return {
+DOWNGRADE_LADDER = {
+    "vo2max": {"title": "阈值跑", "main_set": "3 x 6 min 阈值配速，组间慢跑 3 min", "duration_min": 40, "workout_type": "threshold"},
+    "threshold": {"title": "节奏跑", "main_set": "20 min 节奏跑，配速比阈值慢 5-8s/km", "duration_min": 35, "workout_type": "tempo"},
+    "intervals": {"title": "轻松跑", "main_set": "30 min 轻松跑 + 10 min 动态拉伸", "duration_min": 40, "workout_type": "easy"},
+    "tempo": {"title": "有氧耐力跑", "main_set": "40 min 有氧耐力跑，保持可完整说话的强度", "duration_min": 40, "workout_type": "aerobic"},
+    "aerobic": {"title": "轻松跑", "main_set": "30 min 轻松跑，保持能完整说话的轻松强度", "duration_min": 30, "workout_type": "easy"},
+    "long_run": {"title": "中等距离跑", "main_set": "50 min 有氧耐力跑，比平时长距离短且慢", "duration_min": 50, "workout_type": "aerobic"},
+    "easy": {"title": "恢复轻松跑", "main_set": "恢复轻松跑 20 分钟 + 静态拉伸 10 分钟", "duration_min": 30, "workout_type": "recovery"},
+    "recovery": {"title": "完全休息或散步", "main_set": "完全休息，或 20 min 散步 + 泡沫轴放松", "duration_min": 20, "workout_type": "rest"},
+}
+
+
+def _recovery_suggestion(reason: str, workout_type: str = "") -> Dict[str, Any]:
+    fallback = {
         "title": "恢复轻松跑",
         "main_set": "恢复轻松跑 30 分钟，保持能完整说话的轻松强度。",
         "duration_min": 30,
         "workout_type": "recovery",
-        "reason": reason,
     }
+    key = (workout_type or "").strip().lower().replace(" ", "_").replace("-", "_")
+    suggestion = dict(DOWNGRADE_LADDER.get(key, fallback))
+    suggestion["reason"] = reason
+    return suggestion
 
 
 def _replan_no_safe_slot(
@@ -710,7 +809,7 @@ def _build_feedback_replan(
             }
         )
         moved_event_ids.add(str(event.get("id") or ""))
-        break
+        # 处理所有不可用日事件，不提前 break
 
     for event in future_events:
         event_id_value = str(event.get("id") or "")
@@ -720,8 +819,7 @@ def _build_feedback_replan(
             continue
         if _event_day_name(event) in unavailable:
             continue
-        suggested = _recovery_suggestion(reason)
-        # 反馈导致的训练压力调整只写 patch，用户确认前不覆盖原计划。
+        suggested = _recovery_suggestion(reason, str(event.get("workout_type") or ""))
         patches.append(
             {
                 "event_id": event.get("id"),
@@ -731,7 +829,7 @@ def _build_feedback_replan(
                 "reason": reason,
             }
         )
-        break
+        # 为所有可用日事件生成降级建议，不提前 break
 
     if not patches:
         return _replan_no_safe_slot(feedback_id=feedback_id, schedule_constraints=schedule_constraints)
@@ -857,6 +955,7 @@ def _save_plan_if_ready(
     structured_plan: Optional[Dict[str, Any]],
     request: QueryRequest,
     calendar_days: Optional[List[Dict[str, Any]]] = None,
+    user_id: str = DEFAULT_API_USER_ID,
 ) -> Optional[str]:
     if not isinstance(structured_plan, dict) or not structured_plan.get("week_plans"):
         return None
@@ -864,7 +963,7 @@ def _save_plan_if_ready(
         return get_db().save_training_plan(
             structured_plan,
             source_query=request.query,
-            user_id=request.user_id,
+            user_id=user_id,
             calendar_days=calendar_days,
         )
     except Exception:
@@ -1361,6 +1460,7 @@ async def _build_skeleton_plan_response(
     *,
     generation_status: str,
     message: str,
+    user_id: str = DEFAULT_API_USER_ID,
 ) -> QueryResponse:
     started = time.perf_counter()
     state = await asyncio.to_thread(_build_skeleton_state, request, profile)
@@ -1420,7 +1520,7 @@ async def _build_skeleton_plan_response(
         evidence_chain=evidence_chain,
     )
     save_started = time.perf_counter()
-    training_plan_id = _save_plan_if_ready(structured_plan, request, daily_schedule_cards)
+    training_plan_id = _save_plan_if_ready(structured_plan, request, daily_schedule_cards, user_id=user_id)
     save_elapsed = time.perf_counter() - save_started
     total_elapsed = time.perf_counter() - started
     response = QueryResponse(
@@ -1466,6 +1566,7 @@ def _query_response_from_state(
     generation_status: str,
     message: str = "",
     training_plan_id: Optional[str] = None,
+    user_id: str = DEFAULT_API_USER_ID,
 ) -> QueryResponse:
     raw_structured_report = result.get("structured_report")
     structured_report = dict(raw_structured_report) if isinstance(raw_structured_report, dict) else raw_structured_report
@@ -1577,7 +1678,7 @@ def _query_response_from_state(
         token_usage=result.get("token_usage", {}),
         audit_scores=result.get("audit_scores", {}),
         guided_questions=result.get("guided_questions", []),
-        training_plan_id=training_plan_id or _save_plan_if_ready(structured_plan, request, daily_schedule_cards),
+        training_plan_id=training_plan_id or _save_plan_if_ready(structured_plan, request, daily_schedule_cards, user_id=user_id),
         generation_status=generation_status,
         llm_provider=_normalize_provider(request.llm_provider),
         llm_model=_selected_model(request),
@@ -1717,17 +1818,47 @@ async def admin_kb_governance(request: Request):
     return _admin_kb_governance_summary()
 
 
+@app.get("/admin/users")
+async def admin_list_users(request: Request):
+    """列出所有已注册用户。需要 expert token。"""
+    _require_expert_token(request)
+    return {"users": get_db().list_users()}
+
+
+@app.post("/admin/users")
+async def admin_create_user(request: Request):
+    """创建新用户并返回 API token。需要 expert token。"""
+    _require_expert_token(request)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    display_name = str(body.get("display_name") or "新用户").strip()
+    result = get_db().create_user(display_name)
+    return {"created": True, **result}
+
+
+@app.delete("/admin/users/{user_id}")
+async def admin_deactivate_user(user_id: str, request: Request):
+    """停用用户。需要 expert token。"""
+    _require_expert_token(request)
+    ok = get_db().deactivate_user(user_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="用户不存在。")
+    return {"deactivated": True, "user_id": user_id}
+
+
 @app.get("/ops/metrics", response_model=OpsMetricsResponse)
 async def get_ops_metrics():
     return metrics_snapshot()
 
 
 @app.delete("/plans/{plan_id}")
-async def delete_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
+async def delete_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_API_USER_ID):
     """删除已保存的训练计划及其日历事件。"""
-    _require_default_user(user_id)
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
     plan = get_db().get_plan(plan_id)
-    if not plan or plan.get("user_id") != user_id:
+    if not plan or plan.get("user_id") != uid:
         raise HTTPException(status_code=404, detail="训练计划不存在。")
     if not get_db().delete_training_plan(plan_id):
         raise HTTPException(status_code=404, detail="训练计划不存在。")
@@ -1735,61 +1866,60 @@ async def delete_plan(plan_id: str, user_id: str = DEFAULT_API_USER_ID):
 
 
 @app.get("/profile")
-async def get_profile(user_id: str = DEFAULT_API_USER_ID):
-    """返回当前单用户跑者画像，供 Astro 工作台初始化。"""
-    _require_default_user(user_id)
-    return {"user_id": user_id, "profile": load_user_profile()}
+async def get_profile(http_request: Request, user_id: str = DEFAULT_API_USER_ID):
+    """返回当前用户跑者画像，供 Astro 工作台初始化。"""
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
+    return {"user_id": uid, "profile": load_user_profile(uid)}
 
 
 @app.post("/profile")
-async def save_profile(request: ProfileRequest):
+async def save_profile(request: ProfileRequest, http_request: Request):
     """保存 Astro 工作台提交的跑者画像草稿。"""
-    _require_default_user(request.user_id)
-    profile = _save_profile_patch(request.profile or {})
-    return {"user_id": request.user_id, "profile": profile}
+    uid = _resolve_user_id(http_request)
+    profile = _save_profile_patch(request.profile or {}, user_id=uid)
+    return {"user_id": uid, "profile": profile}
 
 
 @app.get("/profile/{user_id}")
-async def get_profile_by_user(user_id: str):
+async def get_profile_by_user(user_id: str, http_request: Request):
     """按设计文档路径返回完整用户画像。"""
-    _require_default_user(user_id)
-    return {"user_id": user_id, "profile": load_user_profile()}
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
+    return {"user_id": uid, "profile": load_user_profile(uid)}
 
 
 @app.put("/profile/{user_id}")
-async def put_profile_by_user(user_id: str, request: ProfileRequest):
+async def put_profile_by_user(user_id: str, request: ProfileRequest, http_request: Request):
     """按设计文档路径更新用户画像；当前单用户模式下采用合并写入。"""
-    _require_default_user(user_id)
-    _require_default_user(request.user_id)
-    profile = _save_profile_patch(request.profile or {})
-    return {"user_id": user_id, "profile": profile}
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
+    profile = _save_profile_patch(request.profile or {}, user_id=uid)
+    return {"user_id": uid, "profile": profile}
 
 
 @app.patch("/profile/{user_id}/fields/{field_key}")
-async def patch_profile_field(user_id: str, field_key: str, request: ProfileFieldRequest):
+async def patch_profile_field(user_id: str, field_key: str, request: ProfileFieldRequest, http_request: Request):
     """更新单个画像字段，并同步由画像衍生的强度区间。"""
-    _require_default_user(user_id)
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
     if not field_key or field_key.startswith("_"):
         raise HTTPException(status_code=400, detail="画像字段名无效。")
-    profile = _save_profile_patch({field_key: request.value})
-    return {"user_id": user_id, "field_key": field_key, "profile": profile}
+    profile = _save_profile_patch({field_key: request.value}, user_id=uid)
+    return {"user_id": uid, "field_key": field_key, "profile": profile}
 
 
 @app.get("/profile/{user_id}/zones")
-async def get_profile_zones(user_id: str):
+async def get_profile_zones(user_id: str, http_request: Request):
     """从当前画像实时衍生 LTHR 九区和配速区间。"""
-    _require_default_user(user_id)
-    zones = _profile_zones(load_user_profile())
-    return {"user_id": user_id, **zones}
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
+    zones = _profile_zones(load_user_profile(uid))
+    return {"user_id": uid, **zones}
 
 
 @app.post("/profile/{user_id}/nlu-extract")
-async def preview_profile_nlu_extract(user_id: str, request: NluExtractRequest):
+async def preview_profile_nlu_extract(user_id: str, request: NluExtractRequest, http_request: Request):
     """从自然语言中提取画像变更建议；需要用户确认后才写入。"""
-    _require_default_user(user_id)
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
     suggestions = _extract_profile_suggestions(request.text)
     return {
-        "user_id": user_id,
+        "user_id": uid,
         "suggested_changes": suggestions,
         "requires_confirmation": True,
     }
@@ -1841,23 +1971,23 @@ async def get_llm_options(request: Request):
 
 
 @app.get("/plans")
-async def list_plans(user_id: str = DEFAULT_API_USER_ID):
+async def list_plans(http_request: Request, user_id: str = DEFAULT_API_USER_ID):
     """列出本地已保存训练计划。空列表表示暂无历史，不应返回 404。"""
-    _require_default_user(user_id)
-    return {"plans": get_db().list_training_plans(user_id=user_id)}
+    uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
+    return {"plans": get_db().list_training_plans(user_id=uid)}
 
 
 @app.post("/plans")
-async def save_plan(request: SavePlanRequest):
+async def save_plan(request: SavePlanRequest, http_request: Request):
     """保存前端当前结构化训练计划，并同步生成本地日历事件。"""
-    _require_default_user(request.user_id)
+    uid = _resolve_user_id(http_request)
     if not request.structured_training_plan:
         raise HTTPException(status_code=400, detail="structured_training_plan 不能为空。")
     calendar_settings = request.calendar_settings or {}
     plan_id = get_db().save_training_plan(
         request.structured_training_plan,
         source_query=request.source_query,
-        user_id=request.user_id,
+        user_id=uid,
         calendar_days=request.calendar_days,
         training_start_date=str(calendar_settings.get("training_start_date") or ""),
         default_start_time=str(calendar_settings.get("default_start_time") or "07:00"),
@@ -1868,7 +1998,7 @@ async def save_plan(request: SavePlanRequest):
 @app.post("/feedback", response_model=FeedbackResponse)
 async def submit_feedback(request: FeedbackRequest, http_request: Request):
     """根据训练反馈返回自适应调整建议，供 Astro 反馈面板使用。"""
-    _require_default_user(request.user_id)
+    uid = _resolve_user_id(http_request)
     workout_feedback = normalize_workout_feedback(
         _normalize_frontend_feedback(request.feedback or {}),
         raw_text=request.raw_text,
@@ -1894,12 +2024,12 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
     if bool(request.plan_id) != bool(request.event_id):
         raise HTTPException(status_code=400, detail="保存训练反馈需要同时提供 plan_id 和 event_id。")
     if request.plan_id and request.event_id:
-        if not get_db().get_event(request.plan_id, request.event_id, request.user_id):
+        if not get_db().get_event(request.plan_id, request.event_id, uid):
             raise HTTPException(status_code=404, detail="训练日历事件不存在，反馈未保存。")
         feedback_id = get_db().save_training_event_feedback(
             plan_id=request.plan_id,
             event_id=request.event_id,
-            user_id=request.user_id,
+            user_id=uid,
             workout_feedback=workout_feedback,
             reason_codes=reason_codes,
             adaptive_adjustment=adaptive_adjustment,
@@ -1911,7 +2041,7 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
             affected_events = get_db().apply_feedback_effect_to_future_events(
                 plan_id=request.plan_id,
                 event_id=request.event_id,
-                user_id=request.user_id,
+                user_id=uid,
                 feedback_id=feedback_id,
                 reason_codes=reason_codes,
                 adaptive_adjustment=adaptive_adjustment,
@@ -1937,7 +2067,7 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
                 get_db().save_feedback_replan(
                     plan_id=request.plan_id,
                     feedback_id=feedback_id,
-                    user_id=request.user_id,
+                    user_id=uid,
                     feedback_replan=feedback_replan,
                     apply_patch=False,
                     exception_type="feedback_replan_suggested",
@@ -2142,9 +2272,9 @@ async def update_plan_event_schedule(
 @app.post("/query", response_model=QueryResponse)
 async def execute_query(request: QueryRequest, http_request: Request):
     """查询接口。Astro 计划生成默认可走 skeleton-first，避免前端长时间空等。"""
-    _require_default_user(request.user_id)
+    user_id = _resolve_user_id(http_request)
 
-    profile = merge_plan_profile_overrides(request.query, load_user_profile())
+    profile = merge_plan_profile_overrides(request.query, load_user_profile(user_id))
     response_mode = str(request.response_mode or "full").strip().lower()
     skeleton_requested = response_mode in {"skeleton", "skeleton_first"}
     empty_profile_plan = not str(request.query or "").strip() and _has_plan_generation_profile(profile)
@@ -2157,6 +2287,7 @@ async def execute_query(request: QueryRequest, http_request: Request):
                 profile,
                 generation_status="skeleton_ready",
                 message="已先返回确定性结构化计划骨架，避免模型长时间生成导致前端卡住。",
+                user_id=user_id,
             ),
             _response_role(http_request),
         )
@@ -2176,6 +2307,7 @@ async def execute_query(request: QueryRequest, http_request: Request):
                 request,
                 generation_status="complete",
                 message="完整工作流已返回。",
+                user_id=user_id,
             ),
             _response_role(http_request),
         )
@@ -2187,6 +2319,7 @@ async def execute_query(request: QueryRequest, http_request: Request):
                     profile,
                     generation_status="llm_timeout_skeleton",
                     message=f"完整 LLM 工作流超过 {request.timeout_sec} 秒，已回退到结构化规则骨架。",
+                    user_id=user_id,
                 ),
                 _response_role(http_request),
             )
@@ -2199,6 +2332,7 @@ async def execute_query(request: QueryRequest, http_request: Request):
                     profile,
                     generation_status="llm_error_skeleton",
                     message=f"完整 LLM 工作流异常，已回退到结构化规则骨架：{_safe_workflow_error_summary(e)}。",
+                    user_id=user_id,
                 ),
                 _response_role(http_request),
             )

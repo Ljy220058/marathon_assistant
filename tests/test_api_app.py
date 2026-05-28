@@ -2120,10 +2120,9 @@ def test_feedback_generates_local_replan_patch_with_schedule_constraints(tmp_pat
     assert replan["schedule_constraints"]["unavailable_days"] == ["Tuesday", "Thursday"]
     assert replan["patches"]
     patched_ids = {patch["event_id"] for patch in replan["patches"]}
-    # 不可用日 (Tue) 的事件会生成 move patch，因此在 patched_ids 中
+    # 不可用日 (Tue, Thu) 的事件都会生成 move patch
     assert events[1]["id"] in patched_ids
-    # Thu 没有被处理（只处理第一个不可用日），因此不在 patched_ids 中
-    assert events[3]["id"] not in patched_ids
+    assert events[3]["id"] in patched_ids
     first_patch = replan["patches"][0]
     assert first_patch["original"]["main_set"]
     assert first_patch["suggested"]["main_set"]

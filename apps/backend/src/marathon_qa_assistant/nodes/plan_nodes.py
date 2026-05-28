@@ -197,6 +197,15 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 
 """
 
+    # 营养画像
+    nutrition = (profile.get("nutrition_profile") or {})
+    if isinstance(nutrition, dict) and nutrition.get("weight_kg"):
+        prompt += f"""- 体重：{nutrition.get('weight_kg', 0)} kg
+- 饮食偏好：{nutrition.get('diet_preference', '无偏好')}
+- 过敏食物：{', '.join(nutrition.get('allergies') or []) or '无'}
+
+"""
+
     enhancement_missing = state.get("enhancement_missing_fields", [])
     if enhancement_missing:
         from marathon_qa_assistant.nodes.profile_and_retrieval import ENHANCEMENT_FIELD_LABELS
@@ -238,7 +247,14 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 - 轻松跑 (Easy Run)：30-60 分钟恢复性慢跑，非常舒适的配速
 
 ══════════════════════════
-【知识库证据】
+【补给与营养约束】（必须嵌入到对应训练日备注中）
+- 训练时长 > 60 分钟的课表应在备注中标明：训练中每 30-40 分钟补充 30-60g 碳水（凝胶/运动饮料/香蕉）。
+- 训练后 30 分钟内需补充碳水+蛋白（比例 3:1），2 小时内完成正餐。
+- 补水策略：{nutrition.get('hydration_strategy', '运动中每 20 分钟饮水 150-250ml') if isinstance(nutrition, dict) else '运动中每 20 分钟饮水 150-250ml'}。
+- 饮食偏好：{nutrition.get('diet_preference', '无偏好') if isinstance(nutrition, dict) else '无偏好'}。如为素食/低碳水，需在备注中给出替代补给方案。
+- 高温/高湿环境下每额外流失 1L 汗液需补充 1.5L 含电解质液体。
+
+    【知识库证据】
 {evidence_lines}
 
 【引用规则】
@@ -384,6 +400,18 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     if fallback_reason:
         logs.append(fallback_reason)
 
+    # 检测长距离训练日，自动触发营养师节点
+    needs_nutrition = False
+    if isinstance(structured_training_plan, dict):
+        for week in (structured_training_plan.get("week_plans") or []):
+            for day in (week.get("days") or []):
+                duration = int(day.get("duration_min") or 0)
+                if duration >= 90:
+                    needs_nutrition = True
+                    break
+            if needs_nutrition:
+                break
+
     return {
         "draft_plan": content,
         "draft_ready": True,
@@ -395,5 +423,6 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         "evidence_bundle": evidence_bundle,
         "rag_sources": rag_sources,
         "token_usage": usage,
-        "reasoning_log": logs,
+        "reasoning_log": logs + (['[executor] 检测到长距离训练日 (>=90min)，标记需要营养师复核'] if needs_nutrition else []),
+        "needs_nutrition_review": needs_nutrition,
     }
