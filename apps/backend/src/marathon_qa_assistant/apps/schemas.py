@@ -11,7 +11,7 @@ class QueryRequest(BaseModel):
     llm_provider: str = "ollama"
     llm_model: str = ""
     response_mode: str = "full"
-    timeout_sec: int = Field(default=45, ge=5, le=180)
+    timeout_sec: int = Field(default=120, ge=5, le=600)
 
 
 class QueryResponse(BaseModel):
