@@ -417,7 +417,10 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
 
     for item in evidence_items:
         tier = str(item.get("tier") or "")
-        if tier in {"kb_fallback", "action_library"} and not str(item.get("source_path") or "").strip():
+        # P0-2: 图谱来源的证据天然没有文档路径，跳过 source_path 检查
+        trace = item.get("trace") if isinstance(item, dict) else {}
+        is_graph_sourced = isinstance(trace, dict) and trace.get("graph_hit")
+        if tier in {"kb_fallback", "action_library"} and not is_graph_sourced and not str(item.get("source_path") or "").strip():
             feedback.append(f"证据 {item.get('citation_label', '')} 缺少 source_path")
             break
 

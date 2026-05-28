@@ -7,6 +7,7 @@ try:
 except ImportError:
     RunnableConfig = Any
 
+from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
@@ -701,13 +702,13 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         if entity not in entities:
             entities.append(entity)
 
-    hits = await get_context(query, top_k=6)  # 稍微多取一点以便后续融合排序
+    hits = await get_context(query, top_k=10)  # P0-2: 多取以便融合排序后有足够的去重后证据
     if not hits and entities:
-        hits = await get_context(" ".join(entities), top_k=6)
+        hits = await get_context(" ".join(entities), top_k=10)
 
     rag_sources = build_rag_sources(hits)
-    
-    # 获取图谱上下文（展开“动作库”等通用实体为具体标签）
+
+    # 获取图谱上下文（展开"动作库"等通用实体为具体标签）
     kg_entities = expand_entities_for_kg(entities)
     try:
         graph_res = graph_engine.search_graph(kg_entities, max_hops=2)
@@ -719,13 +720,13 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         graph_context = ""
         mermaid_graph = "flowchart TD\n  Empty[Graph Error]"
 
-    # 构建统一的 Ranked Evidence
+    # 构建统一的 Ranked Evidence（P0-2: top_k=6 确保去重后仍有足够证据供教练引用）
     ranked_evidence = build_ranked_evidence(
         query=query,
         vector_hits=hits,
         graph_edges=graph_edges,
         entities=entities,
-        top_k=5
+        top_k=6
     )
 
     evidence_gate = evaluate_plan_evidence(hits, query, state.get("intent_type", "qa"))
@@ -749,12 +750,20 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         )
         logs.append(f"[evidence_trace] top={top_trace}")
 
+    # P0-2: 从 ranked_evidence 构建 evidence_bundle，确保 evidence_state 不再返回空的 evidence_items
+    evidence_bundle = build_evidence_bundle(
+        query=query,
+        ranked_evidence=ranked_evidence,
+        rag_sources=rag_sources,
+        health=state.get("evidence_bundle", {}).get("health"),
+    )
     return {
         "entities": entities,
         "selected_entities": entities,
         "gate_hits": hits,
         "rag_sources": rag_sources,
         "ranked_evidence": ranked_evidence,
+        "evidence_bundle": evidence_bundle,
         "graph_context": graph_context,
         "mermaid_graph": mermaid_graph,
         "token_usage": ensure_usage(state.get("token_usage")),

@@ -89,6 +89,9 @@ def format_evidence_bundle_lines(bundle: Optional[Dict[str, Any]], limit: int = 
         page_text = f" p.{page}" if page not in (None, "", 0) else ""
         snippet = str(item.get("snippet") or item.get("text") or "").replace("\n", " ").strip()
         lines.append(f"{label} [{tier}] {source}{page_text}: {snippet[:220]}")
+    # P0-2: 告知教练 LLM 可用的引用编号范围，避免编造不存在的引用编号
+    visible_count = min(len(items), limit)
+    lines.append(f"（可用引用编号范围：[1] 到 [{visible_count}]，请勿使用超出此范围的编号）")
     return "\n".join(lines)
 
 
@@ -146,12 +149,19 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
     if kind == "fusion":
         tier = "kb_fallback"
     text = _scan_and_clean_context(str(source.get("text") or source.get("snippet") or ""))
+    # P0-2: 若 source_path 为空，尝试从 source_file 推断
+    source_path = str(source.get("source_path") or "")
+    if not source_path:
+        source_file = str(source.get("source_file") or "")
+        if source_file and source_file != "unknown":
+            from marathon_qa_assistant.services.vector_store import infer_source_path as _infer_sp
+            source_path = _infer_sp(source_file)
     item = {
         "evidence_id": str(source.get("evidence_id") or source.get("chunk_id") or ""),
         "citation_label": str(source.get("citation_label") or ""),
         "tier": tier,
         "source_file": str(source.get("source_file") or "unknown"),
-        "source_path": str(source.get("source_path") or ""),
+        "source_path": source_path,
         "page": _safe_int(source.get("page")),
         "chunk_id": str(source.get("chunk_id") or ""),
         "snippet": text[:300],
@@ -163,6 +173,9 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
         if key in source:
             item[key] = source.get(key)
             item["trace"].setdefault(key, source.get(key))
+    # P0-2: 确保 source_path 不为空（metadata 循环可能会用空值覆盖）
+    if not item.get("source_path"):
+        item["source_path"] = source_path
     return item
 
 
