@@ -34,10 +34,10 @@ _stripped = (_raw or "").strip()
 if _stripped and _stripped != "default_token_for_dev":
     AUTH_TOKEN = _stripped
 else:
-    raise RuntimeError(
-        "GRAPHRAG_API_KEY environment variable is not set or is using the banned dev default. "
-        "Set a real token before starting the server."
+    logger.warning(
+        "GRAPHRAG_API_KEY 未设置或仍为开发默认值，知识图谱将初始化为空图。"
     )
+    AUTH_TOKEN = ""
 
 EXACT_RELATION_MAP = {
     "需要": "requires",

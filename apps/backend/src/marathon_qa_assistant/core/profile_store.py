@@ -26,6 +26,13 @@ DEFAULT_PROFILE: Dict[str, Any] = {
     "t_pace": "",
     "hr_zones": {},
     "pace_zones": {},
+    "nutrition_profile": {
+        "weight_kg": 65.0,
+        "diet_preference": "无偏好",
+        "allergies": [],
+        "daily_calories": 2500,
+        "hydration_strategy": "运动中每 20 分钟饮水 150-250ml",
+    },
     "target_race_date": "",
     "plan_duration_weeks": 12,
 }

@@ -1,5 +1,6 @@
 import json
 import hashlib
+import os
 import re
 import sqlite3
 import threading
@@ -10,6 +11,41 @@ from typing import Any, Dict, List, Optional
 
 from marathon_qa_assistant.core.app_state import RUNTIME_DATA_DIR
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
+
+def _get_fernet():
+    """惰性加载 Fernet 加密器，密钥从环境变量读取。"""
+    try:
+        from cryptography.fernet import Fernet
+    except ImportError:
+        return None
+    key = os.getenv("MARATHON_FERNET_KEY", "").strip()
+    if not key:
+        return None
+    try:
+        return Fernet(key.encode("utf-8"))
+    except Exception:
+        return None
+
+
+def _encrypt_token(token: str) -> str:
+    if not token:
+        return ""
+    fernet = _get_fernet()
+    if fernet is None:
+        return token
+    return fernet.encrypt(token.encode("utf-8")).decode("utf-8")
+
+
+def _decrypt_token(encrypted: str) -> str:
+    if not encrypted:
+        return ""
+    fernet = _get_fernet()
+    if fernet is None:
+        return encrypted
+    try:
+        return fernet.decrypt(encrypted.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return encrypted
 
 DB_PATH = RUNTIME_DATA_DIR / "marathon_assistant.db"
 MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
@@ -286,7 +322,12 @@ class _Database:
             "SELECT * FROM sync_state WHERE user_id = ? AND calendar_provider = ?",
             (user_id, provider),
         ).fetchone()
-        return dict(row) if row else None
+        if not row:
+            return None
+        data = dict(row)
+        data["oauth_access_token"] = _decrypt_token(str(data.get("oauth_access_token") or ""))
+        data["oauth_refresh_token"] = _decrypt_token(str(data.get("oauth_refresh_token") or ""))
+        return data
 
     def save_sync_token(self, user_id: str, provider: str, data: Dict[str, Any]):
         existing = self.load_sync_token(user_id, provider)
@@ -300,8 +341,8 @@ class _Database:
                     sync_enabled = 1, updated_at = datetime('now')
                 WHERE user_id = ? AND calendar_provider = ?""",
                 (
-                    data.get("oauth_access_token"),
-                    data.get("oauth_refresh_token"),
+                    _encrypt_token(str(data.get("oauth_access_token") or "")),
+                    _encrypt_token(str(data.get("oauth_refresh_token") or "")),
                     data.get("oauth_token_expiry"),
                     data.get("oauth_client_id", ""),
                     data.get("oauth_client_secret", ""),
@@ -323,8 +364,8 @@ class _Database:
                     str(uuid.uuid4()),
                     user_id,
                     provider,
-                    data.get("oauth_access_token"),
-                    data.get("oauth_refresh_token"),
+                    _encrypt_token(str(data.get("oauth_access_token") or "")),
+                    _encrypt_token(str(data.get("oauth_refresh_token") or "")),
                     data.get("oauth_token_expiry"),
                     data.get("oauth_client_id", ""),
                     data.get("oauth_client_secret", ""),

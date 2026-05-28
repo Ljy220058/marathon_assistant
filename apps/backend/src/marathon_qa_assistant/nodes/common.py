@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -175,26 +176,47 @@ async def ai_invoke(
     prompt: str,
     config: Optional[RunnableConfig],
     current_usage: Optional[Dict[str, int]],
+    max_retries: int = 3,
 ) -> Tuple[str, Dict[str, int]]:
     llm_settings = _extract_llm_settings(config)
     provider = llm_settings["provider"]
-    if provider in {"ds", "deepseek"}:
-        return await _invoke_deepseek(prompt, llm_settings, current_usage)
-    if provider in {"openai", "gpt"}:
-        return await _invoke_openai(prompt, llm_settings, current_usage)
+    last_error: Optional[Exception] = None
+    for attempt in range(max_retries):
+        try:
+            if provider in {"ds", "deepseek"}:
+                return await _invoke_deepseek(prompt, llm_settings, current_usage)
+            if provider in {"openai", "gpt"}:
+                return await _invoke_openai(prompt, llm_settings, current_usage)
 
-    if ChatOllama is None:
-        raise RuntimeError("langchain_ollama 不可用")
+            if ChatOllama is None:
+                raise RuntimeError("langchain_ollama 不可用")
 
-    model = llm_settings["model"] or OLLAMA_MODEL
-    base_url = llm_settings["ollama_base_url"] or OLLAMA_BASE_URL
-    active_llm = llm if model == OLLAMA_MODEL and base_url == OLLAMA_BASE_URL and llm is not None else ChatOllama(
-        model=model,
-        temperature=0.3,
-        base_url=base_url,
-    )
-    response = await active_llm.ainvoke([HumanMessage(content=prompt)], config=config)
-    return str(getattr(response, "content", "") or "").strip(), update_token_usage(current_usage, response)
+            model = llm_settings["model"] or OLLAMA_MODEL
+            base_url = llm_settings["ollama_base_url"] or OLLAMA_BASE_URL
+            active_llm = llm if model == OLLAMA_MODEL and base_url == OLLAMA_BASE_URL and llm is not None else ChatOllama(
+                model=model,
+                temperature=0.3,
+                base_url=base_url,
+            )
+            response = await active_llm.ainvoke([HumanMessage(content=prompt)], config=config)
+            return str(getattr(response, "content", "") or "").strip(), update_token_usage(current_usage, response)
+        except LLMProviderError as exc:
+            if exc.error_code in {"rate_limited", "provider_5xx", "network_error", "timeout"} and attempt < max_retries - 1:
+                wait = 2 ** attempt
+                logger.warning(f"LLM 调用失败 (attempt {attempt + 1}/{max_retries})，{wait}s 后重试: {exc}")
+                await asyncio.sleep(wait)
+                last_error = exc
+                continue
+            raise
+        except Exception as exc:
+            if attempt < max_retries - 1:
+                wait = 2 ** attempt
+                logger.warning(f"LLM 调用异常 (attempt {attempt + 1}/{max_retries})，{wait}s 后重试: {exc}")
+                await asyncio.sleep(wait)
+                last_error = exc
+                continue
+            raise
+    raise last_error  # type: ignore[misc]
 
 
 def _extract_llm_settings(config: Optional[RunnableConfig]) -> Dict[str, Any]:

@@ -105,11 +105,12 @@ class OutputGuard:
 class SafetyClassifier:
     """使用LLM实现的安全分类器"""
 
-    def __init__(self, model_name="qwen2.5:latest", base_url="http://localhost:11434"):
+    def __init__(self, model_name=None, base_url=None):
+        import os
         self.llm = ChatOllama(
-            model=model_name,
+            model=model_name or os.getenv("OLLAMA_MODEL", "qwen2.5:latest"),
             temperature=0.1,
-            base_url=base_url
+            base_url=base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
         )
 
     async def classify(self, text: str) -> Dict[str, Any]:

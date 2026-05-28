@@ -840,6 +840,14 @@ def build_adaptive_adjustment_contract(feedback: Optional[Dict[str, Any]] = None
     }
 
 
+class NutritionProfile(TypedDict):
+    weight_kg: float
+    diet_preference: str          # "无偏好" / "素食" / "低碳水" / "高蛋白" / etc.
+    allergies: List[str]          # 过敏食物列表
+    daily_calories: int           # 日均目标摄入 (kcal)
+    hydration_strategy: str       # 补水策略偏好
+
+
 class UserProfile(TypedDict):
     experience_level: str
     weekly_mileage: float
@@ -858,6 +866,7 @@ class UserProfile(TypedDict):
     pace_zones: Optional[Dict[str, str]]
     target_race_date: Optional[str]
     plan_duration_weeks: Optional[int]
+    nutrition_profile: Optional[NutritionProfile]
     long_term_memory: Optional[List[str]]
     verified_facts: Optional[Dict[str, Any]]
 

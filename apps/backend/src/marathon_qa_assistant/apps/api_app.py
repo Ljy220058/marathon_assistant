@@ -50,7 +50,7 @@ from marathon_qa_assistant.core.kb_bootstrap import (
     ensure_knowledge_base_ready,
     get_knowledge_base_health_snapshot,
 )
-from marathon_qa_assistant.core.app_state import DATA_DIR
+from marathon_qa_assistant.core.app_state import DATA_DIR, check_ollama_status
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
 from marathon_qa_assistant.services.database import get_db
 from marathon_qa_assistant.services.kb.evidence_chain import (
@@ -1618,13 +1618,16 @@ def _require_expert_token(request: Request):
 
 @app.get("/health")
 async def health_check():
-    """Public health check — returns minimal status only."""
+    """Public health check — returns KB, DB, and Ollama status."""
     kb_snapshot = get_knowledge_base_health_snapshot()
     db_ok = _check_database_health()
+    ollama_ok = await check_ollama_status()
+    all_ok = kb_snapshot.get("ready", False) and db_ok and ollama_ok
     return {
-        "status": "healthy" if (kb_snapshot.get("ready", False) and db_ok) else "degraded",
+        "status": "healthy" if all_ok else "degraded",
         "kb": kb_snapshot.get("ready", False),
         "db": db_ok,
+        "ollama": ollama_ok,
     }
 
 
