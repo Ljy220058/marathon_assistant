@@ -1,0 +1,210 @@
+/* profile-components.css — RunnerIdentityCard, ProfileEditor, profile state [product-profile][P0/P1] */
+
+/* --- RunnerIdentityCard --- */
+.runner-identity-card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+}
+
+.identity-card-empty {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.identity-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.identity-card-head h2 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.identity-summary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.identity-summary-rows > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.identity-summary-rows span {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.identity-summary-rows strong {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.identity-supporting-copy {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* --- ProfileEditor dialog --- */
+.profile-editor-dialog {
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 0;
+  background: var(--surface-base);
+  box-shadow: var(--shadow-xl);
+  max-width: 640px;
+  width: calc(100vw - 2 * var(--space-4));
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.profile-editor-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.profile-editor-card {
+  padding: var(--space-6);
+}
+
+.profile-editor-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-5);
+}
+
+.profile-editor-head h2 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.profile-editor-group {
+  margin-bottom: var(--space-5);
+}
+
+.profile-editor-group h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.profile-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.profile-editor-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.profile-editor-grid label span {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.profile-editor-grid input {
+  padding: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  background: var(--surface-base);
+  color: var(--text-primary);
+}
+
+.profile-editor-grid input:focus {
+  border-color: var(--accent-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-primary-alpha);
+}
+
+.profile-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-default);
+}
+
+/* --- Profile status indicator --- */
+.profile-status-synced {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.profile-status-stale {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+/* --- NLP confirmation notice --- */
+.profile-nlp-confirmation {
+  background: var(--surface-raised);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-top: var(--space-3);
+  animation: fadeIn 0.3s ease;
+}
+
+.profile-nlp-confirmation p {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.profile-nlp-confirmation .nlp-changes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.profile-nlp-confirmation .nlp-changes-list li {
+  font-size: var(--text-sm);
+  padding: var(--space-1) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.profile-nlp-confirmation .nlp-changes-list li::before {
+  content: ">";
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+.profile-nlp-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

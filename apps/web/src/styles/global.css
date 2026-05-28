@@ -5,7 +5,14 @@
 @import "./modal.css";
 @import "./calendar.css";
 @import "./calendar-actions.css";
+@import "./calendar-month.css";
 @import "./kb-governance.css";
 @import "./evidence.css";
 @import "./responsive.css";
 @import "./commercial-light.css";
+/* P0/P1 component styles */
+@import "./profile-components.css";
+@import "./status-panel.css";
+@import "./progress-components.css";
+@import "./feedback-components.css";
+@import "./workspace-scenes.css";
