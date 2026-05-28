@@ -1,5 +1,10 @@
-const DEFAULT_API_BASE = "http://127.0.0.1:8010";
-const API_BASE_CANDIDATES = [DEFAULT_API_BASE, "http://127.0.0.1:8011", "http://127.0.0.1:8000"];
+const LOCAL_API_BASE = "http://127.0.0.1:8010";
+// 生产环境可从页面注入 API 地址，本地仍保留端口自动探测。
+const CONFIGURED_API_BASE = String(
+  window.MARATHON_API_BASE || document.body?.dataset?.apiBase || ""
+).trim().replace(/\/$/, "");
+const DEFAULT_API_BASE = CONFIGURED_API_BASE || LOCAL_API_BASE;
+const API_BASE_CANDIDATES = [DEFAULT_API_BASE, LOCAL_API_BASE, "http://127.0.0.1:8011", "http://127.0.0.1:8000"];
 const state = {
   apiBase: DEFAULT_API_BASE,
   apiToken: "",
@@ -181,6 +186,9 @@ const drawerEmptyState = document.querySelector("[data-drawer-empty]");
 const workspaceFlow = $("workspaceFlow");
 const workspaceNextAction = $("workspaceNextAction");
 const workspaceFlowSteps = Array.from(document.querySelectorAll("[data-workspace-state] [data-open-drawer-section], [data-workspace-generate]"));
+const loadKbGovernanceButton = $("loadKbGovernance");
+const kbGovernanceStatus = $("kbGovernanceStatus");
+const kbGovernanceContent = $("kbGovernanceContent");
 
 function getApiBase() {
   return (apiBaseInput.value || state.apiBase).replace(/\/$/, "");
@@ -189,6 +197,12 @@ function getApiBase() {
 function getApiAuthHeaders() {
   const token = String(state.apiToken || apiTokenInput?.value || "").trim();
   return token ? { "X-Marathon-API-Key": token } : {};
+}
+
+function getExpertBearerHeaders() {
+  const token = String(state.apiToken || apiTokenInput?.value || "").trim();
+  // 管理端点使用专家 Bearer token，不复用普通查询的 X-Marathon-API-Key 语义。
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function escapeHtml(value) {
@@ -1335,6 +1349,9 @@ function statusLabel(value) {
     deescalate: "建议降级",
     risk_detected: "检测到风险",
     not_evaluated: "尚未提交反馈自检",
+    feedback_adjusted: "已按反馈调整",
+    stop_for_medical_referral: "暂停并评估",
+    downgrade: "需降级执行",
     legacy_missing: "旧数据缺少审计摘要",
   };
   return map[value] || text(value, "-");
@@ -1346,6 +1363,11 @@ function feedbackStatusLabel(value) {
   if (status === "risk_refused") return "安全阻断，未生成调整建议";
   if (status === "partial_generated") return "部分生成调整建议";
   if (status === "generated") return "已生成调整建议";
+  if (status === "suggested") return "已生成本周调整建议";
+  if (status === "applied") return "已应用到日历";
+  if (status === "needs_manual_choice") return "本周没有可安全安排的训练日";
+  if (status === "blocked_medical") return "不能直接恢复跑步训练";
+  if (status === "dismissed") return "已暂不采用";
   return statusLabel(status || "-");
 }
 
@@ -1863,6 +1885,19 @@ function getPlanHistory() {
   }
 }
 
+function restorePlanResponse(response, badge = "历史计划") {
+  state.lastResponse = response;
+  renderReport(state.lastResponse);
+  renderCalendar(state.lastResponse);
+  renderEvidencePreview(state.lastResponse);
+  renderStatusPanel(state.lastResponse);
+  renderAdjustmentHistory(state.lastResponse);
+  tokenUsageBox.textContent = formatTokenUsage(state.lastResponse.token_usage);
+  auditScoresBox.textContent = formatAuditScores(state.lastResponse.audit_scores);
+  guidedQuestionsBox.textContent = renderQuestions(state.lastResponse.guided_questions);
+  resultBadge.textContent = badge;
+}
+
 function renderLocalPlanHistory() {
   const items = getPlanHistory();
   if (!items.length) {
@@ -1893,13 +1928,7 @@ function renderLocalPlanHistory() {
     button.addEventListener("click", () => {
       const item = getPlanHistory()[Number(button.dataset.historyIndex)];
       if (!item?.response) return;
-      state.lastResponse = item.response;
-      renderReport(item.response);
-      renderCalendar(item.response);
-      renderEvidencePreview(item.response);
-      tokenUsageBox.textContent = formatTokenUsage(item.response.token_usage);
-      auditScoresBox.textContent = formatAuditScores(item.response.audit_scores);
-      guidedQuestionsBox.textContent = renderQuestions(item.response.guided_questions);
+      restorePlanResponse(item.response, "本地历史");
     });
   });
   historyList.querySelectorAll("[data-delete-history-index]").forEach((button) => {
@@ -2032,6 +2061,12 @@ async function loadSavedPlan(planId) {
             workflow_trace: eventContent.workflow_trace || event.workflow_trace || detail.structured_training_plan?.workflow_trace || detail.workflow_trace || {},
             latest_feedback: eventContent.latest_feedback || event.latest_feedback,
             adaptive_adjustment: eventContent.adaptive_adjustment || event.adaptive_adjustment,
+            feedback_effect: eventContent.feedback_effect || event.feedback_effect,
+            latest_feedback_effect: eventContent.latest_feedback_effect || event.latest_feedback_effect,
+            feedback_replan: eventContent.feedback_replan || event.feedback_replan,
+            generation_status: eventContent.generation_status || event.generation_status,
+            adjustment_hint: eventContent.adjustment_hint || event.adjustment_hint,
+            card_status: eventContent.card_status || event.card_status,
             trace: eventContent.trace || event.trace || {},
           });
           }),
@@ -2046,11 +2081,7 @@ async function loadSavedPlan(planId) {
       audit_scores: {},
       guided_questions: [],
     };
-    state.lastResponse = response;
-    renderReport(response);
-    renderCalendar(response);
-    renderEvidencePreview(response);
-    resultBadge.textContent = "历史计划";
+    restorePlanResponse(response, "历史计划");
   } catch (error) {
     historyList.innerHTML = `<div class="empty-state">历史计划加载失败：${escapeHtml(error.message)}</div>`;
   }
@@ -2125,8 +2156,9 @@ function collectFeedbackPayload(root = dayModalContent) {
   const pain = getFeedbackField(root, "pain")?.value || "没有疼痛";
   const sleep = getFeedbackField(root, "sleep")?.value || "良好";
   const notes = (getFeedbackField(root, "notes")?.value || "").trim();
+  const scheduleConstraints = (getFeedbackField(root, "scheduleConstraints")?.value || "").trim();
   const medical_red_flags = selectedMedicalRedFlags(root);
-  return { completion, fatigue, pain, sleep, notes, medical_red_flags };
+  return { completion, fatigue, pain, sleep, notes, scheduleConstraints, medical_red_flags };
 }
 
 function buildFeedbackPrompt(payload, day = state.selectedDay) {
@@ -2217,6 +2249,145 @@ function applyLatestFeedbackToDayList(days, selectedDay, feedbackSummary, feedba
   return updated;
 }
 
+function feedbackAffectedEvents(payload, fallbackDays = []) {
+  const persisted = Array.isArray(payload?.affected_events) ? payload.affected_events.filter(Boolean) : [];
+  return persisted.length ? persisted : fallbackDays;
+}
+
+function feedbackEffectForDay(day) {
+  const effect = day?.feedback_effect || day?.latest_feedback_effect;
+  return effect && typeof effect === "object" ? effect : null;
+}
+
+function feedbackEffectStatusLabel(effect = {}) {
+  if (effect.action === "stop_for_medical_referral") return "暂停并评估";
+  if (effect.action === "downgrade") return "需降级执行";
+  return statusLabel(effect.action || "feedback_adjusted");
+}
+
+function feedbackEventMatchesDay(affectedEvent, day) {
+  if (!affectedEvent || !day) return false;
+  const affectedIds = [affectedEvent.event_id, affectedEvent.id].map((item) => String(item || "").trim()).filter(Boolean);
+  const dayIds = [day.event_id, day.id].map((item) => String(item || "").trim()).filter(Boolean);
+  if (affectedIds.length && dayIds.some((id) => affectedIds.includes(id))) return true;
+  const affectedKeys = new Set(dayKeyCandidates({
+    day_key: affectedEvent.day_key,
+    day_label: affectedEvent.day_label,
+    date: affectedEvent.scheduled_date || affectedEvent.date,
+  }).map((item) => String(item || "").trim()).filter(Boolean));
+  return affectedKeys.size ? dayKeyCandidates(day).some((key) => affectedKeys.has(String(key || "").trim())) : false;
+}
+
+function applyFeedbackEffectsToDayList(days, affectedEvents = []) {
+  if (!Array.isArray(days) || !affectedEvents.length) return false;
+  let updated = false;
+  days.forEach((day, index) => {
+    const affected = affectedEvents.find((item) => feedbackEventMatchesDay(item, day));
+    if (!affected?.feedback_effect) return;
+    const effect = affected.feedback_effect;
+    // 后端已经做过安全判断，前端只叠加可见影响层，不改写原始训练处方。
+    days[index] = {
+      ...day,
+      feedback_effect: effect,
+      latest_feedback_effect: effect,
+      card_status: day.card_status || (effect.action === "stop_for_medical_referral" ? "medical_referral" : "feedback_adjusted"),
+      generation_status: day.generation_status || (effect.action === "stop_for_medical_referral" ? "medical_referral" : "feedback_adjusted"),
+      adjustment_hint: effect.adjusted_instruction || day.adjustment_hint,
+    };
+    updated = true;
+  });
+  return updated;
+}
+
+function buildFeedbackEffectHtml(day) {
+  const effect = feedbackEffectForDay(day);
+  if (!effect) return "";
+  const reasons = Array.isArray(effect.reason_codes) ? effect.reason_codes.map(statusLabel).join(" / ") : statusLabel(effect.reason_codes);
+  return `
+    <section class="feedback-result-card feedback-effect-card" data-feedback-effect>
+      <div class="day-card-top">
+        <strong>已按反馈调整</strong>
+        <span>${escapeHtml(feedbackEffectStatusLabel(effect))}</span>
+      </div>
+      <p>${escapeHtml(effect.reason || "这一天受反馈影响，执行前按调整建议处理。")}</p>
+      <div class="feedback-result-grid">
+        <div><span>受反馈影响</span><strong>${escapeHtml(effect.source_feedback_id || "已保存反馈")}</strong></div>
+        <div><span>调整原因</span><strong>${escapeHtml(reasons || "-")}</strong></div>
+        <div><span>调整后执行建议</span><strong>${escapeHtml(effect.adjusted_instruction || "按降级建议执行。")}</strong></div>
+        <div hidden data-expert-only><span>原主课</span><strong>${escapeHtml(effect.original_main_set || "-")}</strong></div>
+      </div>
+    </section>`;
+}
+
+function buildFeedbackReplanHtml(feedback_replan = {}, feedbackId = "") {
+  const patches = Array.isArray(feedback_replan.patches) ? feedback_replan.patches : [];
+  if (!feedback_replan.status && !patches.length) return "";
+  const status = feedback_replan.status || "suggested";
+  const blockedReason = feedback_replan.audit?.blocked_reason || "";
+  const patchHtml = patches.length
+    ? patches.map((patch) => {
+      const original = patch.original || {};
+      const suggested = patch.suggested || {};
+      const targetDay = patch.target_day ? ` · 目标：${patch.target_day}` : "";
+      return `
+        <li>
+          <strong>${escapeHtml(original.title || "后续训练日")}</strong>
+          <span>原计划：${escapeHtml(original.main_set || "-")}</span>
+          <span>建议：${escapeHtml(suggested.main_set || "-")}${escapeHtml(targetDay)}</span>
+          <em>${escapeHtml(patch.reason || suggested.reason || "根据反馈保守调整。")}</em>
+        </li>`;
+    }).join("")
+    : `<li>${escapeHtml(blockedReason || (status === "needs_manual_choice" ? "本周没有可安全安排的训练日，请修改本周时间或先休息。" : "当前没有可执行 patch；医疗红旗不能直接恢复，请先完成专业评估。"))}</li>`;
+  const disabledAttr = feedbackId ? "" : " disabled";
+  const appliedAttr = status === "applied" ? " data-replan-applied-highlight" : "";
+  const recoverHint = status === "blocked_medical" ? "<p>不能直接恢复跑步主课，需要专业医疗评估通过后再复核。</p>" : "";
+  return `
+    <section class="feedback-result-card feedback-replan-card" data-feedback-replan${appliedAttr}>
+      <div class="day-card-top">
+        <strong>局部重规划建议</strong>
+        <span>${escapeHtml(feedbackStatusLabel(status))}</span>
+      </div>
+      ${recoverHint}
+      <ul class="feedback-replan-patches">${patchHtml}</ul>
+      <div class="modal-actions compact-feedback-actions">
+        <button type="button" class="primary-button" data-feedback-replan-action="accept"${disabledAttr}>按调整执行</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="replan"${disabledAttr}>重新排本周</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="update_availability"${disabledAttr}>修改本周时间</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="recover"${disabledAttr}>我已恢复，申请复核</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="dismiss"${disabledAttr}>暂不采用</button>
+      </div>
+    </section>`;
+}
+
+function applyFeedbackReplanToDayList(days, feedback_replan = {}) {
+  if (!Array.isArray(days) || !feedback_replan?.patches?.length) return false;
+  let updated = false;
+  const patchByEventId = new Map(feedback_replan.patches.map((patch) => [String(patch.event_id || ""), patch]));
+  days.forEach((day) => {
+    const eventId = String(day?.event_id || day?.id || "");
+    const patch = patchByEventId.get(eventId);
+    if (!patch) return;
+    // 前端只叠加建议状态，不直接改写主课，避免用户未确认时误展示为已执行。
+    day.feedback_replan = { ...feedback_replan, patches: [patch] };
+    updated = true;
+  });
+  return updated;
+}
+
+function applyFeedbackReplanToLastResponse(feedback_replan = {}) {
+  if (!state.lastResponse || !feedback_replan?.patches?.length) return;
+  const response = state.lastResponse;
+  const calendar = getCalendar(response);
+  const structuredReport = getStructuredReport(response);
+  const structuredPlan = getStructuredPlan(response);
+  applyFeedbackReplanToDayList(calendar.days, feedback_replan);
+  applyFeedbackReplanToDayList(structuredReport.monthly_training_calendar?.days, feedback_replan);
+  applyFeedbackReplanToDayList(response.monthly_training_calendar?.days, feedback_replan);
+  applyFeedbackReplanToDayList(response.daily_schedule_cards, feedback_replan);
+  applyFeedbackReplanToDayList(structuredReport.daily_schedule_cards, feedback_replan);
+  (structuredPlan.week_plans || []).forEach((week) => applyFeedbackReplanToDayList(week.days, feedback_replan));
+}
+
 function latestFeedbackHistoryEntry(selectedDay, feedbackSummary, payload, feedbackContext = {}) {
   return {
     feedback_id: feedbackSummary.feedback_id || payload?.feedback_id || "",
@@ -2228,11 +2399,12 @@ function latestFeedbackHistoryEntry(selectedDay, feedbackSummary, payload, feedb
     risk_gate: feedbackSummary.risk_gate || payload?.risk_gate || {},
     protocol_recheck: feedbackSummary.protocol_recheck || payload?.protocol_recheck || {},
     adaptive_adjustment: feedbackSummary,
-    affected_events: affectedDaysAfterFeedback(selectedDay).map((day) => ({
+    affected_events: feedbackAffectedEvents(payload, affectedDaysAfterFeedback(selectedDay)).map((day) => ({
       event_id: day.event_id || day.id || "",
       day_key: day.day_key || day.day_label || day.date || "",
-      day_label: day.day_label || day.date || day.day || "",
+      day_label: day.day_label || day.scheduled_date || day.date || day.day || "",
       training_type: day.training_type || day.workout_type || "",
+      feedback_effect: day.feedback_effect || {},
     })),
   };
 }
@@ -2262,8 +2434,15 @@ function applyLatestFeedbackToLastResponse(payload, selectedDay = state.selected
   applyLatestFeedbackToDayList(response.monthly_training_calendar?.days, selectedDay, feedbackSummary, feedbackContext);
   applyLatestFeedbackToDayList(response.daily_schedule_cards, selectedDay, feedbackSummary, feedbackContext);
   applyLatestFeedbackToDayList(structuredReport.daily_schedule_cards, selectedDay, feedbackSummary, feedbackContext);
+  const affectedEvents = feedbackAffectedEvents({ affected_events: payload.affected_events }, []);
+  applyFeedbackEffectsToDayList(calendar.days, affectedEvents);
+  applyFeedbackEffectsToDayList(structuredReport.monthly_training_calendar?.days, affectedEvents);
+  applyFeedbackEffectsToDayList(response.monthly_training_calendar?.days, affectedEvents);
+  applyFeedbackEffectsToDayList(response.daily_schedule_cards, affectedEvents);
+  applyFeedbackEffectsToDayList(structuredReport.daily_schedule_cards, affectedEvents);
   (structuredPlan.week_plans || []).forEach((week) => {
     applyLatestFeedbackToDayList(week.days, selectedDay, feedbackSummary, feedbackContext);
+    applyFeedbackEffectsToDayList(week.days, affectedEvents);
   });
   if (state.selectedDay) {
     state.selectedDay = {
@@ -2271,6 +2450,9 @@ function applyLatestFeedbackToLastResponse(payload, selectedDay = state.selected
       latest_feedback: feedbackSummary,
       adaptive_adjustment: feedbackSummary,
     };
+  }
+  if (payload?.feedback_replan) {
+    applyFeedbackReplanToLastResponse(payload.feedback_replan);
   }
   mergeLatestFeedbackIntoAdjustmentHistory(response, selectedDay, feedbackSummary, payload, feedbackContext);
   return feedbackSummary;
@@ -2381,6 +2563,7 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
   const productStatus = payload?.generation_status || riskGate.product_status || adjustment.product_status || "-";
   const saveStatus = payload?.feedback_id ? "反馈已保存" : "仅计算未保存";
   if (isMedicalReferral) {
+    const referralState = payload?.generation_status || riskGate.product_status || adjustment.product_status || "medical_referral";
     const medicalCopy = {
       rationale: "检测到胸痛、头晕、疑似热病等医疗红旗时，训练连续性必须让位于安全评估。",
       nextDay: "停止训练，优先休息并进行专业医疗评估；评估前不要安排下一次跑步训练。",
@@ -2392,7 +2575,7 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
       <div class="feedback-result-card medical-referral-card" data-feedback-medical-referral data-feedback-product-state>
         <div class="day-card-top">
           <strong>停止训练</strong>
-          <span>建议专业医疗评估</span>
+          <span>${escapeHtml(feedbackStatusLabel(referralState))}</span>
         </div>
         <p>${escapeHtml(medicalCopy.rationale)}</p>
         <div class="feedback-risk-gate" data-feedback-risk-gate>
@@ -2414,8 +2597,15 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
   }
   const regenerateActionHtml =
     `<button type="button" class="primary-button" data-modal-feedback-action="regenerate">生成调整版计划</button>`;
-  const affectedHtml = affectedDays.length
-    ? affectedDays.map((day) => `<li>${escapeHtml(text(day.day_label || day.date || day.day, "后续训练日"))}：${escapeHtml(displayTrainingTitle(day))}</li>`).join("")
+  const affectedEvents = feedbackAffectedEvents(payload, affectedDays);
+  const affectedHtml = affectedEvents.length
+    ? affectedEvents.map((day) => {
+      const effect = day.feedback_effect || {};
+      const label = text(day.day_label || day.scheduled_date || day.date || day.day, "后续训练日");
+      const title = displayTrainingTitle(day);
+      const instruction = effect.adjusted_instruction ? ` · 调整后执行建议：${effect.adjusted_instruction}` : "";
+      return `<li>${escapeHtml(label)}：${escapeHtml(title || statusLabel(effect.action || "feedback_adjusted"))}${escapeHtml(instruction)}</li>`;
+    }).join("")
     : "<li>后续影响范围待生成调整版计划后确认。</li>";
   return `
     <div class="feedback-result-card">
@@ -2463,9 +2653,66 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
         <span>可能影响的后续训练</span>
         <ul>${affectedHtml}</ul>
       </div>
+      ${buildFeedbackReplanHtml(payload?.feedback_replan || {}, payload?.feedback_id || "")}
       ${regenerateActionHtml}
     </div>
   `;
+}
+
+function focusScheduleConstraintsInput(root = dayModalContent) {
+  const input = getFeedbackField(root, "scheduleConstraints");
+  if (!input) return;
+  // 修改可训练时间时直接聚焦输入框，避免用户点了按钮却不知道下一步在哪里填。
+  input.focus();
+  input.scrollIntoView?.({ block: "center", behavior: "smooth" });
+}
+
+async function submitFeedbackReplanAction(action, root = dayModalContent) {
+  const feedback = state.lastFeedbackResult || {};
+  const feedbackId = feedback.feedback_id || "";
+  const planId = buildFeedbackContext().plan_id || state.lastResponse?.training_plan_id || "";
+  if (!feedbackId || !planId) return;
+  const resultTarget = root?.querySelector?.("[data-feedback-result]");
+  if (action === "update_availability") {
+    focusScheduleConstraintsInput(root);
+  }
+  const payload = collectFeedbackPayload(root);
+  if (resultTarget) {
+    resultTarget.className = "modal-feedback-result loading-state";
+    resultTarget.textContent = "正在处理你的重规划操作...";
+  }
+  try {
+    const response = await apiFetch(`/plans/${planId}/feedback/${feedbackId}/actions`, {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        schedule_constraints: { notes: payload.scheduleConstraints },
+      }),
+    });
+    state.lastFeedbackResult = {
+      ...feedback,
+      feedback_replan: response.feedback_replan,
+      affected_events: response.affected_events || feedback.affected_events || [],
+      plan_diff: response.plan_diff || feedback.plan_diff || {},
+    };
+    applyFeedbackReplanToLastResponse(response.feedback_replan);
+    if (resultTarget) {
+      resultTarget.className = "modal-feedback-result";
+      resultTarget.innerHTML = buildFeedbackResultHtml(state.lastFeedbackResult, affectedDaysAfterFeedback());
+      bindFeedbackReplanActions(resultTarget);
+    }
+  } catch (error) {
+    if (resultTarget) {
+      resultTarget.className = "modal-feedback-result error-state";
+      resultTarget.innerHTML = `<div class="feedback-result-card"><strong>操作失败</strong><p>${escapeHtml(error?.message || "请稍后重试，原计划不会被覆盖。")}</p></div>`;
+    }
+  }
+}
+
+function bindFeedbackReplanActions(root = dayModalContent) {
+  root.querySelectorAll?.("[data-feedback-replan-action]").forEach((button) => {
+    button.addEventListener("click", () => submitFeedbackReplanAction(button.dataset.feedbackReplanAction || "dismiss", dayModalContent));
+  });
 }
 
 async function composeFeedbackPrompt(root = dayModalContent) {
@@ -2560,7 +2807,7 @@ function renderFeedbackContextMissing(resultTarget) {
 }
 
 async function submitFeedbackApi(root = dayModalContent) {
-  const { completion, fatigue, pain, sleep, notes, medical_red_flags } = collectFeedbackPayload(root);
+  const { completion, fatigue, pain, sleep, notes, scheduleConstraints, medical_red_flags } = collectFeedbackPayload(root);
   const feedbackContext = buildFeedbackContext();
   const resultTarget = root?.querySelector?.("[data-feedback-result]");
   const rawText = [
@@ -2570,6 +2817,7 @@ async function submitFeedbackApi(root = dayModalContent) {
     `睡眠恢复：${sleep}`,
     medical_red_flags.length ? `医疗红旗：${medicalRedFlagLabels(medical_red_flags).join("、")}` : "",
     notes ? `补充说明：${notes}` : "",
+    scheduleConstraints ? `本周安排限制：${scheduleConstraints}` : "",
   ].filter(Boolean).join("；");
   if (medical_red_flags.length && resultTarget) {
     resultTarget.className = "modal-feedback-result";
@@ -2608,7 +2856,9 @@ async function submitFeedbackApi(root = dayModalContent) {
           pain_status: pain,
           sleep_quality: sleep,
           notes,
+          schedule_constraints: { notes: scheduleConstraints },
         },
+        schedule_constraints: { notes: scheduleConstraints },
       }),
     });
     payload.save_status = payload.feedback_id ? "saved" : "not_saved";
@@ -2626,6 +2876,7 @@ async function submitFeedbackApi(root = dayModalContent) {
     if (resultTarget) {
       resultTarget.className = "modal-feedback-result";
       resultTarget.innerHTML = buildFeedbackResultHtml(payload, affectedDays);
+      bindFeedbackReplanActions(resultTarget);
       resultTarget.querySelector('[data-modal-feedback-action="regenerate"]')?.addEventListener("click", async () => {
         if (isMedicalReferralFeedback(payload)) return;
         const regenerateButton = resultTarget.querySelector('[data-modal-feedback-action="regenerate"]');
@@ -2638,6 +2889,7 @@ async function submitFeedbackApi(root = dayModalContent) {
           if (resultTarget) {
             resultTarget.className = "modal-feedback-result";
             resultTarget.innerHTML = buildFeedbackResultHtml(payload, affectedDays);
+            bindFeedbackReplanActions(resultTarget);
           }
         } finally {
           regenerateButton.disabled = false;
@@ -3583,6 +3835,20 @@ function planPressureLabel(day) {
   return `计划压力${loadStatus(load).label}`;
 }
 
+function runnerTodayMeta(day) {
+  const isRest = isRestDay(day);
+  const duration = formatDuration(numberValue(day?.duration_min, 0));
+  const intensity = runnerFacingText(day?.intensity_target || day?.pace_range || day?.heart_rate_zone || day?.rpe || day?.zone_range || day?.zone_label || day?.zone, isRest ? "恢复" : "按计划");
+  const mainSet = trustedMainSetText(day, isRest ? "恢复日，无主课安排。" : "点开日卡查看完整主课。");
+  return {
+    type: displayTrainingTitle(day),
+    duration: duration === "-" ? (isRest ? "恢复日" : "待确认") : duration,
+    intensity,
+    mainSet,
+    risk: productStateLabel(dayProductStatus(day)),
+  };
+}
+
 function feedbackCountLabel(days) {
   const feedbackDays = days.filter((day) => {
     return hasFeedbackRecord(day);
@@ -3638,8 +3904,19 @@ function calendarSafetySummary(days) {
 function renderCalendarActionPanel(response, days) {
   if (!calendarActionPanel) return;
   if (!days.length) {
-    calendarActionPanel.className = "calendar-action-panel empty-state";
-    calendarActionPanel.textContent = "生成后优先显示下一次训练、本周重点、安全提醒和反馈入口。";
+    calendarActionPanel.className = "calendar-action-panel empty-state runner-today-empty";
+    calendarActionPanel.innerHTML = `
+      <article class="calendar-action-card runner-today-card" data-runner-today-card>
+        <span>下一次训练</span>
+        <strong>先生成可执行训练日历</strong>
+        <p>当前还没有训练日。按顺序完善画像、生成训练日历；如果之前保存过计划，可以恢复历史计划继续执行。</p>
+        <div class="runner-today-meta" aria-label="下一步">
+          <div><span>1</span><strong>完善画像</strong></div>
+          <div><span>2</span><strong>生成训练日历</strong></div>
+          <div><span>3</span><strong>恢复历史计划</strong></div>
+        </div>
+      </article>
+    `;
     return;
   }
   const primaryIndex = primaryTrainingDayIndex(days);
@@ -3651,23 +3928,29 @@ function renderCalendarActionPanel(response, days) {
     "本周以稳定完成计划、观察恢复状态和及时反馈为主。",
   );
   const safety = calendarSafetySummary(days);
-  const duration = formatDuration(numberValue(primaryDay.duration_min, 0));
-  const nextMeta = [
-    duration !== "-" ? duration : "",
-    text(primaryDay.zone_range || primaryDay.zone_label || primaryDay.zone, ""),
-    planPressureLabel(primaryDay),
-  ].filter(Boolean).join(" · ");
+  const todayMeta = runnerTodayMeta(primaryDay);
+  const primaryEffect = feedbackEffectForDay(primaryDay);
   const keyText = weekKeySessions.length
     ? Array.from(new Set(weekKeySessions.map(displayTrainingTitle))).join("、")
     : "本周暂无高强度关键课，优先保证连续性。";
   const safetyAction = safety.filter ? "filter-recheck" : "open-day";
   calendarActionPanel.className = `calendar-action-panel safety-${safety.tone}`;
   calendarActionPanel.innerHTML = `
-    <article class="calendar-action-card primary calendar-action-next">
+    <article class="calendar-action-card primary calendar-action-next runner-today-card" data-runner-today-card>
       <span>下一次训练</span>
-      <strong>${escapeHtml(trainingDayLabel(primaryDay))} · ${escapeHtml(displayTrainingTitle(primaryDay))}</strong>
-      <p>${escapeHtml(nextMeta || "点开日卡查看完整训练安排。")}</p>
-      <button type="button" class="text-action" data-calendar-action="open-day" data-calendar-action-day-index="${primaryIndex}">打开日卡</button>
+      <strong>${escapeHtml(trainingDayLabel(primaryDay))} · ${escapeHtml(todayMeta.type)}</strong>
+      <div class="runner-today-meta" aria-label="下一次训练要点">
+        <div><span>训练类型</span><strong>${escapeHtml(todayMeta.type)}</strong></div>
+        <div><span>时长</span><strong>${escapeHtml(todayMeta.duration)}</strong></div>
+        <div><span>强度</span><strong>${escapeHtml(todayMeta.intensity)}</strong></div>
+        <div><span>风险状态</span><strong>${escapeHtml(todayMeta.risk)}</strong></div>
+      </div>
+      <p><strong>主课</strong>：${escapeHtml(todayMeta.mainSet)}</p>
+      ${primaryEffect ? `<p class="feedback-effect-inline" data-feedback-effect><strong>已按反馈调整</strong>：${escapeHtml(primaryEffect.adjusted_instruction || feedbackEffectStatusLabel(primaryEffect))}</p>` : ""}
+      <div class="runner-today-actions">
+        <button type="button" class="text-action" data-calendar-action="open-day" data-calendar-action-day-index="${primaryIndex}">打开日卡</button>
+        <button type="button" class="text-action" data-calendar-action="open-feedback" data-calendar-action-day-index="${primaryIndex}">记录反馈</button>
+      </div>
     </article>
     <div class="calendar-action-secondary" aria-label="本周摘要">
       <section class="calendar-action-mini">
@@ -3993,12 +4276,13 @@ function renderDayCard(day, index, loadPoint = null) {
   const hoverTitle = `${label}：${title}，${formatDuration(duration)}，${loadInfo.label}。`;
   const actionGuidance = protocolRecheckActionText(day);
   const productStatus = dayProductStatus(day);
+  const effect = feedbackEffectForDay(day);
   const footerStatus = "查看安排";
-  const riskText = needsRecheck ? "先复核" : isRest ? "恢复日" : `课表内${loadInfo.label}`;
+  const riskText = effect ? feedbackEffectStatusLabel(effect) : needsRecheck ? "先复核" : isRest ? "恢复日" : `课表内${loadInfo.label}`;
   const durationLabel = isRest ? "恢复日" : formatDuration(duration);
-  const badgeLabel = needsRecheck ? "待复核" : isRest ? "恢复" : isQualityTraining(day) ? "关键课" : "训练";
+  const badgeLabel = effect ? "已按反馈调整" : needsRecheck ? "待复核" : isRest ? "恢复" : isQualityTraining(day) ? "关键课" : "训练";
   const pressureText = isRest ? "恢复安排" : `训练压力：${loadInfo.label}`;
-  const safetyText = needsRecheck ? "安全：先复核" : "安全：完成自检";
+  const safetyText = effect ? `受反馈影响：${feedbackEffectStatusLabel(effect)}` : needsRecheck ? "安全：先复核" : "安全：完成自检";
   return `
     <button class="day-card ${isRest ? "rest" : ""} ${needsRecheck ? "needs-recheck" : ""} ${loadInfo.className}" data-day-index="${index}" type="button" title="${escapeHtml(hoverTitle)}">
       <div class="day-card-top">
@@ -4618,7 +4902,7 @@ function buildDayModalHtml(day) {
     isRest ? "通过恢复吸收前序训练刺激，为下一次训练保留状态。" : "服务于本周期的能力建设，保持强度与恢复的平衡。",
   );
   const adjustment = runnerFacingText(
-    day.alternative_workout || day.adjustment_hint || day.risk_adjustment || day.risk_alert,
+    feedbackEffectForDay(day)?.adjusted_instruction || day.alternative_workout || day.adjustment_hint || day.risk_adjustment || day.risk_alert,
     isRest ? "如果状态很好，也不要补高强度；最多增加轻松散步。" : "疲劳明显时降为轻松跑或缩短主课；疼痛时停止跑步并改为恢复活动。",
   );
   const basis = describeDayBasis(day);
@@ -4655,6 +4939,7 @@ function buildDayModalHtml(day) {
         ${buildDayModalSection("主课", mainSet, "primary-session")}
         ${buildDayModalSection("冷身", cooldown)}
       </div>
+      ${buildFeedbackEffectHtml(day)}
       ${buildTrainingReasonGrid(day, objective, adjustment)}
     </div>
     <div id="dayModalPanelAudit" class="day-modal-panel" role="tabpanel" aria-labelledby="dayModalTabAudit" data-day-modal-panel="audit" hidden>
@@ -4683,6 +4968,7 @@ function buildDayModalHtml(day) {
     </div>
     <div id="dayModalPanelFeedback" class="day-modal-panel" role="tabpanel" aria-labelledby="dayModalTabFeedback" data-day-modal-panel="feedback" hidden>
       ${buildLatestFeedbackHtml(day)}
+      ${buildFeedbackEffectHtml(day)}
       <div class="modal-actions">
         <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_done">完成</button>
         <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_partial">部分</button>
@@ -4752,6 +5038,10 @@ function buildDayModalHtml(day) {
                 `).join("")}
               </div>
             </fieldset>
+            <label class="wide">
+              <span>本周有没有别的安排</span>
+              <textarea name="scheduleConstraints" data-feedback-field="scheduleConstraints" placeholder="例如：周二周四上课跑不了，需要避开这些日子。"></textarea>
+            </label>
             <label class="wide">
               <span>补充说明</span>
               <textarea data-feedback-field="notes" placeholder="例如：后半程心率偏高，第二天小腿紧张。"></textarea>
@@ -5016,6 +5306,85 @@ async function loadMeta() {
   }
 }
 
+function yesNoLabel(value) {
+  return value ? "是" : "否";
+}
+
+function renderKbGovernanceMetric(label, value) {
+  return `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function renderKbGovernanceList(items = [], emptyText = "暂无待处理项") {
+  if (!items.length) return `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
+  return `
+    <div class="kb-governance-list">
+      ${items.slice(0, 8).map((item) => `
+        <article>
+          <strong>${escapeHtml(text(item.domain_pack || item.subdomain, "未命名 domain"))}</strong>
+          <span>${escapeHtml(text(item.next_action || item.release_gate_impact || item.gap_status, "待补治理动作"))}</span>
+          <em>sources ${escapeHtml(text(item.needed_source_count, 0))} / rules ${escapeHtml(text(item.needed_rule_count, 0))} / tier ${escapeHtml(text(item.required_quality_tier || item.minimum_quality_tier, "-"))}</em>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderKbGovernance(data) {
+  const runtime = data?.runtime || {};
+  const releaseGate = data?.release_gate || {};
+  const domainGapSummary = data?.domain_gap_summary || {};
+  const actionableGaps = Array.isArray(data?.top_actionable_domain_gaps) ? data.top_actionable_domain_gaps : [];
+  const workQueue = Array.isArray(data?.release_work_queue) ? data.release_work_queue : [];
+  const blockers = releaseGate.readiness_blockers || runtime.replacement_blockers || [];
+  kbGovernanceStatus.className = data?.status === "ready" ? "status-note ok" : "status-note error";
+  kbGovernanceStatus.textContent = data?.status === "ready"
+    ? "KB 治理门禁已通过，可继续评估生产替换。"
+    : `KB 治理仍阻塞：${listText(blockers, data?.status || "blocked")}`;
+  kbGovernanceContent.className = "kb-governance-content";
+  kbGovernanceContent.innerHTML = `
+    <div class="kb-governance-grid">
+      ${renderKbGovernanceMetric("can_replace_runtime", yesNoLabel(runtime.can_replace_runtime))}
+      ${renderKbGovernanceMetric("commercial_release_ready", yesNoLabel(releaseGate.commercial_release_ready))}
+      ${renderKbGovernanceMetric("first_batch_release_ready", yesNoLabel(releaseGate.first_batch_release_ready || runtime.first_batch_release_ready))}
+      ${renderKbGovernanceMetric("source deficits", text(domainGapSummary.domain_packs_with_source_deficits, 0))}
+    </div>
+    <section>
+      <h3>Top domain gaps</h3>
+      ${renderKbGovernanceList(actionableGaps, "暂无 domain gap")}
+    </section>
+    <section>
+      <h3>Release work queue</h3>
+      ${renderKbGovernanceList(workQueue, "暂无 release work queue")}
+    </section>
+  `;
+}
+
+async function loadKbGovernance() {
+  if (!kbGovernanceStatus || !kbGovernanceContent) return;
+  const token = String(state.apiToken || apiTokenInput?.value || "").trim();
+  if (!token) {
+    kbGovernanceStatus.className = "status-note error";
+    kbGovernanceStatus.textContent = "请先填写访问令牌，再读取 KB 治理门禁。";
+    return;
+  }
+  kbGovernanceStatus.className = "status-note";
+  kbGovernanceStatus.textContent = "正在读取 KB 治理门禁...";
+  kbGovernanceContent.className = "empty-state";
+  kbGovernanceContent.textContent = "加载中";
+  try {
+    const data = await apiFetch("/admin/kb-governance", {
+      headers: getExpertBearerHeaders(),
+      timeoutMs: 5000,
+    });
+    renderKbGovernance(data);
+  } catch (error) {
+    kbGovernanceStatus.className = "status-note error";
+    kbGovernanceStatus.textContent = `KB 治理门禁加载失败：${error.message}`;
+    kbGovernanceContent.className = "empty-state";
+    kbGovernanceContent.textContent = "请确认专家令牌和后端服务状态。";
+  }
+}
+
 function isPlanLikeQuery(query) {
   return /训练计划|周计划|月历|日历|课表|生成计划|制定|安排|备赛|半马|全马|马拉松/.test(query);
 }
@@ -5028,7 +5397,6 @@ function buildQueryPayload(query, responseMode, timeoutSec) {
     stream: false,
     llm_provider: llmProviderInput.value,
     llm_model: llmModelInput.value.trim(),
-    ds_api_key: llmProviderInput.value === "ds" ? dsApiKeyInput.value.trim() : "",
     response_mode: responseMode,
     timeout_sec: timeoutSec,
   };
@@ -5393,6 +5761,8 @@ apiTokenInput?.addEventListener("change", () => {
   loadLlmOptions();
   loadMeta();
 });
+
+loadKbGovernanceButton?.addEventListener("click", loadKbGovernance);
 
 llmProviderInput.addEventListener("change", () => {
   renderModelOptions();

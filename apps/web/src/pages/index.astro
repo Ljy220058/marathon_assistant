@@ -177,6 +177,17 @@ const profileFields = [
             <input id="apiToken" type="password" placeholder="仅本页会话使用" autocomplete="off" />
             <span class="muted">需要访问令牌时填写；不写入 localStorage。</span>
             <div id="health" class="status-note">等待连接</div>
+            <section id="kbGovernancePanel" class="kb-governance-panel" data-kb-governance-panel aria-live="polite">
+              <div class="panel-heading split">
+                <div>
+                  <p class="section-kicker">KB 治理门禁</p>
+                  <h2>知识库发布状态</h2>
+                </div>
+                <button id="loadKbGovernance" class="ghost-button" type="button">刷新门禁</button>
+              </div>
+              <div id="kbGovernanceStatus" class="status-note">使用访问令牌读取 /admin/kb-governance。</div>
+              <div id="kbGovernanceContent" class="empty-state">尚未加载 KB 治理门禁。</div>
+            </section>
           </section>
 
           <section id="drawerHistoryPanel" class="panel rail-panel" data-drawer-section="history" hidden>

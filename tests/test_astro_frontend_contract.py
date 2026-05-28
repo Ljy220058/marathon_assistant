@@ -74,13 +74,22 @@ def test_astro_workspace_smoke_covers_guarded_frontend_entry_points():
 def test_astro_defaults_to_8010_and_auto_detects_fallback_port():
     source = _index_source()
 
-    assert 'const DEFAULT_API_BASE = "http://127.0.0.1:8010"' in source
+    assert 'const LOCAL_API_BASE = "http://127.0.0.1:8010"' in source
+    assert "window.MARATHON_API_BASE" in source
+    assert "document.body?.dataset?.apiBase" in source
     assert "API_BASE_CANDIDATES" in source
     assert "detectApiBase" in source
     assert "http://127.0.0.1:8011" in source
     assert "http://127.0.0.1:8000" in source
     assert "requestQueryPayloadFromBase" in source
     assert "lastQueryBase" in source
+
+
+def test_astro_query_payload_does_not_send_provider_api_keys():
+    source = _index_source()
+
+    payload_body = source[source.index("function buildQueryPayload") : source.index("function requestQueryPayloadFromBase")]
+    assert "ds_api_key" not in payload_body
 
 
 def test_astro_calendar_renders_full_plan_with_view_switches():
@@ -338,6 +347,31 @@ def test_astro_calendar_surfaces_user_action_summary_before_expert_metrics():
     assert ".calendar-action-card" in styles
 
 
+def test_astro_runner_today_card_answers_next_training_without_expert_fields():
+    source = _index_source()
+    styles = _style_source()
+    panel_source = source[source.index("function renderCalendarActionPanel") : source.index("function normalizeRiskLevel")]
+
+    assert 'data-runner-today-card' in panel_source
+    assert "renderCalendarActionPanel(response, days)" in source
+    assert "runnerTodayMeta" in panel_source
+    assert "训练类型" in panel_source
+    assert "时长" in panel_source
+    assert "强度" in panel_source
+    assert "主课" in panel_source
+    assert "风险状态" in panel_source
+    assert "打开日卡" in panel_source
+    assert "记录反馈" in panel_source
+    assert "完善画像" in panel_source
+    assert "生成训练日历" in panel_source
+    assert "恢复历史计划" in panel_source
+    assert "workflow_trace" not in panel_source
+    assert "field_sources" not in panel_source
+    assert "source_registry_id" not in panel_source
+    assert ".runner-today-card" in styles
+    assert ".runner-today-meta" in styles
+
+
 def test_astro_drawer_actions_are_step_guided_not_a_tool_dump():
     source = _index_source()
     styles = _style_source()
@@ -372,6 +406,28 @@ def test_astro_guided_sidebar_keeps_expert_settings_out_of_normal_flow():
     assert 'targetSection?.hasAttribute("data-expert-only")' in source
     assert 'button.hasAttribute("data-expert-only")' in source
     assert '<details class="audit-panel" data-audit-trace hidden data-expert-only>' in source
+
+
+def test_astro_expert_settings_show_kb_governance_release_gate():
+    source = _index_source()
+    styles = _style_source()
+
+    assert 'id="kbGovernancePanel"' in source
+    assert 'data-kb-governance-panel' in source
+    assert 'id="loadKbGovernance"' in source
+    assert 'id="kbGovernanceStatus"' in source
+    assert 'id="kbGovernanceContent"' in source
+    assert "loadKbGovernance" in source
+    assert 'apiFetch("/admin/kb-governance"' in source
+    assert 'Authorization: `Bearer ${token}`' in source
+    assert "can_replace_runtime" in source
+    assert "commercial_release_ready" in source
+    assert "top_actionable_domain_gaps" in source
+    assert "release_work_queue" in source
+    assert "KB 治理门禁" in source
+    assert ".kb-governance-panel" in styles
+    assert ".kb-governance-grid" in styles
+    assert ".kb-governance-list" in styles
 
 
 def test_astro_drawer_content_is_hidden_until_user_selects_a_guided_action():
@@ -464,6 +520,144 @@ def test_astro_day_card_surfaces_basis_and_feedback_loop():
     assert "completion," in source
     assert "pain," in source
     assert "生成调整版计划" in source
+
+
+def test_astro_day_modal_explains_training_in_four_runner_sections():
+    source = _index_source()
+    modal_source = source[source.index("function buildTrainingReasonGrid") : source.index("function buildDayEvidenceActionHtml")]
+
+    assert "buildTrainingReasonGrid(day, objective, adjustment)" in source
+    assert "练什么能力" in modal_source
+    assert "为什么是这个剂量" in modal_source
+    assert "如何恢复或降级" in modal_source
+    assert "后续承接" in modal_source
+    assert "runnerFacingText" in modal_source
+    assert "needs_evidence" not in modal_source
+    assert "needs_protocol_recheck" not in modal_source
+
+
+def test_astro_feedback_result_names_runner_adjustment_fields_directly():
+    source = _index_source()
+    feedback_source = source[source.index("function buildFeedbackResultHtml") : source.index("async function composeFeedbackPrompt")]
+
+    assert "next_day_adjustment" in feedback_source
+    assert "weekly_adjustment" in feedback_source
+    assert "affected_events" in source
+    assert "medical_referral" in feedback_source
+    assert "明日调整" in feedback_source
+    assert "本周微调" in feedback_source
+    assert "可能影响的后续训练" in feedback_source
+    assert "停止训练" in feedback_source
+    assert "专业医疗评估" in feedback_source
+
+
+def test_astro_feedback_collects_schedule_constraints_for_local_replan():
+    source = _index_source()
+    feedback_form_source = source[source.index("function buildDayModalHtml") : source.index("function closeDayModal")]
+    collect_source = source[source.index("function collectFeedbackPayload") : source.index("function buildFeedbackPrompt")]
+    submit_source = source[source.index("async function submitFeedbackApi") : source.index("function normalizeEvidencePages")]
+
+    assert "scheduleConstraints" in collect_source
+    assert 'name="scheduleConstraints"' in feedback_form_source
+    assert "本周有没有别的安排" in feedback_form_source
+    assert "周二周四上课跑不了" in source
+    assert "schedule_constraints" in submit_source
+    assert "scheduleConstraints" in submit_source
+
+
+def test_astro_feedback_replan_renders_patch_and_action_buttons():
+    source = _index_source()
+    feedback_source = source[source.index("function buildFeedbackResultHtml") : source.index("async function composeFeedbackPrompt")]
+
+    assert "feedback_replan" in feedback_source
+    assert "buildFeedbackReplanHtml" in source
+    assert "feedback_replan.patches" in source
+    assert "original.main_set" in source
+    assert "suggested.main_set" in source
+    assert "按调整执行" in source
+    assert "重新排本周" in source
+    assert "修改本周时间" in source
+    assert "我已恢复，申请复核" in source
+    assert "暂不采用" in source
+    assert "data-feedback-replan-action" in source
+
+
+def test_astro_feedback_replan_actions_call_backend_and_merge_state():
+    source = _index_source()
+    action_source = source[source.index("async function submitFeedbackReplanAction") : source.index("async function composeFeedbackPrompt")]
+    restore_source = source[source.index("async function loadSavedPlan") : source.index("async function saveCurrentPlanSnapshot")]
+
+    assert "submitFeedbackReplanAction" in source
+    assert 'data-feedback-replan-action="accept"' in source
+    assert 'data-feedback-replan-action="replan"' in source
+    assert 'data-feedback-replan-action="update_availability"' in source
+    assert 'data-feedback-replan-action="recover"' in source
+    assert 'data-feedback-replan-action="dismiss"' in source
+    assert 'apiFetch(`/plans/${planId}/feedback/${feedbackId}/actions`' in action_source
+    assert "applyFeedbackReplanToLastResponse" in source
+    assert "response.feedback_replan" in action_source
+    assert "feedback_replan: eventContent.feedback_replan || event.feedback_replan" in restore_source
+
+
+def test_astro_feedback_replan_handles_runner_action_states_and_errors():
+    source = _index_source()
+    action_source = source[source.index("async function submitFeedbackReplanAction") : source.index("async function composeFeedbackPrompt")]
+    replan_source = source[source.index("function buildFeedbackReplanHtml") : source.index("function applyFeedbackReplanToDayList")]
+
+    assert "try {" in action_source
+    assert "catch (error)" in action_source
+    assert "正在处理" in action_source
+    assert "操作失败" in action_source
+    assert "focusScheduleConstraintsInput" in source
+    assert "needs_manual_choice" in source
+    assert "本周没有可安全安排的训练日" in source
+    assert "已应用到日历" in source  # 在 feedbackStatusLabel 中，不在 replan_source 切片
+    assert "不能直接恢复" in replan_source
+    assert "data-replan-applied-highlight" in source
+
+
+def test_astro_feedback_effect_uses_persisted_affected_events():
+    source = _index_source()
+    feedback_source = source[source.index("function buildFeedbackResultHtml") : source.index("async function composeFeedbackPrompt")]
+    apply_source = source[source.index("function applyLatestFeedbackToLastResponse") : source.index("function isMedicalReferralFeedback")]
+    restore_source = source[source.index("async function loadSavedPlan") : source.index("async function saveCurrentPlanSnapshot")]
+    panel_source = source[source.index("function renderCalendarActionPanel") : source.index("function normalizeRiskLevel")]
+    card_source = source[source.index("function renderDayCard") : source.index("function weekGroupStateKey")]
+    modal_source = source[source.index("function buildDayModalHtml") : source.index("function closeDayModal")]
+
+    assert "const affectedEvents = feedbackAffectedEvents(payload, affectedDays)" in feedback_source
+    assert "effect.adjusted_instruction" in feedback_source
+    assert "function feedbackEffectForDay" in source
+    assert "function buildFeedbackEffectHtml" in source
+    assert "function applyFeedbackEffectsToDayList" in source
+    assert "applyFeedbackEffectsToDayList(calendar.days" in apply_source
+    assert "payload.affected_events" in apply_source
+    assert "affected_events: feedbackAffectedEvents(payload, affectedDaysAfterFeedback(selectedDay))" in source
+    assert "feedback_effect: eventContent.feedback_effect || event.feedback_effect" in restore_source
+    assert "latest_feedback_effect: eventContent.latest_feedback_effect || event.latest_feedback_effect" in restore_source
+    assert "adjustment_hint: eventContent.adjustment_hint || event.adjustment_hint" in restore_source
+    assert "feedbackEffectForDay(primaryDay)" in panel_source
+    assert "feedbackEffectForDay(day)" in card_source
+    assert "buildFeedbackEffectHtml(day)" in modal_source
+    assert "已按反馈调整" in source
+    assert "受反馈影响" in source
+    assert "调整后执行建议" in source
+
+
+def test_astro_saved_plan_restore_refreshes_runner_execution_surfaces():
+    source = _index_source()
+    restore_source = source[source.index("function restorePlanResponse") : source.index("function renderLocalPlanHistory")]
+    load_source = source[source.index("async function loadSavedPlan") : source.index("async function saveCurrentPlanSnapshot")]
+
+    assert "restorePlanResponse(response, \"历史计划\")" in load_source
+    assert "renderReport(state.lastResponse)" in restore_source
+    assert "renderCalendar(state.lastResponse)" in restore_source
+    assert "renderEvidencePreview(state.lastResponse)" in restore_source
+    assert "renderStatusPanel(state.lastResponse)" in restore_source
+    assert "renderAdjustmentHistory(state.lastResponse)" in restore_source
+    assert "restorePlanResponse(item.response, \"本地历史\")" in source
+    assert "calendar_days: normalizeCalendarDays(state.lastResponse)" in source
+    assert "localStorage" in source
 
 
 def test_astro_profile_derives_plan_weeks_and_weekly_mileage_from_race_date():
