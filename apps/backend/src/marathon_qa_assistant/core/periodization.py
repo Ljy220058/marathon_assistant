@@ -51,7 +51,8 @@ class Macrocycle:
         if total_weeks is None:
             total_weeks = int((profile or {}).get("plan_duration_weeks", 12) or 12)
         total_weeks = max(1, min(total_weeks, 26))
-        mesocycles = cls._compute_mesocycles(total_weeks)
+        race_type = _resolve_race_type(profile) if profile else "general"
+        mesocycles = cls._compute_mesocycles(total_weeks, race_type=race_type)
         return cls(race_date=race_date, total_weeks=total_weeks, mesocycles=mesocycles)
 
     @classmethod
@@ -83,7 +84,11 @@ class Macrocycle:
         return cls.from_race_date(race_date=parsed, total_weeks=total_weeks, profile=profile)
 
     @staticmethod
-    def _compute_mesocycles(total_weeks: int) -> List[Mesocycle]:
+    def _compute_mesocycles(total_weeks: int, race_type: str = "general") -> List[Mesocycle]:
+        """根据总周数和赛事类型选择对应的阶段模型。"""
+        if race_type == "marathon":
+            return Macrocycle._marathon_phases(total_weeks)
+        # 半马和通用类型使用现有 HMP 阶段模型
         if total_weeks <= 4:
             return Macrocycle._phases_short(total_weeks)
         elif total_weeks <= 8:
@@ -92,6 +97,128 @@ class Macrocycle:
             return Macrocycle._phases_standard(total_weeks)
         else:
             return Macrocycle._phases_long(total_weeks)
+
+    # ------------------------------------------------------------------
+    # 全马专属阶段模型 (Base / Build / Peak / Taper)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _marathon_phases(total_weeks: int) -> List[Mesocycle]:
+        """全马专属四阶段模型，长距离每周递增到 30-35km。"""
+        if total_weeks <= 6:
+            return Macrocycle._marathon_phases_short(total_weeks)
+        elif total_weeks <= 12:
+            return Macrocycle._marathon_phases_medium(total_weeks)
+        else:
+            return Macrocycle._marathon_phases_long(total_weeks)
+
+    @staticmethod
+    def _marathon_phases_short(total_weeks: int) -> List[Mesocycle]:
+        """短周期全马 (< 7 周)：压缩为 Build + Taper。"""
+        taper_w = max(2, int(total_weeks * 0.25))
+        build_w = total_weeks - taper_w
+        mesos = []
+        start = 1
+        if build_w > 0:
+            mesos.append(Mesocycle(
+                name="强化期 (Build Phase)", weeks=build_w, start_week=start,
+                goal="提升有氧耐力与长距离能力，每周长距离递增至25-30km，引入马拉松配速专项",
+                max_high_intensity_per_week=1, min_easy_days=4, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=0.95,
+            ))
+            start += build_w
+        if taper_w > 0:
+            mesos.append(Mesocycle(
+                name="减量期 (Taper Phase)", weeks=taper_w, start_week=start,
+                goal="大幅降低训练负荷，消除累积疲劳，储备体能迎接全马比赛",
+                max_high_intensity_per_week=1, min_easy_days=6, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.55,
+            ))
+        return mesos
+
+    @staticmethod
+    def _marathon_phases_medium(total_weeks: int) -> List[Mesocycle]:
+        """中周期全马 (7-12 周)：Base + Build + Taper。"""
+        taper_w = max(2, int(total_weeks * 0.22))
+        build_w = max(4, int(total_weeks * 0.45))
+        base_w = total_weeks - build_w - taper_w
+        if base_w < 2:
+            base_w = 2
+            build_w = total_weeks - base_w - taper_w
+        mesos = []
+        start = 1
+        if base_w > 0:
+            mesos.append(Mesocycle(
+                name="基础期 (Base Phase)", weeks=base_w, start_week=start,
+                goal="建立有氧基础，以轻松跑和渐进长距离为核心，逐步增加跑量，长距离递增至20-25km",
+                max_high_intensity_per_week=1, min_easy_days=5, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.82,
+            ))
+            start += base_w
+        if build_w > 0:
+            mesos.append(Mesocycle(
+                name="强化期 (Build Phase)", weeks=build_w, start_week=start,
+                goal="增加长距离距离至25-30km，引入马拉松配速跑、节奏跑和无氧阈间歇，强化专项耐力",
+                max_high_intensity_per_week=2, min_easy_days=3, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=1.03,
+            ))
+            start += build_w
+        if taper_w > 0:
+            mesos.append(Mesocycle(
+                name="减量期 (Taper Phase)", weeks=taper_w, start_week=start,
+                goal="大幅降低负荷，消除累积疲劳，心理与体能准备迎接全马比赛",
+                max_high_intensity_per_week=1, min_easy_days=6, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.55,
+            ))
+        return mesos
+
+    @staticmethod
+    def _marathon_phases_long(total_weeks: int) -> List[Mesocycle]:
+        """长周期全马 (>=13 周)：Base + Build + Peak + Taper 标准四阶段。"""
+        taper_w = max(2, int(total_weeks * 0.17))
+        peak_w = max(3, int(total_weeks * 0.22))
+        build_w = max(4, int(total_weeks * 0.35))
+        base_w = total_weeks - taper_w - peak_w - build_w
+        if base_w < 3:
+            base_w = 3
+            remaining = total_weeks - taper_w - peak_w - base_w
+            build_w = max(3, int(remaining * 0.6))
+            peak_w = remaining - build_w
+
+        mesos = []
+        start = 1
+        if base_w > 0:
+            mesos.append(Mesocycle(
+                name="基础期 (Base Phase)", weeks=base_w, start_week=start,
+                goal="有氧基础建设：以轻松跑和渐进长距离为核心，长距离每周递增至20-25km，引入法特莱克",
+                max_high_intensity_per_week=1, min_easy_days=5, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.78,
+            ))
+            start += base_w
+        if build_w > 0:
+            mesos.append(Mesocycle(
+                name="强化期 (Build Phase)", weeks=build_w, start_week=start,
+                goal="增加长距离至28-32km，引入马拉松配速跑、节奏跑和无氧阈间歇，提升专项耐力与乳酸阈值",
+                max_high_intensity_per_week=2, min_easy_days=3, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=1.00,
+            ))
+            start += build_w
+        if peak_w > 0:
+            mesos.append(Mesocycle(
+                name="巅峰期 (Peak Phase)", weeks=peak_w, start_week=start,
+                goal="马拉松配速专项：长距离含比赛配速段落，模拟比赛节奏与补给策略，长距离峰值30-35km",
+                max_high_intensity_per_week=2, min_easy_days=2, long_run_zone="Z3",
+                weekly_mileage_ratio=1.05,
+            ))
+            start += peak_w
+        if taper_w > 0:
+            mesos.append(Mesocycle(
+                name="减量期 (Taper Phase)", weeks=taper_w, start_week=start,
+                goal="赛前减量：大幅降低训练负荷与跑量（至巅峰期50-60%），消除累积疲劳，配速感维持",
+                max_high_intensity_per_week=1, min_easy_days=6, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.55,
+            ))
+        return mesos
 
     @staticmethod
     def _phases_short(total_weeks: int) -> List[Mesocycle]:
@@ -325,3 +452,28 @@ def compute_week_volume_factor(week_index: int, blocks: List[BlockParams]) -> fl
                 factor = max(1.0, factor - 0.02 * (4 - blk.weeks))
             return round(blk.block_coeff * factor, 4)
     return 1.0
+
+
+def _resolve_race_type(profile: Dict) -> str:
+    """从用户画像中检测目标赛事类型。
+
+    检测来源（按优先级）：
+    1. profile['race_type'] 显式字段（"half_marathon" / "marathon"）
+    2. profile['goal'] 文本关键词（全马/半马/全程/半程/marathon）
+    3. profile['target_pace'] 文本关键词
+    4. 默认返回 "general"
+    """
+    race_type = str(profile.get("race_type") or "").strip().lower()
+    if race_type in ("marathon", "half_marathon"):
+        return race_type
+
+    goal = str(profile.get("goal") or "").strip()
+    target_pace = str(profile.get("target_pace") or "").strip()
+    combined = f"{goal} {target_pace}".lower()
+
+    if any(kw in combined for kw in ("全马", "全程", "马拉松", "marathon", "42k", "42.2")):
+        return "marathon"
+    if any(kw in combined for kw in ("半马", "半程", "half marathon", "half", "21k", "21.1")):
+        return "half_marathon"
+
+    return "general"

@@ -432,7 +432,7 @@ def test_half_year_plan_anti_duplication_for_marathon():
             primary_types_per_phase[phase].add(tue_day.training_type)
 
     for phase, types in primary_types_per_phase.items():
-        if "减量" in phase or "调整" in phase:
+        if any(kw in phase for kw in ("减量", "调整", "Taper", "taper")):
             continue
         assert len(types) >= 2, f"Phase {phase} has only {len(types)} primary types: {types}"
 
@@ -442,8 +442,10 @@ def test_half_year_plan_anti_duplication_for_marathon():
         assert sig not in seen_exact_schedules, f"Week {week.week_index} has exact duplicate schedule"
         seen_exact_schedules.add(sig)
 
-    has_base_phase = any("基础" in w.phase for w in weeks)
-    has_build_phase = any("建设" in w.phase for w in weeks)
-    has_peak_phase = any("巅峰" in w.phase for w in weeks)
-    has_taper_phase = any("减量" in w.phase for w in weeks)
-    assert has_base_phase and has_build_phase and has_peak_phase and has_taper_phase
+    # 全马阶段模型使用 Base/Build/Peak/Taper，兼容中英文名称
+    has_base_phase = any("基础" in w.phase or "Base" in w.phase for w in weeks)
+    has_build_phase = any("建设" in w.phase or "Build" in w.phase or "强化" in w.phase for w in weeks)
+    has_peak_phase = any("巅峰" in w.phase or "Peak" in w.phase for w in weeks)
+    has_taper_phase = any("减量" in w.phase or "Taper" in w.phase for w in weeks)
+    assert has_base_phase and has_build_phase and has_peak_phase and has_taper_phase, \
+        f"Missing phases: base={has_base_phase}, build={has_build_phase}, peak={has_peak_phase}, taper={has_taper_phase}"
