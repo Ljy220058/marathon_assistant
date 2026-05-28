@@ -345,9 +345,19 @@ PLAN_QUERY_KEYWORDS = (
     "race prep", "race preparation", "sub ", "pb",
 )
 
+# P1-7: 营养/补给类关键词 — 包含这些词的查询不应被误判为训练计划请求
+NUTRITION_EXCLUSION_KEYWORDS = (
+    "营养", "补给", "吃", "喝", "补水", "蛋白", "碳水", "恢复餐",
+    "能量胶", "电解质", "饮食", "素食", "生酮", "空腹", "低血糖",
+    "hydration", "fuel", "nutrition", "diet",
+)
+
 
 def _is_plan_query(query: str) -> bool:
     text = str(query or "").lower()
+    # P1-7: 若查询包含营养/补给关键词，不应判定为训练计划请求
+    if any(keyword.lower() in text for keyword in NUTRITION_EXCLUSION_KEYWORDS):
+        return False
     return any(keyword.lower() in text for keyword in PLAN_QUERY_KEYWORDS)
 
 

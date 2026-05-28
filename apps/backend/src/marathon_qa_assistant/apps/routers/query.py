@@ -53,7 +53,8 @@ async def execute_query(request: QueryRequest, http_request: Request):
         )
 
     ensure_knowledge_base_ready()
-    initial_state: IntegratedState = build_working_state(query=request.query, user_profile=profile)
+    # P1-1: 将 API mode 参数传入 build_working_state，避免被硬编码 "team" 覆盖
+    initial_state: IntegratedState = build_working_state(query=request.query, mode=request.mode, user_profile=profile)
     config = _build_llm_config(request)
 
     try:
@@ -83,8 +84,10 @@ async def execute_query(request: QueryRequest, http_request: Request):
                 ),
                 _response_role(http_request),
             )
+        # P1-2: 非计划查询超时时返回有意义错误，不再抛 504
         raise HTTPException(status_code=504, detail=f"完整 LLM 工作流超过 {request.timeout_sec} 秒。")
     except Exception as e:
+        # P1-2: 统一异常处理 — 计划查询回退到骨架，其他查询返回 200 with error info
         if plan_query:
             return _project_query_response_for_role(
                 await _build_skeleton_plan_response(
@@ -96,4 +99,23 @@ async def execute_query(request: QueryRequest, http_request: Request):
                 ),
                 _response_role(http_request),
             )
-        raise HTTPException(status_code=500, detail=_safe_workflow_error_summary(e))
+        # P1-2: 非计划查询也返回 200，附带错误信息和回退报告
+        from marathon_qa_assistant.apps.response_builders import _query_response_from_state
+        from marathon_qa_assistant.core.working_state import build_working_state
+        error_state = build_working_state(query=request.query, mode=request.mode, user_profile=profile)
+        error_state["final_report"] = (
+            f"## 查询处理遇到问题\n\n"
+            f"很抱歉，处理您的查询时遇到了技术问题：{_safe_workflow_error_summary(e)}。\n\n"
+            f"请稍后重试，或检查模型服务是否正常运行。"
+        )
+        error_state["token_usage"] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        return _project_query_response_for_role(
+            _query_response_from_state(
+                error_state,
+                request,
+                generation_status="error",
+                message=f"工作流异常：{_safe_workflow_error_summary(e)}",
+                user_id=user_id,
+            ),
+            _response_role(http_request),
+        )
