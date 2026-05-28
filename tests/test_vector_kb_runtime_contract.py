@@ -110,9 +110,9 @@ def test_probe_vector_kb_health_labels_v2_runtime_source(monkeypatch, tmp_path):
 
 
 def test_kb_source_label_resolves_repo_v2_directory():
-    from marathon_qa_assistant.core.app_state import V2_VECTOR_DIR
-
-    assert vector_store._kb_source_label(V2_VECTOR_DIR) == "v2"
+    # Use vector_store's own V2_VECTOR_DIR (imported at module load) to avoid
+    # mismatch when test_monorepo_paths reloads app_state with temp paths.
+    assert vector_store._kb_source_label(vector_store.V2_VECTOR_DIR) == "v2"
 
 
 def test_load_faiss_store_rejects_untrusted_external_dir(monkeypatch, tmp_path):

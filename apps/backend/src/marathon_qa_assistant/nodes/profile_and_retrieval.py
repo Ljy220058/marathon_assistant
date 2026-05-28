@@ -563,6 +563,17 @@ def build_ranked_evidence(
                 "fusion_bonus": 0.0,
             },
         }
+        # 从 hit 传播 v2 metadata（evidence_bundle 链需要这些字段）
+        for meta_key in (
+            "source_registry_id", "source_url", "source_path", "section",
+            "evidence_domain", "knowledge_layer", "domain_pack",
+            "allowed_use", "prescription_permission", "quality_tier",
+            "review_status", "needs_review",
+        ):
+            if meta_key in hit:
+                ev[meta_key] = hit[meta_key]
+                ev["trace"].setdefault(meta_key, hit[meta_key])
+
         # 以 chunk_id 为核心去重键
         key = chunk_id if chunk_id else f"{source}_{page}"
         evidence_map[key] = ev

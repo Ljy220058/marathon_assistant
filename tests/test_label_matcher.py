@@ -16,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 def _make_mock_embeddings(labels_to_vectors: dict[str, list[float]]):
     """构造 mock embedding 实例，返回预定义向量"""
     mock = MagicMock()
-    mock.model = "bge-m3"
+    mock.model = "nomic-embed-text:latest"
 
     def embed_documents(texts):
         results = []
@@ -86,10 +86,11 @@ class TestSemanticMatchEntities:
         assert "轻松跑" in result["entities"]
         assert result["selected_entities"] == result["entities"]
 
-    def test_vector_store_uses_bge_m3_embedding_model(self):
+    def test_vector_store_uses_nomic_embed_text_model(self):
         from marathon_qa_assistant.services import vector_store
 
-        assert vector_store.EMBEDDING_MODEL == "bge-m3"
+        assert "nomic-embed-text" in vector_store.EMBEDDING_MODEL
+        assert vector_store.EMBEDDING_MODEL == "nomic-embed-text:latest"
 
     def test_l2_below_threshold_returns_empty(self):
         """余弦相似度 < 0.6 → 返回空列表"""
@@ -118,7 +119,7 @@ class TestSemanticMatchEntities:
         call_count = [0]
 
         mock_emb = MagicMock()
-        mock_emb.model = "bge-m3"
+        mock_emb.model = "nomic-embed-text:latest"
 
         def embed_docs(texts):
             call_count[0] += 1

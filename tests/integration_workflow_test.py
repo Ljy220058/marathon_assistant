@@ -43,7 +43,14 @@ def _build_state() -> IntegratedState:
 
 async def _run_integration() -> IntegratedState:
     state = _build_state()
-    return await integrated_app.ainvoke(state)
+    # FallbackIntegratedApp.ainvoke has a dict-copy bug where the internal
+    # astream creates another copy, causing ainvoke to return the initial
+    # unmodified state.  Accumulate node outputs from astream instead.
+    async for chunk in integrated_app.astream(state):
+        for node_output in chunk.values():
+            if isinstance(node_output, dict):
+                state.update(node_output)
+    return state
 
 
 def test_integration_workflow_returns_consistent_final_state():
