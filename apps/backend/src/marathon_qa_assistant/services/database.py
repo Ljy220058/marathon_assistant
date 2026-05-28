@@ -692,12 +692,195 @@ class _Database:
         conn.commit()
         return feedback_id
 
+    @staticmethod
+    def _event_content(row: Dict[str, Any]) -> Dict[str, Any]:
+        raw = row.get("content_json")
+        if isinstance(raw, dict):
+            return dict(raw)
+        if isinstance(raw, str) and raw.strip():
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                return {}
+            return parsed if isinstance(parsed, dict) else {}
+        return {}
+
+    @staticmethod
+    def _future_feedback_effect(
+        event: Dict[str, Any],
+        *,
+        feedback_id: str,
+        reason_codes: List[str],
+        adaptive_adjustment: Dict[str, Any],
+        risk_gate: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        medical_referral = str(risk_gate.get("product_status") or "") == "medical_referral"
+        original_main_set = str(event.get("main_set") or "")
+        instruction = str(adaptive_adjustment.get("next_day_adjustment") or adaptive_adjustment.get("alternative_workout") or "")
+        if medical_referral:
+            instruction = "停止训练，先进行专业医疗评估；评估通过前不继续原计划主课。"
+        return {
+            "source_feedback_id": feedback_id,
+            "reason_codes": list(reason_codes or []),
+            "reason": str(adaptive_adjustment.get("rationale") or risk_gate.get("decision_reason") or "训练反馈触发后续调整。"),
+            "action": "stop_for_medical_referral" if medical_referral else "downgrade",
+            "original_main_set": original_main_set,
+            "adjusted_instruction": instruction,
+            "risk_status": str(risk_gate.get("product_status") or "generated"),
+        }
+
+    def apply_feedback_effect_to_future_events(
+        self,
+        *,
+        plan_id: str,
+        event_id: str,
+        user_id: str = "default_user",
+        feedback_id: str,
+        reason_codes: List[str],
+        adaptive_adjustment: Dict[str, Any],
+        risk_gate: Dict[str, Any],
+        limit: int = 3,
+    ) -> List[Dict[str, Any]]:
+        rows = self.list_events(plan_id)
+        index = next((idx for idx, row in enumerate(rows) if str(row.get("id")) == str(event_id)), -1)
+        if index < 0 or not feedback_id:
+            return []
+        status = str(risk_gate.get("product_status") or "generated")
+        needs_adjustment = status == "medical_referral" or bool(reason_codes or adaptive_adjustment.get("adjustment_required"))
+        if not needs_adjustment:
+            return []
+
+        conn = self._get_conn()
+        affected: List[Dict[str, Any]] = []
+        for row in rows[index + 1 :]:
+            if str(row.get("user_id") or "") != user_id:
+                continue
+            if str(row.get("workout_type") or "").lower() == "rest":
+                continue
+            old_content = self._event_content(row)
+            effect = self._future_feedback_effect(
+                row,
+                feedback_id=feedback_id,
+                reason_codes=reason_codes,
+                adaptive_adjustment=adaptive_adjustment,
+                risk_gate=risk_gate,
+            )
+            # 只叠加反馈影响层，保留原主课，避免把降级提示误写成新处方。
+            new_content = dict(old_content)
+            new_content["feedback_effect"] = effect
+            new_content["latest_feedback_effect"] = effect
+            new_content["card_status"] = "medical_referral" if effect["action"] == "stop_for_medical_referral" else "feedback_adjusted"
+            new_content["generation_status"] = new_content["card_status"]
+            new_content["adjustment_hint"] = effect["adjusted_instruction"]
+            conn.execute(
+                """UPDATE training_calendar_events SET
+                    content_json = ?, sync_status = 'not_synced', updated_at = datetime('now')
+                WHERE id = ?""",
+                (json.dumps(new_content, ensure_ascii=False), row.get("id")),
+            )
+            conn.execute(
+                """INSERT INTO training_event_exceptions
+                    (id, event_id, plan_id, user_id, exception_type, reason,
+                     old_scheduled_date, new_scheduled_date, old_start_time, new_start_time,
+                     old_content_json, new_content_json, is_applied)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                (
+                    str(uuid.uuid4()),
+                    row.get("id"),
+                    plan_id,
+                    user_id,
+                    "feedback_effect",
+                    ",".join(reason_codes or []),
+                    row.get("scheduled_date"),
+                    row.get("scheduled_date"),
+                    row.get("start_time"),
+                    row.get("start_time"),
+                    row.get("content_json") or json.dumps(old_content, ensure_ascii=False),
+                    json.dumps(new_content, ensure_ascii=False),
+                ),
+            )
+            affected.append(
+                {
+                    "event_id": row.get("id"),
+                    "day_label": row.get("day_label"),
+                    "scheduled_date": row.get("scheduled_date"),
+                    "title": row.get("title"),
+                    "workout_type": row.get("workout_type"),
+                    "feedback_effect": effect,
+                }
+            )
+            if len(affected) >= limit:
+                break
+        conn.commit()
+        return affected
+
     def get_latest_event_feedback(self, event_id: str) -> Optional[Dict[str, Any]]:
         row = self._get_conn().execute(
             "SELECT * FROM training_event_feedback WHERE event_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1",
             (event_id,),
         ).fetchone()
         return self._feedback_summary(row) if row else None
+
+    def save_feedback_replan(
+        self,
+        *,
+        plan_id: str,
+        feedback_id: str,
+        user_id: str,
+        feedback_replan: Dict[str, Any],
+        apply_patch: bool = False,
+        exception_type: str = "feedback_replan_suggested",
+    ) -> List[Dict[str, Any]]:
+        conn = self._get_conn()
+        affected: List[Dict[str, Any]] = []
+        for patch in feedback_replan.get("patches") or []:
+            event_id = str(patch.get("event_id") or "")
+            row = self.get_event(plan_id, event_id, user_id)
+            if not row:
+                continue
+            old_content = self._event_content(row)
+            new_content = dict(old_content)
+            event_replan = dict(feedback_replan)
+            event_replan["patches"] = [patch]
+            if apply_patch:
+                event_replan["status"] = "applied"
+                suggested = patch.get("suggested") or {}
+                new_content["card_status"] = "feedback_replan_applied"
+                new_content["generation_status"] = "feedback_replan_applied"
+                new_content["adjustment_hint"] = str(suggested.get("main_set") or "")
+            new_content["feedback_replan"] = event_replan
+            # 反馈重规划写入 content_json，保留原字段用于追溯 old/new patch。
+            conn.execute(
+                """UPDATE training_calendar_events SET
+                    content_json = ?, sync_status = 'not_synced', updated_at = datetime('now')
+                WHERE id = ?""",
+                (json.dumps(new_content, ensure_ascii=False), event_id),
+            )
+            conn.execute(
+                """INSERT INTO training_event_exceptions
+                    (id, event_id, plan_id, user_id, exception_type, reason,
+                     old_scheduled_date, new_scheduled_date, old_start_time, new_start_time,
+                     old_content_json, new_content_json, is_applied)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    str(uuid.uuid4()),
+                    event_id,
+                    plan_id,
+                    user_id,
+                    exception_type,
+                    str(feedback_id),
+                    row.get("scheduled_date"),
+                    row.get("scheduled_date"),
+                    row.get("start_time"),
+                    row.get("start_time"),
+                    row.get("content_json") or json.dumps(old_content, ensure_ascii=False),
+                    json.dumps(new_content, ensure_ascii=False),
+                    1 if apply_patch else 0,
+                ),
+            )
+            affected.append({"event_id": event_id, "feedback_replan": event_replan})
+        conn.commit()
+        return affected
 
     def list_plan_feedback(self, plan_id: str) -> list:
         rows = self._get_conn().execute(

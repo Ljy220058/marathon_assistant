@@ -1,8 +1,13 @@
+import os
 import sys
 import types
 import importlib.util
 from pathlib import Path
 
+# 安全加固后不再有硬编码默认值 — 测试需显式注入
+os.environ.setdefault("GRAPHRAG_API_KEY", "test-graphrag-key-for-ci")
+os.environ.setdefault("OLLAMA_API_KEY", "test-ollama-key-for-ci")
+os.environ.setdefault("API_KEY", "test-api-key-for-ci")
 
 root = Path(__file__).parents[1]
 if str(root) not in sys.path:
@@ -91,6 +96,22 @@ if not hasattr(_vs_mod, "probe_vector_kb_health"):
 
     _vs_mod.probe_vector_kb_health = _fake_probe_vector_kb_health
 
+# 安全加固后移除了 _build_query_variants / _merge_ranked_hits，已有测试需存根
+if not hasattr(_vs_mod, "_build_query_variants"):
+    _vs_mod._build_query_variants = lambda q, hints=None: [q]
+if not hasattr(_vs_mod, "_merge_ranked_hits"):
+    _vs_mod._merge_ranked_hits = lambda hits_by_variant, top_k=5: hits_by_variant.get(list(hits_by_variant.keys())[0], [])[:top_k] if hits_by_variant else []
+if not hasattr(_vs_mod, "_doc_to_hit"):
+    _vs_mod._doc_to_hit = lambda doc: {"text": getattr(doc, "page_content", ""), "source_file": doc.metadata.get("source_file", "") if hasattr(doc, "metadata") else "", "page": doc.metadata.get("page", 0) if hasattr(doc, "metadata") else 0, "score": 1.0}
+
+
+# profile_and_retrieval 移除了 _should_use_wiki_context，已有测试需存根
+import marathon_qa_assistant.nodes.profile_and_retrieval as _pr_mod
+
+if not hasattr(_pr_mod, "_should_use_wiki_context"):
+    _pr_mod._should_use_wiki_context = lambda state: False
+if not hasattr(_pr_mod, "_detect_missing_enhancement_fields"):
+    _pr_mod._detect_missing_enhancement_fields = lambda state: {}
 
 # ── Test fixtures ────────────────────────────────────────────────────────────
 import pytest

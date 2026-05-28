@@ -72,6 +72,8 @@ from marathon_qa_assistant.core.logging_middleware import (
 from marathon_qa_assistant.apps.schemas import (
     DayDetailResponse,
     EventScheduleRequest,
+    FeedbackActionRequest,
+    FeedbackActionResponse,
     FeedbackRequest,
     FeedbackResponse,
     NluExtractRequest,
@@ -479,8 +481,10 @@ def _affected_events_after_feedback(events: List[Dict[str, Any]], event_id: str,
         return []
     affected: List[Dict[str, Any]] = []
     for event in events[index + 1 :]:
-        if str(event.get("workout_type") or "").lower() == "rest":
-            continue
+        effect = event.get("feedback_effect") if isinstance(event, dict) else None
+        if not isinstance(effect, dict):
+            if str(event.get("workout_type") or "").lower() == "rest":
+                continue
         affected.append(
             {
                 "event_id": event.get("id"),
@@ -488,11 +492,260 @@ def _affected_events_after_feedback(events: List[Dict[str, Any]], event_id: str,
                 "scheduled_date": event.get("scheduled_date"),
                 "title": event.get("title"),
                 "workout_type": event.get("workout_type"),
+                "feedback_effect": effect if isinstance(effect, dict) else None,
             }
         )
         if len(affected) >= limit:
             break
     return affected
+
+
+def _plan_diff_from_affected_events(
+    plan_diff: Dict[str, Any],
+    affected_events: List[Dict[str, Any]],
+    *,
+    blocked: bool,
+    needs_adjustment: bool,
+) -> Dict[str, Any]:
+    updated = dict(plan_diff or {})
+    count = len(affected_events or [])
+    if count:
+        updated["affected_days"] = count
+        updated["cancelled"] = count if blocked else 0
+        updated["downgraded"] = 0 if blocked else count
+        updated["kept"] = 0
+    else:
+        updated["affected_days"] = 0
+        updated["cancelled"] = 0
+        updated["downgraded"] = 0
+        updated["kept"] = 0 if needs_adjustment else 1
+    return updated
+
+
+_DAY_NAME_ALIASES = {
+    "monday": "Monday",
+    "mon": "Monday",
+    "周一": "Monday",
+    "星期一": "Monday",
+    "tuesday": "Tuesday",
+    "tue": "Tuesday",
+    "周二": "Tuesday",
+    "星期二": "Tuesday",
+    "wednesday": "Wednesday",
+    "wed": "Wednesday",
+    "周三": "Wednesday",
+    "星期三": "Wednesday",
+    "thursday": "Thursday",
+    "thu": "Thursday",
+    "周四": "Thursday",
+    "星期四": "Thursday",
+    "friday": "Friday",
+    "fri": "Friday",
+    "周五": "Friday",
+    "星期五": "Friday",
+    "saturday": "Saturday",
+    "sat": "Saturday",
+    "周六": "Saturday",
+    "星期六": "Saturday",
+    "sunday": "Sunday",
+    "sun": "Sunday",
+    "周日": "Sunday",
+    "星期日": "Sunday",
+    "周天": "Sunday",
+    "星期天": "Sunday",
+}
+
+
+def _parse_schedule_constraints(raw_text: str = "", feedback: Optional[Dict[str, Any]] = None, override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    feedback = feedback or {}
+    raw_constraints = override if isinstance(override, dict) and override else feedback.get("schedule_constraints")
+    if not isinstance(raw_constraints, dict):
+        raw_constraints = {}
+    notes = " ".join(
+        str(item or "")
+        for item in [raw_text, raw_constraints.get("notes"), raw_constraints.get("reason")]
+        if str(item or "").strip()
+    )
+    unavailable: List[str] = []
+    for day in raw_constraints.get("unavailable_days") or []:
+        normalized = _DAY_NAME_ALIASES.get(str(day or "").strip().lower()) or _DAY_NAME_ALIASES.get(str(day or "").strip())
+        if normalized and normalized not in unavailable:
+            unavailable.append(normalized)
+    for token, normalized in _DAY_NAME_ALIASES.items():
+        if token in notes and normalized not in unavailable:
+            unavailable.append(normalized)
+    return {
+        "unavailable_days": unavailable,
+        "reason": str(raw_constraints.get("reason") or raw_constraints.get("notes") or notes or "").strip(),
+        "scope": str(raw_constraints.get("scope") or "this_week"),
+    }
+
+
+def _event_day_name(event: Dict[str, Any]) -> str:
+    label = str(event.get("day_label") or event.get("day") or "").strip()
+    normalized = _DAY_NAME_ALIASES.get(label.lower()) or _DAY_NAME_ALIASES.get(label)
+    if normalized:
+        return normalized
+    try:
+        return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][int(event.get("day_no") or 0) - 1]
+    except Exception:
+        return ""
+
+
+def _event_original_payload(event: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "title": str(event.get("title") or ""),
+        "main_set": str(event.get("main_set") or ""),
+        "duration_min": int(event.get("duration_min") or 0),
+        "workout_type": str(event.get("workout_type") or ""),
+    }
+
+
+def _recovery_suggestion(reason: str) -> Dict[str, Any]:
+    return {
+        "title": "恢复轻松跑",
+        "main_set": "恢复轻松跑 30 分钟，保持能完整说话的轻松强度。",
+        "duration_min": 30,
+        "workout_type": "recovery",
+        "reason": reason,
+    }
+
+
+def _replan_no_safe_slot(
+    *,
+    feedback_id: str,
+    schedule_constraints: Dict[str, Any],
+    previous_replan_id: str = "",
+) -> Dict[str, Any]:
+    replan = {
+        "replan_id": str(uuid4()),
+        "source_feedback_id": feedback_id,
+        "status": "needs_manual_choice",
+        "strategy": "no_available_safe_slot",
+        "schedule_constraints": schedule_constraints,
+        "patches": [],
+        "audit": {"allowed": False, "blocked_reason": "本周没有可安全安排的训练日，需要手动选择可训练时间或先休息。"},
+        "user_action": "manual_choice_required",
+    }
+    if previous_replan_id:
+        replan["previous_replan_id"] = previous_replan_id
+    return replan
+
+
+def _find_next_safe_target_event(events: List[Dict[str, Any]], start_index: int, unavailable: set, excluded_ids: set) -> Optional[Dict[str, Any]]:
+    for candidate in events[start_index + 1 :]:
+        candidate_id = str(candidate.get("id") or "")
+        if candidate_id in excluded_ids:
+            continue
+        if str(candidate.get("workout_type") or "").lower() == "rest":
+            continue
+        if _event_day_name(candidate) in unavailable:
+            continue
+        return candidate
+    return None
+
+
+def _find_applied_feedback_replan(events: List[Dict[str, Any]], feedback_id: str) -> Dict[str, Any]:
+    for event in events:
+        enriched = _event_with_content_trace(event)
+        replan = enriched.get("feedback_replan")
+        if not isinstance(replan, dict):
+            continue
+        if str(replan.get("source_feedback_id") or "") == str(feedback_id) and replan.get("status") == "applied":
+            return replan
+    return {}
+
+
+def _build_feedback_replan(
+    *,
+    plan_id: str,
+    event_id: str,
+    feedback_id: str,
+    events: List[Dict[str, Any]],
+    workout_feedback: Dict[str, Any],
+    risk_gate: Dict[str, Any],
+    protocol_recheck: Dict[str, Any],
+    adaptive_adjustment: Dict[str, Any],
+    schedule_constraints: Dict[str, Any],
+    status: str = "suggested",
+) -> Dict[str, Any]:
+    if str(risk_gate.get("product_status") or "") == "medical_referral" or protocol_recheck.get("allowed") is False:
+        return {
+            "replan_id": str(uuid4()),
+            "source_feedback_id": feedback_id,
+            "status": "blocked_medical",
+            "strategy": "medical_referral_stop",
+            "schedule_constraints": schedule_constraints,
+            "patches": [],
+            "audit": {"allowed": False, "blocked_reason": "停止训练，并先完成专业医疗评估后再考虑恢复。"},
+            "user_action": "blocked",
+        }
+
+    index = next((idx for idx, row in enumerate(events) if str(row.get("id")) == str(event_id)), -1)
+    unavailable = set(schedule_constraints.get("unavailable_days") or [])
+    reason = str(adaptive_adjustment.get("rationale") or "训练反馈显示恢复压力偏高，下一次训练应保守降级。")
+    patches: List[Dict[str, Any]] = []
+    moved_event_ids: set = set()
+    future_events = events[index + 1 :] if index >= 0 else []
+
+    for move_index, event in enumerate(future_events, start=index + 1):
+        if str(event.get("workout_type") or "").lower() == "rest":
+            continue
+        event_day = _event_day_name(event)
+        if event_day not in unavailable:
+            continue
+        target = _find_next_safe_target_event(events, move_index, unavailable, moved_event_ids | {str(event.get("id") or "")})
+        if not target:
+            continue
+        # 不可训练日上的课只生成移动建议，保留原日历和目标日 old/new 信息。
+        patches.append(
+            {
+                "event_id": event.get("id"),
+                "action": "move",
+                "target_event_id": target.get("id"),
+                "target_day": _event_day_name(target),
+                "original": _event_original_payload(event),
+                "suggested": _event_original_payload(event),
+                "reason": f"{event_day} 在本周不可训练安排内，建议移到 {_event_day_name(target)}，避免和周二/周四等个人安排冲突。",
+            }
+        )
+        moved_event_ids.add(str(event.get("id") or ""))
+        break
+
+    for event in future_events:
+        event_id_value = str(event.get("id") or "")
+        if event_id_value in moved_event_ids:
+            continue
+        if str(event.get("workout_type") or "").lower() == "rest":
+            continue
+        if _event_day_name(event) in unavailable:
+            continue
+        suggested = _recovery_suggestion(reason)
+        # 反馈导致的训练压力调整只写 patch，用户确认前不覆盖原计划。
+        patches.append(
+            {
+                "event_id": event.get("id"),
+                "action": "downgrade",
+                "original": _event_original_payload(event),
+                "suggested": suggested,
+                "reason": reason,
+            }
+        )
+        break
+
+    if not patches:
+        return _replan_no_safe_slot(feedback_id=feedback_id, schedule_constraints=schedule_constraints)
+
+    return {
+        "replan_id": str(uuid4()),
+        "source_feedback_id": feedback_id,
+        "status": status,
+        "strategy": "move_and_downgrade_local_window" if any(patch.get("action") == "move" for patch in patches) else "downgrade_next_available_workout",
+        "schedule_constraints": schedule_constraints,
+        "patches": patches,
+        "audit": {"allowed": True, "blocked_reason": ""},
+        "user_action": "pending" if status == "suggested" else status,
+    }
 
 
 def _build_adjustment_history(plan_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -502,6 +755,25 @@ def _build_adjustment_history(plan_id: str, events: List[Dict[str, Any]]) -> Lis
         protocol_recheck = feedback.get("protocol_recheck") or {}
         adaptive_adjustment = _feedback_summary_to_adaptive_adjustment(feedback)
         reason_codes = list(feedback.get("reason_codes") or [])
+        affected_events = _affected_events_after_feedback(events, str(feedback.get("event_id") or ""))
+        blocked = str(risk_gate.get("product_status") or "") == "medical_referral" or protocol_recheck.get("allowed") is False
+        plan_diff = _plan_diff_from_affected_events(
+            _build_feedback_plan_diff(
+                risk_gate=risk_gate,
+                protocol_recheck=protocol_recheck,
+                adaptive_adjustment=adaptive_adjustment,
+                reason_codes=reason_codes,
+            ),
+            affected_events,
+            blocked=blocked,
+            needs_adjustment=bool(adaptive_adjustment.get("adjustment_required") or reason_codes or blocked),
+        )
+        feedback_replan = next(
+            (event.get("feedback_replan") for event in affected_events if isinstance(event.get("feedback_replan"), dict)),
+            {},
+        )
+        if feedback_replan:
+            plan_diff["feedback_replan_status"] = feedback_replan.get("status")
         history.append(
             {
                 "feedback_id": feedback.get("id"),
@@ -513,13 +785,9 @@ def _build_adjustment_history(plan_id: str, events: List[Dict[str, Any]]) -> Lis
                 "risk_gate": risk_gate,
                 "protocol_recheck": protocol_recheck,
                 "adaptive_adjustment": adaptive_adjustment,
-                "plan_diff": _build_feedback_plan_diff(
-                    risk_gate=risk_gate,
-                    protocol_recheck=protocol_recheck,
-                    adaptive_adjustment=adaptive_adjustment,
-                    reason_codes=reason_codes,
-                ),
-                "affected_events": _affected_events_after_feedback(events, str(feedback.get("event_id") or "")),
+                "plan_diff": plan_diff,
+                "affected_events": affected_events,
+                "feedback_replan": feedback_replan,
             }
         )
     return history
@@ -648,6 +916,11 @@ def _event_with_content_trace(event: Dict[str, Any]) -> Dict[str, Any]:
             "risk_gate",
             "workflow_trace",
             "trace",
+            "feedback_effect",
+            "latest_feedback_effect",
+            "feedback_replan",
+            "generation_status",
+            "adjustment_hint",
         }
         for key in passthrough_keys:
             if key in content and content[key] not in (None, ""):
@@ -1337,7 +1610,9 @@ def _require_expert_token(request: Request):
     if not expert_token:
         raise HTTPException(status_code=501, detail="Expert mode not configured.")
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer ") or auth[len("Bearer "):] != expert_token:
+    supplied = auth[len("Bearer "):] if auth.startswith("Bearer ") else ""
+    # 使用常量时间比较，避免专家令牌校验暴露时序差异。
+    if not supplied or not hmac.compare_digest(supplied, expert_token):
         raise HTTPException(status_code=403, detail="Expert access required.")
 
 
@@ -1357,14 +1632,86 @@ async def health_check():
 async def admin_health_check(request: Request):
     """Admin health check — full component status. Requires expert token."""
     _require_expert_token(request)
+    kb_snapshot = get_knowledge_base_health_snapshot()
+    db_ok = _check_database_health()
     return {
-        "status": "healthy",
+        "status": "healthy" if (kb_snapshot.get("ready", False) and db_ok) else "degraded",
         "provider": os.getenv("LLM_PROVIDER", "ollama"),
         "model": os.getenv("OLLAMA_MODEL", "qwen2.5:latest"),
-        "rag": get_knowledge_base_health_snapshot(),
-        "db": _check_database_health(),
+        "rag": kb_snapshot,
+        "db": db_ok,
         "request_id": getattr(request.state, "request_id", None),
     }
+
+
+def _load_kb_governance_artifact(governance_dir: Path, filename: str) -> Tuple[str, Dict[str, Any]]:
+    path = governance_dir / filename
+    if not path.exists():
+        return "missing", {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return "unreadable", {}
+    if not isinstance(payload, dict):
+        return "unreadable", {}
+    return "ready", payload
+
+
+def _admin_kb_governance_summary() -> Dict[str, Any]:
+    governance_dir = DATA_DIR / "knowledge" / "governance"
+    artifact_files = {
+        "kb_release_report": "kb_release_report.json",
+        "source_gap_report": "source_gap_report.json",
+        "runtime_index_v2_manifest": "runtime_index_v2_manifest.json",
+    }
+    artifacts: Dict[str, str] = {}
+    payloads: Dict[str, Dict[str, Any]] = {}
+    for key, filename in artifact_files.items():
+        status, payload = _load_kb_governance_artifact(governance_dir, filename)
+        artifacts[key] = status
+        payloads[key] = payload
+
+    release_report = payloads["kb_release_report"]
+    source_gap_report = payloads["source_gap_report"]
+    runtime_manifest = payloads["runtime_index_v2_manifest"]
+    can_replace_runtime = bool(runtime_manifest.get("can_replace_runtime"))
+    commercial_release_ready = bool(release_report.get("commercial_release_ready"))
+    ready = can_replace_runtime and commercial_release_ready
+    if any(status == "unreadable" for status in artifacts.values()):
+        status = "unreadable"
+    elif any(status == "missing" for status in artifacts.values()):
+        status = "unavailable"
+    else:
+        status = "ready" if ready else "blocked"
+
+    # 管理接口只返回治理摘要，避免把 registry/local_path 等机器细节透出到 API。
+    return {
+        "status": status,
+        "artifacts": artifacts,
+        "runtime": {
+            "status": str(runtime_manifest.get("status") or ""),
+            "can_replace_runtime": can_replace_runtime,
+            "first_batch_release_ready": bool(runtime_manifest.get("first_batch_release_ready")),
+            "replacement_blockers": list(runtime_manifest.get("replacement_blockers") or []),
+        },
+        "release_gate": {
+            "commercial_release_ready": commercial_release_ready,
+            "ready_for_next_batch": bool(release_report.get("ready_for_next_batch")),
+            "first_batch_release_ready": bool(release_report.get("first_batch_release_ready")),
+            "readiness_blockers": list(release_report.get("readiness_blockers") or []),
+            "evaluation_gate_summary": dict(release_report.get("evaluation_gate_summary") or {}),
+        },
+        "domain_gap_summary": dict(release_report.get("domain_gap_summary") or {}),
+        "top_actionable_domain_gaps": list(release_report.get("actionable_domain_gaps") or [])[:5],
+        "release_work_queue": list(source_gap_report.get("release_work_queue") or [])[:20],
+    }
+
+
+@app.get("/admin/kb-governance")
+async def admin_kb_governance(request: Request):
+    """Admin KB governance release gate summary. Requires expert token."""
+    _require_expert_token(request)
+    return _admin_kb_governance_summary()
 
 
 @app.get("/ops/metrics", response_model=OpsMetricsResponse)
@@ -1539,6 +1886,8 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
         reason_codes=reason_codes,
     )
     feedback_id = None
+    affected_events: List[Dict[str, Any]] = []
+    feedback_replan: Dict[str, Any] = {}
     if bool(request.plan_id) != bool(request.event_id):
         raise HTTPException(status_code=400, detail="保存训练反馈需要同时提供 plan_id 和 event_id。")
     if request.plan_id and request.event_id:
@@ -1555,6 +1904,51 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
             protocol_recheck=protocol_recheck,
             raw_text=request.raw_text,
         )
+        if feedback_id:
+            affected_events = get_db().apply_feedback_effect_to_future_events(
+                plan_id=request.plan_id,
+                event_id=request.event_id,
+                user_id=request.user_id,
+                feedback_id=feedback_id,
+                reason_codes=reason_codes,
+                adaptive_adjustment=adaptive_adjustment,
+                risk_gate=risk_gate,
+            )
+            blocked = str(risk_gate.get("product_status") or "") == "medical_referral" or protocol_recheck.get("allowed") is False
+            feedback_replan = _build_feedback_replan(
+                plan_id=request.plan_id,
+                event_id=request.event_id,
+                feedback_id=feedback_id,
+                events=get_db().list_events(request.plan_id),
+                workout_feedback=workout_feedback,
+                risk_gate=risk_gate,
+                protocol_recheck=protocol_recheck,
+                adaptive_adjustment=adaptive_adjustment,
+                schedule_constraints=_parse_schedule_constraints(
+                    request.raw_text,
+                    request.feedback or {},
+                    request.schedule_constraints,
+                ),
+            )
+            if feedback_replan.get("patches"):
+                get_db().save_feedback_replan(
+                    plan_id=request.plan_id,
+                    feedback_id=feedback_id,
+                    user_id=request.user_id,
+                    feedback_replan=feedback_replan,
+                    apply_patch=False,
+                    exception_type="feedback_replan_suggested",
+                )
+            plan_diff = _plan_diff_from_affected_events(
+                plan_diff,
+                affected_events,
+                blocked=blocked,
+                needs_adjustment=bool(adaptive_adjustment.get("adjustment_required") or reason_codes or blocked),
+            )
+            if feedback_replan.get("status") == "blocked_medical" and not affected_events:
+                plan_diff["affected_days"] = max(int(plan_diff.get("affected_days") or 0), 1)
+                plan_diff["cancelled"] = max(int(plan_diff.get("cancelled") or 0), 1)
+                plan_diff["status"] = "medical_referral"
     adaptive_feedback = {
         "workout_feedback": workout_feedback,
         "reason_codes": reason_codes,
@@ -1586,10 +1980,97 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
         "adaptive_adjustment": adaptive_adjustment,
         "plan_diff": plan_diff,
         "generation_status": generation_status,
+        "affected_events": affected_events,
         "feedback_id": feedback_id,
+        "feedback_replan": feedback_replan,
         "workflow_trace": workflow_trace,
     }
     return _project_feedback_response_for_role(response_payload, _response_role(http_request))
+
+
+@app.post("/plans/{plan_id}/feedback/{feedback_id}/actions", response_model=FeedbackActionResponse)
+async def apply_feedback_action(plan_id: str, feedback_id: str, request: FeedbackActionRequest, user_id: str = DEFAULT_API_USER_ID):
+    """处理跑者对局部重规划的确认、重排、恢复复核和暂不采用动作。"""
+    _require_default_user(user_id)
+    plan = get_db().get_plan(plan_id)
+    if not plan or plan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="训练计划不存在。")
+    feedback = next((item for item in get_db().list_plan_feedback(plan_id) if str(item.get("id")) == str(feedback_id)), None)
+    if not feedback:
+        raise HTTPException(status_code=404, detail="训练反馈不存在。")
+
+    events = get_db().list_events(plan_id)
+    existing_applied_replan = _find_applied_feedback_replan(events, feedback_id)
+    risk_gate = feedback.get("risk_gate") or {}
+    protocol_recheck = feedback.get("protocol_recheck") or {}
+    adaptive_adjustment = _feedback_summary_to_adaptive_adjustment(feedback)
+    schedule_constraints = _parse_schedule_constraints(
+        str(feedback.get("raw_text") or ""),
+        {"schedule_constraints": request.schedule_constraints},
+        request.schedule_constraints,
+    )
+    action = str(request.action or "").strip().lower()
+    if action not in {"accept", "replan", "recover", "update_availability", "dismiss"}:
+        raise HTTPException(status_code=400, detail="不支持的反馈重规划动作。")
+
+    replan = _build_feedback_replan(
+        plan_id=plan_id,
+        event_id=str(feedback.get("event_id") or ""),
+        feedback_id=feedback_id,
+        events=events,
+        workout_feedback=feedback,
+        risk_gate=risk_gate,
+        protocol_recheck=protocol_recheck,
+        adaptive_adjustment=adaptive_adjustment,
+        schedule_constraints=schedule_constraints,
+        status="suggested",
+    )
+    if existing_applied_replan and action in {"replan", "update_availability"}:
+        # 已应用的执行层不能被新建议回退；新版本只引用上一版，等待用户重新选择。
+        replan["previous_replan_id"] = existing_applied_replan.get("replan_id", "")
+        if replan.get("status") == "suggested" and len(replan.get("patches") or []) <= len(existing_applied_replan.get("patches") or []):
+            replan = _replan_no_safe_slot(
+                feedback_id=feedback_id,
+                schedule_constraints=schedule_constraints,
+                previous_replan_id=str(existing_applied_replan.get("replan_id") or ""),
+            )
+    affected_events: List[Dict[str, Any]] = []
+    if action == "accept":
+        if replan.get("status") not in {"blocked_medical", "needs_manual_choice"}:
+            replan["status"] = "applied"
+            replan["user_action"] = "accept"
+            affected_events = get_db().save_feedback_replan(
+                plan_id=plan_id,
+                feedback_id=feedback_id,
+                user_id=user_id,
+                feedback_replan=replan,
+                apply_patch=True,
+                exception_type="feedback_replan_applied",
+            )
+    elif action in {"replan", "update_availability"}:
+        if replan.get("patches"):
+            affected_events = get_db().save_feedback_replan(
+                plan_id=plan_id,
+                feedback_id=feedback_id,
+                user_id=user_id,
+                feedback_replan=replan,
+                apply_patch=False,
+                exception_type="feedback_replan_suggested",
+            )
+    elif action == "recover":
+        if replan.get("status") == "blocked_medical":
+            replan["audit"]["blocked_reason"] = "需要专业医疗评估通过后，才能恢复跑步主课。"
+    elif action == "dismiss":
+        replan["status"] = "dismissed"
+        replan["user_action"] = "dismiss"
+
+    plan_diff = {
+        "status": replan.get("status"),
+        "affected_days": len(replan.get("patches") or []),
+        "downgraded": len(replan.get("patches") or []) if replan.get("status") != "blocked_medical" else 0,
+        "cancelled": 1 if replan.get("status") == "blocked_medical" else 0,
+    }
+    return {"feedback_replan": replan, "affected_events": affected_events, "plan_diff": plan_diff}
 
 
 @app.get("/plans/{plan_id}", response_model=PlanDetailResponse)

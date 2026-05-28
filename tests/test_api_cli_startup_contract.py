@@ -17,16 +17,19 @@ API_SCRIPT = root / "apps" / "backend" / "src" / "marathon_qa_assistant" / "apps
 client = TestClient(api_app.app)
 
 
-def test_health_endpoint_uses_default_model_when_env_missing(monkeypatch):
+def test_health_endpoint_reports_dependency_booleans_without_model_details(monkeypatch):
     monkeypatch.delenv("OLLAMA_MODEL", raising=False)
 
     response = client.get("/health")
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["status"] == "healthy"
-    assert payload["model"] == "qwen2.5:latest"
-    assert set(payload["rag"]).issuperset({"ready", "source", "chunks_count", "faiss_ready"})
+    assert set(payload) <= {"status", "kb", "db"}
+    assert payload["status"] in {"healthy", "degraded"}
+    assert isinstance(payload["kb"], bool)
+    assert isinstance(payload["db"], bool)
+    assert "model" not in payload
+    assert "rag" not in payload
 
 
 def test_api_app_main_starts_uvicorn_with_expected_contract(monkeypatch):

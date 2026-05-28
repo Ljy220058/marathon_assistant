@@ -68,6 +68,19 @@ class FeedbackRequest(BaseModel):
     day_key: Optional[str] = None
     raw_text: str = ""
     feedback: Dict[str, Any] = Field(default_factory=dict)
+    schedule_constraints: Dict[str, Any] = Field(default_factory=dict)
+
+
+class FeedbackActionRequest(BaseModel):
+    action: str
+    schedule_constraints: Dict[str, Any] = Field(default_factory=dict)
+    note: str = ""
+
+
+class FeedbackActionResponse(BaseModel):
+    feedback_replan: Dict[str, Any]
+    affected_events: List[Dict[str, Any]] = Field(default_factory=list)
+    plan_diff: Dict[str, Any] = Field(default_factory=dict)
 
 
 class FeedbackResponse(BaseModel):
@@ -78,7 +91,9 @@ class FeedbackResponse(BaseModel):
     adaptive_adjustment: Dict[str, Any]
     plan_diff: Dict[str, Any]
     generation_status: str
+    affected_events: List[Dict[str, Any]] = Field(default_factory=list)
     feedback_id: Optional[str] = None
+    feedback_replan: Dict[str, Any] = Field(default_factory=dict)
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
 
 

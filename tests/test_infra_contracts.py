@@ -37,3 +37,12 @@ def test_graphrag_api_key_valid_allows_import():
             os.environ["GRAPHRAG_API_KEY"] = saved
         else:
             os.environ.pop("GRAPHRAG_API_KEY", None)
+
+
+def test_backend_docker_healthcheck_has_internal_timeout():
+    from pathlib import Path
+
+    project_root = Path(__file__).resolve().parent.parent
+    dockerfile = (project_root / "apps" / "backend" / "Dockerfile").read_text(encoding="utf-8")
+
+    assert "urlopen('http://localhost:8000/health', timeout=3)" in dockerfile

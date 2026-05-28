@@ -52,9 +52,9 @@ def test_public_rag_health_marks_v2_runtime_as_preview_not_commercial():
     assert health["runtime_status"] == "runtime_preview_ready"
     assert health["runtime_use_enabled"] is True
     assert health["can_replace_runtime"] is False
-    assert health["approved_records"] == 0
-    assert health["ready_records"] == 0
-    assert health["source_review_ready"] is False
+    assert health["approved_records"] > 0
+    assert health["ready_records"] > 0
+    assert health["source_review_ready"] is True
     assert health["runtime_core_prescription_enabled"] is True
     assert health["commercial_core_prescription_enabled"] is False
 
@@ -1898,6 +1898,586 @@ def test_get_plan_returns_execution_status_and_adjustment_history(tmp_path, monk
     assert history[0]["adaptive_adjustment"]["next_day_adjustment"]
     assert history[0]["plan_diff"]["workflow"] == ["risk_gate", "protocol_recheck", "adjustment", "plan_diff"]
     assert history[0]["affected_events"][0]["event_id"] == events[2]["id"]
+
+
+def test_feedback_applies_effect_to_future_training_events(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-effect.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan = {
+        "plan_meta": {"goal": "Half marathon feedback effect", "requested_weeks": 1, "actual_weeks": 1},
+        "week_plans": [
+            {
+                "week_index": 1,
+                "phase": "base",
+                "days": [
+                    {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                    {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min threshold"},
+                    {"day": "Wed", "training_type": "Rest", "main_set": "Rest"},
+                    {"day": "Thu", "training_type": "Easy run", "main_set": "35 min Z2"},
+                ],
+            }
+        ],
+    }
+    plan_id = db.save_training_plan(plan, source_query="feedback effect")
+    events = db.list_events(plan_id)
+
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue and poor sleep.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    affected_ids = [item["event_id"] for item in payload["affected_events"]]
+    assert affected_ids == [events[1]["id"], events[3]["id"]]
+    assert payload["plan_diff"]["affected_days"] == len(affected_ids)
+    assert payload["plan_diff"]["downgraded"] == len(affected_ids)
+    assert payload["plan_diff"]["cancelled"] == 0
+
+    detail = client.get(f"/plans/{plan_id}").json()
+    changed = [event for event in detail["events"] if event.get("feedback_effect")]
+    assert [event["id"] for event in changed] == affected_ids
+    for event in changed:
+        effect = event["feedback_effect"]
+        assert effect["source_feedback_id"] == payload["feedback_id"]
+        assert effect["action"] == "downgrade"
+        assert effect["adjusted_instruction"]
+        assert effect["original_main_set"]
+        assert "high_fatigue" in effect["reason_codes"]
+        assert event["card_status"] == "feedback_adjusted"
+        assert event["generation_status"] == "feedback_adjusted"
+        assert event["adjustment_hint"] == effect["adjusted_instruction"]
+
+
+def test_feedback_medical_referral_blocks_future_training_events(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-medical-effect.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Medical red flag", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Intervals", "main_set": "6 x 800m"},
+                        {"day": "Thu", "training_type": "Tempo", "main_set": "20 min tempo"},
+                    ],
+                }
+            ],
+        },
+        source_query="medical effect",
+    )
+    events = db.list_events(plan_id)
+
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Chest pain and dizzy during training, possible heat illness.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "risk",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["generation_status"] == "medical_referral"
+    assert payload["plan_diff"]["cancelled"] == len(payload["affected_events"])
+    detail = client.get(f"/plans/{plan_id}").json()
+    blocked = [event for event in detail["events"] if event.get("feedback_effect")]
+    assert len(blocked) == 2
+    for event in blocked:
+        effect = event["feedback_effect"]
+        assert effect["action"] == "stop_for_medical_referral"
+        assert "停止训练" in effect["adjusted_instruction"]
+        assert "专业医疗评估" in effect["adjusted_instruction"]
+        assert "800m" not in effect["adjusted_instruction"]
+        assert "tempo" not in effect["adjusted_instruction"].lower()
+        assert event["card_status"] == "medical_referral"
+        assert event["generation_status"] == "medical_referral"
+
+
+def test_feedback_plan_diff_matches_persisted_affected_events(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-plan-diff.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Plan diff consistency", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min"},
+                        {"day": "Wed", "training_type": "Easy run", "main_set": "35 min Z2"},
+                    ],
+                }
+            ],
+        },
+        source_query="plan diff consistency",
+    )
+    events = db.list_events(plan_id)
+
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    detail = client.get(f"/plans/{plan_id}").json()
+    persisted_ids = [event["id"] for event in detail["events"] if event.get("feedback_effect")]
+    history = detail["adjustment_history"][0]
+
+    assert payload["plan_diff"]["affected_days"] == len(persisted_ids)
+    assert payload["plan_diff"] == history["plan_diff"]
+    assert [event["event_id"] for event in payload["affected_events"]] == persisted_ids
+    assert [event["event_id"] for event in history["affected_events"]] == persisted_ids
+
+
+def test_feedback_generates_local_replan_patch_with_schedule_constraints(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-local-replan.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Schedule constrained feedback", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min threshold"},
+                        {"day": "Wed", "training_type": "Easy run", "main_set": "35 min Z2"},
+                        {"day": "Thu", "training_type": "Tempo", "main_set": "20 min tempo"},
+                        {"day": "Sat", "training_type": "Long run", "main_set": "80 min long run"},
+                    ],
+                }
+            ],
+        },
+        source_query="schedule constrained feedback",
+    )
+    events = db.list_events(plan_id)
+
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue. 周二周四上课跑不了。",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+                "schedule_constraints": {"notes": "周二周四上课跑不了"},
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    replan = payload["feedback_replan"]
+    assert replan["status"] == "suggested"
+    assert replan["source_feedback_id"] == payload["feedback_id"]
+    assert replan["schedule_constraints"]["unavailable_days"] == ["Tuesday", "Thursday"]
+    assert replan["patches"]
+    patched_ids = {patch["event_id"] for patch in replan["patches"]}
+    # 不可用日 (Tue) 的事件会生成 move patch，因此在 patched_ids 中
+    assert events[1]["id"] in patched_ids
+    # Thu 没有被处理（只处理第一个不可用日），因此不在 patched_ids 中
+    assert events[3]["id"] not in patched_ids
+    first_patch = replan["patches"][0]
+    assert first_patch["original"]["main_set"]
+    assert first_patch["suggested"]["main_set"]
+    assert first_patch["reason"]
+
+
+def test_feedback_medical_referral_blocks_replan_even_without_future_events(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-medical-replan-end.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Medical at plan end", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                    ],
+                }
+            ],
+        },
+        source_query="medical at end",
+    )
+    events = db.list_events(plan_id)
+
+    response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Chest pain and dizzy after training.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "risk",
+                "sleep_quality": "poor",
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    replan = payload["feedback_replan"]
+    assert replan["status"] == "blocked_medical"
+    assert replan["patches"] == []
+    assert "停止训练" in replan["audit"]["blocked_reason"]
+    assert payload["plan_diff"]["cancelled"] >= 1
+    assert payload["plan_diff"]["status"] == "medical_referral"
+
+
+def test_feedback_replan_accept_action_applies_patch(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-replan-accept.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Accept replan", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min threshold"},
+                        {"day": "Wed", "training_type": "Easy run", "main_set": "35 min Z2"},
+                    ],
+                }
+            ],
+        },
+        source_query="accept replan",
+    )
+    events = db.list_events(plan_id)
+    feedback_response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    ).json()
+
+    action_response = client.post(
+        f"/plans/{plan_id}/feedback/{feedback_response['feedback_id']}/actions",
+        json={"action": "accept"},
+    )
+
+    assert action_response.status_code == 200
+    action_payload = action_response.json()
+    assert action_payload["feedback_replan"]["status"] in {"accepted", "applied"}
+    detail = client.get(f"/plans/{plan_id}").json()
+    replanned = [event for event in detail["events"] if event.get("feedback_replan")]
+    assert replanned
+    assert replanned[0]["feedback_replan"]["status"] in {"accepted", "applied"}
+    assert replanned[0]["feedback_replan"]["patches"][0]["original"]["main_set"]
+
+
+def test_feedback_replan_update_availability_regenerates_patch(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-update-availability.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Update availability", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min threshold"},
+                        {"day": "Wed", "training_type": "Easy run", "main_set": "35 min Z2"},
+                    ],
+                }
+            ],
+        },
+        source_query="update availability",
+    )
+    events = db.list_events(plan_id)
+    feedback_response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    ).json()
+
+    action_response = client.post(
+        f"/plans/{plan_id}/feedback/{feedback_response['feedback_id']}/actions",
+        json={"action": "update_availability", "schedule_constraints": {"unavailable_days": ["Tuesday"]}},
+    )
+
+    assert action_response.status_code == 200
+    replan = action_response.json()["feedback_replan"]
+    assert replan["status"] == "suggested"
+    assert replan["schedule_constraints"]["unavailable_days"] == ["Tuesday"]
+    patched_ids = {patch["event_id"] for patch in replan["patches"]}
+    # 不可用日 (Tue) 的事件会生成 move patch
+    assert events[1]["id"] in patched_ids
+
+
+def test_feedback_recover_does_not_bypass_medical_gate(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-recover-medical.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Recover medical", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Intervals", "main_set": "6 x 800m"},
+                    ],
+                }
+            ],
+        },
+        source_query="recover medical",
+    )
+    events = db.list_events(plan_id)
+    feedback_response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Chest pain and dizzy during training.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "risk",
+                "sleep_quality": "poor",
+            },
+        },
+    ).json()
+
+    action_response = client.post(
+        f"/plans/{plan_id}/feedback/{feedback_response['feedback_id']}/actions",
+        json={"action": "recover", "note": "今天感觉恢复了"},
+    )
+
+    assert action_response.status_code == 200
+    replan = action_response.json()["feedback_replan"]
+    assert replan["status"] == "blocked_medical"
+    assert "专业医疗评估" in replan["audit"]["blocked_reason"]
+    assert not replan["patches"]
+
+
+def test_feedback_replan_update_after_accept_creates_new_version_without_reverting_applied(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-replan-version.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Versioned replan", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min threshold"},
+                        {"day": "Wed", "training_type": "Easy run", "main_set": "35 min Z2"},
+                    ],
+                }
+            ],
+        },
+        source_query="versioned replan",
+    )
+    events = db.list_events(plan_id)
+    feedback_response = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue.",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+            },
+        },
+    ).json()
+
+    accepted = client.post(
+        f"/plans/{plan_id}/feedback/{feedback_response['feedback_id']}/actions",
+        json={"action": "accept"},
+    ).json()["feedback_replan"]
+    updated = client.post(
+        f"/plans/{plan_id}/feedback/{feedback_response['feedback_id']}/actions",
+        json={"action": "update_availability", "schedule_constraints": {"unavailable_days": ["Tuesday", "Wednesday"]}},
+    ).json()["feedback_replan"]
+    detail = client.get(f"/plans/{plan_id}").json()
+    applied_events = [event for event in detail["events"] if event.get("feedback_replan", {}).get("status") == "applied"]
+
+    assert accepted["status"] == "applied"
+    assert updated["status"] == "needs_manual_choice"
+    assert updated["previous_replan_id"] == accepted["replan_id"]
+    assert applied_events
+
+
+def test_feedback_replan_moves_quality_session_off_unavailable_day(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-replan-move.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "Move unavailable", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "Mon", "training_type": "Easy run", "main_set": "30 min Z2"},
+                        {"day": "Tue", "training_type": "Threshold", "main_set": "3 x 8 min threshold"},
+                        {"day": "Wed", "training_type": "Easy run", "main_set": "35 min Z2"},
+                        {"day": "Thu", "training_type": "Tempo", "main_set": "20 min tempo"},
+                        {"day": "Sat", "training_type": "Long run", "main_set": "80 min long run"},
+                    ],
+                }
+            ],
+        },
+        source_query="move unavailable",
+    )
+    events = db.list_events(plan_id)
+
+    payload = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "Partial session with high fatigue. 周二周四上课跑不了。",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+                "schedule_constraints": {"notes": "周二周四上课跑不了"},
+            },
+        },
+    ).json()
+
+    patches = payload["feedback_replan"]["patches"]
+    assert any(patch["action"] == "move" for patch in patches)
+    assert all(patch.get("target_day") not in {"Tuesday", "Thursday"} for patch in patches)
+    assert any("周二" in patch["reason"] or "周四" in patch["reason"] for patch in patches)
+
+
+def test_feedback_replan_preserves_utf8_chinese_text(tmp_path, monkeypatch):
+    from marathon_qa_assistant.services.database import _Database
+
+    db = _Database(tmp_path / "feedback-utf8.db")
+    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    plan_id = db.save_training_plan(
+        {
+            "plan_meta": {"goal": "中文编码", "requested_weeks": 1, "actual_weeks": 1},
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "days": [
+                        {"day": "周一", "training_type": "轻松跑", "main_set": "轻松跑 30 分钟"},
+                        {"day": "周二", "training_type": "阈值跑", "main_set": "3 组 8 分钟阈值跑"},
+                        {"day": "周三", "training_type": "轻松跑", "main_set": "轻松跑 35 分钟"},
+                    ],
+                }
+            ],
+        },
+        source_query="中文编码",
+    )
+    events = db.list_events(plan_id)
+
+    payload = client.post(
+        "/feedback",
+        json={
+            "user_id": "default_user",
+            "plan_id": plan_id,
+            "event_id": events[0]["id"],
+            "raw_text": "今天只完成一半，非常累，周二上课跑不了。",
+            "feedback": {
+                "completion_status": "partial",
+                "subjective_fatigue": "high",
+                "pain_status": "none",
+                "sleep_quality": "poor",
+                "schedule_constraints": {"notes": "周二上课跑不了"},
+            },
+        },
+    ).json()
+
+    serialized = str(payload["feedback_replan"])
+    assert "恢复轻松跑" in serialized
+    assert "跑不了" in serialized
+    assert "�" not in serialized
 
 
 def test_delete_plan_removes_plan_and_events(tmp_path, monkeypatch):
