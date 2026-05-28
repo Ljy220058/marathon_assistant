@@ -1386,7 +1386,7 @@ from marathon_qa_assistant.apps.routers.query import router as query_router
 from marathon_qa_assistant.apps.routers.feedback import router as feedback_router
 from marathon_qa_assistant.apps.routers.plans import router as plans_router
 from marathon_qa_assistant.apps.routers.profile import router as profile_router
-from marathon_qa_assistant.apps.routers.reference import router as reference_router
+from marathon_qa_assistant.apps.routers.reference import router as reference_router, get_evidence_tier_reference
 
 app.include_router(query_router)
 app.include_router(feedback_router)
