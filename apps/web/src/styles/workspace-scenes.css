@@ -1,0 +1,314 @@
+/* workspace-scenes.css — Workspace scene status and entry actions [product-workspace][P1] */
+
+/* --- Workspace scene status (first-screen info) --- */
+.workspace-scene-status {
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+}
+
+.workspace-scene-head {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.workspace-scene-head h3 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: var(--space-1) 0;
+}
+
+.workspace-scene-head > span {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.workspace-scene-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.workspace-scene-items > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-2);
+  background: var(--surface-base);
+  border-radius: var(--radius-md);
+}
+
+.workspace-scene-items > div span {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workspace-scene-items > div strong {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Scene-specific coloring */
+[data-workspace-scene="first_time"] {
+  border-color: var(--accent-primary-alpha);
+}
+
+[data-workspace-scene="in_cycle"] {
+  border-color: var(--success-alpha);
+}
+
+[data-workspace-scene="post_feedback"] {
+  border-color: var(--warning-alpha);
+}
+
+/* --- Adaptive explanation card --- */
+.adaptive-explanation-card {
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+}
+
+.adaptive-risk-medical_referral {
+  border-color: var(--danger);
+  border-width: 2px;
+  background: var(--danger-subtle);
+}
+
+.adaptive-risk-deescalate {
+  border-color: var(--warning);
+  background: var(--warning-subtle);
+}
+
+.adaptive-risk-attention {
+  border-color: var(--warning-alpha);
+}
+
+.adaptive-risk-normal {
+  border-color: var(--success-alpha);
+}
+
+.adaptive-explanation-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.adaptive-explanation-head h3 {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.adaptive-risk-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--surface-base);
+  border: 1px solid var(--border-default);
+}
+
+.adaptive-risk-banner {
+  padding: var(--space-3);
+  background: var(--surface-base);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.adaptive-risk-banner p {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.adaptive-summary {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  line-height: 1.5;
+}
+
+.adaptive-detail-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.adaptive-detail-list > div {
+  padding: var(--space-2);
+  background: var(--surface-base);
+  border-radius: var(--radius-md);
+}
+
+.adaptive-detail-list dt {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.adaptive-detail-list dd {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.adaptive-next-actions {
+  padding: var(--space-3);
+  background: var(--surface-base);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.adaptive-next-actions strong {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.adaptive-next-actions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.adaptive-next-actions li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  padding: var(--space-1) 0;
+  padding-left: var(--space-3);
+  position: relative;
+  line-height: 1.5;
+}
+
+.adaptive-next-actions li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+}
+
+/* --- Glossary terms in evidence --- */
+.glossary-section {
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+}
+
+.glossary-term-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.glossary-term-list article {
+  padding: var(--space-3);
+  background: var(--surface-base);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.glossary-term-list strong {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.glossary-term-list p {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-1);
+}
+
+.glossary-term-list em {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: normal;
+}
+
+/* --- NLP profile change confirmation --- */
+.nlp-confirmation-banner {
+  padding: var(--space-4);
+  background: var(--accent-primary-subtle);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+  animation: fadeIn 0.3s ease;
+}
+
+.nlp-confirmation-banner h4 {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.nlp-confirmation-banner .nlp-field-changes {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.nlp-confirmation-banner .nlp-field-changes li {
+  font-size: var(--text-sm);
+  padding: var(--space-1) 0;
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.nlp-confirmation-banner .nlp-field-changes .nlp-field-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 100px;
+}
+
+.nlp-confirmation-banner .nlp-field-changes .nlp-old-value {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.nlp-confirmation-banner .nlp-field-changes .nlp-new-value {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.nlp-confirmation-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+@media (max-width: 600px) {
+  .workspace-scene-items {
+    grid-template-columns: 1fr;
+  }
+
+  .adaptive-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .glossary-term-list {
+    grid-template-columns: 1fr;
+  }
+}
