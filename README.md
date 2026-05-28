@@ -46,14 +46,15 @@
 
 执行以下命令验证核心链路可用性：
 
-```bash
-py -3 -m py_compile marathon_qa_assistant/core/workflow.py
+```powershell
+# 编译检查核心模块（需设置 monorepo PYTHONPATH）
+$env:PYTHONPATH="apps/backend/src"; python -m py_compile apps/backend/src/marathon_qa_assistant/core/workflow.py
 ```
 
 或运行集成测试脚本：
 
-```bash
-py -3 tests/integration_workflow_test.py
+```powershell
+$env:PYTHONPATH="apps/backend/src"; python -m pytest tests/test_training_plan_skeleton.py tests/test_api_cli_startup_contract.py -q
 ```
 
 ## 7. 快速启动

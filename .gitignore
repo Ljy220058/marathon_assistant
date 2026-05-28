@@ -162,6 +162,10 @@ artifacts/**/tmp/
 artifacts/frontend-audit/chrome-*-profile/
 archive/local_caches/
 
+# Runtime-generated files at root (canonical locations under data/vector_kb/).
+/vector_kb_user/
+/vector_kb_report.json
+
 # Local dependencies and runtime caches
 lib/
 .chainlit/
