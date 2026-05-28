@@ -10,8 +10,14 @@ from marathon_qa_assistant.nodes.common import ensure_usage
 
 PLAN_TIME_KEYWORDS = ["本周", "下周", "这周", "明天", "后天", "接下来", "第一周", "第1周", "周期"]
 PLAN_ACTION_KEYWORDS = ["计划", "制定", "安排", "生成", "怎么练", "练什么", "课表", "schedule", "plan"]
-RESEARCH_KEYWORDS = ["研究", "文献", "对比", "机制", "原理", "graph", "图谱", "cross-document"]
-NUTRITION_KEYWORDS = ["营养", "补给", "碳水", "蛋白", "hydration", "fuel"]
+# P1-1: 添加 "比较" 关键词，使对比类查询能正确触发 research 模式
+RESEARCH_KEYWORDS = ["研究", "文献", "对比", "比较", "机制", "原理", "graph", "图谱", "cross-document"]
+# P0-4: 扩展营养关键词，覆盖补给/恢复/饮食等常见营养查询
+NUTRITION_KEYWORDS = [
+    "营养", "补给", "吃", "喝", "补水", "蛋白", "碳水", "恢复餐",
+    "能量胶", "电解质", "饮食", "素食", "生酮", "空腹", "低血糖",
+    "hydration", "fuel", "nutrition", "diet",
+]
 THERAPY_KEYWORDS = ["伤", "恢复", "疼", "疲劳", "拉伸", "康复", "injury", "recovery"]
 ADAPTIVE_KEYWORDS = ["【自适应调整】", "adaptive"]
 PROFILE_UPDATE_KEYWORDS = [

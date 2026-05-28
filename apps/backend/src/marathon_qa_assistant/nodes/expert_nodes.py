@@ -383,9 +383,13 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
     workflow_kind = state.get("workflow_kind") or state.get("intent_type") or "qa"
     feedback: List[str] = []
 
-    invalid_citations = find_invalid_citations(draft, evidence_bundle)
-    if invalid_citations:
-        feedback.append(f"引用编号不存在：{', '.join(invalid_citations)}")
+    # P0-5: 当 evidence_bundle 无证据时，跳过引用编号检查，避免 coach 编造引用后 auditor 拒绝形成死循环
+    if evidence_items:
+        invalid_citations = find_invalid_citations(draft, evidence_bundle)
+        if invalid_citations:
+            feedback.append(f"引用编号不存在：{', '.join(invalid_citations)}")
+    else:
+        invalid_citations = []
 
     for item in evidence_items:
         tier = str(item.get("tier") or "")

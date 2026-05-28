@@ -46,7 +46,11 @@ class FallbackIntegratedApp:
         if current == "entity_extraction":
             return "wiki_search"
         if current == "wiki_search":
-            return entity_route_decision(state)
+            decision = entity_route_decision(state)
+            # P0-4: 支持营养查询路由到 nutritionist
+            if decision == "nutritionist":
+                return "nutritionist"
+            return decision
         if current == "planner":
             return after_planner_route(state)
         if current == "executor":
@@ -141,6 +145,7 @@ def build_integrated_app(node_handlers):
         {
             "planner": "planner",
             "coach": "coach",
+            "nutritionist": "nutritionist",  # P0-4: 营养查询直接路由到营养师
             "research_analyst": "research_analyst",
             "adaptive_coach": "adaptive_coach",
             "missing_info_handler": "missing_info_handler",

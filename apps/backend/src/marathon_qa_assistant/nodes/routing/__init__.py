@@ -89,6 +89,10 @@ def entity_route_decision(state: IntegratedState):
     if is_plan_missing_evidence and state.get("mode") != "research":
         return "missing_info_handler"
 
+    # P0-4: QA 模式下营养类查询路由到 nutritionist 节点
+    if state.get("category") == "nutritionist":
+        return "nutritionist"
+
     workflow_kind = state.get("workflow_kind") or state.get("intent_type")
     if workflow_kind == "research":
         return "research_analyst"
@@ -140,10 +144,19 @@ def after_critic_auditor_route(state: IntegratedState):
         logger.warning(f"[critic_auditor] 已达最大审计迭代次数 ({state['iteration_count']})，强制转入引导节点")
         return "missing_info_handler"
 
-    if (state.get("workflow_kind") or state.get("intent_type")) == "plan":
+    # P0-5: QA 模式下无证据时，审计未通过也直接走 formatter，避免重试死循环
+    workflow_kind = state.get("workflow_kind") or state.get("intent_type") or "qa"
+    if workflow_kind == "qa":
+        evidence_bundle = state.get("evidence_bundle") if isinstance(state.get("evidence_bundle"), dict) else {}
+        evidence_items = [item for item in (evidence_bundle.get("evidence_items") or []) if isinstance(item, dict)]
+        if not evidence_items:
+            logger.warning("[critic_auditor] QA 模式无证据，跳过重试，直接格式化输出")
+            return "formatter"
+
+    if workflow_kind == "plan":
         return "executor"
-    if (state.get("workflow_kind") or state.get("intent_type")) == "research":
+    if workflow_kind == "research":
         return "research_analyst"
-    if (state.get("workflow_kind") or state.get("intent_type")) == "adaptive":
+    if workflow_kind == "adaptive":
         return "adaptive_coach"
     return "coach"
