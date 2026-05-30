@@ -70,7 +70,32 @@
 
 ## 4. 组件与样式系统
 
-### 4.1 统一站点外壳
+### 4.1 Design Tokens
+
+实施前先在全局样式中沉淀底层 token，首页和智能文档页共享这些变量，而不是互相复制 class。初始 token 包括：
+
+```css
+:root {
+  --app-bg: #eef5ef;
+  --app-shell-bg: #fdfefc;
+  --app-border: #173321;
+  --app-border-soft: #d9e3dc;
+  --app-text: #173321;
+  --app-muted: #63746b;
+  --app-accent: #35a762;
+  --app-nav-height: 64px;
+  --app-shell-padding: 24px;
+  --radius-shell: 24px;
+  --radius-container: 16px;
+  --radius-component: 8px;
+}
+```
+
+圆角必须分层使用：外层 shell 使用 `--radius-shell`，中/右栏大区块使用 `--radius-container`，按钮、输入框、折叠面板使用 `--radius-component`，避免所有元素都套大圆角造成气泡堆叠感。
+
+正文颜色使用深绿墨色，例如 `#173321`，避免纯黑。实现时需检查主要文本、次级文本、按钮文本和提示文本的对比度，目标达到 WCAG 2.1 AA 的基本可读性要求。
+
+### 4.2 统一站点外壳
 
 从智能文档页面抽取并复用以下概念：
 
@@ -81,9 +106,44 @@
 - `docs-evidence` 成为右侧依据栏基准。
 - `docs-row`、`docs-answer`、`docs-alert` 成为折叠依据、回答卡片、风险提示的样式基准。
 
-实现时可以保留现有 class 名，也可以新增更通用的别名，例如 `app-top`、`app-shell`、`app-side`、`app-main`、`app-evidence`。为了降低一次性改动风险，优先复用当前智能文档样式，并逐步把首页 DOM 映射到这些样式能力。
+实现时可以保留现有 class 名，也可以新增更通用的别名，例如 `app-top`、`app-shell`、`app-side`、`app-main`、`app-evidence`。优先让通用 class 消费 Design Tokens，再让智能文档页和首页映射到同一套 token。
 
-### 4.2 视觉规则
+### 4.3 CSS Grid 工作台布局
+
+三栏工作台使用 CSS Grid，避免复杂 Flex 嵌套。桌面端三栏独立滚动，保持工作台静止感；移动端恢复单列自然滚动。
+
+```css
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--app-bg);
+}
+
+.app-shell {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  gap: 24px;
+  margin: 16px 24px 24px;
+  padding: var(--app-shell-padding);
+  overflow: hidden;
+  border: 2px solid var(--app-border);
+  border-radius: var(--radius-shell);
+  background: var(--app-shell-bg);
+  box-shadow: 0 4px 12px rgba(44, 94, 59, 0.08);
+}
+
+.app-side,
+.app-main,
+.app-evidence {
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+```
+
+### 4.4 视觉规则
 
 - 背景：页面底色使用智能文档的浅绿白方向，例如 `#eef5ef`。
 - 主 shell：白色或近白色背景，深绿色硬边框，圆角约 `24px`，轻阴影。
@@ -92,11 +152,13 @@
 - 控件：输入框、按钮、搜索框、折叠行统一圆角、边框、字重和 hover 反馈。
 - 卡片：减少厚重卡片堆叠，优先用工作台分区和细边框区块。
 
-### 4.3 响应式规则
+### 4.5 响应式规则
 
 - 桌面端：三栏工作台。
-- 中等宽度：左栏变窄或折叠，右侧依据栏可下移。
-- 移动端：主 shell 改为单列；导航使用移动端快捷导航；依据区折叠到主内容下方。
+- `max-width: 1200px`：左右栏适度收窄，例如 `200px 1fr 280px`。
+- `max-width: 900px`：左栏转为抽屉或隐藏为导航入口，保留主任务和依据栏。
+- `max-width: 768px`：主 shell 改为单列；导航使用移动端快捷导航；引用依据和规则来源可折叠到底部。
+- 移动端不能把风险提示简单丢到页面底部；风险提示必须从右栏中拆出，提升到今日训练顶部或紧贴主要操作区。引用依据和规则来源可以折叠或下移。
 
 ## 5. 信息架构
 
@@ -137,7 +199,27 @@
 - `calendarRenderer.js` 继续渲染训练日历。
 - `intelligentDocs.js` 继续驱动智能文档页面问答和依据折叠。
 
-UI 重构只调整 DOM 容器、class 和样式。若某些脚本依赖具体选择器，实施时必须保留对应 `id`、`data-*` 或添加兼容 wrapper，避免功能断裂。
+### 6.1 DOM 绑定契约
+
+实施前必须先盘点脚本选择器，避免 DOM 重组造成静默断裂。当前代码已经大量使用 `id` 与 `data-*`，但仍需按以下契约执行：
+
+- JS 业务绑定优先使用稳定的 `id`、`data-action`、`data-state`、`data-*`。
+- 不新增依赖视觉 class 的 JS 选择器。
+- 不新增依赖父子层级的选择器，例如 `.calendar-card .btn-submit` 或 `parentNode.querySelector(...)`。
+- 迁移 DOM 时必须保留现有脚本依赖的 `id` 与 `data-*`，或提供兼容 wrapper。
+- 视觉 class 只负责样式，不能作为业务行为契约。
+
+示例：
+
+```js
+// 避免：依赖视觉层级
+// document.querySelector(".calendar-card .btn-submit")
+
+// 使用：依赖行为契约
+document.querySelector('[data-action="generate-plan"]')
+```
+
+UI 重构只调整 DOM 容器、class 和样式。若某些脚本依赖具体选择器，实施时必须先改成稳定契约或保留兼容标记，避免功能断裂。
 
 ## 7. 错误处理与空状态
 
@@ -148,6 +230,8 @@ UI 重构只调整 DOM 容器、class 和样式。若某些脚本依赖具体选
 - 依据不足：右栏显示证据覆盖不足提示。
 - 日历为空：保留生成提示，不显示破碎布局。
 - 移动端溢出：内容单列堆叠，避免横向滚动。
+- 移动端风险提示：风险提示必须提前显示在主任务区附近，不能仅折叠到页面底部；依据明细可折叠。
+
 
 ## 8. 验收标准
 
@@ -161,11 +245,14 @@ UI 重构只调整 DOM 容器、class 和样式。若某些脚本依赖具体选
 
 ## 9. 实施顺序建议
 
-1. 先抽取/复用智能文档的工作台样式能力。
-2. 重构首页顶栏与主 shell。
-3. 将首页左侧 drawer/导航整理为 Workspace / Context。
-4. 将计划输入、今日训练和日历迁移到中栏主任务区。
-5. 将依据、风险、反馈快捷操作迁移到右栏。
-6. 调整响应式样式。
-7. 运行构建和 smoke，修复选择器兼容问题。
-8. 交付可运行样板供用户查看。
+1. 先抽取 Design Tokens：在全局样式中沉淀颜色、圆角、间距、阴影与层级 token。
+2. 审查并重写 DOM 绑定契约：将首页与智能文档页相关脚本切到稳定的 `id`、`data-action`、`data-state` 和 `data-*` 绑定。
+3. 重构首页顶栏与主 shell：建立三栏 Grid 工作台。
+4. 将首页左侧 drawer/导航整理为 Workspace / Context。
+5. 将计划输入、今日训练和日历迁移到中栏主任务区。
+6. 将依据、风险、反馈快捷操作迁移到右栏。
+7. 校验空状态、加载态和错误态在三栏结构中的表现，特别是移动端风险提示层级。
+8. 调整响应式样式。
+9. 运行构建和 smoke，修复选择器兼容问题。
+10. 交付可运行样板供用户查看。
+
