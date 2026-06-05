@@ -46,15 +46,34 @@
 
 执行以下命令验证核心链路可用性：
 
-```bash
-py -3 -m py_compile marathon_qa_assistant/core/workflow.py
+```powershell
+# 编译检查核心模块（需设置 monorepo PYTHONPATH）
+$env:PYTHONPATH="apps/backend/src"; python -m py_compile apps/backend/src/marathon_qa_assistant/core/workflow.py
 ```
 
 或运行集成测试脚本：
 
-```bash
-py -3 tests/integration_workflow_test.py
+```powershell
+$env:PYTHONPATH="apps/backend/src"; python -m pytest tests/test_training_plan_skeleton.py tests/test_api_cli_startup_contract.py -q
 ```
+
+## 6. 系统要求
+
+### 最低配置
+- **CPU**: 4 核以上
+- **内存**: 8GB RAM
+- **存储**: 5GB 可用空间（模型 + 向量库）
+
+### 推荐配置（LLM 实时推理）
+- **GPU**: NVIDIA GPU 6GB+ VRAM（运行 qwen2.5:latest 等 7B 模型）
+- **或**: DeepSeek API Key（设置 `DS_API_KEY` 环境变量使用云端推理）
+- **内存**: 16GB RAM
+
+### CPU-only 环境说明
+在仅有 CPU 的环境下：
+- LLM 推理可能超时（qwen2.5/llama3 在 CPU 上生成复杂训练计划需要 >60 秒）
+- 可使用 `response_mode: "skeleton"` 获得规则驱动的骨架训练计划（无需 LLM）
+- 或配置 `DS_API_KEY` 环境变量使用 DeepSeek 云端 API 获得完整 AI 教练体验
 
 ## 7. 快速启动
 
@@ -67,8 +86,14 @@ py -3 tests/integration_workflow_test.py
    ```
 2. 安装依赖：
    ```bash
-   pip install -r requirements.txt
+   pip install -r apps/backend/requirements-dev.txt
    ```
+
+如果只需要后端运行时依赖（例如 Docker / 轻量部署），使用：
+
+```bash
+pip install -r apps/backend/requirements-runtime.txt
+```
 
 ### 启动前端 (Astro)
 
@@ -99,7 +124,7 @@ $env:PYTHONPATH="apps/backend/src"; python -m uvicorn marathon_qa_assistant.apps
 $env:PYTHONPATH="apps/backend/src"; python tools/kb/evaluate_rag_ragas.py
 ```
 
-该脚本使用当前 `marathon_qa_assistant.services.vector_store` 中的向量库实现，并默认读取项目根目录下的 `data/vector_kb/default`。运行前需确保已安装 `requirements.txt` 中的 RAG 评测依赖，并已准备 `data/vector_kb/default/eval_dataset.json`。
+该脚本使用当前 `marathon_qa_assistant.services.vector_store` 中的向量库实现，并默认读取项目根目录下的 `data/vector_kb/default`。运行前需确保已安装 `apps/backend/requirements-dev.txt`（或至少包含 `eval` extra 的环境），并已准备 `data/vector_kb/default/eval_dataset.json`。
 评测报告默认输出到当前项目根目录下的 `rag_eval_report.md`。脚本只汇总显式启用的 Ragas 评分项，不再把 `reference` 之类的数据列误记为指标。
 传统检索部分默认输出三档 Top-5 口径：`精确块命中`（同一 `chunk_id`）、`同页命中`（同一 `source_file` 且同页）、`同文档命中`（同一 `source_file`），便于区分“没召回到参考文档”和“召回到相邻块但未命中精确 chunk”这两类情况。
 当前检索侧还会对中文问题额外构造一个偏英文术语的查询变体，并与原查询结果做融合重排，用于缓解“中文问题检索英文知识库”时的召回偏弱。
@@ -107,5 +132,5 @@ $env:PYTHONPATH="apps/backend/src"; python tools/kb/evaluate_rag_ragas.py
 ## 8. 最近更新 (2026-04-29)
 
 - **Git 仓库初始化**: 已完成项目根目录 Git 初始化。
-- **依赖收口**: 统一 `requirements_api.txt` 为根目录 `requirements.txt`，保留 FastAPI、FAISS 等核心依赖；Chainlit 运行入口已移除。
+- **依赖收口**: 后端现在区分 `requirements-runtime.txt`（运行时）、`requirements-dev.txt`（开发/测试/评测）和 `constraints.txt`（高波动依赖约束）；`requirements.txt` 仅保留兼容入口。
 - **Gradio 废弃**: 已移除 `legacy_ui.py` 中的 Gradio 锁屏逻辑，准备清理冗余 entry points。

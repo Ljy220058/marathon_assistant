@@ -9,6 +9,7 @@ from marathon_qa_assistant.core.state_models import WorkingState
 def build_working_state(
     *,
     query: str = "",
+    mode: str = "",
     user_profile: Optional[Dict[str, Any]] = None,
     history: Optional[List[Dict[str, str]]] = None,
     adaptive_feedback: Optional[Dict[str, Any]] = None,
@@ -17,9 +18,11 @@ def build_working_state(
     """为每轮请求构造干净运行态，避免上一轮 mode/draft/approval 污染。"""
 
     health = kb_health if isinstance(kb_health, dict) else get_knowledge_base_health_snapshot()
+    # P1-1: 使用 API 传来的 mode 参数，非空时不再硬编码 "team"；router_node 可后续覆写
+    effective_mode = str(mode).strip() if mode else "team"
     return {
         "query": str(query or ""),
-        "mode": "team",
+        "mode": effective_mode,
         "workflow_kind": "",
         "intent_type": "qa",
         "selected_entities": [],
@@ -70,6 +73,8 @@ def build_working_state(
         "validation_result": {},
         "repair_suggestions": [],
         "repair_attempts": 0,
+        "nutritionist_done": False,
+        "needs_nutrition_review": False,
     }
 
 

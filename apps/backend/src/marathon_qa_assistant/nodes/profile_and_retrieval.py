@@ -1,12 +1,14 @@
 import hashlib
 import logging
-from typing import Any, Dict, List
+import re
+from typing import Any, Dict, List, Optional
 
 try:
     from langchain_core.runnables import RunnableConfig
 except ImportError:
     RunnableConfig = Any
 
+from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
@@ -17,12 +19,160 @@ from marathon_qa_assistant.nodes.common import (
     expand_entities_for_kg,
     get_context,
     get_graph_context,
+    graph_fusion_runtime_enabled,
     graph_engine,
     infer_entities,
+    semantic_match_entities,
 )
 from marathon_qa_assistant.nodes.routing import evaluate_plan_evidence
+from marathon_qa_assistant.services.kb.conflict_governance import record_conflict_review_item
+from marathon_qa_assistant.services.wiki_agent import wiki_agent
 
 logger = logging.getLogger("workflow_engine")
+
+INTENT_DOMAIN_POLICIES = {
+    "nutrition": {
+        "categories": {"nutritionist"},
+        "query_terms": {"营养", "补给", "碳水", "能量胶", "喝水", "电解质", "盐丸"},
+        "domains": {"nutrition_race_fueling", "nutrition", "race_fueling", "hydration"},
+    },
+    "injury_safety": {
+        "categories": {"therapist"},
+        "query_terms": {"疼", "痛", "伤", "膝", "跟腱", "足底", "恢复", "康复", "无法承重"},
+        "domains": {"medical_risk", "injury_prevention", "injury", "rehabilitation", "recovery"},
+    },
+}
+
+EVIDENCE_CONTRACT_KEYS = (
+    "source_registry_id",
+    "source_url",
+    "source_label",
+    "source_path",
+    "local_path",
+    "section",
+    "section_anchor",
+    "locator_hint",
+    "paragraph_index",
+    "paragraph_hash",
+    "char_start",
+    "char_end",
+    "text_span_hash",
+    "text_span",
+    "language",
+    "evidence_domain",
+    "knowledge_layer",
+    "domain_pack",
+    "allowed_use",
+    "prescription_permission",
+    "quality_tier",
+    "review_status",
+    "exclude_from_training_generation",
+    "needs_review",
+    "retrieval_mode",
+    "retrieval_status",
+    "display_mode",
+    "why_retrieved",
+    "score_breakdown",
+    "relevance_score",
+    "relevance_percent",
+    "source_status",
+    "has_full_text",
+    "evidence_kind",
+    "can_write_core",
+    "explanation_only",
+    "query_variant",
+    "query_variants",
+    "query_variant_count",
+    "best_query_variant",
+    "bilingual_match",
+    "consensus_count",
+    "confidence_level",
+    "graph_relation_strength",
+    "evidence_source_type",
+    "decision_gate",
+    "decision_gate_reason",
+    "governance_conflict_id",
+    "conflict_detected",
+    "conflict_reason",
+    "conflicting_sources",
+)
+
+
+def _safe_positive_int(value: Any) -> int | None:
+    try:
+        page = int(value)
+    except (TypeError, ValueError):
+        return None
+    return page if page > 0 else None
+
+
+def _intent_domain_policy(category: str = "", query: str = "") -> tuple[str, Dict[str, Any]] | tuple[None, None]:
+    normalized_category = str(category or "").strip().lower()
+    normalized_query = str(query or "").lower()
+    for policy_name, policy in INTENT_DOMAIN_POLICIES.items():
+        if normalized_category in policy["categories"] or any(term in normalized_query for term in policy["query_terms"]):
+            return policy_name, policy
+    return None, None
+
+
+def _hit_domain_values(hit: Dict[str, Any]) -> set[str]:
+    values = set()
+    for key in ("domain_pack", "evidence_domain", "knowledge_layer", "section"):
+        value = str(hit.get(key) or "").strip().lower()
+        if value:
+            values.add(value)
+    return values
+
+
+def filter_hits_for_intent_domain(
+    hits: List[Dict[str, Any]],
+    *,
+    category: str = "",
+    query: str = "",
+    top_k: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """按 intent 证据域优先筛选 RAG 命中，避免营养/伤病问题被高分但跑题来源覆盖。"""
+
+    policy_name, policy = _intent_domain_policy(category=category, query=query)
+    if not policy_name or not policy:
+        return list(hits or [])[:top_k] if top_k is not None else list(hits or [])
+
+    allowed_domains = set(policy["domains"])
+    matched: List[Dict[str, Any]] = []
+    fallback: List[Dict[str, Any]] = []
+    for hit in hits or []:
+        item = dict(hit)
+        if _hit_domain_values(item) & allowed_domains:
+            item["retrieval_domain_match"] = policy_name
+            matched.append(item)
+        else:
+            item["retrieval_domain_mismatch"] = policy_name
+            fallback.append(item)
+
+    ordered = matched + fallback
+    return ordered[:top_k] if top_k is not None else ordered
+
+
+def _should_use_wiki_context(
+    query: str,
+    intent_type: str = "qa",
+    mode: str = "team",
+    entities: Optional[List[str]] = None,
+) -> bool:
+    del mode
+    entity_list = [item for item in (entities or []) if str(item).strip()]
+    if not entity_list:
+        return False
+    if str(intent_type or "").strip().lower() == "plan":
+        return False
+    concept_keywords = ("是什么", "什么是", "机制", "概念", "原理", "定义")
+    normalized_query = str(query or "")
+    return any(keyword in normalized_query for keyword in concept_keywords)
+
+
+def _detect_missing_enhancement_fields(state: Dict[str, Any]) -> Dict[str, Any]:
+    del state
+    return {}
 
 
 EXTRACT_PROFILE_SYSTEM = (
@@ -514,24 +664,103 @@ async def _extract_profile_from_query(query: str, config: RunnableConfig, curren
     return parsed
 
 
+def _extract_relevance_terms(query: str, entities: List[str]) -> List[str]:
+    """提取用于二次相关度校验的关键词，避免纯向量近邻把跑题片段排到前面。"""
+    terms: List[str] = []
+    stop_terms = {
+        "怎么", "如何", "什么", "选手", "运动员", "进去", "影响", "不影响", "可以", "需要", "这个", "一下",
+        "the", "and", "for", "with", "training", "running",
+    }
+    for value in list(entities or []) + re.findall(r"[一-鿿A-Za-z0-9_\-]{2,}", str(query or "")):
+        term = str(value or "").strip().lower()
+        if not term or term in stop_terms or len(term) < 2:
+            continue
+        if term not in terms:
+            terms.append(term)
+    return terms[:12]
+
+
+def _term_overlap_score(text: str, terms: List[str]) -> float:
+    if not terms:
+        return 0.0
+    lowered = str(text or "").lower()
+    matched = sum(1 for term in terms if term and term in lowered)
+    return min(1.0, matched / max(1, len(terms)))
+
+
+def _compute_relevance_score(
+    *,
+    raw_vector_score: float,
+    entity_overlap: float,
+    term_overlap: float,
+    graph_confidence: float,
+    fusion_bonus: float,
+    is_graph_only: bool,
+    has_trace_anchor: bool,
+    consensus_count: int = 1,
+    bilingual_match: bool = False,
+    graph_relation_strength: str = "weak_support",
+) -> tuple[float, Dict[str, float]]:
+    """把 FAISS 距离分与词面/实体命中合成用户可见相关度。"""
+    term_mismatch_penalty = 0.0
+    if term_overlap <= 0.0 and entity_overlap <= 0.0 and raw_vector_score > 0:
+        term_mismatch_penalty = 0.35
+    graph_anchor_penalty = 0.25 if (is_graph_only and not has_trace_anchor) else 0.0
+    relevance = max(
+        0.0,
+        raw_vector_score * 0.55
+        + entity_overlap * 0.25
+        + term_overlap * 0.20
+        + graph_confidence * 0.15
+        + fusion_bonus
+        - term_mismatch_penalty
+        - graph_anchor_penalty,
+    )
+    relevance = min(1.0, relevance)
+    return relevance, {
+        "raw_vector_score": round(raw_vector_score, 3),
+        "entity_overlap": round(entity_overlap, 3),
+        "term_overlap": round(term_overlap, 3),
+        "graph_confidence": round(graph_confidence, 3),
+        "graph_relation_strength": str(graph_relation_strength or "weak_support"),
+        "graph_relation_strength_bonus": 0.0,
+        "consensus_count": int(consensus_count or 1),
+        "bilingual_match": bool(bilingual_match),
+        "consensus_bonus": 0.0,
+        "bilingual_bonus": 0.0,
+        "fusion_bonus": round(fusion_bonus, 3),
+        "term_mismatch_penalty": round(term_mismatch_penalty, 3),
+        "graph_anchor_penalty": round(graph_anchor_penalty, 3),
+        "penalty": round(term_mismatch_penalty + graph_anchor_penalty, 3),
+        "relevance": round(relevance, 3),
+        # 前端优先读取 score_breakdown.vector_score；这里放合成相关度，原始向量分另存 raw_vector_score。
+        "vector_score": round(relevance, 3),
+    }
+
+
 def build_ranked_evidence(
     query: str,
     vector_hits: List[Dict[str, Any]],
     graph_edges: List[Dict[str, Any]],
     entities: List[str],
-    top_k: int = 5
+    top_k: Optional[int] = None
 ) -> List[Evidence]:
     """聚合向量与图谱证据，去重合并并打分排序"""
     evidence_map: Dict[str, Evidence] = {}
-    pre_sort_stats = {"vector": 0, "graph": 0, "fusion": 0}
+    pre_sort_stats = {"vector": 0, "graph": 0, "fusion": 0, "decision_gate": 0}
+    relevance_terms = _extract_relevance_terms(query, entities)
 
     # 1. 处理向量证据
     for hit in vector_hits or []:
         chunk_id = hit.get("chunk_id", "")
         source = hit.get("source_file", "unknown")
-        page = int(hit.get("page", 1) or 1)
+        page = _safe_positive_int(hit.get("page"))
         text = hit.get("text", "")
         score = float(hit.get("score", 0.0) or 0.0)
+        section = str(hit.get("section") or "")
+        has_full_text = bool(hit.get("has_full_text") if "has_full_text" in hit else section in {"document_paragraph", "pdf_paragraph_candidate"})
+        source_status = str(hit.get("source_status") or ("ready" if has_full_text else "registry_only"))
+        evidence_kind = "body_chunk" if has_full_text else "source_registry_line"
 
         # 构造 ID：优先用 chunk_id
         if chunk_id:
@@ -548,6 +777,7 @@ def build_ranked_evidence(
             "chunk_id": chunk_id,
             "snippet": text[:300],
             "text": text,
+            "raw_vector_score": score,
             "vector_score": score,
             "retrieval_score": score,
             "graph_confidence": 0.0,
@@ -555,13 +785,45 @@ def build_ranked_evidence(
             "fusion_bonus": 0.0,
             "hybrid_score": 0.0,
             "citation_label": "",
+            "display_mode": hit.get("display_mode") or ("verified_source" if has_full_text else "legacy_explanation"),
+            "source_status": source_status,
+            "has_full_text": has_full_text,
+            "evidence_kind": evidence_kind,
+            "source_label": hit.get("source_label") or source,
+            "text_span": hit.get("text_span") or text,
+            "locator_hint": hit.get("locator_hint") or hit.get("page_hint") or (f"p.{page}" if page else ""),
+            "retrieval_mode": hit.get("retrieval_mode", "vector"),
+            "query_variant": hit.get("query_variant", ""),
+            "query_variants": list(hit.get("query_variants") or []),
+            "query_variant_count": int(hit.get("query_variant_count") or 1),
+            "best_query_variant": hit.get("best_query_variant") or hit.get("query_variant", ""),
+            "bilingual_match": bool(hit.get("bilingual_match")),
+            "consensus_count": int(hit.get("consensus_count") or 1),
+            "evidence_source_type": hit.get("evidence_source_type") or "retrieval_evidence",
+            "graph_relation_strength": "none",
+            "conflict_detected": bool(hit.get("conflict_detected", False)),
+            "conflict_reason": str(hit.get("conflict_reason") or ""),
+            "conflicting_sources": list(hit.get("conflicting_sources") or []),
+            "can_write_core": hit.get("prescription_permission") in {"can_write_core", "core"},
+            "explanation_only": hit.get("prescription_permission") == "explanation_only",
             "trace": {
                 "vector_hit": True,
                 "vector_score": score,
                 "graph_hit": False,
                 "fusion_bonus": 0.0,
+                "retrieval_mode": hit.get("retrieval_mode", "vector"),
+                "query_variant": hit.get("query_variant", ""),
+                "query_variants": list(hit.get("query_variants") or []),
+                "consensus_count": int(hit.get("consensus_count") or 1),
+                "bilingual_match": bool(hit.get("bilingual_match")),
             },
         }
+        # 从 hit 传播 v2 metadata（evidence_bundle 链需要这些字段）
+        for meta_key in EVIDENCE_CONTRACT_KEYS:
+            if meta_key in hit:
+                ev[meta_key] = hit.get(meta_key)
+                ev["trace"].setdefault(meta_key, hit.get(meta_key))
+
         # 以 chunk_id 为核心去重键
         key = chunk_id if chunk_id else f"{source}_{page}"
         evidence_map[key] = ev
@@ -574,17 +836,90 @@ def build_ranked_evidence(
         source = g_ev_raw["source_file"]
         page = g_ev_raw["page"]
         key = chunk_id if chunk_id else f"{source}_{page}"
+        strength = str(g_ev_raw.get("graph_relation_strength") or g_ev_raw.get("trace", {}).get("graph_relation_strength") or "weak_support")
+        is_conflict = bool(g_ev_raw.get("conflict_detected")) or strength == "conflict"
+
+        if strength == "hard_constraint":
+            gate_id = str(g_ev_raw.get("evidence_id") or f"graph_{hashlib.md5(str(edge).encode('utf-8')).hexdigest()[:10]}")
+            if not gate_id.startswith("gate_"):
+                gate_id = f"gate_{gate_id}"
+            g_ev_raw["evidence_id"] = gate_id
+            g_ev_raw["kind"] = "decision_gate"
+            g_ev_raw["evidence_source_type"] = "decision_gate"
+            g_ev_raw["decision_gate"] = True
+            g_ev_raw["decision_gate_reason"] = "Knowledge graph hard constraint is a rule decision gate, not retrieval evidence."
+            g_ev_raw["prescription_permission"] = "blocked_needs_evidence"
+            g_ev_raw["allowed_use"] = "risk_gate"
+            g_ev_raw["can_write_core"] = False
+            g_ev_raw["explanation_only"] = True
+            g_ev_raw["display_mode"] = "needs_evidence"
+            g_ev_raw["retrieval_mode"] = "decision_gate"
+            g_ev_raw["graph_relation_strength"] = strength
+            g_ev_raw["conflict_detected"] = is_conflict
+            g_ev_raw["why_retrieved"] = "Knowledge graph hard constraint matched extracted entities and is handled as a decision gate."
+            g_ev_raw.setdefault("trace", {})
+            g_ev_raw["trace"]["decision_gate"] = True
+            g_ev_raw["trace"]["evidence_source_type"] = "decision_gate"
+            g_ev_raw["trace"]["graph_relation_strength"] = strength
+            if is_conflict:
+                g_ev_raw["conflict_reason"] = "Knowledge graph hard constraint is also marked as conflict."
+                g_ev_raw["conflicting_sources"] = [g_ev_raw.get("evidence_id", "")]
+                review_item = record_conflict_review_item(query=query, reason=g_ev_raw["conflict_reason"], sources=[g_ev_raw])
+                g_ev_raw["governance_conflict_id"] = review_item["conflict_id"]
+                g_ev_raw["trace"]["governance_conflict_id"] = review_item["conflict_id"]
+            evidence_map[f"decision_gate:{g_ev_raw['evidence_id']}:{key}"] = g_ev_raw
+            pre_sort_stats["decision_gate"] += 1
+            continue
 
         if key in evidence_map:
             # 融合逻辑
             existing = evidence_map[key]
-            existing["kind"] = "fusion"
+            existing["graph_relation_strength"] = strength
             existing["graph_confidence"] = g_ev_raw["graph_confidence"]
             existing["trace"]["graph_hit"] = True
             existing["trace"]["graph_relation"] = edge.get("relation", "")
-            existing["trace"]["fusion_bonus"] = 0.1
+            existing["trace"]["graph_relation_strength"] = strength
+            if is_conflict:
+                existing["conflict_detected"] = True
+                existing["conflict_reason"] = "Knowledge graph relation conflicts with vector evidence; conflict is surfaced instead of forced fusion."
+                existing["conflicting_sources"] = [existing.get("evidence_id", ""), g_ev_raw.get("evidence_id", "")]
+                review_item = record_conflict_review_item(
+                    query=query,
+                    reason=existing["conflict_reason"],
+                    sources=[existing, g_ev_raw],
+                )
+                existing["governance_conflict_id"] = review_item["conflict_id"]
+                existing["display_mode"] = "needs_evidence"
+                existing["prescription_permission"] = "blocked_needs_evidence"
+                existing["can_write_core"] = False
+                existing["explanation_only"] = True
+                existing["trace"]["conflict_detected"] = True
+                existing["trace"]["governance_conflict_id"] = review_item["conflict_id"]
+            else:
+                existing["kind"] = "fusion"
+                existing["evidence_source_type"] = "retrieval_evidence"
+                existing["trace"]["fusion_bonus"] = 0.1
             pre_sort_stats["fusion"] += 1
         else:
+            g_ev_raw["prescription_permission"] = "explanation_only"
+            g_ev_raw["allowed_use"] = "explanation"
+            g_ev_raw["can_write_core"] = False
+            g_ev_raw["explanation_only"] = True
+            g_ev_raw["display_mode"] = "graph_hint"
+            g_ev_raw["retrieval_mode"] = "graph"
+            g_ev_raw["evidence_source_type"] = "explanatory_context"
+            g_ev_raw["graph_relation_strength"] = strength
+            g_ev_raw["conflict_detected"] = is_conflict
+            if is_conflict:
+                g_ev_raw["display_mode"] = "needs_evidence"
+                g_ev_raw["prescription_permission"] = "blocked_needs_evidence"
+                g_ev_raw["conflict_reason"] = "Knowledge graph relation is marked as conflict."
+                g_ev_raw["conflicting_sources"] = [g_ev_raw.get("evidence_id", "")]
+                review_item = record_conflict_review_item(query=query, reason=g_ev_raw["conflict_reason"], sources=[g_ev_raw])
+                g_ev_raw["governance_conflict_id"] = review_item["conflict_id"]
+                g_ev_raw.setdefault("trace", {})
+                g_ev_raw["trace"]["governance_conflict_id"] = review_item["conflict_id"]
+            g_ev_raw["why_retrieved"] = "Knowledge graph relation matched extracted entities."
             evidence_map[key] = g_ev_raw
             pre_sort_stats["graph"] += 1
 
@@ -599,45 +934,89 @@ def build_ranked_evidence(
                 overlap_count += 1
         ev["entity_overlap"] = min(1.0, overlap_count / max(1, len(entities)))
 
-        # Hybrid Score 公式: 向量分(0.4) + 图分(0.3) + 实体分(0.2) + 融合分(0.1)
-        vector_score = float(ev.get("retrieval_score", 0.0) or 0.0)
+        # Hybrid Score：先保留 FAISS 原始分，再用查询词/实体覆盖率做二次相关度校验，避免跑题片段进入报告顶部。
+        raw_vector_score = float(ev.get("raw_vector_score", ev.get("retrieval_score", 0.0)) or 0.0)
         graph_conf = float(ev.get("graph_confidence", 0.0) or 0.0)
-        v_part = vector_score * 0.4
-        g_part = graph_conf * 0.3
-        e_part = ev["entity_overlap"] * 0.2
         f_part = 0.1 if ev["kind"] == "fusion" else 0.0
-        ev["vector_score"] = vector_score
+        graph_strength = str(ev.get("graph_relation_strength") or ev.get("trace", {}).get("graph_relation_strength") or "weak_support")
+        ev["raw_vector_score"] = raw_vector_score
         ev["fusion_bonus"] = f_part
 
-        # 对无法回溯 source/chunk 的 graph-only 证据降权
         is_graph_only = ev["kind"] == "graph"
         has_trace_anchor = bool(ev.get("chunk_id")) or str(ev.get("source_file", "")).strip().lower() not in {"", "unknown"}
-        penalty = 0.25 if (is_graph_only and not has_trace_anchor) else 0.0
+        term_overlap = _term_overlap_score(f"{ev.get('text', '')} {ev.get('snippet', '')}", relevance_terms)
+        relevance_score, score_breakdown = _compute_relevance_score(
+            raw_vector_score=raw_vector_score,
+            entity_overlap=float(ev.get("entity_overlap", 0.0) or 0.0),
+            term_overlap=term_overlap,
+            graph_confidence=graph_conf,
+            fusion_bonus=f_part,
+            is_graph_only=is_graph_only,
+            has_trace_anchor=has_trace_anchor,
+            consensus_count=int(ev.get("consensus_count") or 1),
+            bilingual_match=bool(ev.get("bilingual_match")),
+            graph_relation_strength=graph_strength,
+        )
+        if graph_strength == "hard_constraint" or ev.get("kind") == "decision_gate":
+            relevance_score = 0.0 if ev.get("kind") == "decision_gate" else relevance_score
+            score_breakdown["hard_constraint_gate"] = 1.0
+            score_breakdown["decision_gate_not_rank_bonus"] = 1.0
+            ev["can_write_core"] = False
+            ev["explanation_only"] = True
+        if ev.get("conflict_detected"):
+            score_breakdown["conflict_detected"] = 1.0
+            ev["display_mode"] = "needs_evidence"
+            ev["can_write_core"] = False
+            ev["explanation_only"] = True
 
-        ev["hybrid_score"] = max(0.0, v_part + g_part + e_part + f_part - penalty)
-        ev["trace"]["score_breakdown"] = {
-            "vector_score": round(v_part, 3),
-            "graph_confidence": round(g_part, 3),
-            "entity_overlap": round(e_part, 3),
-            "fusion_bonus": round(f_part, 3),
-            "penalty": round(penalty, 3),
-        }
+        # 正文 chunk 可作为正式证据；registry-only 只能作为解释性线索，避免登记卡写入核心处方。
+        if ev.get("kind") == "decision_gate":
+            ev["display_mode"] = "needs_evidence"
+            ev["evidence_kind"] = "decision_gate"
+            ev["source_status"] = "rule_gate"
+        elif ev.get("has_full_text"):
+            relevance_score = min(1.0, relevance_score + 0.05)
+            score_breakdown["source_status_bonus"] = 0.05
+        elif ev.get("display_mode") == "needs_evidence":
+            ev["can_write_core"] = False
+            ev["explanation_only"] = True
+        else:
+            relevance_score = max(0.0, relevance_score - 0.20)
+            score_breakdown["registry_only_penalty"] = 0.20
+            ev["display_mode"] = "legacy_explanation"
+            ev["can_write_core"] = False
+            ev["explanation_only"] = True
+            ev["evidence_kind"] = "source_registry_line"
+
+        ev["hybrid_score"] = relevance_score
+        ev["relevance_score"] = relevance_score
+        ev["relevance_percent"] = round(relevance_score * 100)
+        ev["vector_score"] = relevance_score
+        ev["trace"]["raw_vector_score"] = raw_vector_score
+        ev["trace"]["score_breakdown"] = score_breakdown
+        ev["score_breakdown"] = score_breakdown
+        ev["confidence_level"] = "high" if relevance_score >= 0.75 else "medium" if relevance_score >= 0.50 else "low"
+        if not ev.get("why_retrieved"):
+            ev["why_retrieved"] = "vector_similarity" if ev.get("kind") in {"vector", "fusion"} else "graph_relationship_hint"
+        if not ev.get("display_mode") and ev.get("kind") == "graph":
+            ev["display_mode"] = "graph_hint"
         ev["trace"]["query"] = query[:80]
         ranked_list.append(ev)
 
-    # 4. 排序与截断
-    ranked_list.sort(key=lambda x: x["hybrid_score"], reverse=True)
-    final_list = ranked_list[:top_k]
+    # 4. 排序与按需截断；top_k=None 表示保留全部可见证据。
+    ranked_list.sort(key=lambda x: (1 if x.get("kind") == "decision_gate" else 0, x["hybrid_score"]), reverse=True)
+    final_list = ranked_list if top_k is None else ranked_list[:top_k]
 
     # 5. 固定 Citation Label
     for idx, ev in enumerate(final_list, start=1):
         ev["citation_label"] = f"[{idx}]"
 
     logger.info(
-        "[retrieval:evidence] pre_sort vector=%s graph=%s fusion=%s merged=%s top_k=%s",
+        "[retrieval:evidence] pre_sort vector=%s graph=%s fusion=%s decision_gate=%s merged=%s top_k=%s",
         pre_sort_stats["vector"],
         pre_sort_stats["graph"],
         pre_sort_stats["fusion"],
+        pre_sort_stats["decision_gate"],
         len(ranked_list),
         len(final_list),
     )
@@ -685,32 +1064,47 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     del config
     query = state.get("query", "")
     entities = infer_entities(query, state.get("selected_entities"))
+    for entity in semantic_match_entities(query):
+        if entity not in entities:
+            entities.append(entity)
 
-    hits = await get_context(query, top_k=6)  # 稍微多取一点以便后续融合排序
+    hits = await get_context(query, top_k=10)  # P0-2: 多取以便融合排序后有足够的去重后证据
     if not hits and entities:
-        hits = await get_context(" ".join(entities), top_k=6)
+        hits = await get_context(" ".join(entities), top_k=10)
+
+    hits = filter_hits_for_intent_domain(
+        hits,
+        category=str(state.get("category", "") or ""),
+        query=query,
+        top_k=10,
+    )
 
     rag_sources = build_rag_sources(hits)
-    
-    # 获取图谱上下文（展开“动作库”等通用实体为具体标签）
+
+    # 获取图谱上下文（展开"动作库"等通用实体为具体标签）
     kg_entities = expand_entities_for_kg(entities)
-    try:
-        graph_res = graph_engine.search_graph(kg_entities, max_hops=2)
-        graph_edges = graph_res.get("edges", [])
-        graph_context, mermaid_graph = get_graph_context(kg_entities)
-    except Exception as exc:
-        logger.warning(f"Graph Search failed in extraction node: {exc}")
+    if graph_fusion_runtime_enabled():
+        try:
+            graph_res = graph_engine.search_graph(kg_entities, max_hops=2)
+            graph_edges = graph_res.get("edges", [])
+            graph_context, mermaid_graph = get_graph_context(kg_entities)
+        except Exception as exc:
+            logger.warning(f"Graph Search failed in extraction node: {exc}")
+            graph_edges = []
+            graph_context = ""
+            mermaid_graph = "flowchart TD\n  Empty[Graph Error]"
+    else:
         graph_edges = []
         graph_context = ""
-        mermaid_graph = "flowchart TD\n  Empty[Graph Error]"
+        mermaid_graph = "flowchart TD\n  Empty[Graph fusion disabled]"
 
-    # 构建统一的 Ranked Evidence
+    # 构建统一的 Ranked Evidence（P0-2: top_k=6 确保去重后仍有足够证据供教练引用）
     ranked_evidence = build_ranked_evidence(
         query=query,
         vector_hits=hits,
         graph_edges=graph_edges,
         entities=entities,
-        top_k=5
+        top_k=None
     )
 
     evidence_gate = evaluate_plan_evidence(hits, query, state.get("intent_type", "qa"))
@@ -726,7 +1120,7 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     if graph_context:
         logs.append(f"[graph_traversal] 已生成图谱关联路径 (命中 {len(graph_edges)} 条边)")
     else:
-        logs.append("[graph_traversal] 未发现直接图谱路径")
+        logs.append("[graph_traversal] 图谱融合未启用或未发现直接图谱路径")
     if ranked_evidence:
         top_trace = ", ".join(
             f"{ev.get('citation_label', '[?]')}:{ev.get('kind', 'unknown')}/{ev.get('hybrid_score', 0):.3f}"
@@ -734,12 +1128,20 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         )
         logs.append(f"[evidence_trace] top={top_trace}")
 
+    # P0-2: 从 ranked_evidence 构建 evidence_bundle，确保 evidence_state 不再返回空的 evidence_items
+    evidence_bundle = build_evidence_bundle(
+        query=query,
+        ranked_evidence=ranked_evidence,
+        rag_sources=rag_sources,
+        health=state.get("evidence_bundle", {}).get("health"),
+    )
     return {
         "entities": entities,
         "selected_entities": entities,
         "gate_hits": hits,
         "rag_sources": rag_sources,
         "ranked_evidence": ranked_evidence,
+        "evidence_bundle": evidence_bundle,
         "graph_context": graph_context,
         "mermaid_graph": mermaid_graph,
         "token_usage": ensure_usage(state.get("token_usage")),

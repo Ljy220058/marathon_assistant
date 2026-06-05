@@ -75,27 +75,52 @@ def _compute_pace_zones(profile: dict) -> dict:
         t_pace_sec = None
         goal = str(profile.get('goal', '') or '').strip()
         race_pace_sec = None
-        m_half = re.search(r'半马\s*(\d+)\s*分', goal)
-        if m_half:
-            total_min = int(m_half.group(1))
-            race_pace_sec = total_min * 60 / 21.0975
-        m_full = re.search(r'全马\s*(\d+)\s*小时\s*(\d+)\s*分', goal)
-        if not m_full:
-            m_full = re.search(r'全马\s*(\d+)\s*[时分]\s*(\d+)\s*[分]', goal)
-        if not m_full:
-            m_full = re.search(r'全马\s*(\d{3})\s*$', goal)
-            if m_full:
-                hour = int(m_full.group(1)[:1])
-                minute = int(m_full.group(1)[1:])
-                race_pace_sec = (hour * 60 + minute) * 60 / 42.195
-        if m_full and not race_pace_sec:
-            hour = int(m_full.group(1))
-            minute = int(m_full.group(2))
+        race_type = None  # "full" | "half"
+
+        # ── P0-3: 时间在前、赛事在后的模式 ──
+        # "3小时30分全马" / "3小时30分 马拉松"
+        m_time_first_full = re.search(r'(\d+)\s*小时\s*(\d+)\s*分[^a-z0-9]*(?:全马|马拉松|marathon|全马)', goal, re.I)
+        if m_time_first_full:
+            hour = int(m_time_first_full.group(1))
+            minute = int(m_time_first_full.group(2))
             race_pace_sec = (hour * 60 + minute) * 60 / 42.195
+            race_type = "full"
+        else:
+            # "1小时30分半马" / "1小时30分 半程"
+            m_time_first_half = re.search(r'(\d+)\s*小时\s*(\d+)\s*分[^a-z0-9]*(?:半马|半程|half)', goal, re.I)
+            if m_time_first_half:
+                hour = int(m_time_first_half.group(1))
+                minute = int(m_time_first_half.group(2))
+                race_pace_sec = (hour * 60 + minute) * 60 / 21.0975
+                race_type = "half"
+
+        # ── 赛事在前、时间在后的模式（原有）──
+        if race_pace_sec is None:
+            m_half = re.search(r'半马\s*(\d+)\s*分', goal)
+            if m_half:
+                total_min = int(m_half.group(1))
+                race_pace_sec = total_min * 60 / 21.0975
+                race_type = "half"
+        if race_pace_sec is None:
+            m_full = re.search(r'全马\s*(\d+)\s*小时\s*(\d+)\s*分', goal)
+            if not m_full:
+                m_full = re.search(r'全马\s*(\d+)\s*[时分]\s*(\d+)\s*[分]', goal)
+            if not m_full:
+                m_full = re.search(r'全马\s*(\d{3})\s*$', goal)
+                if m_full:
+                    hour = int(m_full.group(1)[:1])
+                    minute = int(m_full.group(1)[1:])
+                    race_pace_sec = (hour * 60 + minute) * 60 / 42.195
+            if m_full and not race_pace_sec:
+                hour = int(m_full.group(1))
+                minute = int(m_full.group(2))
+                race_pace_sec = (hour * 60 + minute) * 60 / 42.195
+            if m_full:
+                race_type = "full"
 
         if race_pace_sec:
             from marathon_qa_assistant.core.physiology import seconds_to_pace
-            if '半马' in goal:
+            if race_type == "half":
                 t_pace_str = seconds_to_pace(race_pace_sec - 9)
             else:
                 t_pace_str = seconds_to_pace(race_pace_sec - 20)
@@ -197,6 +222,15 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 
 """
 
+    # 营养画像
+    nutrition = (profile.get("nutrition_profile") or {})
+    if isinstance(nutrition, dict) and nutrition.get("weight_kg"):
+        prompt += f"""- 体重：{nutrition.get('weight_kg', 0)} kg
+- 饮食偏好：{nutrition.get('diet_preference', '无偏好')}
+- 过敏食物：{', '.join(nutrition.get('allergies') or []) or '无'}
+
+"""
+
     enhancement_missing = state.get("enhancement_missing_fields", [])
     if enhancement_missing:
         from marathon_qa_assistant.nodes.profile_and_retrieval import ENHANCEMENT_FIELD_LABELS
@@ -238,7 +272,14 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 - 轻松跑 (Easy Run)：30-60 分钟恢复性慢跑，非常舒适的配速
 
 ══════════════════════════
-【知识库证据】
+【补给与营养约束】（必须嵌入到对应训练日备注中）
+- 训练时长 > 60 分钟的课表应在备注中标明：训练中每 30-40 分钟补充 30-60g 碳水（凝胶/运动饮料/香蕉）。
+- 训练后 30 分钟内需补充碳水+蛋白（比例 3:1），2 小时内完成正餐。
+- 补水策略：{nutrition.get('hydration_strategy', '运动中每 20 分钟饮水 150-250ml') if isinstance(nutrition, dict) else '运动中每 20 分钟饮水 150-250ml'}。
+- 饮食偏好：{nutrition.get('diet_preference', '无偏好') if isinstance(nutrition, dict) else '无偏好'}。如为素食/低碳水，需在备注中给出替代补给方案。
+- 高温/高湿环境下每额外流失 1L 汗液需补充 1.5L 含电解质液体。
+
+    【知识库证据】
 {evidence_lines}
 
 【引用规则】
@@ -384,6 +425,18 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     if fallback_reason:
         logs.append(fallback_reason)
 
+    # 检测长距离训练日，自动触发营养师节点
+    needs_nutrition = False
+    if isinstance(structured_training_plan, dict):
+        for week in (structured_training_plan.get("week_plans") or []):
+            for day in (week.get("days") or []):
+                duration = int(day.get("duration_min") or 0)
+                if duration >= 90:
+                    needs_nutrition = True
+                    break
+            if needs_nutrition:
+                break
+
     return {
         "draft_plan": content,
         "draft_ready": True,
@@ -395,5 +448,6 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         "evidence_bundle": evidence_bundle,
         "rag_sources": rag_sources,
         "token_usage": usage,
-        "reasoning_log": logs,
+        "reasoning_log": logs + (['[executor] 检测到长距离训练日 (>=90min)，标记需要营养师复核'] if needs_nutrition else []),
+        "needs_nutrition_review": needs_nutrition,
     }

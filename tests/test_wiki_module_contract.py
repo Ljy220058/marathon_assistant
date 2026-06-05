@@ -21,18 +21,8 @@ def test_should_use_wiki_context_only_for_concept_or_research_queries():
     assert not _should_use_wiki_context("什么是乳酸阈？", "qa", "team", [])
 
 
-def test_wiki_search_node_uses_wiki_agent_for_concept_queries(monkeypatch):
-    from marathon_qa_assistant.nodes import profile_and_retrieval as profile_module
-
-    calls = []
-
-    class _FakeWikiAgent:
-        async def search(self, entities, lang="zh"):
-            calls.append({"entities": entities, "lang": lang})
-            return "【维基百科 - 乳酸阈】\n乳酸阈是耐力训练中的重要概念。"
-
-    monkeypatch.setattr(profile_module, "wiki_agent", _FakeWikiAgent())
-
+def test_wiki_search_node_always_returns_kb_only_for_concept_queries():
+    """wiki_search_node 当前保持 KB-only，所有查询（包括概念类）均不启用外部知识。"""
     result = asyncio.run(
         wiki_search_node(
             {
@@ -45,20 +35,13 @@ def test_wiki_search_node_uses_wiki_agent_for_concept_queries(monkeypatch):
         )
     )
 
-    assert calls == [{"entities": ["乳酸阈"], "lang": "zh"}]
-    assert "乳酸阈" in result["wiki_context"]
-    assert "已补充" in result["reasoning_log"][0]
+    assert result["wiki_context"] == ""
+    assert "KB-only" in result["reasoning_log"][0]
+    assert "未启用外部知识" in result["reasoning_log"][0]
 
 
-def test_wiki_search_node_skips_plan_queries(monkeypatch):
-    from marathon_qa_assistant.nodes import profile_and_retrieval as profile_module
-
-    class _FailingWikiAgent:
-        async def search(self, entities, lang="zh"):
-            raise AssertionError("计划类问题不应调用 Wiki")
-
-    monkeypatch.setattr(profile_module, "wiki_agent", _FailingWikiAgent())
-
+def test_wiki_search_node_always_returns_kb_only_for_plan_queries():
+    """wiki_search_node 当前保持 KB-only，计划类查询也不启用外部知识。"""
     result = asyncio.run(
         wiki_search_node(
             {
@@ -72,7 +55,8 @@ def test_wiki_search_node_skips_plan_queries(monkeypatch):
     )
 
     assert result["wiki_context"] == ""
-    assert "不需要外部概念补充" in result["reasoning_log"][0]
+    assert "KB-only" in result["reasoning_log"][0]
+    assert "未启用外部知识" in result["reasoning_log"][0]
 
 
 def test_expert_prompt_includes_wiki_context_without_treating_it_as_numbered_evidence(monkeypatch):

@@ -8,12 +8,15 @@ if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
 from marathon_qa_assistant.nodes.router import router_node
+from marathon_qa_assistant.core.workflow_graph import FallbackIntegratedApp
 from marathon_qa_assistant.nodes.routing import (
     after_critic_auditor_route,
+    after_executor_route,
     after_planner_route,
     after_profile_update_route,
     after_router_route,
     after_therapist_route,
+    evaluate_plan_evidence,
     entity_route_decision,
     gate_decision,
 )
@@ -87,6 +90,14 @@ def test_entity_route_decision_sends_plan_without_evidence_to_handler():
     assert entity_route_decision(state) == "missing_info_handler"
 
 
+def test_training_plan_keyword_alone_does_not_count_as_plan_evidence():
+    evidence = evaluate_plan_evidence([], "请给我一个训练计划", "plan")
+
+    assert evidence["required"] is True
+    assert evidence["is_training_plan_request"] is True
+    assert evidence["has_plan_evidence"] is False
+
+
 def test_entity_route_decision_sends_subagent_plan_with_evidence_to_planner():
     state = {
         "missing_fields": [],
@@ -117,6 +128,25 @@ def test_after_planner_route_requires_subtasks_before_executor():
     assert after_planner_route(state) == "missing_info_handler"
 
 
+def test_after_executor_routes_to_nutritionist_when_needed():
+    state = {
+        "needs_nutrition_review": True,
+        "nutritionist_done": False,
+    }
+
+    assert after_executor_route(state) == "nutritionist"
+
+
+def test_fallback_executor_route_uses_shared_after_executor_route():
+    app = FallbackIntegratedApp(node_handlers={})
+    state = {
+        "needs_nutrition_review": True,
+        "nutritionist_done": False,
+    }
+
+    assert app._next_node("executor", state) == "nutritionist"
+
+
 def test_after_therapist_route_prioritizes_critic_auditor_for_qa():
     state = {"intent_type": "qa", "is_approved": False, "mode": "team"}
 
@@ -127,6 +157,18 @@ def test_after_critic_auditor_route_returns_to_executor_for_plan_retry():
     state = {"is_approved": False, "iteration_count": 1, "mode": "subagent", "workflow_kind": "plan"}
 
     assert after_critic_auditor_route(state) == "executor"
+
+
+def test_after_critic_auditor_route_formats_plan_with_structured_skeleton():
+    state = {
+        "is_approved": False,
+        "iteration_count": 1,
+        "mode": "subagent",
+        "workflow_kind": "plan",
+        "structured_training_plan": {"week_plans": []},
+    }
+
+    assert after_critic_auditor_route(state) == "formatter"
 
 
 def test_after_critic_auditor_route_stops_after_max_iterations():

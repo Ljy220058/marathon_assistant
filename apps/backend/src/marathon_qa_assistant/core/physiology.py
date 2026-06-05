@@ -1,9 +1,24 @@
+"""
+运动生理学工具函数 —— 心率/配速区间计算与格式转换。
+
+文献溯源说明：
+- LTHR 分区概念源自 Joe Friel 的训练体系，本站点采用的 9 区百分比
+  为教练实践经验提炼，未对应单一学术出版物。
+- T-Pace 概念同样来自 Joe Friel 的阈值配速训练框架，本站点 9 区
+  配速比率为教练实践经验适配。
+- 纯工具函数（格式转换、有效性检查）无生理学公式来源，标注为
+  [utility]。
+"""
+
 import re
 from typing import Dict
 
 
 def is_zone_empty(zones: Dict[str, str], expected_count: int = 9) -> bool:
-    """检查区间数据是否有效。"""
+    """检查区间数据是否有效。
+
+    出处：[utility] 数据校验工具函数，无运动生理学公式来源。
+    """
     if not zones or not isinstance(zones, dict):
         return True
     
@@ -20,7 +35,18 @@ def is_zone_empty(zones: Dict[str, str], expected_count: int = 9) -> bool:
 
 
 def calculate_hr_zones(lthr: int, model: str = "Coros") -> Dict[str, str]:
-    """基于 LTHR 自动计算 9 区心率范围。"""
+    """基于 LTHR 自动计算 9 区心率范围。
+
+    出处：
+    - 乳酸阈心率 (LTHR) 分区训练概念源自 Joe Friel (2009),
+      Total Heart Rate Training, Ch.4; 以及 Joe Friel (2016),
+      The Triathlete's Training Bible, 4th ed., Ch.7.
+    - ACSM 运动处方指南 (Garber et al. 2011) 定义了基于 %HRmax
+      或 %VO₂max 的 3-5 区通用分级，但未规定 %LTHR 多区映射。
+    - 本站点采用的 9 区 %LTHR 具体阈值 (Z1<72% 至 Z9>105%)
+      为 [coaching_practice]——综合 COROS/Stryd 等多区间训练
+      生态的教练实践经验提炼，暂无单一文献出处。
+    """
     if not lthr or lthr < 40:
         return {}
 
@@ -40,7 +66,10 @@ def calculate_hr_zones(lthr: int, model: str = "Coros") -> Dict[str, str]:
 
 
 def pace_to_seconds(pace_str: str) -> int:
-    """将 `M:SS`、`3.15`、`315` 等格式统一转换为秒。"""
+    """将 `M:SS`、`3.15`、`315` 等格式统一转换为秒。
+
+    出处：[utility] 配速格式解析工具函数，无运动生理学公式来源。
+    """
     if not pace_str:
         return 0
 
@@ -76,15 +105,39 @@ def pace_to_seconds(pace_str: str) -> int:
 
 
 def seconds_to_pace(seconds: int) -> str:
-    """将秒数转换为 `M:SS` 配速文本。"""
+    """将秒数转换为 `M:SS` 配速文本。
+
+    出处：[utility] 秒数格式化工具函数，无运动生理学公式来源。
+    """
     if seconds <= 0:
         return "-"
     minutes, remaining_seconds = divmod(int(round(seconds)), 60)
     return f"{minutes}:{remaining_seconds:02d}"
 
 
-def calculate_pace_zones(t_pace_str: str) -> Dict[str, str]:
-    """基于 T-Pace 自动计算 9 区配速范围。"""
+def calculate_pace_zones(
+    t_pace_str: str,
+    target_hmp_seconds: int = 0,
+) -> Dict[str, str]:
+    """基于 T-Pace 自动计算 9 区配速范围。
+
+    如果提供了 target_hmp_seconds（目标半马配速，秒/km），Z5 马拉松专项区
+    将以 HMP 为中心（±6 秒），而非从 T-Pace 推导，确保 Z5 与目标比赛配速一致。
+
+    出处：
+    - 阈值配速 (T-Pace / Threshold Pace) 概念源自 Joe Friel (2009),
+      Your Best Triathlon, Ch.5; 以及 Joe Friel (2016),
+      The Triathlete's Training Bible, 4th ed., Ch.7 —
+      Friel 提出以乳酸阈配速为基准按比例推导各训练区间的框架。
+    - 基于 VDOT 的配速区间表来自 Jack Daniels (2013),
+      Daniels' Running Formula, 3rd ed., Ch.3-4 —
+      Daniels 通过 VO₂max 预估比赛成绩并反推各强度配速，
+      与 %T-Pace 比例法属于不同体系。
+    - 本站点采用的 9 区 T-Pace 具体比率
+      (Z1 1.30x-1.15x 至 Z9 0.85x-0.75x) 以及 Z5 围绕
+      目标半马配速 ±6 秒/km 的调整策略，均为 [coaching_practice]——
+      综合多位马拉松教练的实践经验适配，暂无单一文献出处。
+    """
     t_seconds = pace_to_seconds(t_pace_str)
     if t_seconds <= 0:
         return {}
@@ -92,13 +145,23 @@ def calculate_pace_zones(t_pace_str: str) -> Dict[str, str]:
     def pace_range(slower_ratio: float, faster_ratio: float) -> str:
         return f"{seconds_to_pace(t_seconds * slower_ratio)}-{seconds_to_pace(t_seconds * faster_ratio)}"
 
+    # 如果提供了目标 HMP，Z5 围绕 HMP 排列（±6 秒）
+    # 这样进阶跑者的马拉松配速区直接对应目标比赛配速，偏差可控在 5-8 秒/km 内
+    # P2: 无目标 HMP 时返回占位提示，避免从 T-Pace 推导出无意义的默认值
+    if target_hmp_seconds > 0:
+        z5_lower = target_hmp_seconds - 6  # 稍快于 HMP（下限）
+        z5_upper = target_hmp_seconds + 6  # 稍慢于 HMP（上限）
+        z5_range = f"{seconds_to_pace(z5_upper)}-{seconds_to_pace(z5_lower)}"
+    else:
+        z5_range = "设置目标配速后自动计算"
+
     # 采用用户确认的 T-Pace 九区映射
     return {
         "Z1": pace_range(1.30, 1.15),
         "Z2": pace_range(1.15, 1.08),
         "Z3": pace_range(1.08, 1.02),
         "Z4": pace_range(1.02, 0.99),
-        "Z5": pace_range(0.99, 0.95),
+        "Z5": z5_range,
         "Z6": pace_range(0.95, 0.92),
         "Z7": pace_range(0.92, 0.90),
         "Z8": pace_range(0.90, 0.85),

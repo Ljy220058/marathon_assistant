@@ -1,6 +1,8 @@
 # API 契约快照：训练日历、反馈与观测
 
 > 范围：本文件固定当前 Astro 前端依赖的核心 FastAPI surface，避免后续继续靠散落 `dict` 维护契约。
+> 生成时间：2026-05-28（P1.4 固化）
+> OpenAPI schema 来源：`marathon_qa_assistant.apps.api_app.app.openapi()`
 
 ## 公共约定
 
@@ -10,10 +12,11 @@
 - `MARATHON_ALLOWED_ORIGINS` 可用逗号配置允许来源。
 - 只有显式设置 `MARATHON_DEV_PERMISSIVE_CORS=1` 才允许 `*`。
 - 每个 HTTP 响应都会回写 `X-Request-ID`；请求没有传入时由后端生成。
+- `/openapi.json` 包含所有公开端点（`/query`, `/feedback`, `/plans/{plan_id}` 等）的完整 schema。
 
 ## `POST /query`
 
-用途：生成或回答训练相关请求。计划类请求支持 skeleton-first，前端主按钮“生成训练日历”依赖该路径。
+用途：生成或回答训练相关请求。计划类请求支持 skeleton-first，前端主按钮"生成训练日历"依赖该路径。
 
 请求模型：`QueryRequest`
 
@@ -33,16 +36,20 @@
 核心响应字段：
 
 - `report`
-- `structured_training_plan`
+- `structured_training_plan`（含 `plan_meta`, `week_plans`, `phase_summary`, `half_marathon_protocol`, `half_marathon_protocol_validation`）
 - `structured_report`
 - `training_explanation_panel`
 - `monthly_training_calendar`
 - `daily_schedule_cards`
 - `phases`
 - `training_load_summary`
+- `training_plan_review`
 - `training_plan_id`
 - `generation_status`
 - `generation_timings`
+- `answer_source_mode`
+- `rag_health`
+- `evidence_chain`
 - `workflow_trace`
 
 计划类请求验收：
@@ -51,6 +58,7 @@
 - `llm_timeout_skeleton` 和 `llm_error_skeleton` 必须回退到结构化骨架，而不是只返回 Markdown。
 - `workflow_trace` 必须保留生成路径、证据摘要和状态。
 - `generation_timings.total_sec` 用于前端展示和 `/ops/metrics` 聚合。
+- 训练计划核心字段结构：`plan_meta.goal`, `plan_meta.actual_weeks`, `week_plans[].days[].training_type`, `week_plans[].days[].main_set`
 
 ## `POST /feedback`
 
@@ -65,20 +73,23 @@
 - `event_id`：可选；无有效事件时只计算建议，不阻塞用户。
 - `day_key`：可选；前端日卡定位辅助字段。
 - `raw_text`
-- `feedback`
+- `feedback`（支持两套字段风格：中文 `completion/fatigue/pain/sleep` 和内部 `completion_status/subjective_fatigue/pain_status/sleep_quality`）
+- `schedule_constraints`
 
 响应模型：`FeedbackResponse`
 
-核心响应字段：
+核心响应字段（风险门和调整建议）：
 
 - `workout_feedback`
-- `risk_gate`
-- `protocol_recheck`
+- `risk_gate`（含 `status`, `product_status`, `adjustment_action`, `decision_reason`, `triggers`）
+- `protocol_recheck`（含 `allowed`, `risk_gate_status`）
 - `adaptive_feedback`
-- `adaptive_adjustment`
+- `adaptive_adjustment`（含 `adjustment_required`, `reason_codes`, `next_day_adjustment`, `weekly_adjustment`, `alternative_workout`, `risk_alert`, `rationale`）
 - `plan_diff`
 - `generation_status`
+- `affected_events`
 - `feedback_id`
+- `feedback_replan`
 - `workflow_trace`
 
 风险契约：
@@ -88,6 +99,7 @@
 - 疼痛风险和医疗红旗不得生成 threshold、interval、tempo、VO2 等高强度替代训练。
 - 替代训练必须是休息、低冲击或明确等待专业评估。
 - 成功入库时返回 `feedback_id`；无有效事件时 `feedback_id=null`，但仍返回调整建议。
+- 老客户端只传 `raw_text + feedback` 仍可用。
 
 ## `GET /plans/{plan_id}`
 
@@ -101,8 +113,10 @@
 - `structured_training_plan`
 - `workflow_trace`
 - `events`
-- `execution_status_summary`
-- `adjustment_history`
+- `execution_status_summary`（含 `planned_count`, `completed_count`, `partial_count`, `missed_feedback_count`, `completion_rate`, `risk_level`, `risk_reasons`, `risk_rule_source`）
+- `adjustment_history`（含 `feedback_id`, `created_at`, `plan_id`, `event_id`, `reason_codes`, `risk_gate`, `protocol_recheck`, `adaptive_adjustment`, `plan_diff`, `affected_events`）
+- `training_plan_review`
+- `evidence_chain`
 
 验收要点：
 
@@ -121,8 +135,10 @@
 
 - `requests_total`
 - `errors_total`
+- `request_route_counts`
 - `generation_status_counts`
 - `feedback_risk_reason_counts`
+- `llm_provider_error_counts`
 - `plan_generation_duration_buckets`
 - `medical_referral_total`
 
@@ -132,10 +148,36 @@
 - 不暴露 API key、OAuth token、refresh token 或 authorization header。
 - 不使用用户输入作为高基数 label。
 
+## 其他端点概要
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/training-calendar` | 生成训练日历 |
+| GET | `/training-calendar/day-detail/{day_index}` | 返回某天详情 |
+| GET/POST/PUT | `/profile` 系列 | 跑者画像 CRUD 和 NLU 提取 |
+| GET | `/zone-reference` | Z1-Z9 强度区间参考 |
+| GET | `/evidence-tier-reference` | 证据分层标记参考 |
+| GET | `/llm-options` | 可用 LLM 模型列表 |
+| GET | `/health` | 公共健康检查 |
+| GET | `/admin/health` | 管理健康检查（需专家 token） |
+| GET | `/ops/metrics` | 运营指标 |
+
+## 错误状态码
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 请求参数无效（缺少必填字段、不支持的 action、无效 response role） |
+| 401 | 需要有效 API 凭据 |
+| 403 | 专家凭据不足 |
+| 404 | 计划/事件不存在 |
+| 429 | 请求频率超过限制 |
+| 500 | 模型服务暂不可用 |
+| 504 | LLM 工作流超时 |
+
 ## 验证命令
 
 ```powershell
 $env:PYTHONUTF8='1'
 $env:PYTHONPATH='apps/backend/src'
-python -m pytest tests/test_openapi_contract.py tests/test_api_app.py tests/test_observability_contract.py -q
+python -m pytest tests/test_openapi_contract.py tests/test_api_app.py -q
 ```

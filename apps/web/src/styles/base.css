@@ -1,27 +1,63 @@
 :root {
-  color-scheme: dark;
-  --bg: #090b10;
-  --bg-soft: #0d1017;
-  --panel: #151821;
-  --panel-strong: #20242e;
-  --panel-muted: #10131a;
-  --border: #2a303b;
-  --border-strong: #3a4250;
-  --text: #f6f7fb;
-  --muted: #a5adbd;
-  --faint: #858fa3;
-  --accent: #a78bfa;
-  --accent-1: #22d3ee;
-  --accent-2: #60a5fa;
-  --accent-3: #22d3ee;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #fb7185;
-  --shadow: 0 20px 70px rgba(0, 0, 0, 0.38);
+  color-scheme: light;
+  --bg: #f8fafc;
+  --bg-soft: #f1f5f9;
+  --panel: #ffffff;
+  --panel-strong: #ffffff;
+  --panel-muted: #f8fafc;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  --accent: #2563eb;
+  --accent-1: #2563eb;
+  --accent-2: #1d4ed8;
+  --accent-3: #2563eb;
+  --success: #059669;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04);
   --radius: 8px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+  --surface-base: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-lowered: #f1f5f9;
+  --border-default: var(--border);
+  --border-subtle: #eef2f7;
+  --text-primary: var(--text);
+  --text-secondary: #475569;
+  --text-muted: var(--muted);
+  --accent-primary: var(--accent);
+  --accent-primary-alpha: rgba(37, 99, 235, 0.14);
+  --accent-primary-subtle: #eff6ff;
+  --success-alpha: rgba(5, 150, 105, 0.18);
+  --success-subtle: #ecfdf5;
+  --warning-alpha: rgba(180, 83, 9, 0.2);
+  --warning-subtle: #fffbeb;
+  --danger-alpha: rgba(220, 38, 38, 0.16);
+  --danger-subtle: #fef2f2;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 20px;
   font-family:
-    "Microsoft YaHei UI", "PingFang SC", "Microsoft YaHei", "Segoe UI",
-    sans-serif;
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
 }
 
 * {
@@ -49,6 +85,17 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 #workspace,
 #plan,
 #profile,
@@ -60,12 +107,13 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--bg) 0%, #0b0d12 54%, var(--bg) 100%);
+  background: var(--bg);
   color: var(--text);
 }
 
 body::selection {
-  background: rgba(167, 139, 250, 0.38);
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--text);
 }
 
 button,
@@ -93,7 +141,7 @@ textarea:focus-visible,
 select:focus-visible {
   outline: 2px solid var(--accent-3);
   outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.14);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 a {
@@ -102,15 +150,7 @@ a {
 }
 
 .grid-background {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(to bottom, black 0%, black 46%, transparent 82%);
+  display: none;
 }
 
 .top-nav {
@@ -123,8 +163,8 @@ a {
   gap: 18px;
   min-height: 64px;
   padding: 0 6vw;
-  border-bottom: 1px solid var(--border);
-  background: rgba(9, 11, 16, 0.9);
+  border-bottom: 1px solid rgba(217, 225, 234, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px);
 }
 
@@ -142,20 +182,18 @@ a {
   width: 30px;
   height: 30px;
   place-items: center;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--accent);
   border-radius: 7px;
-  background:
-    radial-gradient(circle at 68% 28%, rgba(52, 211, 153, 0.32), transparent 28%),
-    linear-gradient(135deg, #12302c, #121821);
-  color: var(--text);
+  background: var(--accent);
+  color: #ffffff;
 }
 
 .brand-mark::before {
   content: "";
   width: 17px;
   height: 12px;
-  border-bottom: 3px solid var(--accent-1);
-  border-left: 3px solid var(--success);
+  border-bottom: 3px solid #ffffff;
+  border-left: 3px solid rgba(255, 255, 255, 0.74);
   border-radius: 2px 0 0 8px;
   transform: skewX(-16deg) translateY(-1px);
 }
@@ -170,27 +208,28 @@ a {
 }
 
 .top-nav nav a:hover {
-  color: var(--text);
+  color: var(--accent);
 }
 
 .nav-health {
   justify-self: end;
   width: max-content;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(217, 225, 234, 0.96);
   border-radius: 999px;
   padding: 6px 10px;
   color: var(--muted);
   font-size: 12px;
-  background: rgba(21, 24, 33, 0.72);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .nav-health.ok {
-  border-color: rgba(52, 211, 153, 0.34);
+  border-color: rgba(16, 185, 129, 0.28);
   color: var(--success);
 }
 
 .nav-health.error {
-  border-color: rgba(251, 113, 133, 0.34);
+  border-color: rgba(241, 91, 112, 0.28);
   color: var(--danger);
 }
 
@@ -199,7 +238,7 @@ a {
 }
 
 .workspace {
-  width: min(1540px, 100%);
+  width: min(1680px, 100%);
   margin: 0 auto;
 }
 
@@ -248,4 +287,167 @@ a {
   gap: 12px;
   width: min(920px, 100%);
   margin-top: 12px;
+}
+
+/* ── Suggested Questions (P2-1) ── */
+.suggested-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.suggested-questions .muted {
+  font-size: 12px;
+  margin-right: 4px;
+  color: var(--muted);
+}
+
+.suggested-question-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.suggested-question-chip:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+}
+
+/* ── Evidence Source Indicator (P2-6) ── */
+.evidence-source-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.evidence-source-indicator.source-verified {
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--success);
+}
+
+.evidence-source-indicator.source-model-knowledge {
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent);
+}
+
+.evidence-source-indicator.source-blocked {
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--warning);
+}
+
+.evidence-source-indicator.source-none {
+  border: 1px solid rgba(165, 173, 189, 0.2);
+  background: rgba(165, 173, 189, 0.05);
+  color: var(--muted);
+}
+
+.evidence-source-indicator-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.evidence-source-indicator.source-verified .evidence-source-indicator-icon {
+  background: rgba(52, 211, 153, 0.22);
+}
+
+.evidence-source-indicator.source-model-knowledge .evidence-source-indicator-icon {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.evidence-source-indicator.source-blocked .evidence-source-indicator-icon {
+  background: rgba(251, 191, 36, 0.22);
+}
+
+.evidence-source-indicator.source-none .evidence-source-indicator-icon {
+  background: rgba(165, 173, 189, 0.12);
+}
+
+/* ── Profile Field Help/Tooltip (P2-2) ── */
+.profile-field-help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.profile-field-help-icon:hover,
+.profile-field-help-icon:focus {
+  background: rgba(37, 99, 235, 0.18);
+  outline: none;
+}
+
+.profile-field-help-text {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+/* ── Profile Advanced Field Hiding (P2-2) ── */
+.profile-field-advanced.hidden-by-experience {
+  display: none;
+}
+
+/* ── Beginner Button (P2-2) ── */
+.beginner-button {
+  border-color: rgba(52, 211, 153, 0.34) !important;
+  background: rgba(52, 211, 153, 0.08) !important;
+  color: var(--success) !important;
+}
+
+.beginner-button:hover {
+  border-color: rgba(52, 211, 153, 0.55) !important;
+  background: rgba(52, 211, 153, 0.16) !important;
+}
+
+/* ── Query Mode Switch in Composer Panel (P2-1) ── */
+#queryModeSwitch {
+  margin-top: 0;
+}
+
+#queryModeSwitch .segmented-control-button {
+  font-size: 12px;
+}
+
+/* ── Expert-only toggle ── */
+[data-expert-only] {
+  /* controlled by JS toggle */;
 }

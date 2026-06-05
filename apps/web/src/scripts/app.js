@@ -1,5 +1,12 @@
-const DEFAULT_API_BASE = "http://127.0.0.1:8010";
-const API_BASE_CANDIDATES = [DEFAULT_API_BASE, "http://127.0.0.1:8011", "http://127.0.0.1:8000"];
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const FULL_QUERY_TIMEOUT_SEC = 120;
+const FULL_QUERY_TIMEOUT_MS = 120000;
+// 生产环境可从页面注入 API 地址，本地仍保留端口自动探测。
+const CONFIGURED_API_BASE = String(
+  window.MARATHON_API_BASE || document.body?.dataset?.apiBase || ""
+).trim().replace(/\/$/, "");
+const DEFAULT_API_BASE = CONFIGURED_API_BASE || LOCAL_API_BASE;
+const API_BASE_CANDIDATES = [DEFAULT_API_BASE, LOCAL_API_BASE, "http://127.0.0.1:8001", "http://127.0.0.1:8010", "http://127.0.0.1:8011"];
 const state = {
   apiBase: DEFAULT_API_BASE,
   apiToken: "",
@@ -24,6 +31,9 @@ const state = {
   activeFocusTrap: null,
   lastSideDrawerTrigger: null,
   lastRequestId: "",
+  // 缓存 /health 和 /llm-options 响应，用于 LLM 状态提示条
+  lastHealthData: null,
+  lastLlmOptionsData: null,
 };
 
 const FEEDBACK_QUICK_PRESETS = {
@@ -127,6 +137,7 @@ const clearDsApiKeyButton = $("clearDsApiKey");
 const dsApiKeyStatus = $("dsApiKeyStatus");
 const healthBox = $("health");
 const navHealth = $("navHealth");
+const llmStatusBanner = $("llmStatusBanner");
 const reportBox = $("report");
 const resultBadge = $("resultBadge");
 const cancelQueryButton = $("cancelQuery");
@@ -181,6 +192,9 @@ const drawerEmptyState = document.querySelector("[data-drawer-empty]");
 const workspaceFlow = $("workspaceFlow");
 const workspaceNextAction = $("workspaceNextAction");
 const workspaceFlowSteps = Array.from(document.querySelectorAll("[data-workspace-state] [data-open-drawer-section], [data-workspace-generate]"));
+const loadKbGovernanceButton = $("loadKbGovernance");
+const kbGovernanceStatus = $("kbGovernanceStatus");
+const kbGovernanceContent = $("kbGovernanceContent");
 
 function getApiBase() {
   return (apiBaseInput.value || state.apiBase).replace(/\/$/, "");
@@ -189,6 +203,12 @@ function getApiBase() {
 function getApiAuthHeaders() {
   const token = String(state.apiToken || apiTokenInput?.value || "").trim();
   return token ? { "X-Marathon-API-Key": token } : {};
+}
+
+function getExpertBearerHeaders() {
+  const token = String(state.apiToken || apiTokenInput?.value || "").trim();
+  // 管理端点使用专家 Bearer token，不复用普通查询的 X-Marathon-API-Key 语义。
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function escapeHtml(value) {
@@ -595,13 +615,14 @@ function updateWorkspaceFlow(stateName = "profile", message = "") {
   const flowMessages = {
     profile: "先完善画像，或直接补充目标赛事后生成训练日历。",
     generating: "正在生成训练日历，完成后会自动引导到训练日历。",
+    answer: "智能对话已返回，优先查看回答卡片和依据提示。",
     calendar: "计划已生成。下一步查看周重点，点击单日卡进入详情和反馈。",
     feedback: "根据单日反馈调整后续训练，历史计划可随时恢复。",
   };
   if (workspaceFlow) {
     workspaceFlow.dataset.workspaceState = stateName;
   }
-  const stateOrder = { profile: 0, generating: 1, calendar: 2, feedback: 3 };
+  const stateOrder = { profile: 0, generating: 1, answer: 2, calendar: 2, feedback: 3 };
   const activeIndex = stateOrder[stateName] ?? 0;
   workspaceFlowSteps.forEach((step, index) => {
     step.classList.toggle("is-current", index === activeIndex);
@@ -770,86 +791,23 @@ function handleFocusTrapKeydown(event) {
   return false;
 }
 
-async function apiFetch(path, options = {}) {
-  const {
-    base,
-    timeoutMs = 30000,
-    signal,
-    headers = {},
-    ...fetchOptions
-  } = options;
-  const apiBase = (base || getApiBase()).replace(/\/$/, "");
-  const controller = new AbortController();
-  let timedOut = false;
-  const timeoutId = timeoutMs
-    ? window.setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, timeoutMs)
-    : null;
-  if (signal) {
-    signal.addEventListener("abort", () => controller.abort(), { once: true });
+// renderHealth 接收完整 /health 响应或 error 信息
+function renderHealth(status, model, provider, error, fullData) {
+  // 缓存 health 数据供 LLM 状态提示条使用
+  if (fullData) {
+    state.lastHealthData = fullData;
+  } else if (!error) {
+    state.lastHealthData = { status, model, provider };
+  } else {
+    state.lastHealthData = null;
   }
-
-  try {
-    const response = await fetch(`${apiBase}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getApiAuthHeaders(),
-        ...headers,
-      },
-      signal: controller.signal,
-      ...fetchOptions,
-    });
-    state.lastRequestId = response.headers.get("X-Request-ID") || state.lastRequestId || "";
-    if (!response.ok) {
-      let detail = `${response.status} ${response.statusText}`;
-      try {
-        const payload = await response.json();
-        detail = payload.detail || detail;
-      } catch {}
-      throw new Error(detail);
-    }
-    const payload = await response.json();
-    if (payload && typeof payload === "object" && state.lastRequestId) {
-      payload.__request_id = state.lastRequestId;
-    }
-    return payload;
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      throw new Error(timedOut ? "请求超时，已停止等待本地训练服务响应。" : "请求已取消。");
-    }
-    throw error;
-  } finally {
-    if (timeoutId) {
-      window.clearTimeout(timeoutId);
-    }
-  }
-}
-
-function explainApiError(error, base = getApiBase()) {
-  const message = String(error?.message || error || "").trim();
-  if (message.includes("请求超时")) {
-    return `${base} 响应超时。健康检查超时通常是本地训练服务未启动、端口被占用，或模型/RAG 初始化卡住。`;
-  }
-  if (
-    message.includes("Failed to fetch") ||
-    message.includes("NetworkError") ||
-    message.includes("Load failed") ||
-    message.includes("Network request failed")
-  ) {
-    return `本地训练服务不可用：无法连接 ${base}。请确认本地服务正在该端口运行，当前推荐端口是 8010。`;
-  }
-  return `${base} 返回错误：${message || "未知错误"}`;
-}
-
-function renderHealth(status, model, provider, error) {
   if (error) {
     healthBox.className = "status-note error";
     navHealth.className = "nav-health error";
-    healthBox.textContent = `离线：${explainApiError(error)}`;
+    healthBox.textContent = `离线：${window.__apiClient.explainApiError(error)}`;
     navHealth.textContent = "服务离线";
     navHealth.hidden = false;
+    renderLlmStatusHint();
     return;
   }
   healthBox.className = "status-note ok";
@@ -857,11 +815,78 @@ function renderHealth(status, model, provider, error) {
   healthBox.textContent = `在线：${status} / ${provider || "unknown"} / ${model || "unknown"}`;
   navHealth.textContent = "服务在线";
   navHealth.hidden = true;
+  renderLlmStatusHint();
+}
+
+// 根据 /health 和 /llm-options 数据在页面顶部显示 LLM 状态提示条
+function renderLlmStatusHint() {
+  if (!llmStatusBanner) return;
+  const health = state.lastHealthData;
+  const llmOpts = state.lastLlmOptionsData;
+
+  // 后端不可达
+  if (!health) {
+    llmStatusBanner.className = "llm-status-banner llm-status-warning";
+    llmStatusBanner.innerHTML = `
+      <strong>训练服务未连接</strong>
+      <span>你仍可先填写我的情况；连接本地服务后即可生成训练日历。</span>
+      <span class="llm-status-actions">
+        <button type="button" class="secondary-button compact-button" data-health-retry>重试连接</button>
+        <button type="button" class="secondary-button compact-button" data-open-drawer-section="settings">查看启动命令</button>
+        <button type="button" class="secondary-button compact-button" data-sample-plan>使用示例计划体验</button>
+      </span>
+    `;
+    llmStatusBanner.hidden = false;
+    return;
+  }
+
+  // DeepSeek API key 是否已配置
+  let dsKeyConfigured = false;
+  if (llmOpts && Array.isArray(llmOpts.providers)) {
+    const dsProvider = llmOpts.providers.find((p) => p.id === "ds");
+    if (dsProvider && dsProvider.api_key_configured) {
+      dsKeyConfigured = true;
+    }
+  }
+
+  // 构建提示消息
+  let message = "";
+  let cssClass = "llm-status-banner";
+
+  if (health.ollama === false) {
+    // Ollama 不可达
+    message = "本地 LLM 不可用，可使用云端推理或骨架模式生成训练计划。";
+    cssClass += " llm-status-warning";
+    if (dsKeyConfigured) {
+      message += " DeepSeek 云端推理已配置，可在侧栏设置中切换模型来源。";
+    }
+  } else if (health.ollama === true && health.status === "degraded") {
+    // Ollama 可用但整体状态降级（如 KB/DB 问题，但仍可能是 LLM 慢的提示）
+    message = "本地 LLM 响应较慢，建议使用 DeepSeek 云端推理获得更快体验。";
+    cssClass += " llm-status-info";
+    if (dsKeyConfigured) {
+      message += " DeepSeek 云端推理已配置，可在侧栏设置中切换模型来源。";
+    }
+  } else if (health.ollama === true && health.status === "healthy") {
+    // 一切正常：仅在 DS key 已配置时提示可切换
+    if (dsKeyConfigured) {
+      message = "DeepSeek 云端推理已配置。若本地 LLM 响应较慢，可在侧栏设置中切换至云端推理。";
+      cssClass += " llm-status-info";
+    }
+  }
+
+  if (message) {
+    llmStatusBanner.className = cssClass;
+    llmStatusBanner.innerHTML = escapeHtml(message);
+    llmStatusBanner.hidden = false;
+  } else {
+    llmStatusBanner.hidden = true;
+  }
 }
 
 async function loadLlmOptions() {
   try {
-    const data = await apiFetch("/llm-options");
+    const data = await window.__apiClient.apiFetch("/llm-options");
     const providers = Array.isArray(data.providers) ? data.providers : [];
     if (providers.length) {
       llmProviderInput.innerHTML = providers
@@ -881,13 +906,16 @@ async function loadLlmOptions() {
     });
     const savedProvider = localStorage.getItem("marathon_llm_provider");
     const savedModel = localStorage.getItem("marathon_llm_model");
-    llmProviderInput.value = savedProvider || data.default?.provider || "ollama";
+    llmProviderInput.value = savedProvider || data.default?.provider || "ds";
     llmProviderInput.dataset.defaults = JSON.stringify(defaultsByProvider);
     llmProviderInput.dataset.models = JSON.stringify(modelsByProvider);
     llmProviderInput.dataset.providerConfig = JSON.stringify(configByProvider);
     renderModelOptions(savedModel || data.default?.model || defaultsByProvider[llmProviderInput.value] || "");
+    // 缓存 llm-options 数据供 LLM 状态提示条使用
+    state.lastLlmOptionsData = data;
+    renderLlmStatusHint();
   } catch (error) {
-    llmProviderInput.value = localStorage.getItem("marathon_llm_provider") || "ollama";
+    llmProviderInput.value = localStorage.getItem("marathon_llm_provider") || "ds";
     llmProviderInput.dataset.models = JSON.stringify({
       ollama: ["qwen2.5:latest"],
       ds: ["deepseek-v4-pro"],
@@ -901,14 +929,16 @@ async function loadLlmOptions() {
       ds: { api_key_configured: false, api_key_config_visible: true },
     });
     renderModelOptions(localStorage.getItem("marathon_llm_model") || "");
+    state.lastLlmOptionsData = null;
+    renderLlmStatusHint();
   }
 }
 
 function renderModelOptions(preferredModel = "") {
   const modelsByProvider = JSON.parse(llmProviderInput.dataset.models || "{}");
   const defaultsByProvider = JSON.parse(llmProviderInput.dataset.defaults || "{}");
-  const provider = llmProviderInput.value || "ollama";
-  const models = modelsByProvider[provider] || [defaultsByProvider[provider] || "qwen2.5:latest"];
+  const provider = llmProviderInput.value || "ds";
+  const models = modelsByProvider[provider] || [defaultsByProvider[provider] || "deepseek-v4-pro"];
   const selected = preferredModel && models.includes(preferredModel)
     ? preferredModel
     : (defaultsByProvider[provider] || models[0] || "");
@@ -1283,9 +1313,14 @@ function sourceTypeLabel(value) {
     action_library: "动作库",
     kb_fallback: "参考知识库",
     llm_expression: "LLM 表达",
-    needs_evidence: "证据不足",
+    needs_evidence: "待补证据",
     plan_only: "计划规则",
     llm_general_knowledge: "模型知识说明",
+    verified_source: "可定位来源",
+    legacy_explanation: "旧知识库解释性来源",
+    graph_hint: "图谱关联线索",
+    model_general_knowledge: "模型常识说明",
+    rejected_source: "已阻断来源",
   };
   return map[value] || text(value, "未标注");
 }
@@ -1335,6 +1370,9 @@ function statusLabel(value) {
     deescalate: "建议降级",
     risk_detected: "检测到风险",
     not_evaluated: "尚未提交反馈自检",
+    feedback_adjusted: "已按反馈调整",
+    stop_for_medical_referral: "暂停并评估",
+    downgrade: "需降级执行",
     legacy_missing: "旧数据缺少审计摘要",
   };
   return map[value] || text(value, "-");
@@ -1346,6 +1384,11 @@ function feedbackStatusLabel(value) {
   if (status === "risk_refused") return "安全阻断，未生成调整建议";
   if (status === "partial_generated") return "部分生成调整建议";
   if (status === "generated") return "已生成调整建议";
+  if (status === "suggested") return "已生成本周调整建议";
+  if (status === "applied") return "已应用到日历";
+  if (status === "needs_manual_choice") return "本周没有可安全安排的训练日";
+  if (status === "blocked_medical") return "不能直接恢复跑步训练";
+  if (status === "dismissed") return "已暂不采用";
   return statusLabel(status || "-");
 }
 
@@ -1434,6 +1477,13 @@ function hasProfileLimitation(value) {
   return Boolean(normalizeLimitationText(value));
 }
 
+function hasAnsweredLimitationField(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return false;
+  // “无”代表用户已完成安全自检，只是不需要作为实际伤病约束传给后端。
+  return !normalizeLimitationText(raw) || hasProfileLimitation(raw);
+}
+
 function formatWeeklyMileage(value) {
   const raw = text(value, "");
   if (!raw) return "未设置";
@@ -1479,6 +1529,24 @@ function buildProfileConstraints(profile) {
   return constraints;
 }
 
+const TRAINING_DAY_BADGES = [
+  { label: "一", aliases: ["周一", "星期一", "mon", "monday"] },
+  { label: "二", aliases: ["周二", "星期二", "tue", "tuesday"] },
+  { label: "三", aliases: ["周三", "星期三", "wed", "wednesday"] },
+  { label: "四", aliases: ["周四", "星期四", "thu", "thursday"] },
+  { label: "五", aliases: ["周五", "星期五", "fri", "friday"] },
+  { label: "六", aliases: ["周六", "星期六", "sat", "saturday"] },
+  { label: "日", aliases: ["周日", "周天", "星期日", "星期天", "sun", "sunday"] },
+];
+
+function renderTrainingDayBadges(availableDays) {
+  const haystack = splitProfileList(availableDays).join(" ").toLowerCase();
+  return TRAINING_DAY_BADGES.map((day) => {
+    const active = day.aliases.some((alias) => haystack.includes(alias.toLowerCase()));
+    return `<span class="training-day-badge ${active ? "is-active" : ""}">${escapeHtml(day.label)}</span>`;
+  }).join("");
+}
+
 function renderRunnerIdentityCard(profile = {}) {
   state.latestProfile = profile || {};
   const level = text(profile.experience_level || profile.experience, "未知水平");
@@ -1486,10 +1554,11 @@ function renderRunnerIdentityCard(profile = {}) {
   const runnerType = goal === "未设置目标" ? `${level}跑者` : goal;
   const constraints = buildProfileConstraints(profile);
   const availableDays = splitProfileList(profile.available_days).slice(0, 4).join("、") || "未填写";
+  const maxSession = constraints.find(([label]) => label === "单次上限")?.[1] || text(profile.max_session_minutes || profile.long_run, "未填写");
   const summaryRows = [
     ["目标", goal],
     ["水平", level],
-    ["可训练日", availableDays],
+    ["单次上限", maxSession],
   ];
   const supportingCopy = constraints.length
     ? `已记录：${constraints.slice(0, 2).map(([label, value]) => `${label} ${value}`).join("；")}`
@@ -1503,6 +1572,9 @@ function renderRunnerIdentityCard(profile = {}) {
       </div>
       <button id="openProfilePanel" class="secondary-button compact-button" type="button">编辑我的情况</button>
     </div>
+    <div class="training-day-badges" aria-label="可训练日">
+      ${renderTrainingDayBadges(profile.available_days)}
+    </div>
     <div class="identity-summary-rows" aria-label="跑者情况摘要">
       ${summaryRows.map(([label, value]) => `
         <div>
@@ -1511,6 +1583,7 @@ function renderRunnerIdentityCard(profile = {}) {
         </div>
       `).join("")}
     </div>
+    <p class="identity-available-days">可训练日：${escapeHtml(availableDays)}</p>
     <p class="identity-supporting-copy">${escapeHtml(supportingCopy)}</p>
   `;
   $("openProfilePanel")?.addEventListener("click", openProfilePanel);
@@ -1577,17 +1650,19 @@ async function saveProfilePanel() {
   saveProfilePanelButton.disabled = true;
   saveProfilePanelButton.textContent = "保存中";
   try {
+    const patch = {};
     for (const input of inputs) {
       const field = PROFILE_EDITOR_GROUPS.flatMap((group) => group.fields).find((item) => item.key === input.dataset.profileEditorField);
-      const value = input.value.trim();
-      latest = { ...latest, [field.key]: value };
-      const payload = await apiFetch(`/profile/default_user/fields/${field.key}`, {
-        method: "PATCH",
-        body: JSON.stringify({ value }),
-        timeoutMs: 3000,
-      });
-      latest = payload.profile || latest;
+      if (!field) continue;
+      patch[field.key] = input.value.trim();
     }
+    latest = { ...latest, ...patch };
+    const payload = await window.__apiClient.apiFetch("/profile", {
+      method: "POST",
+      body: JSON.stringify({ profile: patch }),
+      timeoutMs: 3000,
+    });
+    latest = payload.profile || latest;
     fillProfileDraft(profileApiToDraft(latest));
     localStorage.setItem("marathon-profile-draft", JSON.stringify(getProfileDraft()));
     refreshPlanStateAfterProfileSave(latest);
@@ -1708,7 +1783,7 @@ function actionableProfileMissingFields(draft = getProfileDraft()) {
   if (!ability) missing.push("当前能力或月跑量");
   if (!normalized.raceDate) missing.push("比赛日期");
   if (!normalized.availableDays) missing.push("可训练日");
-  if (!normalized.limitations) missing.push("伤病/疲劳限制（没有可写“无”）");
+  if (!hasAnsweredLimitationField(normalized.limitations)) missing.push("伤病/疲劳限制（没有可写“无”）");
   return missing;
 }
 
@@ -1735,6 +1810,9 @@ function profileDraftToApi(draft) {
 }
 
 function profileApiToDraft(profile) {
+  const injuryHistory = Array.isArray(profile.injury_history)
+    ? profile.injury_history.join("、")
+    : profile.injury_history || "";
   return normalizeProfileDraft({
     goal: profile.goal || "",
     experience: profile.experience_level || profile.experience || "",
@@ -1751,7 +1829,7 @@ function profileApiToDraft(profile) {
       : profile.available_days || "",
     longRun: profile.max_session_minutes || profile.long_run || "",
     targetPace: profile.target_pace || profile.target_half_time || profile.target_time || "",
-    limitations: profile.injury || profile.recovery_state || profile.fatigue || "",
+    limitations: profile.injury || profile.recovery_state || profile.fatigue || injuryHistory || "无",
   });
 }
 
@@ -1811,7 +1889,7 @@ async function saveProfileDraft() {
   const draft = getProfileDraft();
   localStorage.setItem("marathon-profile-draft", JSON.stringify(draft));
   try {
-    const payload = await apiFetch("/profile/default_user", {
+    const payload = await window.__apiClient.apiFetch("/profile/default_user", {
       method: "PUT",
       body: JSON.stringify({
         user_id: "default_user",
@@ -1829,7 +1907,7 @@ async function saveProfileDraft() {
 
 async function loadProfileDraft() {
   try {
-    const payload = await apiFetch("/profile/default_user");
+    const payload = await window.__apiClient.apiFetch("/profile/default_user");
     fillProfileDraft(profileApiToDraft(payload.profile || {}));
     renderRunnerIdentityCard(payload.profile || {});
     profileStatus.textContent = "已同步";
@@ -1863,6 +1941,19 @@ function getPlanHistory() {
   }
 }
 
+function restorePlanResponse(response, badge = "历史计划") {
+  state.lastResponse = response;
+  renderReport(state.lastResponse);
+  renderCalendar(state.lastResponse);
+  renderEvidencePreview(state.lastResponse);
+  renderStatusPanel(state.lastResponse);
+  renderAdjustmentHistory(state.lastResponse);
+  tokenUsageBox.textContent = formatTokenUsage(state.lastResponse.token_usage);
+  auditScoresBox.textContent = formatAuditScores(state.lastResponse.audit_scores);
+  guidedQuestionsBox.textContent = renderQuestions(state.lastResponse.guided_questions);
+  resultBadge.textContent = badge;
+}
+
 function renderLocalPlanHistory() {
   const items = getPlanHistory();
   if (!items.length) {
@@ -1893,13 +1984,7 @@ function renderLocalPlanHistory() {
     button.addEventListener("click", () => {
       const item = getPlanHistory()[Number(button.dataset.historyIndex)];
       if (!item?.response) return;
-      state.lastResponse = item.response;
-      renderReport(item.response);
-      renderCalendar(item.response);
-      renderEvidencePreview(item.response);
-      tokenUsageBox.textContent = formatTokenUsage(item.response.token_usage);
-      auditScoresBox.textContent = formatAuditScores(item.response.audit_scores);
-      guidedQuestionsBox.textContent = renderQuestions(item.response.guided_questions);
+      restorePlanResponse(item.response, "本地历史");
     });
   });
   historyList.querySelectorAll("[data-delete-history-index]").forEach((button) => {
@@ -1909,7 +1994,7 @@ function renderLocalPlanHistory() {
 
 async function renderPlanHistory() {
   try {
-    const payload = await apiFetch("/plans");
+    const payload = await window.__apiClient.apiFetch("/plans");
     const plans = payload.plans || [];
     if (plans.length) {
       const visiblePlans = state.historyExpanded ? plans.slice(0, 12) : plans.slice(0, 2);
@@ -1965,7 +2050,7 @@ async function deleteSavedPlan(planId) {
   if (!planId) return;
   if (!window.confirm("确认删除这条已保存计划吗？")) return;
   try {
-    await apiFetch(`/plans/${encodeURIComponent(planId)}`, { method: "DELETE" });
+    await window.__apiClient.apiFetch(`/plans/${encodeURIComponent(planId)}`, { method: "DELETE" });
     if (state.lastResponse?.training_plan_id === planId) {
       clearResult();
     }
@@ -1994,7 +2079,7 @@ function parseEventContent(event) {
 async function loadSavedPlan(planId) {
   if (!planId) return;
   try {
-    const detail = await apiFetch(`/plans/${encodeURIComponent(planId)}`);
+    const detail = await window.__apiClient.apiFetch(`/plans/${encodeURIComponent(planId)}`);
     const response = {
       structured_training_plan: detail.structured_training_plan || {},
       structured_report: {
@@ -2032,6 +2117,12 @@ async function loadSavedPlan(planId) {
             workflow_trace: eventContent.workflow_trace || event.workflow_trace || detail.structured_training_plan?.workflow_trace || detail.workflow_trace || {},
             latest_feedback: eventContent.latest_feedback || event.latest_feedback,
             adaptive_adjustment: eventContent.adaptive_adjustment || event.adaptive_adjustment,
+            feedback_effect: eventContent.feedback_effect || event.feedback_effect,
+            latest_feedback_effect: eventContent.latest_feedback_effect || event.latest_feedback_effect,
+            feedback_replan: eventContent.feedback_replan || event.feedback_replan,
+            generation_status: eventContent.generation_status || event.generation_status,
+            adjustment_hint: eventContent.adjustment_hint || event.adjustment_hint,
+            card_status: eventContent.card_status || event.card_status,
             trace: eventContent.trace || event.trace || {},
           });
           }),
@@ -2042,15 +2133,13 @@ async function loadSavedPlan(planId) {
       workflow_trace: detail.workflow_trace || detail.structured_training_plan?.workflow_trace || {},
       execution_status_summary: detail.execution_status_summary || {},
       adjustment_history: detail.adjustment_history || [],
+      training_plan_review: detail.training_plan_review || detail.structured_training_plan?.training_plan_review || {},
+      evidence_chain: detail.evidence_chain || detail.structured_training_plan?.evidence_chain || {},
       token_usage: {},
       audit_scores: {},
       guided_questions: [],
     };
-    state.lastResponse = response;
-    renderReport(response);
-    renderCalendar(response);
-    renderEvidencePreview(response);
-    resultBadge.textContent = "历史计划";
+    restorePlanResponse(response, "历史计划");
   } catch (error) {
     historyList.innerHTML = `<div class="empty-state">历史计划加载失败：${escapeHtml(error.message)}</div>`;
   }
@@ -2069,7 +2158,7 @@ async function saveCurrentPlanSnapshot() {
   }
   if (structuredPlan?.week_plans?.length) {
     try {
-      await apiFetch("/plans", {
+      await window.__apiClient.apiFetch("/plans", {
         method: "POST",
         body: JSON.stringify({
           user_id: "default_user",
@@ -2125,8 +2214,9 @@ function collectFeedbackPayload(root = dayModalContent) {
   const pain = getFeedbackField(root, "pain")?.value || "没有疼痛";
   const sleep = getFeedbackField(root, "sleep")?.value || "良好";
   const notes = (getFeedbackField(root, "notes")?.value || "").trim();
+  const scheduleConstraints = (getFeedbackField(root, "scheduleConstraints")?.value || "").trim();
   const medical_red_flags = selectedMedicalRedFlags(root);
-  return { completion, fatigue, pain, sleep, notes, medical_red_flags };
+  return { completion, fatigue, pain, sleep, notes, scheduleConstraints, medical_red_flags };
 }
 
 function buildFeedbackPrompt(payload, day = state.selectedDay) {
@@ -2217,6 +2307,145 @@ function applyLatestFeedbackToDayList(days, selectedDay, feedbackSummary, feedba
   return updated;
 }
 
+function feedbackAffectedEvents(payload, fallbackDays = []) {
+  const persisted = Array.isArray(payload?.affected_events) ? payload.affected_events.filter(Boolean) : [];
+  return persisted.length ? persisted : fallbackDays;
+}
+
+function feedbackEffectForDay(day) {
+  const effect = day?.feedback_effect || day?.latest_feedback_effect;
+  return effect && typeof effect === "object" ? effect : null;
+}
+
+function feedbackEffectStatusLabel(effect = {}) {
+  if (effect.action === "stop_for_medical_referral") return "暂停并评估";
+  if (effect.action === "downgrade") return "需降级执行";
+  return statusLabel(effect.action || "feedback_adjusted");
+}
+
+function feedbackEventMatchesDay(affectedEvent, day) {
+  if (!affectedEvent || !day) return false;
+  const affectedIds = [affectedEvent.event_id, affectedEvent.id].map((item) => String(item || "").trim()).filter(Boolean);
+  const dayIds = [day.event_id, day.id].map((item) => String(item || "").trim()).filter(Boolean);
+  if (affectedIds.length && dayIds.some((id) => affectedIds.includes(id))) return true;
+  const affectedKeys = new Set(dayKeyCandidates({
+    day_key: affectedEvent.day_key,
+    day_label: affectedEvent.day_label,
+    date: affectedEvent.scheduled_date || affectedEvent.date,
+  }).map((item) => String(item || "").trim()).filter(Boolean));
+  return affectedKeys.size ? dayKeyCandidates(day).some((key) => affectedKeys.has(String(key || "").trim())) : false;
+}
+
+function applyFeedbackEffectsToDayList(days, affectedEvents = []) {
+  if (!Array.isArray(days) || !affectedEvents.length) return false;
+  let updated = false;
+  days.forEach((day, index) => {
+    const affected = affectedEvents.find((item) => feedbackEventMatchesDay(item, day));
+    if (!affected?.feedback_effect) return;
+    const effect = affected.feedback_effect;
+    // 后端已经做过安全判断，前端只叠加可见影响层，不改写原始训练处方。
+    days[index] = {
+      ...day,
+      feedback_effect: effect,
+      latest_feedback_effect: effect,
+      card_status: day.card_status || (effect.action === "stop_for_medical_referral" ? "medical_referral" : "feedback_adjusted"),
+      generation_status: day.generation_status || (effect.action === "stop_for_medical_referral" ? "medical_referral" : "feedback_adjusted"),
+      adjustment_hint: effect.adjusted_instruction || day.adjustment_hint,
+    };
+    updated = true;
+  });
+  return updated;
+}
+
+function buildFeedbackEffectHtml(day) {
+  const effect = feedbackEffectForDay(day);
+  if (!effect) return "";
+  const reasons = Array.isArray(effect.reason_codes) ? effect.reason_codes.map(statusLabel).join(" / ") : statusLabel(effect.reason_codes);
+  return `
+    <section class="feedback-result-card feedback-effect-card" data-feedback-effect>
+      <div class="day-card-top">
+        <strong>已按反馈调整</strong>
+        <span>${escapeHtml(feedbackEffectStatusLabel(effect))}</span>
+      </div>
+      <p>${escapeHtml(effect.reason || "这一天受反馈影响，执行前按调整建议处理。")}</p>
+      <div class="feedback-result-grid">
+        <div><span>受反馈影响</span><strong>${escapeHtml(effect.source_feedback_id || "已保存反馈")}</strong></div>
+        <div><span>调整原因</span><strong>${escapeHtml(reasons || "-")}</strong></div>
+        <div><span>调整后执行建议</span><strong>${escapeHtml(effect.adjusted_instruction || "按降级建议执行。")}</strong></div>
+        <div hidden data-expert-only><span>原主课</span><strong>${escapeHtml(effect.original_main_set || "-")}</strong></div>
+      </div>
+    </section>`;
+}
+
+function buildFeedbackReplanHtml(feedback_replan = {}, feedbackId = "") {
+  const patches = Array.isArray(feedback_replan.patches) ? feedback_replan.patches : [];
+  if (!feedback_replan.status && !patches.length) return "";
+  const status = feedback_replan.status || "suggested";
+  const blockedReason = feedback_replan.audit?.blocked_reason || "";
+  const patchHtml = patches.length
+    ? patches.map((patch) => {
+      const original = patch.original || {};
+      const suggested = patch.suggested || {};
+      const targetDay = patch.target_day ? ` · 目标：${patch.target_day}` : "";
+      return `
+        <li>
+          <strong>${escapeHtml(original.title || "后续训练日")}</strong>
+          <span>原计划：${escapeHtml(original.main_set || "-")}</span>
+          <span>建议：${escapeHtml(suggested.main_set || "-")}${escapeHtml(targetDay)}</span>
+          <em>${escapeHtml(patch.reason || suggested.reason || "根据反馈保守调整。")}</em>
+        </li>`;
+    }).join("")
+    : `<li>${escapeHtml(blockedReason || (status === "needs_manual_choice" ? "本周没有可安全安排的训练日，请修改本周时间或先休息。" : "当前没有可执行 patch；医疗红旗不能直接恢复，请先完成专业评估。"))}</li>`;
+  const disabledAttr = feedbackId ? "" : " disabled";
+  const appliedAttr = status === "applied" ? " data-replan-applied-highlight" : "";
+  const recoverHint = status === "blocked_medical" ? "<p>不能直接恢复跑步主课，需要专业医疗评估通过后再复核。</p>" : "";
+  return `
+    <section class="feedback-result-card feedback-replan-card" data-feedback-replan${appliedAttr}>
+      <div class="day-card-top">
+        <strong>局部重规划建议</strong>
+        <span>${escapeHtml(feedbackStatusLabel(status))}</span>
+      </div>
+      ${recoverHint}
+      <ul class="feedback-replan-patches">${patchHtml}</ul>
+      <div class="modal-actions compact-feedback-actions">
+        <button type="button" class="primary-button" data-feedback-replan-action="accept"${disabledAttr}>按调整执行</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="replan"${disabledAttr}>重新排本周</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="update_availability"${disabledAttr}>修改本周时间</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="recover"${disabledAttr}>我已恢复，申请复核</button>
+        <button type="button" class="secondary-button" data-feedback-replan-action="dismiss"${disabledAttr}>暂不采用</button>
+      </div>
+    </section>`;
+}
+
+function applyFeedbackReplanToDayList(days, feedback_replan = {}) {
+  if (!Array.isArray(days) || !feedback_replan?.patches?.length) return false;
+  let updated = false;
+  const patchByEventId = new Map(feedback_replan.patches.map((patch) => [String(patch.event_id || ""), patch]));
+  days.forEach((day) => {
+    const eventId = String(day?.event_id || day?.id || "");
+    const patch = patchByEventId.get(eventId);
+    if (!patch) return;
+    // 前端只叠加建议状态，不直接改写主课，避免用户未确认时误展示为已执行。
+    day.feedback_replan = { ...feedback_replan, patches: [patch] };
+    updated = true;
+  });
+  return updated;
+}
+
+function applyFeedbackReplanToLastResponse(feedback_replan = {}) {
+  if (!state.lastResponse || !feedback_replan?.patches?.length) return;
+  const response = state.lastResponse;
+  const calendar = getCalendar(response);
+  const structuredReport = getStructuredReport(response);
+  const structuredPlan = getStructuredPlan(response);
+  applyFeedbackReplanToDayList(calendar.days, feedback_replan);
+  applyFeedbackReplanToDayList(structuredReport.monthly_training_calendar?.days, feedback_replan);
+  applyFeedbackReplanToDayList(response.monthly_training_calendar?.days, feedback_replan);
+  applyFeedbackReplanToDayList(response.daily_schedule_cards, feedback_replan);
+  applyFeedbackReplanToDayList(structuredReport.daily_schedule_cards, feedback_replan);
+  (structuredPlan.week_plans || []).forEach((week) => applyFeedbackReplanToDayList(week.days, feedback_replan));
+}
+
 function latestFeedbackHistoryEntry(selectedDay, feedbackSummary, payload, feedbackContext = {}) {
   return {
     feedback_id: feedbackSummary.feedback_id || payload?.feedback_id || "",
@@ -2228,11 +2457,12 @@ function latestFeedbackHistoryEntry(selectedDay, feedbackSummary, payload, feedb
     risk_gate: feedbackSummary.risk_gate || payload?.risk_gate || {},
     protocol_recheck: feedbackSummary.protocol_recheck || payload?.protocol_recheck || {},
     adaptive_adjustment: feedbackSummary,
-    affected_events: affectedDaysAfterFeedback(selectedDay).map((day) => ({
+    affected_events: feedbackAffectedEvents(payload, affectedDaysAfterFeedback(selectedDay)).map((day) => ({
       event_id: day.event_id || day.id || "",
       day_key: day.day_key || day.day_label || day.date || "",
-      day_label: day.day_label || day.date || day.day || "",
+      day_label: day.day_label || day.scheduled_date || day.date || day.day || "",
       training_type: day.training_type || day.workout_type || "",
+      feedback_effect: day.feedback_effect || {},
     })),
   };
 }
@@ -2262,8 +2492,15 @@ function applyLatestFeedbackToLastResponse(payload, selectedDay = state.selected
   applyLatestFeedbackToDayList(response.monthly_training_calendar?.days, selectedDay, feedbackSummary, feedbackContext);
   applyLatestFeedbackToDayList(response.daily_schedule_cards, selectedDay, feedbackSummary, feedbackContext);
   applyLatestFeedbackToDayList(structuredReport.daily_schedule_cards, selectedDay, feedbackSummary, feedbackContext);
+  const affectedEvents = feedbackAffectedEvents({ affected_events: payload.affected_events }, []);
+  applyFeedbackEffectsToDayList(calendar.days, affectedEvents);
+  applyFeedbackEffectsToDayList(structuredReport.monthly_training_calendar?.days, affectedEvents);
+  applyFeedbackEffectsToDayList(response.monthly_training_calendar?.days, affectedEvents);
+  applyFeedbackEffectsToDayList(response.daily_schedule_cards, affectedEvents);
+  applyFeedbackEffectsToDayList(structuredReport.daily_schedule_cards, affectedEvents);
   (structuredPlan.week_plans || []).forEach((week) => {
     applyLatestFeedbackToDayList(week.days, selectedDay, feedbackSummary, feedbackContext);
+    applyFeedbackEffectsToDayList(week.days, affectedEvents);
   });
   if (state.selectedDay) {
     state.selectedDay = {
@@ -2271,6 +2508,9 @@ function applyLatestFeedbackToLastResponse(payload, selectedDay = state.selected
       latest_feedback: feedbackSummary,
       adaptive_adjustment: feedbackSummary,
     };
+  }
+  if (payload?.feedback_replan) {
+    applyFeedbackReplanToLastResponse(payload.feedback_replan);
   }
   mergeLatestFeedbackIntoAdjustmentHistory(response, selectedDay, feedbackSummary, payload, feedbackContext);
   return feedbackSummary;
@@ -2381,6 +2621,7 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
   const productStatus = payload?.generation_status || riskGate.product_status || adjustment.product_status || "-";
   const saveStatus = payload?.feedback_id ? "反馈已保存" : "仅计算未保存";
   if (isMedicalReferral) {
+    const referralState = payload?.generation_status || riskGate.product_status || adjustment.product_status || "medical_referral";
     const medicalCopy = {
       rationale: "检测到胸痛、头晕、疑似热病等医疗红旗时，训练连续性必须让位于安全评估。",
       nextDay: "停止训练，优先休息并进行专业医疗评估；评估前不要安排下一次跑步训练。",
@@ -2392,7 +2633,7 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
       <div class="feedback-result-card medical-referral-card" data-feedback-medical-referral data-feedback-product-state>
         <div class="day-card-top">
           <strong>停止训练</strong>
-          <span>建议专业医疗评估</span>
+          <span>${escapeHtml(feedbackStatusLabel(referralState))}</span>
         </div>
         <p>${escapeHtml(medicalCopy.rationale)}</p>
         <div class="feedback-risk-gate" data-feedback-risk-gate>
@@ -2414,8 +2655,15 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
   }
   const regenerateActionHtml =
     `<button type="button" class="primary-button" data-modal-feedback-action="regenerate">生成调整版计划</button>`;
-  const affectedHtml = affectedDays.length
-    ? affectedDays.map((day) => `<li>${escapeHtml(text(day.day_label || day.date || day.day, "后续训练日"))}：${escapeHtml(displayTrainingTitle(day))}</li>`).join("")
+  const affectedEvents = feedbackAffectedEvents(payload, affectedDays);
+  const affectedHtml = affectedEvents.length
+    ? affectedEvents.map((day) => {
+      const effect = day.feedback_effect || {};
+      const label = text(day.day_label || day.scheduled_date || day.date || day.day, "后续训练日");
+      const title = displayTrainingTitle(day);
+      const instruction = effect.adjusted_instruction ? ` · 调整后执行建议：${effect.adjusted_instruction}` : "";
+      return `<li>${escapeHtml(label)}：${escapeHtml(title || statusLabel(effect.action || "feedback_adjusted"))}${escapeHtml(instruction)}</li>`;
+    }).join("")
     : "<li>后续影响范围待生成调整版计划后确认。</li>";
   return `
     <div class="feedback-result-card">
@@ -2463,9 +2711,66 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
         <span>可能影响的后续训练</span>
         <ul>${affectedHtml}</ul>
       </div>
+      ${buildFeedbackReplanHtml(payload?.feedback_replan || {}, payload?.feedback_id || "")}
       ${regenerateActionHtml}
     </div>
   `;
+}
+
+function focusScheduleConstraintsInput(root = dayModalContent) {
+  const input = getFeedbackField(root, "scheduleConstraints");
+  if (!input) return;
+  // 修改可训练时间时直接聚焦输入框，避免用户点了按钮却不知道下一步在哪里填。
+  input.focus();
+  input.scrollIntoView?.({ block: "center", behavior: "smooth" });
+}
+
+async function submitFeedbackReplanAction(action, root = dayModalContent) {
+  const feedback = state.lastFeedbackResult || {};
+  const feedbackId = feedback.feedback_id || "";
+  const planId = buildFeedbackContext().plan_id || state.lastResponse?.training_plan_id || "";
+  if (!feedbackId || !planId) return;
+  const resultTarget = root?.querySelector?.("[data-feedback-result]");
+  if (action === "update_availability") {
+    focusScheduleConstraintsInput(root);
+  }
+  const payload = collectFeedbackPayload(root);
+  if (resultTarget) {
+    resultTarget.className = "modal-feedback-result loading-state";
+    resultTarget.textContent = "正在处理你的重规划操作...";
+  }
+  try {
+    const response = await window.__apiClient.apiFetch(`/plans/${planId}/feedback/${feedbackId}/actions`, {
+      method: "POST",
+      body: JSON.stringify({
+        action,
+        schedule_constraints: { notes: payload.scheduleConstraints },
+      }),
+    });
+    state.lastFeedbackResult = {
+      ...feedback,
+      feedback_replan: response.feedback_replan,
+      affected_events: response.affected_events || feedback.affected_events || [],
+      plan_diff: response.plan_diff || feedback.plan_diff || {},
+    };
+    applyFeedbackReplanToLastResponse(response.feedback_replan);
+    if (resultTarget) {
+      resultTarget.className = "modal-feedback-result";
+      resultTarget.innerHTML = buildFeedbackResultHtml(state.lastFeedbackResult, affectedDaysAfterFeedback());
+      bindFeedbackReplanActions(resultTarget);
+    }
+  } catch (error) {
+    if (resultTarget) {
+      resultTarget.className = "modal-feedback-result error-state";
+      resultTarget.innerHTML = `<div class="feedback-result-card"><strong>操作失败</strong><p>${escapeHtml(error?.message || "请稍后重试，原计划不会被覆盖。")}</p></div>`;
+    }
+  }
+}
+
+function bindFeedbackReplanActions(root = dayModalContent) {
+  root.querySelectorAll?.("[data-feedback-replan-action]").forEach((button) => {
+    button.addEventListener("click", () => submitFeedbackReplanAction(button.dataset.feedbackReplanAction || "dismiss", dayModalContent));
+  });
 }
 
 async function composeFeedbackPrompt(root = dayModalContent) {
@@ -2560,7 +2865,7 @@ function renderFeedbackContextMissing(resultTarget) {
 }
 
 async function submitFeedbackApi(root = dayModalContent) {
-  const { completion, fatigue, pain, sleep, notes, medical_red_flags } = collectFeedbackPayload(root);
+  const { completion, fatigue, pain, sleep, notes, scheduleConstraints, medical_red_flags } = collectFeedbackPayload(root);
   const feedbackContext = buildFeedbackContext();
   const resultTarget = root?.querySelector?.("[data-feedback-result]");
   const rawText = [
@@ -2570,6 +2875,7 @@ async function submitFeedbackApi(root = dayModalContent) {
     `睡眠恢复：${sleep}`,
     medical_red_flags.length ? `医疗红旗：${medicalRedFlagLabels(medical_red_flags).join("、")}` : "",
     notes ? `补充说明：${notes}` : "",
+    scheduleConstraints ? `本周安排限制：${scheduleConstraints}` : "",
   ].filter(Boolean).join("；");
   if (medical_red_flags.length && resultTarget) {
     resultTarget.className = "modal-feedback-result";
@@ -2589,7 +2895,7 @@ async function submitFeedbackApi(root = dayModalContent) {
       : "正在提交反馈并计算调整建议...";
   }
   try {
-    const payload = await apiFetch("/feedback", {
+    const payload = await window.__apiClient.apiFetch("/feedback", {
       method: "POST",
       body: JSON.stringify({
         user_id: "default_user",
@@ -2608,7 +2914,9 @@ async function submitFeedbackApi(root = dayModalContent) {
           pain_status: pain,
           sleep_quality: sleep,
           notes,
+          schedule_constraints: { notes: scheduleConstraints },
         },
+        schedule_constraints: { notes: scheduleConstraints },
       }),
     });
     payload.save_status = payload.feedback_id ? "saved" : "not_saved";
@@ -2626,6 +2934,7 @@ async function submitFeedbackApi(root = dayModalContent) {
     if (resultTarget) {
       resultTarget.className = "modal-feedback-result";
       resultTarget.innerHTML = buildFeedbackResultHtml(payload, affectedDays);
+      bindFeedbackReplanActions(resultTarget);
       resultTarget.querySelector('[data-modal-feedback-action="regenerate"]')?.addEventListener("click", async () => {
         if (isMedicalReferralFeedback(payload)) return;
         const regenerateButton = resultTarget.querySelector('[data-modal-feedback-action="regenerate"]');
@@ -2638,6 +2947,7 @@ async function submitFeedbackApi(root = dayModalContent) {
           if (resultTarget) {
             resultTarget.className = "modal-feedback-result";
             resultTarget.innerHTML = buildFeedbackResultHtml(payload, affectedDays);
+            bindFeedbackReplanActions(resultTarget);
           }
         } finally {
           regenerateButton.disabled = false;
@@ -2706,9 +3016,13 @@ async function submitFeedbackApi(root = dayModalContent) {
 }
 
 function normalizeEvidencePages(item) {
-  const rawPages = item?.pages || item?.page || item?.page_range || item?.page_number || "";
+  const rawPages = item?.page_hint || item?.locator_hint || item?.pages || item?.page || item?.page_range || item?.page_number || "";
   if (Array.isArray(rawPages)) return rawPages.filter(Boolean).join("-");
   return String(rawPages || "").trim();
+}
+
+function canShowCitationBadge(item) {
+  return Boolean(text(item?.source_url, "") && (text(item?.page, "") || text(item?.section, "")));
 }
 
 function extractModelKnowledgeAnswer(response) {
@@ -2730,20 +3044,26 @@ function extractModelKnowledgeAnswer(response) {
 }
 
 function normalizeEvidenceItem(item, index = 0) {
-  const id = item?.id || item?.evidence_id || item?.citation_label || index + 1;
-  const source = item?.source_name || item?.document || item?.source || item?.file_name || item?.source_file || "证据来源";
-  const excerpt = item?.snippet || item?.excerpt || item?.content || item?.text || item?.summary || item?.body || "";
-  const tier = item?.evidence_tier || item?.tier || item?.evidence_type || item?.source_type || "source";
+  const id = item?.id || item?.evidence_id || item?.citation_label || item?.source_id || item?.chunk_id || index + 1;
+  const tier = item?.display_mode || item?.evidence_tier || item?.tier || item?.evidence_type || item?.source_type || "legacy_explanation";
+  const source = item?.source_label || item?.source_name || item?.document || item?.source || item?.file_name || item?.source_file || "训练依据";
+  const excerpt = item?.text_span || item?.user_facing_summary || item?.snippet || item?.excerpt || item?.content || item?.text || item?.summary || item?.body || "";
+  const locator = item?.locator_hint || item?.section || (item?.page_hint ? `页码提示：${item.page_hint}` : "");
   return {
     id,
     title: source,
     body: excerpt,
     excerpt,
     tier,
+    display_mode: tier,
     evidence_type: item?.evidence_type || sourceTypeLabel(tier),
     page: normalizeEvidencePages(item),
-    source_path: item?.source_path || item?.path || "",
-    relation: item?.relation || item?.decision_relation || item?.note || "该证据为训练安排提供参考依据。",
+    page_hint: item?.page_hint || "",
+    locator_hint: locator,
+    source_url: item?.source_url || "",
+    section: item?.section || "",
+    can_show_citation: canShowCitationBadge(item),
+    relation: item?.user_facing_summary || item?.relation || item?.decision_relation || item?.note || "该证据为训练安排提供参考依据。",
     status: item?.status || (tier === "needs_evidence" ? "missing" : "verified"),
   };
 }
@@ -2785,6 +3105,11 @@ function protocolRuleEvidenceItems(structuredPlan = {}) {
 function collectEvidenceItems(response) {
   const report = getStructuredReport(response);
   const items = [];
+  const canonicalChain = response?.evidence_chain;
+  const canonicalItems = Array.isArray(canonicalChain?.items) ? canonicalChain.items : (Array.isArray(canonicalChain) ? canonicalChain : []);
+  if (canonicalItems.length) {
+    return canonicalItems.slice(0, 12).map((item, index) => normalizeEvidenceItem(item, index));
+  }
   const evidenceBase = report.evidence_base || response?.rag_sources || [];
   if (Array.isArray(evidenceBase)) {
     evidenceBase.slice(0, 8).forEach((item, index) => {
@@ -2863,8 +3188,17 @@ function renderEvidencePreview(response) {
 function buildDayEvidenceItems(day) {
   if (!day) return collectEvidenceItems(state.lastResponse || {});
   const allItems = collectEvidenceItems(state.lastResponse || {});
-  const ids = Array.isArray(day.evidence_ids) ? day.evidence_ids : [];
-  const matched = ids
+  const ids = [];
+  const pushId = (value) => {
+    if (Array.isArray(value)) value.forEach(pushId);
+    else if (value && typeof value === "object") pushId(value.id || value.evidence_id || value.source_id || value.chunk_id);
+    else if (value) ids.push(String(value));
+  };
+  pushId(day.evidence_ids);
+  pushId(day.evidence_id);
+  pushId(day.evidence_refs);
+  if (day.field_sources && typeof day.field_sources === "object") Object.values(day.field_sources).forEach(pushId);
+  const matched = Array.from(new Set(ids))
     .map((id) => allItems.find((item) => String(item.id) === String(id)))
     .filter(Boolean);
   if (matched.length) return matched;
@@ -2935,13 +3269,13 @@ function renderEvidenceDrawerItem(item) {
       </div>
       <h3>${escapeHtml(item.title || "证据来源")}</h3>
       <dl class="evidence-drawer-meta">
-        <div><dt>页码</dt><dd>${escapeHtml(pageText)}</dd></div>
+        <div><dt>定位提示</dt><dd>${escapeHtml(item.locator_hint || pageText)}</dd></div>
         <div><dt>证据类型</dt><dd>${escapeHtml(item.evidence_type || sourceTypeLabel(item.tier))}</dd></div>
         <div><dt>状态</dt><dd>${escapeHtml(statusText)}</dd></div>
       </dl>
+      ${item.can_show_citation ? `<a class="evidence-citation-link" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">查看原文定位</a>` : `<div class="evidence-status-card">${escapeHtml(item.locator_hint || "当前来源不生成可点击引用，仅展示状态与定位提示。")}</div>`}
       <p class="evidence-drawer-excerpt">${escapeHtml(text(item.excerpt || item.body, "暂无摘录"))}</p>
       <p class="evidence-relation-note">${escapeHtml(item.relation || "该证据为训练安排提供参考依据。")}</p>
-      ${item.source_path ? `<small class="evidence-source-path">${escapeHtml(item.source_path)}</small>` : ""}
     </article>
   `;
 }
@@ -2955,6 +3289,7 @@ function openEvidenceDrawer(context = {}, opener = null) {
     ? items.map(renderEvidenceDrawerItem).join("")
     : '<div class="empty-state">当前没有可展示的证据或模型知识说明。</div>';
   evidenceDrawer.classList.add("open");
+  evidenceDrawer.hidden = false;
   evidenceDrawer.setAttribute("aria-hidden", "false");
   activateFocusTrap(evidenceDrawer, closeEvidenceDrawer);
   evidenceDrawerClose.focus();
@@ -2963,6 +3298,7 @@ function openEvidenceDrawer(context = {}, opener = null) {
 function closeEvidenceDrawer() {
   evidenceDrawer.classList.remove("open");
   evidenceDrawer.setAttribute("aria-hidden", "true");
+  evidenceDrawer.hidden = true;
   deactivateFocusTrap(evidenceDrawer);
   state.lastEvidenceDrawerTrigger?.focus();
   state.lastEvidenceDrawerTrigger = null;
@@ -3227,7 +3563,7 @@ function renderRacePrepOverview(response, summary) {
 
 function protocolRecheckActionText(day) {
   if (isRestDay(day)) {
-    return "恢复日；执行前完成疲劳/疼痛自检";
+    return "恢复日";
   }
   if (day?.card_status === "needs_evidence" || day?.evidence_tier === "needs_evidence") {
     return "安排依据不足：先保守查看，不展示高强度细节";
@@ -3237,7 +3573,7 @@ function protocolRecheckActionText(day) {
     return reasons ? `待复核：${reasons}` : "待复核：先降级或跳过高风险主课";
   }
   if (hasActionLibraryMainSet(day)) {
-    return "执行前完成疲劳/疼痛自检";
+    return "已自检";
   }
   return "待复核：先补齐安排依据";
 }
@@ -3256,6 +3592,100 @@ function protocolViolationLabels(day) {
     .join(" / ");
 }
 
+function renderReportMarkdown(markdown) {
+  const source = String(markdown || "").trim();
+  if (!source) return "";
+  const lines = source.split(/\r?\n/);
+  const blocks = [];
+  let listItems = [];
+  let paragraphLines = [];
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) return;
+    blocks.push(`<p>${escapeHtml(paragraphLines.join(" "))}</p>`);
+    paragraphLines = [];
+  };
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    blocks.push(`<ul>${listItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`);
+    listItems = [];
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      flushParagraph();
+      continue;
+    }
+    if (trimmed.startsWith("### ")) {
+      flushParagraph();
+      flushList();
+      blocks.push(`<h3>${escapeHtml(trimmed.slice(4))}</h3>`);
+      continue;
+    }
+    if (trimmed.startsWith("## ")) {
+      flushParagraph();
+      flushList();
+      blocks.push(`<h2>${escapeHtml(trimmed.slice(3))}</h2>`);
+      continue;
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
+      flushParagraph();
+      listItems.push(trimmed.replace(/^[-*]\s+/, ""));
+      continue;
+    }
+    flushList();
+    paragraphLines.push(trimmed);
+  }
+
+  flushParagraph();
+  flushList();
+  return `<div class="report-markdown">${blocks.join("")}</div>`;
+}
+
+function renderAnswerCard(answerCard, uiPolicy = {}) {
+  if (!answerCard || typeof answerCard !== "object") return "";
+  const mustShow = Array.isArray(answerCard.must_show) ? answerCard.must_show : [];
+  const doNotDo = Array.isArray(answerCard.do_not_do) ? answerCard.do_not_do : [];
+  const nextSteps = Array.isArray(answerCard.next_steps) ? answerCard.next_steps : [];
+  const mustNotTruncate = Array.isArray(uiPolicy.must_not_truncate) ? uiPolicy.must_not_truncate : [];
+  const sectionHtml = mustShow.map((section) => {
+    const items = Array.isArray(section.items) ? section.items : [];
+    return `<section class="answer-card-section" data-type="${escapeHtml(section.type || "info")}">
+      <strong>${escapeHtml(section.label || "必看信息")}</strong>
+      ${section.text ? `<p>${escapeHtml(section.text)}</p>` : ""}
+      ${items.length ? `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+    </section>`;
+  }).join("");
+  const extras = [
+    doNotDo.length ? `<section class="answer-card-section warning-card" data-type="do_not_do"><strong>不要做</strong><ul>${doNotDo.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : "",
+    nextSteps.length ? `<section class="answer-card-section" data-type="next_steps"><strong>下一步</strong><ul>${nextSteps.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>` : "",
+  ].filter(Boolean).join("");
+  return `<article class="answer-card" data-answer-card-version="${escapeHtml(answerCard.version || "answer_card.v2")}" data-severity="${escapeHtml(answerCard.severity || "info")}" data-intent="${escapeHtml(answerCard.intent || "qa_card")}">
+    <div class="answer-card-header answer-card-hero">
+      <span>${escapeHtml(answerCard.intent || "qa_card")}</span>
+      <strong>${escapeHtml(answerCard.title || "回答摘要")}</strong>
+      <p>${escapeHtml(answerCard.one_line || "请查看下方必看信息。")}</p>
+    </div>
+    <small class="answer-card-policy">必看内容不截断：${escapeHtml(mustNotTruncate.join("、") || "answer_card")}</small>
+    ${sectionHtml || `<section class="answer-card-section" data-type="summary"><strong>核心结论</strong><p>${escapeHtml(answerCard.one_line || "已生成回答。")}</p></section>`}
+    ${extras}
+  </article>`;
+}
+
+function renderFullReportDetails(response, uiPolicy = {}) {
+  const markdown = String(response?.full_report?.markdown || response?.report || "").trim();
+  if (!markdown) return "";
+  const defaultCollapsed = Array.isArray(uiPolicy.default_collapsed) ? uiPolicy.default_collapsed : [];
+  const openAttr = defaultCollapsed.includes("full_report.markdown") || defaultCollapsed.includes("full_report") ? "" : " open";
+  return `<details class="full-report-details"${openAttr}>
+    <summary>展开完整分析</summary>
+    <div class="callout-card secondary">${renderReportMarkdown(markdown)}</div>
+  </details>`;
+}
+
 function renderReport(response) {
   const summary = summarizePlan(response);
   const generationStatus = String(response?.generation_status || "").trim();
@@ -3264,15 +3694,19 @@ function renderReport(response) {
   const actualWeeks = String(summary.weeks || "");
   if (!summary.hasStructuredPlan) {
     const rawReport = String(response?.report || "").trim();
-    reportBox.className = rawReport ? "report-content" : "empty-state";
-    reportBox.innerHTML = rawReport
-      ? `<div class="callout-card"><span>模型回复</span><p>${escapeHtml(rawReport)}</p></div>
+    const uiPolicy = response?.ui_policy || {};
+    const answerCardHtml = response?.answer_card ? renderAnswerCard(response.answer_card, uiPolicy) : "";
+    reportBox.className = rawReport || answerCardHtml ? "report-content" : "empty-state";
+    reportBox.innerHTML = answerCardHtml || rawReport
+      ? `${answerCardHtml || `<div class="callout-card"><span>模型回复</span><p>${escapeHtml(rawReport)}</p></div>`}
+         ${renderFullReportDetails(response, uiPolicy)}
          <div class="callout-card secondary"><span>结构化计划</span><p>当前响应没有返回可渲染的结构化周计划。请检查模型调用是否成功，或稍后重新生成。</p></div>`
       : "本次没有返回训练计划内容。请检查模型配置或重新生成。";
-    resultBadge.textContent = rawReport ? "缺少结构化计划" : "无结果";
+    resultBadge.textContent = rawReport || answerCardHtml ? "回答可查看" : "无结果";
     return;
   }
   const sections = [
+    response?.answer_card ? renderAnswerCard(response.answer_card, response?.ui_policy || {}) : "",
     renderPhaseOverviewBar(response, summary),
     renderRacePrepOverview(response, summary),
     `<div class="report-summary">
@@ -3305,6 +3739,9 @@ function renderReport(response) {
 
   if (summary.explanationSummary) {
     sections.push(`<div class="callout-card secondary"><span>关键解释</span><p>${escapeHtml(summary.explanationSummary)}</p></div>`);
+  }
+  if (response?.answer_card) {
+    sections.push(renderFullReportDetails(response, response?.ui_policy || {}));
   }
 
   reportBox.className = "report-content";
@@ -3541,6 +3978,7 @@ function renderCalendarStats(days) {
   updateCalendarStat("rest-days", restDays);
   updateCalendarStat("key-sessions", qualityDays);
   calendarCount.textContent = days.length ? `${weeks} 周计划` : "待生成";
+  $("calendar-section")?.classList.toggle("has-calendar-data", days.length > 0);
 }
 
 function parseTrainingDate(day) {
@@ -3581,6 +4019,20 @@ function planPressureLabel(day) {
   const load = numberValue(day?.training_load, 0);
   if (!load) return "计划压力待估算";
   return `计划压力${loadStatus(load).label}`;
+}
+
+function runnerTodayMeta(day) {
+  const isRest = isRestDay(day);
+  const duration = formatDuration(numberValue(day?.duration_min, 0));
+  const intensity = runnerFacingText(day?.intensity_target || day?.pace_range || day?.heart_rate_zone || day?.rpe || day?.zone_range || day?.zone_label || day?.zone, isRest ? "恢复" : "按计划");
+  const mainSet = trustedMainSetText(day, isRest ? "恢复日，无主课安排。" : "点开日卡查看完整主课。");
+  return {
+    type: displayTrainingTitle(day),
+    duration: duration === "-" ? (isRest ? "恢复日" : "待确认") : duration,
+    intensity,
+    mainSet,
+    risk: productStateLabel(dayProductStatus(day)),
+  };
 }
 
 function feedbackCountLabel(days) {
@@ -3638,8 +4090,20 @@ function calendarSafetySummary(days) {
 function renderCalendarActionPanel(response, days) {
   if (!calendarActionPanel) return;
   if (!days.length) {
-    calendarActionPanel.className = "calendar-action-panel empty-state";
-    calendarActionPanel.textContent = "生成后优先显示下一次训练、本周重点、安全提醒和反馈入口。";
+    calendarActionPanel.className = "calendar-action-panel empty-state runner-today-empty";
+    calendarActionPanel.innerHTML = `
+      <article class="calendar-action-card runner-today-card" data-runner-today-card>
+        <span>下一次训练</span>
+        <strong>先生成可执行训练日历</strong>
+        <p>当前还没有训练日。按顺序完善画像、生成训练日历；如果之前保存过计划，可以恢复历史计划继续执行。</p>
+        <div class="runner-today-meta" aria-label="下一步">
+          <div><span>1</span><strong>完善画像</strong></div>
+          <div><span>2</span><strong>生成训练日历</strong></div>
+          <div><span>3</span><strong>恢复历史计划</strong></div>
+        </div>
+        <button type="button" class="primary-button compact-button" data-focus-plan-entry>回到生成入口</button>
+      </article>
+    `;
     return;
   }
   const primaryIndex = primaryTrainingDayIndex(days);
@@ -3651,23 +4115,29 @@ function renderCalendarActionPanel(response, days) {
     "本周以稳定完成计划、观察恢复状态和及时反馈为主。",
   );
   const safety = calendarSafetySummary(days);
-  const duration = formatDuration(numberValue(primaryDay.duration_min, 0));
-  const nextMeta = [
-    duration !== "-" ? duration : "",
-    text(primaryDay.zone_range || primaryDay.zone_label || primaryDay.zone, ""),
-    planPressureLabel(primaryDay),
-  ].filter(Boolean).join(" · ");
+  const todayMeta = runnerTodayMeta(primaryDay);
+  const primaryEffect = feedbackEffectForDay(primaryDay);
   const keyText = weekKeySessions.length
     ? Array.from(new Set(weekKeySessions.map(displayTrainingTitle))).join("、")
     : "本周暂无高强度关键课，优先保证连续性。";
   const safetyAction = safety.filter ? "filter-recheck" : "open-day";
   calendarActionPanel.className = `calendar-action-panel safety-${safety.tone}`;
   calendarActionPanel.innerHTML = `
-    <article class="calendar-action-card primary calendar-action-next">
+    <article class="calendar-action-card primary calendar-action-next runner-today-card" data-runner-today-card>
       <span>下一次训练</span>
-      <strong>${escapeHtml(trainingDayLabel(primaryDay))} · ${escapeHtml(displayTrainingTitle(primaryDay))}</strong>
-      <p>${escapeHtml(nextMeta || "点开日卡查看完整训练安排。")}</p>
-      <button type="button" class="text-action" data-calendar-action="open-day" data-calendar-action-day-index="${primaryIndex}">打开日卡</button>
+      <strong>${escapeHtml(trainingDayLabel(primaryDay))} · ${escapeHtml(todayMeta.type)}</strong>
+      <div class="runner-today-meta" aria-label="下一次训练要点">
+        <div><span>训练类型</span><strong>${escapeHtml(todayMeta.type)}</strong></div>
+        <div><span>时长</span><strong>${escapeHtml(todayMeta.duration)}</strong></div>
+        <div><span>强度</span><strong>${escapeHtml(todayMeta.intensity)}</strong></div>
+        <div><span>风险状态</span><strong>${escapeHtml(todayMeta.risk)}</strong></div>
+      </div>
+      <p><strong>主课</strong>：${escapeHtml(todayMeta.mainSet)}</p>
+      ${primaryEffect ? `<p class="feedback-effect-inline" data-feedback-effect><strong>已按反馈调整</strong>：${escapeHtml(primaryEffect.adjusted_instruction || feedbackEffectStatusLabel(primaryEffect))}</p>` : ""}
+      <div class="runner-today-actions">
+        <button type="button" class="text-action" data-calendar-action="open-day" data-calendar-action-day-index="${primaryIndex}">打开日卡</button>
+        <button type="button" class="text-action" data-calendar-action="open-feedback" data-calendar-action-day-index="${primaryIndex}">记录反馈</button>
+      </div>
     </article>
     <div class="calendar-action-secondary" aria-label="本周摘要">
       <section class="calendar-action-mini">
@@ -3991,16 +4461,24 @@ function renderDayCard(day, index, loadPoint = null) {
   const acuteRatio = acute7 > 0 ? (load / acute7) * 100 : 0;
   const chronicRatio = chronic42 > 0 ? (load / chronic42) * 100 : 0;
   const hoverTitle = `${label}：${title}，${formatDuration(duration)}，${loadInfo.label}。`;
-  const actionGuidance = protocolRecheckActionText(day);
   const productStatus = dayProductStatus(day);
-  const footerStatus = "查看安排";
-  const riskText = needsRecheck ? "先复核" : isRest ? "恢复日" : `课表内${loadInfo.label}`;
+  const effect = feedbackEffectForDay(day);
+  const effectAction = String(effect?.action || effect?.product_status || effect?.status || "").trim();
+  const needsEvidence = productStatus === "needs_evidence";
+  const needsMedicalStop = ["stop_for_medical_referral", "medical_referral", "blocked_medical", "risk_refused"].includes(effectAction);
+  const riskText = effect
+    ? needsMedicalStop ? "先暂停" : "按调整执行"
+    : needsRecheck ? "先确认"
+      : needsEvidence ? "补依据"
+        : isRest ? "恢复优先" : "可执行";
   const durationLabel = isRest ? "恢复日" : formatDuration(duration);
-  const badgeLabel = needsRecheck ? "待复核" : isRest ? "恢复" : isQualityTraining(day) ? "关键课" : "训练";
-  const pressureText = isRest ? "恢复安排" : `训练压力：${loadInfo.label}`;
-  const safetyText = needsRecheck ? "安全：先复核" : "安全：完成自检";
+  const badgeLabel = effect ? "已调整" : needsRecheck ? "待复核" : needsEvidence ? "待补证据" : isRest ? "恢复" : isQualityTraining(day) ? "关键课" : "训练";
+  const pressureText = isRest ? "低负荷" : loadInfo.label;
+  const safetyText = effect ? needsMedicalStop ? "需评估" : "已调整" : needsRecheck ? "先复核" : needsEvidence ? "先查看" : isRest ? "按感觉" : "已自检";
+  const loadTone = isRest ? "recovery" : (needsRecheck || needsEvidence) ? "warning" : loadInfo.className || "stable";
+  const safetyTone = effect ? needsMedicalStop ? "warning" : "feedback" : (needsRecheck || needsEvidence) ? "warning" : "stable";
   return `
-    <button class="day-card ${isRest ? "rest" : ""} ${needsRecheck ? "needs-recheck" : ""} ${loadInfo.className}" data-day-index="${index}" type="button" title="${escapeHtml(hoverTitle)}">
+    <button class="day-card ${isRest ? "rest" : ""} ${isQualityTraining(day) ? "key-session" : ""} ${needsRecheck ? "needs-recheck" : ""} ${loadInfo.className}" data-day-index="${index}" type="button" title="${escapeHtml(hoverTitle)}">
       <div class="day-card-top">
         <strong>${escapeHtml(label)}</strong>
         <span>${escapeHtml(badgeLabel)}</span>
@@ -4008,11 +4486,10 @@ function renderDayCard(day, index, loadPoint = null) {
       <h3>${escapeHtml(title)}</h3>
       <p class="day-card-summary">${escapeHtml(isRest ? durationLabel : `${durationLabel} · ${zone}`)}</p>
       <div class="day-card-essentials" aria-label="日卡要点">
-        <span>${escapeHtml(pressureText)}</span>
-        <span>${escapeHtml(safetyText)}</span>
+        <span class="day-status-chip ${escapeHtml(loadTone)}"><i aria-hidden="true"></i>${escapeHtml(pressureText)}</span>
+        <span class="day-status-chip ${escapeHtml(safetyTone)}"><i aria-hidden="true"></i>${escapeHtml(safetyText)}</span>
       </div>
       <div class="day-risk-pill">${escapeHtml(riskText)}</div>
-      ${buildProductStateHtml(day)}
       <div class="day-load-row" hidden data-expert-only>
         <span>计划代理负荷 ${escapeHtml(formatLoad(load))}${load ? ` · 课表内${escapeHtml(loadInfo.label)}` : ""}</span>
         <span>${escapeHtml(formatDuration(duration))}</span>
@@ -4030,10 +4507,6 @@ function renderDayCard(day, index, loadPoint = null) {
         <span>占42日折算代理周负荷：${escapeHtml(percentLabel(chronicRatio))}</span>
         <small>当日计划代理负荷 ${escapeHtml(formatLoad(load))} · ${escapeHtml(loadInfo.label)}</small>
       </div>
-      <div class="day-card-footer">
-        <small>${escapeHtml(actionGuidance)}</small>
-        <span>${escapeHtml(footerStatus)}</span>
-      </div>
     </button>
   `;
 }
@@ -4047,7 +4520,18 @@ function isWeekGroupExpanded(group, view) {
   if (Object.prototype.hasOwnProperty.call(state.weekCollapseState, stateKey)) {
     return Boolean(state.weekCollapseState[stateKey]);
   }
-  return false;
+  const days = normalizeCalendarDays(state.lastResponse || {});
+  if (!days.length) {
+    return group.firstIndex === 0;
+  }
+  const primaryIndex = primaryTrainingDayIndex(days);
+  if (primaryIndex < 0) {
+    return group.firstIndex === 0;
+  }
+  if (Array.isArray(group.days) && group.days.some((item) => item.index === primaryIndex)) {
+    return true;
+  }
+  return group.firstIndex === 0;
 }
 
 function weekGroupPanelId(group, view) {
@@ -4290,14 +4774,22 @@ function jumpToWeekGroup(stateKey) {
 
 function renderCalendar(response) {
   const days = normalizeCalendarDays(response);
+  const hasStructuredPlan = summarizePlan(response).hasStructuredPlan;
+  const monthGrid = document.getElementById("monthCalendarGrid");
   renderTrainingLoadSummary(response, days);
   renderCalendarStats(days);
   renderCalendarActionPanel(response, days);
   renderStatusPanel(response, days);
   renderAdjustmentHistory(response, days);
   if (!days.length) {
-    setEmpty(calendarBox, "本次返回里没有日历数据。可以尝试明确要求生成训练计划或月历。");
-    calendarScopeHint.textContent = "暂无可切换的日历视图";
+    if (monthGrid) {
+      monthGrid.hidden = true;
+      monthGrid.innerHTML = "";
+    }
+    setEmpty(calendarBox, hasStructuredPlan ? "本次返回里没有日历数据。可以尝试明确要求生成训练计划或月历。" : "智能对话不会改动训练日历；需要训练安排时请切换到“训练日历”。");
+    calendarScopeHint.textContent = hasStructuredPlan ? "暂无可切换的日历视图" : "当前是智能对话结果，日历保持不变";
+    updateWorkspaceSceneStatus();
+    renderGlossaryTermsPanel(response);
     return;
   }
 
@@ -4309,8 +4801,22 @@ function renderCalendar(response) {
   const groups = groupCalendarEntries(visibleEntries, state.calendarView);
   calendarScopeHint.textContent = `${viewLabels[state.calendarView] || "按周"}展示 ${groups.length} 组 / ${visibleEntries.length} 天，已展示完整计划`;
   if (!visibleEntries.length) {
+    if (monthGrid) {
+      monthGrid.hidden = true;
+      monthGrid.innerHTML = "";
+    }
     setEmpty(calendarBox, state.calendarFilter === "recheck" ? "当前没有待复核日。" : "当前筛选下没有关键课。");
+    updateWorkspaceSceneStatus();
+    renderGlossaryTermsPanel(response);
     return;
+  }
+  if (state.calendarView === "month") {
+    if (monthGrid) {
+      renderMonthCalendarGrid(visibleEntries.map(({ day }) => day));
+    }
+  } else if (monthGrid) {
+    monthGrid.hidden = true;
+    monthGrid.innerHTML = "";
   }
   calendarBox.className = state.calendarView === "all" ? "calendar-grid" : "calendar-groups";
   calendarBox.innerHTML = state.calendarView === "all"
@@ -4357,6 +4863,8 @@ function renderCalendar(response) {
       }
     });
   });
+  updateWorkspaceSceneStatus();
+  renderGlossaryTermsPanel(response);
 }
 
 function modalMetric(label, value) {
@@ -4368,6 +4876,28 @@ function buildDayModalSection(title, body, extraClass = "") {
     <section class="modal-section ${extraClass}">
       <span>${escapeHtml(title)}</span>
       <p>${escapeHtml(body)}</p>
+    </section>
+  `;
+}
+
+function buildWorkoutTimelineStep(title, body, extraClass = "") {
+  return `
+    <article class="timeline-step ${extraClass}">
+      <div class="timeline-step-head">
+        <span class="timeline-dot" aria-hidden="true"></span>
+        <strong>${escapeHtml(title)}</strong>
+      </div>
+      <p>${escapeHtml(body)}</p>
+    </article>
+  `;
+}
+
+function buildWorkoutTimeline(warmup, mainSet, cooldown) {
+  return `
+    <section class="workout-timeline" aria-label="训练步骤时间轴，按顺序执行">
+      ${buildWorkoutTimelineStep("1. 热身", warmup, "warmup")}
+      ${buildWorkoutTimelineStep("2. 主课", mainSet, "primary-session")}
+      ${buildWorkoutTimelineStep("3. 冷身", cooldown, "cooldown")}
     </section>
   `;
 }
@@ -4618,7 +5148,7 @@ function buildDayModalHtml(day) {
     isRest ? "通过恢复吸收前序训练刺激，为下一次训练保留状态。" : "服务于本周期的能力建设，保持强度与恢复的平衡。",
   );
   const adjustment = runnerFacingText(
-    day.alternative_workout || day.adjustment_hint || day.risk_adjustment || day.risk_alert,
+    feedbackEffectForDay(day)?.adjusted_instruction || day.alternative_workout || day.adjustment_hint || day.risk_adjustment || day.risk_alert,
     isRest ? "如果状态很好，也不要补高强度；最多增加轻松散步。" : "疲劳明显时降为轻松跑或缩短主课；疼痛时停止跑步并改为恢复活动。",
   );
   const basis = describeDayBasis(day);
@@ -4648,14 +5178,19 @@ function buildDayModalHtml(day) {
       <div class="modal-primary-summary" aria-label="今日训练摘要">
         <div><span>时长</span><strong>${escapeHtml(formatDuration(duration))}</strong></div>
         <div><span>强度</span><strong>${escapeHtml(intensity)}</strong></div>
-        <div><span>安全</span><strong>${escapeHtml(needsRecheck ? "先复核" : "完成自检")}</strong></div>
+        <div><span>安全</span><strong>${escapeHtml(needsRecheck ? "先复核" : "可执行")}</strong></div>
       </div>
-      <div class="modal-session-grid">
-        ${buildDayModalSection("热身", warmup)}
-        ${buildDayModalSection("主课", mainSet, "primary-session")}
-        ${buildDayModalSection("冷身", cooldown)}
-      </div>
-      ${buildTrainingReasonGrid(day, objective, adjustment)}
+      ${buildWorkoutTimeline(warmup, mainSet, cooldown)}
+      ${buildFeedbackEffectHtml(day)}
+      <details class="coach-insights">
+        <summary>
+          <span>可选查看</span>
+          <strong>训练解释与依据</strong>
+        </summary>
+        <div class="coach-insights-body">
+          ${buildTrainingReasonGrid(day, objective, adjustment)}
+        </div>
+      </details>
     </div>
     <div id="dayModalPanelAudit" class="day-modal-panel" role="tabpanel" aria-labelledby="dayModalTabAudit" data-day-modal-panel="audit" hidden>
       ${buildTrustStatusHtml(day)}
@@ -4683,16 +5218,17 @@ function buildDayModalHtml(day) {
     </div>
     <div id="dayModalPanelFeedback" class="day-modal-panel" role="tabpanel" aria-labelledby="dayModalTabFeedback" data-day-modal-panel="feedback" hidden>
       ${buildLatestFeedbackHtml(day)}
+      ${buildFeedbackEffectHtml(day)}
       <div class="modal-actions">
-        <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_done">完成</button>
-        <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_partial">部分</button>
-        <button type="button" class="secondary-button danger-action" aria-pressed="false" data-modal-feedback="feedback_skipped">跳过/不适</button>
+        <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_done">已完成</button>
+        <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_partial">部分完成</button>
+        <button type="button" class="secondary-button" aria-pressed="false" data-modal-feedback="feedback_skipped">不适/未完成</button>
       </div>
       <p class="feedback-selected-summary" data-feedback-selected>已选择：已完成 · 疲劳轻微 · 没有疼痛 · 睡眠良好</p>
       <section class="modal-feedback-panel" data-modal-feedback-form data-feedback-quick-first>
         <div class="modal-actions compact-feedback-actions">
-          <button type="button" class="primary-button" data-modal-feedback-action="submit">提交反馈并计算</button>
-          <button type="button" class="secondary-button" data-modal-feedback-action="compose">生成调整建议</button>
+          <button type="button" class="primary-button" data-modal-feedback-action="submit">记录反馈并计算调整</button>
+          <button type="button" class="secondary-button" data-modal-feedback-action="compose">生成调整说明</button>
         </div>
         <details class="modal-feedback-detail" data-feedback-detail>
           <summary>
@@ -4753,6 +5289,10 @@ function buildDayModalHtml(day) {
               </div>
             </fieldset>
             <label class="wide">
+              <span>本周有没有别的安排</span>
+              <textarea name="scheduleConstraints" data-feedback-field="scheduleConstraints" placeholder="例如：周二周四上课跑不了，需要避开这些日子。"></textarea>
+            </label>
+            <label class="wide">
               <span>补充说明</span>
               <textarea data-feedback-field="notes" placeholder="例如：后半程心率偏高，第二天小腿紧张。"></textarea>
             </label>
@@ -4766,7 +5306,7 @@ function buildDayModalHtml(day) {
     </div>
     <footer class="day-modal-sticky-actions">
       <button type="button" class="secondary-button" data-day-modal-tab="audit">查看依据</button>
-      <button type="button" class="primary-button" data-day-modal-tab="feedback">记录反馈</button>
+      <button type="button" class="primary-button" data-day-modal-tab="feedback">记录完成情况</button>
     </footer>
   `;
 }
@@ -4774,6 +5314,7 @@ function buildDayModalHtml(day) {
 function closeDayModal() {
   dayModal.classList.remove("open");
   dayModal.setAttribute("aria-hidden", "true");
+  dayModal.hidden = true;
   deactivateFocusTrap(dayModal);
   state.lastDayModalTrigger?.focus();
   state.lastDayModalTrigger = null;
@@ -4786,8 +5327,12 @@ function resetDayModalScrollPosition() {
   }
 }
 
-function selectDayModalTab(target = "plan", { focus = false } = {}) {
-  const tabButtons = Array.from(dayModalContent.querySelectorAll('[role="tab"][data-day-modal-tab]'));
+function getDayDetailRoot(element = null) {
+  return element?.closest?.("#calendarDetailContent, #dayModalContent") || dayModalContent;
+}
+
+function selectDayModalTab(target = "plan", { focus = false, root = dayModalContent } = {}) {
+  const tabButtons = Array.from(root.querySelectorAll('[role="tab"][data-day-modal-tab]'));
   const matchedTarget = tabButtons.some((button) => button.dataset.dayModalTab === target) ? target : "plan";
   tabButtons.forEach((item) => {
     const active = item.dataset.dayModalTab === matchedTarget;
@@ -4796,14 +5341,15 @@ function selectDayModalTab(target = "plan", { focus = false } = {}) {
     item.setAttribute("tabindex", active ? "0" : "-1");
     if (active && focus) item.focus();
   });
-  dayModalContent.querySelectorAll("[data-day-modal-panel]").forEach((panel) => {
+  root.querySelectorAll("[data-day-modal-panel]").forEach((panel) => {
     panel.hidden = panel.dataset.dayModalPanel !== matchedTarget;
   });
 }
 
 function handleDayModalTabKeydown(event) {
   if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-  const tabs = Array.from(dayModalContent.querySelectorAll('[role="tab"][data-day-modal-tab]'));
+  const root = getDayDetailRoot(event.currentTarget);
+  const tabs = Array.from(root.querySelectorAll('[role="tab"][data-day-modal-tab]'));
   const currentIndex = Math.max(0, tabs.indexOf(event.currentTarget));
   const lastIndex = tabs.length - 1;
   const nextIndex = event.key === "Home"
@@ -4814,7 +5360,7 @@ function handleDayModalTabKeydown(event) {
         ? (currentIndex - 1 + tabs.length) % tabs.length
         : (currentIndex + 1) % tabs.length;
   event.preventDefault();
-  selectDayModalTab(tabs[nextIndex]?.dataset.dayModalTab || "plan", { focus: true });
+  selectDayModalTab(tabs[nextIndex]?.dataset.dayModalTab || "plan", { focus: true, root });
 }
 
 function handleSegmentedControlKeydown(event, buttons) {
@@ -4890,12 +5436,53 @@ function syncMedicalRedFlagUi(root = dayModalContent) {
   }
 }
 
+function bindDayModalInteractions(root) {
+  if (!root) return;
+  root.querySelectorAll("[data-modal-feedback]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const presetKey = button.dataset.modalFeedback || "feedback_done";
+      applyFeedbackPreset(root, FEEDBACK_QUICK_PRESETS[presetKey]);
+    });
+  });
+  root.querySelector('[data-modal-feedback-action="compose"]')?.addEventListener("click", () => composeFeedbackPrompt(root));
+  root.querySelector('[data-modal-feedback-action="submit"]')?.addEventListener("click", () => submitFeedbackApi(root));
+  root.querySelector('[data-modal-feedback-action="clear"]')?.addEventListener("click", () => {
+    const notes = getFeedbackField(root, "notes");
+    if (notes) notes.value = "";
+    const result = root.querySelector("[data-feedback-result]");
+    if (result) {
+      result.className = "modal-feedback-result empty-state";
+      result.textContent = "提交反馈后，这里会显示明日调整、本周微调和可能影响的后续训练。";
+    }
+  });
+  root.querySelectorAll("[data-evidence-open]").forEach((button) => {
+    button.addEventListener("click", () => {
+      openEvidenceDrawer({ day: state.selectedDay }, button);
+    });
+  });
+  root.querySelectorAll("[data-medical-red-flag]").forEach((input) => {
+    input.addEventListener("change", () => syncMedicalRedFlagUi(root));
+  });
+  root.querySelectorAll("[data-feedback-field]").forEach((input) => {
+    input.addEventListener("change", () => syncFeedbackQuickChoiceUi(root));
+  });
+  root.querySelectorAll("[data-day-modal-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectDayModalTab(button.dataset.dayModalTab || "plan", { focus: button.getAttribute("role") === "tab", root });
+    });
+  });
+  root.querySelectorAll('[role="tab"][data-day-modal-tab]').forEach((button) => {
+    button.addEventListener("keydown", handleDayModalTabKeydown);
+  });
+}
+
 function openDayModal(day, feedbackPreset = null, opener = null) {
   if (!day) return;
   state.selectedDay = day;
   state.lastDayModalTrigger = opener instanceof HTMLElement ? opener : document.activeElement;
   dayModalContent.innerHTML = buildDayModalHtml(day);
   dayModal.classList.add("open");
+  dayModal.hidden = false;
   dayModal.setAttribute("aria-hidden", "false");
   activateFocusTrap(dayModal, closeDayModal);
   dayModalClose.focus();
@@ -4905,42 +5492,7 @@ function openDayModal(day, feedbackPreset = null, opener = null) {
   } else {
     syncFeedbackQuickChoiceUi(dayModalContent, FEEDBACK_QUICK_PRESETS.feedback_done);
   }
-  dayModalContent.querySelectorAll("[data-modal-feedback]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const presetKey = button.dataset.modalFeedback || "feedback_done";
-      applyFeedbackPreset(dayModalContent, FEEDBACK_QUICK_PRESETS[presetKey]);
-    });
-  });
-  dayModalContent.querySelector('[data-modal-feedback-action="compose"]')?.addEventListener("click", () => composeFeedbackPrompt(dayModalContent));
-  dayModalContent.querySelector('[data-modal-feedback-action="submit"]')?.addEventListener("click", () => submitFeedbackApi(dayModalContent));
-  dayModalContent.querySelector('[data-modal-feedback-action="clear"]')?.addEventListener("click", () => {
-    const notes = getFeedbackField(dayModalContent, "notes");
-    if (notes) notes.value = "";
-    const result = dayModalContent.querySelector("[data-feedback-result]");
-    if (result) {
-      result.className = "modal-feedback-result empty-state";
-      result.textContent = "提交反馈后，这里会显示明日调整、本周微调和可能影响的后续训练。";
-    }
-  });
-  dayModalContent.querySelectorAll("[data-evidence-open]").forEach((button) => {
-    button.addEventListener("click", () => {
-      openEvidenceDrawer({ day: state.selectedDay }, button);
-    });
-  });
-  dayModalContent.querySelectorAll("[data-medical-red-flag]").forEach((input) => {
-    input.addEventListener("change", () => syncMedicalRedFlagUi(dayModalContent));
-  });
-  dayModalContent.querySelectorAll("[data-feedback-field]").forEach((input) => {
-    input.addEventListener("change", () => syncFeedbackQuickChoiceUi(dayModalContent));
-  });
-  dayModalContent.querySelectorAll("[data-day-modal-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      selectDayModalTab(button.dataset.dayModalTab || "plan", { focus: button.getAttribute("role") === "tab" });
-    });
-  });
-  dayModalContent.querySelectorAll('[role="tab"][data-day-modal-tab]').forEach((button) => {
-    button.addEventListener("keydown", handleDayModalTabKeydown);
-  });
+  bindDayModalInteractions(dayModalContent);
 }
 
 function renderReferences(target, payload, valueKey, detailKey, emptyMessage) {
@@ -4974,28 +5526,13 @@ function getApiBaseCandidates() {
   ].filter(Boolean)));
 }
 
-async function detectApiBase() {
-  const candidates = getApiBaseCandidates();
-  for (const base of candidates) {
-    try {
-      const data = await apiFetch("/health", { base, timeoutMs: 2500 });
-      apiBaseInput.value = base;
-      state.apiBase = base;
-      state.lastQueryBase = base;
-      localStorage.setItem("marathon-api-base", base);
-      renderHealth(data.status, data.model, data.provider);
-      return true;
-    } catch {}
-  }
-  return false;
-}
-
 async function ping({ autoDetect = false } = {}) {
   try {
-    const data = await apiFetch("/health", { timeoutMs: 2500 });
-    renderHealth(data.status, data.model, data.provider);
+    const data = await window.__apiClient.apiFetch("/health", { timeoutMs: 2500 });
+    // 传入完整 health 数据以支持 LLM 状态提示条
+    renderHealth(data.status, data.model, data.provider, null, data);
   } catch (error) {
-    if (autoDetect && await detectApiBase()) {
+    if (autoDetect && await window.__apiClient.detectApiBase()) {
       return;
     }
     renderHealth("", "", "", error.message);
@@ -5005,8 +5542,8 @@ async function ping({ autoDetect = false } = {}) {
 async function loadMeta() {
   try {
     const [zones, tiers] = await Promise.all([
-      apiFetch("/zone-reference"),
-      apiFetch("/evidence-tier-reference"),
+      window.__apiClient.apiFetch("/zone-reference"),
+      window.__apiClient.apiFetch("/evidence-tier-reference"),
     ]);
     renderReferences(zonesBox, zones, "zones", "zones_detail", "没有强度区间数据");
     renderReferences(tiersBox, tiers, "evidence_tiers", "descriptions", "没有训练依据数据");
@@ -5016,62 +5553,136 @@ async function loadMeta() {
   }
 }
 
+function yesNoLabel(value) {
+  return value ? "是" : "否";
+}
+
+function renderKbGovernanceMetric(label, value) {
+  return `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function renderKbGovernanceList(items = [], emptyText = "暂无待处理项") {
+  if (!items.length) return `<div class="empty-state">${escapeHtml(emptyText)}</div>`;
+  return `
+    <div class="kb-governance-list">
+      ${items.slice(0, 8).map((item) => `
+        <article>
+          <strong>${escapeHtml(text(item.domain_pack || item.subdomain, "未命名 domain"))}</strong>
+          <span>${escapeHtml(text(item.next_action || item.release_gate_impact || item.gap_status, "待补治理动作"))}</span>
+          <em>sources ${escapeHtml(text(item.needed_source_count, 0))} / rules ${escapeHtml(text(item.needed_rule_count, 0))} / tier ${escapeHtml(text(item.required_quality_tier || item.minimum_quality_tier, "-"))}</em>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderKbGovernance(data) {
+  const runtime = data?.runtime || {};
+  const releaseGate = data?.release_gate || {};
+  const domainGapSummary = data?.domain_gap_summary || {};
+  const actionableGaps = Array.isArray(data?.top_actionable_domain_gaps) ? data.top_actionable_domain_gaps : [];
+  const workQueue = Array.isArray(data?.release_work_queue) ? data.release_work_queue : [];
+  const blockers = releaseGate.readiness_blockers || runtime.replacement_blockers || [];
+  kbGovernanceStatus.className = data?.status === "ready" ? "status-note ok" : "status-note error";
+  kbGovernanceStatus.textContent = data?.status === "ready"
+    ? "KB 治理门禁已通过，可继续评估生产替换。"
+    : `KB 治理仍阻塞：${listText(blockers, data?.status || "blocked")}`;
+  kbGovernanceContent.className = "kb-governance-content";
+  kbGovernanceContent.innerHTML = `
+    <div class="kb-governance-grid">
+      ${renderKbGovernanceMetric("can_replace_runtime", yesNoLabel(runtime.can_replace_runtime))}
+      ${renderKbGovernanceMetric("commercial_release_ready", yesNoLabel(releaseGate.commercial_release_ready))}
+      ${renderKbGovernanceMetric("first_batch_release_ready", yesNoLabel(releaseGate.first_batch_release_ready || runtime.first_batch_release_ready))}
+      ${renderKbGovernanceMetric("source deficits", text(domainGapSummary.domain_packs_with_source_deficits, 0))}
+    </div>
+    <section>
+      <h3>Top domain gaps</h3>
+      ${renderKbGovernanceList(actionableGaps, "暂无 domain gap")}
+    </section>
+    <section>
+      <h3>Release work queue</h3>
+      ${renderKbGovernanceList(workQueue, "暂无 release work queue")}
+    </section>
+  `;
+}
+
+async function loadKbGovernance() {
+  if (!kbGovernanceStatus || !kbGovernanceContent) return;
+  const token = String(state.apiToken || apiTokenInput?.value || "").trim();
+  if (!token) {
+    kbGovernanceStatus.className = "status-note error";
+    kbGovernanceStatus.textContent = "请先填写访问令牌，再读取 KB 治理门禁。";
+    return;
+  }
+  kbGovernanceStatus.className = "status-note";
+  kbGovernanceStatus.textContent = "正在读取 KB 治理门禁...";
+  kbGovernanceContent.className = "empty-state";
+  kbGovernanceContent.textContent = "加载中";
+  try {
+    const data = await window.__apiClient.apiFetch("/admin/kb-governance", {
+      headers: getExpertBearerHeaders(),
+      timeoutMs: 5000,
+    });
+    renderKbGovernance(data);
+  } catch (error) {
+    kbGovernanceStatus.className = "status-note error";
+    kbGovernanceStatus.textContent = `KB 治理门禁加载失败：${error.message}`;
+    kbGovernanceContent.className = "empty-state";
+    kbGovernanceContent.textContent = "请确认专家令牌和后端服务状态。";
+  }
+}
+
 function isPlanLikeQuery(query) {
   return /训练计划|周计划|月历|日历|课表|生成计划|制定|安排|备赛|半马|全马|马拉松/.test(query);
 }
 
-function buildQueryPayload(query, responseMode, timeoutSec) {
-  return {
-    query,
-    mode: "team",
-    user_id: "default_user",
-    stream: false,
-    llm_provider: llmProviderInput.value,
-    llm_model: llmModelInput.value.trim(),
-    ds_api_key: llmProviderInput.value === "ds" ? dsApiKeyInput.value.trim() : "",
-    response_mode: responseMode,
-    timeout_sec: timeoutSec,
-  };
-}
-
-async function requestQueryPayloadFromBase(query, base, { planLike, controller, retry = false } = {}) {
-  const responseMode = planLike ? "skeleton" : "full";
-  const timeoutSec = planLike ? (retry ? 90 : 60) : 45;
-  const timeoutMs = planLike ? (retry ? 100000 : 70000) : 52000;
-  return apiFetch("/query", {
-    base,
-    method: "POST",
-    body: JSON.stringify(buildQueryPayload(query, responseMode, timeoutSec)),
-    signal: controller.signal,
-    timeoutMs,
-  });
-}
-
-async function requestQueryPayload(query, { planLike, controller, retry = false } = {}) {
-  const bases = Array.from(new Set([
-    getApiBase(),
-    state.lastQueryBase,
-    ...API_BASE_CANDIDATES,
-  ].filter(Boolean)));
-  let lastError = null;
-  for (const base of bases) {
-    if (controller.signal.aborted) {
-      throw new Error("请求已取消。");
-    }
-    try {
-      const payload = await requestQueryPayloadFromBase(query, base, { planLike, controller, retry });
-      state.lastQueryBase = base;
-      if (apiBaseInput.value !== base) {
-        apiBaseInput.value = base;
-        state.apiBase = base;
-        localStorage.setItem("marathon-api-base", base);
-      }
-      return payload;
-    } catch (error) {
-      lastError = error;
-    }
+function renderEvidenceSourceIndicator(response) {
+  const el = $("evidenceSourceIndicator");
+  if (!el) return;
+  const answerSourceMode = String(response?.answer_source_mode || "").trim();
+  const chainItems = response?.evidence_chain?.items;
+  // 后端 evidence_chain 是对象契约；只用 items 判定，避免把对象误当数组导致来源状态隐藏。
+  const hasEvidenceChain = Array.isArray(chainItems) && chainItems.length > 0;
+  if (!answerSourceMode && !hasEvidenceChain) {
+    el.hidden = true;
+    return;
   }
-  throw lastError || new Error("请求失败。");
+  el.hidden = false;
+  let statusClass = "source-none";
+  let icon = "-";
+  let label = "未绑定外部证据";
+
+  switch (answerSourceMode) {
+    case "verified_source":
+      statusClass = "source-verified";
+      icon = "✓"; // checkmark
+      label = "有科学证据支持";
+      break;
+    case "model_general_knowledge":
+      statusClass = "source-model-knowledge";
+      icon = "i";
+      label = "基于模型通用知识";
+      break;
+    case "blocked_needs_evidence":
+      statusClass = "source-blocked";
+      icon = "!";
+      label = "证据不足，建议仅供参考";
+      break;
+    default:
+      if (hasEvidenceChain) {
+        statusClass = "source-verified";
+        icon = "✓";
+        label = "有科学证据支持";
+      } else if (String(response?.report || "").length > 50) {
+        statusClass = "source-none";
+        icon = "-";
+        label = "未绑定外部证据";
+      }
+      break;
+  }
+
+  el.className = `evidence-source-indicator ${statusClass}`;
+  el.innerHTML = `<span class="evidence-source-indicator-icon">${icon}</span><span>${label}</span>`;
 }
 
 function renderQueryPayload(payload) {
@@ -5079,8 +5690,15 @@ function renderQueryPayload(payload) {
   renderReport(payload);
   renderCalendar(payload);
   renderEvidencePreview(payload);
-  updateWorkspaceFlow("calendar", "训练日历已生成。优先查看周重点，再点开单日卡片反馈调整。");
-  setActiveDrawerSection("calendar");
+  renderEvidenceSourceIndicator(payload);
+  const hasStructuredPlan = summarizePlan(payload).hasStructuredPlan;
+  updateWorkspaceFlow(hasStructuredPlan ? "calendar" : "answer", hasStructuredPlan ? "训练日历已生成。优先查看周重点，再点开单日卡片反馈调整。" : "这是智能对话结果，可在下方查看回答与依据。");
+  if (hasStructuredPlan) {
+    setActiveDrawerSection("calendar");
+  } else {
+    updateWorkspaceFlow("answer", "这是智能对话结果，可在下方查看回答与依据。");
+    setActiveDrawerSection("basis");
+  }
   syncPlanProgressFromPayload(payload);
   tokenUsageBox.textContent = formatTokenUsage(payload.token_usage);
   auditScoresBox.textContent = formatAuditScores(payload.audit_scores);
@@ -5099,9 +5717,18 @@ async function enrichQuery(query, runId, controller) {
     syncPlanProgressFromPayload(state.lastResponse, "enriching");
   }
   try {
-    const payload = await apiFetch("/query", {
+    const payload = await window.__apiClient.apiFetch("/query", {
       method: "POST",
-      body: JSON.stringify(buildQueryPayload(query, "full", 45)),
+      body: JSON.stringify({
+        query,
+        mode: "team",
+        user_id: "default_user",
+        stream: false,
+        llm_provider: llmProviderInput.value,
+        llm_model: llmModelInput.value.trim(),
+        response_mode: "full",
+        timeout_sec: 45,
+      }),
       signal: controller.signal,
       timeoutMs: 52000,
     });
@@ -5132,7 +5759,22 @@ async function enrichQuery(query, runId, controller) {
 
 async function runQuery(textValue) {
   let query = (textValue || queryInput.value || "").trim();
+  const qaMode = currentQueryMode === "qa";
   if (!query) {
+    if (qaMode) {
+      setEmpty(reportBox, "请输入你想问 AI 教练的问题，例如训练安排、伤病预防、补给或恢复。");
+      resultBadge.textContent = "等待提问";
+      queryHint.textContent = "智能对话需要先输入一个具体问题。";
+      renderPlanProgress({
+        percent: 0,
+        activeStep: "connect",
+        status: "idle",
+        phase: "等待问题",
+        signal: "输入问题后即可向 AI 教练提问",
+      });
+      queryInput.focus();
+      return;
+    }
     const draft = getProfileDraft();
     const missingFields = actionableProfileMissingFields(draft);
     if (!missingFields.length) {
@@ -5155,9 +5797,9 @@ async function runQuery(textValue) {
     }
   }
 
-  const planLike = isPlanLikeQuery(query);
+  const planLike = qaMode ? false : isPlanLikeQuery(query);
   capturePlanIntent(query);
-  if (llmProviderInput.value === "openai" && llmProviderInput.dataset.activeProviderConfigured === "false") {
+  if (!planLike && llmProviderInput.value === "openai" && llmProviderInput.dataset.activeProviderConfigured === "false") {
     setEmpty(reportBox, "OpenAI 需要服务端配置 OPENAI_API_KEY。请配置后刷新模型选项，或切换到 Ollama。");
     resultBadge.textContent = "模型未配置";
     renderPlanProgress({
@@ -5170,7 +5812,8 @@ async function runQuery(textValue) {
     return;
   }
   if (
-    llmProviderInput.value === "ds"
+    !planLike
+    && llmProviderInput.value === "ds"
     && llmProviderInput.dataset.activeProviderConfigured === "false"
     && !dsApiKeyInput.value.trim()
   ) {
@@ -5187,10 +5830,15 @@ async function runQuery(textValue) {
     return;
   }
 
-  setBusy("正在生成训练日历...");
+  setBusy(qaMode ? "正在询问 AI 教练..." : "正在生成训练日历...");
   resetPlanProgress();
-  updateWorkspaceFlow("generating", "正在生成训练日历，完成后会自动打开日历。");
-  calendarBox.innerHTML = '<div class="loading-state">正在等待结构化日历</div>';
+  updateWorkspaceFlow(
+    "generating",
+    qaMode ? "正在处理智能对话，回答会显示在下方结果区。" : "正在生成训练日历，完成后会自动打开日历。",
+  );
+  if (planLike) {
+    calendarBox.innerHTML = '<div class="loading-state">正在等待结构化日历</div>';
+  }
   if (planLike) {
     startPlanProgressDrift();
   } else {
@@ -5211,12 +5859,12 @@ async function runQuery(textValue) {
   state.queryRunId = runId;
   state.queryController = controller;
   cancelQueryButton.disabled = false;
-  queryHint.textContent = "正在生成结构化训练日历。";
+  queryHint.textContent = qaMode ? "正在向 AI 教练提问。" : "正在生成结构化训练日历。";
 
   try {
     let payload;
     try {
-      payload = await requestQueryPayload(query, { planLike, controller });
+      payload = await window.__apiClient.requestQueryPayload(query, { planLike, controller });
     } catch (error) {
       if (!planLike || controller.signal.aborted) {
         throw error;
@@ -5230,7 +5878,7 @@ async function runQuery(textValue) {
         signal: "长计划第一次等待超时，正在用更长窗口重试结构化日历",
       });
       queryHint.textContent = "长计划第一次超时，正在自动重试一次。";
-      payload = await requestQueryPayload(query, { planLike, controller, retry: true });
+      payload = await window.__apiClient.requestQueryPayload(query, { planLike, controller, retry: true });
     }
     if (runId !== state.queryRunId || controller.signal.aborted) {
       return;
@@ -5258,7 +5906,7 @@ async function runQuery(textValue) {
       state.queryController = null;
       return;
     }
-    const friendlyError = explainApiError(error, state.lastQueryBase || getApiBase());
+    const friendlyError = window.__apiClient.explainApiError(error, state.lastQueryBase || getApiBase());
     setEmpty(reportBox, `请求失败：${friendlyError}`);
     setEmpty(calendarBox, "无法刷新日历。");
     resultBadge.textContent = "失败";
@@ -5299,7 +5947,8 @@ function clearResult() {
   tokenUsageBox.textContent = "-";
   auditScoresBox.textContent = "-";
   guidedQuestionsBox.textContent = "-";
-  queryHint.textContent = "准备好后生成训练日历";
+  queryHint.textContent = "提交后会优先返回可执行计划。";
+  $("calendar-section")?.classList.remove("has-calendar-data");
   resetPlanProgress();
 }
 
@@ -5309,10 +5958,30 @@ function moveWorkspaceSectionsToDrawer() {
   drawerSections.innerHTML = "";
 }
 
+function setTopNavCurrent(sectionId) {
+  const targetBySection = {
+    plan: "plan",
+    templates: "plan",
+    history: "calendar-section",
+    settings: "plan",
+    calendar: "calendar-section",
+    profile: "profile",
+    basis: "evidence",
+  };
+  const targetId = targetBySection[sectionId] || sectionId;
+  document.querySelectorAll(".top-nav nav a, .mobile-quick-nav a").forEach((link) => {
+    const hrefId = (link.getAttribute("href") || "").replace(/^#/, "");
+    const navId = link.dataset.navSection || hrefId;
+    if (navId === targetId) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+}
+
 function setActiveDrawerSection(sectionId, opener = null) {
   const drawerSectionNodes = Array.from(document.querySelectorAll("[data-drawer-section]"));
   const targetSection = drawerSectionNodes.find((section) => section.dataset.drawerSection === sectionId);
   if (targetSection?.hasAttribute("data-expert-only")) return;
+  setTopNavCurrent(sectionId);
   if (sectionId === "profile") {
     const profileSection = drawerSectionNodes.find((section) => section.dataset.drawerSection === "profile");
     if (profileSection) profileSection.hidden = true;
@@ -5323,7 +5992,7 @@ function setActiveDrawerSection(sectionId, opener = null) {
       button.classList.toggle("is-active", isActive);
       button.setAttribute("aria-current", isActive ? "true" : "false");
     });
-    closeSideDrawer();
+    if (isMobileDrawerMode()) closeSideDrawer();
     openProfilePanel();
     return;
   }
@@ -5332,12 +6001,13 @@ function setActiveDrawerSection(sectionId, opener = null) {
   if (drawer && targetInDrawer) {
     drawer.open = true;
     activateSideDrawerModal(drawer, opener);
-  } else if (drawer) {
+  } else if (drawer && isMobileDrawerMode()) {
     closeSideDrawer();
   }
   drawerSectionNodes.forEach((section) => {
     const isActive = section.dataset.drawerSection === sectionId;
-    section.hidden = !isActive;
+    const isPersistent = section.hasAttribute("data-persistent-section");
+    section.hidden = isPersistent ? false : !isActive;
     section.classList.toggle("is-active", isActive);
   });
   drawerActionButtons.forEach((button) => {
@@ -5375,6 +6045,35 @@ function filterDrawerActions(query) {
   }
 }
 
+function showSamplePlan() {
+  queryInput.value = "请给一个半马新手示例训练日历，我会之后再补充自己的画像。";
+  setActiveDrawerSection("profile");
+  queryHint.textContent = "已填入示例请求；你可以先完善我的情况，服务连接后再生成训练日历。";
+}
+
+document.addEventListener("click", (event) => {
+  const retry = event.target.closest?.("[data-health-retry]");
+  if (retry) {
+    event.preventDefault();
+    ping({ autoDetect: true });
+    loadLlmOptions();
+    return;
+  }
+  const samplePlan = event.target.closest?.("[data-sample-plan]");
+  if (samplePlan) {
+    event.preventDefault();
+    showSamplePlan();
+    return;
+  }
+  const focusPlanEntry = event.target.closest?.("[data-focus-plan-entry]");
+  if (focusPlanEntry) {
+    event.preventDefault();
+    setTopNavCurrent("plan");
+    $("plan")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    queryInput?.focus({ preventScroll: true });
+  }
+});
+
 apiBaseInput.addEventListener("change", () => {
   state.apiBase = getApiBase();
   localStorage.setItem("marathon-api-base", state.apiBase);
@@ -5394,6 +6093,8 @@ apiTokenInput?.addEventListener("change", () => {
   loadMeta();
 });
 
+loadKbGovernanceButton?.addEventListener("click", loadKbGovernance);
+
 llmProviderInput.addEventListener("change", () => {
   renderModelOptions();
   localStorage.setItem("marathon_llm_provider", llmProviderInput.value);
@@ -5402,7 +6103,7 @@ llmProviderInput.addEventListener("change", () => {
 
 providerButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    llmProviderInput.value = button.dataset.providerChoice || "ollama";
+    llmProviderInput.value = button.dataset.providerChoice || "ds";
     renderModelOptions();
     localStorage.setItem("marathon_llm_provider", llmProviderInput.value);
     localStorage.setItem("marathon_llm_model", llmModelInput.value.trim());
@@ -5481,6 +6182,13 @@ document.querySelectorAll("[data-open-drawer-section]").forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
     setActiveDrawerSection(link.dataset.openDrawerSection || "", link);
+  });
+});
+
+document.querySelectorAll('.top-nav nav a[href="#plan"]:not([data-query-nav]), .mobile-quick-nav a[href="#plan"]:not([data-query-nav])').forEach((link) => {
+  link.addEventListener("click", () => {
+    setQueryMode("plan");
+    setTopNavCurrent("plan");
   });
 });
 
@@ -5587,9 +6295,181 @@ document.addEventListener("keydown", (event) => {
 });
 $("loadMeta").addEventListener("click", () => loadMeta());
 $("clearResult").addEventListener("click", clearResult);
+// ── P2-1: Mode toggle (训练日历 / 自由问答) ──
+const queryModeButtons = Array.from(document.querySelectorAll("[data-query-mode]"));
+let currentQueryMode = "plan";
+const suggestedQuestionsEl = $("suggestedQuestions");
+
+function syncWorkspaceIntentCards(mode) {
+  document.querySelectorAll("[data-workspace-intent]").forEach((button) => {
+    const isActive = button.dataset.workspaceIntent === mode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function setQueryMode(mode = "plan") {
+  currentQueryMode = mode === "qa" ? "qa" : "plan";
+  queryModeButtons.forEach((item) => {
+    const active = item.dataset.queryMode === currentQueryMode;
+    item.classList.toggle("active", active);
+    item.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  setTopNavCurrent(currentQueryMode === "qa" ? "dialog" : "plan");
+  updateQueryModeUi();
+  syncWorkspaceIntentCards(currentQueryMode);
+}
+
+queryModeButtons.forEach((button) => {
+  button.addEventListener("click", () => setQueryMode(button.dataset.queryMode || "plan"));
+});
+
+document.querySelectorAll("[data-workspace-intent]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const intent = button.dataset.workspaceIntent === "qa" ? "qa" : "plan";
+    setQueryMode(intent);
+    if (intent === "qa") {
+      queryInput.placeholder = "例如：膝盖疼还能跑吗？跑前吃什么？跑后怎么恢复？";
+      queryHint.textContent = "智能对话只回答问题，不会改动当前训练日历。";
+    } else {
+      queryInput.placeholder = "可留空使用我的情况，或补充目标赛事、可训练日、近期伤病/疲劳。";
+      queryHint.textContent = "训练日历会根据我的情况生成可点击日历。";
+    }
+    queryInput.focus({ preventScroll: true });
+  });
+});
+
+document.querySelectorAll("[data-query-nav]").forEach((link) => {
+  link.addEventListener("click", () => {
+    setQueryMode(link.dataset.queryNav || "qa");
+    setTopNavCurrent("dialog");
+  });
+});
+
+function updateQueryModeUi() {
+  const isQa = currentQueryMode === "qa";
+  const composerTitle = $("composerTitle");
+  if (composerTitle) {
+    composerTitle.textContent = isQa ? "智能对话" : "生成日历";
+  }
+  if (suggestedQuestionsEl) {
+    suggestedQuestionsEl.hidden = !isQa;
+  }
+  if (queryInput) {
+    queryInput.placeholder = isQa
+      ? "向 AI 教练提问，例如：如何预防膝盖疼？跑前应该吃什么？"
+      : "补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用侧栏画像生成。";
+  }
+  const runQueryBtn = $("runQuery");
+  if (runQueryBtn) {
+    runQueryBtn.textContent = isQa ? "向教练提问" : "生成训练日历";
+    runQueryBtn.title = isQa ? "提交问题给 AI 教练" : "根据画像生成训练日历";
+  }
+  const queryHintEl = $("queryHint");
+  if (queryHintEl) {
+    queryHintEl.textContent = isQa ? "准备向 AI 教练提问" : "准备好后生成训练日历";
+  }
+}
+
+// ── P2-1: Suggested question click ──
+if (suggestedQuestionsEl) {
+  suggestedQuestionsEl.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-question]");
+    if (chip && queryInput) {
+      queryInput.value = chip.dataset.question || "";
+      queryInput.focus();
+    }
+  });
+}
+
+// ── P2-1: Quick action template switching ──
+document.addEventListener("click", (event) => {
+  const quickBtn = event.target.closest("[data-prompt]");
+  if (quickBtn && queryInput) {
+    const prompt = quickBtn.dataset.prompt || "";
+    if (prompt.includes("自由问答") || prompt.includes("跑步训练相关问题")) {
+      // Switch to Q&A mode
+      if (currentQueryMode !== "qa") {
+        const qaModeBtn = document.querySelector("[data-query-mode=\"qa\"]");
+        if (qaModeBtn) qaModeBtn.click();
+      } else {
+        updateQueryModeUi();
+      }
+    } else if (prompt.includes("训练日历") || prompt.includes("训练计划")) {
+      if (currentQueryMode !== "plan") {
+        const planModeBtn = document.querySelector("[data-query-mode=\"plan\"]");
+        if (planModeBtn) planModeBtn.click();
+      } else {
+        updateQueryModeUi();
+      }
+    }
+  }
+});
+
+// ── P2-2: "我是新手" button ──
+const beginnerButton = $("beginnerQuickFill");
+const BEGINNER_DEFAULTS = {
+  goal: "健康跑 / 完成第一个 5K 或半马",
+  experience: "新手",
+  lastMonthMileage: "50 km",
+  raceDate: "",
+  availableDays: "周一、周三、周五、周六",
+  longRun: "40 分钟",
+  limitations: "暂无严重伤病",
+};
+
+function applyBeginnerDefaults() {
+  Object.entries(BEGINNER_DEFAULTS).forEach(([key, value]) => {
+    const input = document.querySelector(`[data-profile-field="${key}"]`);
+    if (input) input.value = value;
+  });
+  // Hide advanced fields for beginners
+  document.querySelectorAll(".profile-field-advanced").forEach((el) => {
+    el.classList.add("hidden-by-experience");
+  });
+  // Update derived metrics
+  if (typeof updateProfileDerivedMetrics === "function") {
+    updateProfileDerivedMetrics();
+  }
+  // Save draft
+  if (typeof saveProfileDraft === "function") {
+    saveProfileDraft();
+  }
+  const profileStatusEl = $("profileStatus");
+  if (profileStatusEl) {
+    profileStatusEl.textContent = "新手画像已填充";
+    profileStatusEl.className = "pill muted-pill";
+  }
+}
+
+if (beginnerButton) {
+  beginnerButton.addEventListener("click", applyBeginnerDefaults);
+}
+
+// ── P2-2: Profile experience-level changes ──
+function syncAdvancedFieldVisibility() {
+  const experienceInput = document.querySelector("[data-profile-field=\"experience\"]");
+  if (!experienceInput) return;
+  const value = String(experienceInput.value || "").trim().toLowerCase();
+  const isBeginner = value === "新手" || value === "beginner" || value.includes("新手");
+  document.querySelectorAll(".profile-field-advanced").forEach((el) => {
+    if (isBeginner) {
+      el.classList.add("hidden-by-experience");
+    } else {
+      el.classList.remove("hidden-by-experience");
+    }
+  });
+}
+
+document.querySelectorAll("[data-profile-field=\"experience\"]").forEach((input) => {
+  input.addEventListener("input", syncAdvancedFieldVisibility);
+  input.addEventListener("change", syncAdvancedFieldVisibility);
+});
+
 $("saveProfileDraft").addEventListener("click", saveProfileDraft);
 $("buildProfilePrompt").addEventListener("click", buildProfilePrompt);
 $("runProfilePlan").addEventListener("click", async () => {
+  setQueryMode("plan");
   if (!queryInput.value.trim()) {
     await saveProfileDraft();
   }
@@ -5618,10 +6498,371 @@ if (savedBase) {
 localStorage.removeItem("marathon_ds_api_key");
 dsApiKeyStatus.textContent = "API Key 仅在当前会话内使用；更推荐在服务端配置 DEEPSEEK_API_KEY / DS_API_KEY。";
 
+// ── Integration: Month Calendar View [product-calendar][P1] ──
+
+function renderMonthCalendarGrid(days) {
+  const grid = document.getElementById("monthCalendarGrid");
+  if (!grid) return;
+  if (!days || !days.length) {
+    grid.hidden = true;
+    return;
+  }
+  // Only show month grid in month view
+  if (state.calendarView !== "month") {
+    grid.hidden = true;
+    return;
+  }
+  grid.hidden = false;
+
+  // Group days by month
+  const monthMap = new Map();
+  days.forEach((day, index) => {
+    const date = parseTrainingDate(day);
+    if (!date) return;
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (!monthMap.has(monthKey)) {
+      monthMap.set(monthKey, { key: monthKey, year: date.getFullYear(), month: date.getMonth(), days: [] });
+    }
+    monthMap.get(monthKey).days.push({ day, index, date });
+  });
+
+  if (!monthMap.size) {
+    grid.hidden = true;
+    return;
+  }
+
+  const monthEntries = Array.from(monthMap.values()).sort((a, b) => a.key.localeCompare(b.key));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+  const dayNames = ["日", "一", "二", "三", "四", "五", "六"];
+
+  let html = "";
+
+  monthEntries.forEach((monthData) => {
+    const firstDay = new Date(monthData.year, monthData.month, 1);
+    const lastDay = new Date(monthData.year, monthData.month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    const dayMap = new Map();
+    monthData.days.forEach(({ day, index, date }) => {
+      const dayNum = date.getDate();
+      if (!dayMap.has(dayNum)) dayMap.set(dayNum, []);
+      dayMap.get(dayNum).push({ day, index });
+    });
+
+    const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+    html += `<div class="calendar-month-nav">
+      <button type="button" data-month-prev disabled>←</button>
+      <strong>${monthData.year}年${monthNames[monthData.month]}</strong>
+      <button type="button" data-month-next disabled>→</button>
+    </div>`;
+    html += `<div class="calendar-month-header">${dayNames.map((d) => `<span>${d}</span>`).join("")}</div>`;
+    html += `<div class="calendar-month-grid">`;
+
+    // Empty cells before the first day
+    for (let i = 0; i < startDayOfWeek; i++) {
+      html += `<div class="calendar-month-cell empty" aria-hidden="true"></div>`;
+    }
+
+    for (let d = 1; d <= totalDays; d++) {
+      const dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const isToday = dateStr === todayStr;
+      const entries = dayMap.get(d) || [];
+      const mainEntry = entries[0];
+      const day = mainEntry ? mainEntry.day : null;
+      const index = mainEntry ? mainEntry.index : -1;
+      const isRest = day ? isRestDay(day) : true;
+      const isQuality = day ? isQualityTraining(day) : false;
+      const needsRecheck = day ? requiresProtocolRecheck(day) : false;
+      const hasRace = day ? /race|比赛|赛事/i.test(String(day.training_title || day.main_set || "")) : false;
+      const trainingLabel = day ? displayTrainingTitle(day) : "";
+      const indicatorClass = hasRace ? "race" : needsRecheck ? "recheck" : isQuality ? "quality" : isRest ? "rest" : "default";
+
+      html += `<button class="calendar-month-cell${isToday ? " today" : ""}${entries.length ? "" : " empty"}"
+        type="button"
+        data-month-day-index="${index}"
+        ${!entries.length ? "disabled" : ""}
+        aria-label="${dateStr}${trainingLabel ? "：" + trainingLabel : ""}">
+        <span class="month-day-number">${d}</span>
+        ${trainingLabel ? `<span class="month-day-label">${escapeHtml(trainingLabel.substring(0, 12))}</span>` : ""}
+        <span class="month-day-indicator ${indicatorClass}" aria-hidden="true"></span>
+      </button>`;
+    }
+    html += `</div>`;
+  });
+
+  grid.innerHTML = html;
+
+  // Wire up month day click → open day modal or detail drawer
+  grid.querySelectorAll("[data-month-day-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const dayIndex = parseInt(button.dataset.monthDayIndex, 10);
+      if (isNaN(dayIndex)) return;
+      const response = state.lastResponse;
+      if (!response) return;
+      const days = normalizeCalendarDays(response);
+      const day = days[dayIndex];
+      if (!day) return;
+      if (window.innerWidth <= 768) {
+        openCalendarDetailDrawer(day, dayIndex);
+      } else {
+        openDayModal(day, null, button);
+      }
+    });
+  });
+}
+
+// ── Integration: Calendar Detail Drawer (mobile) [product-calendar][P1] ──
+
+const calendarDetailDrawer = document.getElementById("calendarDetailDrawer");
+const calendarDetailBackdrop = document.getElementById("calendarDetailDrawerBackdrop");
+const calendarDetailContent = document.getElementById("calendarDetailContent");
+
+function openCalendarDetailDrawer(day, index) {
+  if (!calendarDetailDrawer || !calendarDetailContent) return;
+  state.selectedDay = day;
+  calendarDetailContent.innerHTML = buildDayModalHtml(day);
+  calendarDetailDrawer.classList.add("open");
+  calendarDetailDrawer.hidden = false;
+  calendarDetailDrawer.setAttribute("aria-hidden", "false");
+  if (calendarDetailBackdrop) {
+    calendarDetailBackdrop.hidden = false;
+    calendarDetailBackdrop.classList.add("open");
+  }
+  bindDayModalInteractions(calendarDetailContent);
+}
+
+function closeCalendarDetailDrawer() {
+  if (!calendarDetailDrawer) return;
+  calendarDetailDrawer.classList.remove("open");
+  calendarDetailDrawer.setAttribute("aria-hidden", "true");
+  calendarDetailDrawer.hidden = true;
+  if (calendarDetailBackdrop) {
+    calendarDetailBackdrop.classList.remove("open");
+    calendarDetailBackdrop.hidden = true;
+  }
+}
+
+if (calendarDetailBackdrop) {
+  calendarDetailBackdrop.addEventListener("click", closeCalendarDetailDrawer);
+}
+document.querySelector("[data-calendar-detail-close]")?.addEventListener("click", closeCalendarDetailDrawer);
+
+// ── Integration: Workspace Scene Status [product-workspace][P1] ──
+
+function updateWorkspaceSceneStatus() {
+  const container = document.getElementById("workspaceSceneStatus");
+  if (!container) return;
+
+  const hasPlan = Boolean(state.lastResponse && normalizeCalendarDays(state.lastResponse).length);
+  const hasProfile = Boolean(state.latestProfile && Object.keys(state.latestProfile).length > 1);
+  const hasRecentAdjustment = Boolean(state.lastFeedbackResult);
+
+  let scene = "first_time";
+  if (hasRecentAdjustment) scene = "post_feedback";
+  else if (hasPlan) scene = "in_cycle";
+  else if (hasProfile) scene = "free_explore";
+
+  let statusHtml = "";
+  if (hasPlan) {
+    const days = normalizeCalendarDays(state.lastResponse);
+    const primaryIndex = primaryTrainingDayIndex(days);
+    const primaryDay = days[primaryIndex];
+    const statusSummary = frontendStatusFromDays(days);
+    const todayLabel = primaryDay ? trainingDayLabel(primaryDay) : "查看日历";
+    const todayType = primaryDay ? (isRestDay(primaryDay) ? "恢复日" : "训练日") : "";
+    statusHtml = `
+      <div class="workspace-scene-status" data-workspace-scene="${scene}" aria-label="工作台状态">
+        <div class="workspace-scene-head">
+          <p class="section-kicker">当前状态</p>
+          <h3>${escapeHtml(todayLabel)}${todayType ? " · " + escapeHtml(todayType) : ""}</h3>
+          <span>风险等级：${escapeHtml(statusLabel(statusSummary.risk_level))} · 完成度：${escapeHtml(statusSummary.completion_rate)}%</span>
+        </div>
+        <div class="workspace-scene-items">
+          <div><span>风险状态</span><strong>${escapeHtml(statusLabel(statusSummary.risk_level))}</strong></div>
+          <div><span>本周完成</span><strong>${escapeHtml(statusSummary.completion_rate)}%</strong></div>
+          <div><span>漏反馈</span><strong>${escapeHtml(statusSummary.missed_feedback_count)} 天</strong></div>
+          <div><span>建议</span><strong>${escapeHtml(statusSummary.next_training_recommendation || "按计划执行")}</strong></div>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = statusHtml;
+}
+
+// ── Integration: Glossary Terms [product-evidence][P1] ──
+
+function renderGlossaryTermsPanel(response) {
+  const glossarySection = document.getElementById("glossaryTerms");
+  const glossaryContent = document.getElementById("glossaryTermsContent");
+  if (!glossarySection || !glossaryContent) return;
+
+  const terms = getHmpGlossaryTerms(response);
+  if (!terms.length) {
+    glossarySection.hidden = true;
+    return;
+  }
+  glossarySection.hidden = false;
+  glossaryContent.innerHTML = terms.slice(0, 9).map((item) => `
+    <article>
+      <strong>${escapeHtml(item.term || item.name || item.id || "HMP 术语")}</strong>
+      <p>${escapeHtml(item.short_definition || item.definition || item.description || "暂无定义。")}</p>
+      <em>${escapeHtml(item.training_effect || item.training_impact || item.impact || "用于统一训练解释口径。")}</em>
+    </article>
+  `).join("");
+}
+
+// ── Integration: Adaptive Explanation after Feedback [product-explanation][P1] ──
+
+function renderAdaptiveExplanationAfterFeedback(feedbackResult) {
+  const container = document.getElementById("adaptiveExplanation");
+  if (!container) return;
+
+  if (!feedbackResult) {
+    container.hidden = true;
+    return;
+  }
+
+  container.hidden = false;
+  const fb = feedbackResult.feedback || feedbackResult;
+  const riskLevel = fb.risk_gate?.product_status || fb.risk_gate?.status || "normal";
+  const riskClass = `adaptive-risk-${riskLevel}`;
+  const adjustmentText = fb.rationale || fb.next_day_adjustment || fb.adaptive_adjustment?.rationale || "";
+  const affectedCount = Array.isArray(feedbackResult.affected_events) ? feedbackResult.affected_events.length : 0;
+
+  container.className = `adaptive-explanation-card ${riskClass}`;
+  container.innerHTML = `
+    <div class="adaptive-explanation-head">
+      <div>
+        <p class="section-kicker">计划调整</p>
+        <h3>${riskLevel === "medical_referral" ? "需要专业评估" : riskLevel === "deescalate" ? "计划已调整" : "反馈已记录"}</h3>
+      </div>
+      <span class="adaptive-risk-badge">${escapeHtml(statusLabel(riskLevel))}</span>
+    </div>
+    <div class="adaptive-risk-banner">
+      <p>${escapeHtml(adjustmentText || "系统已根据你的反馈评估当前状态。查看日历确认调整后的安排。")}</p>
+    </div>
+    ${affectedCount ? `
+      <div class="adaptive-detail-list">
+        <div><dt>影响范围</dt><dd>${escapeHtml(affectedCount)} 个后续训练日</dd></div>
+        <div><dt>下次训练</dt><dd>${escapeHtml(fb.next_day_adjustment || "查看日历确认")}</dd></div>
+      </div>
+    ` : ""}
+    <div class="adaptive-next-actions">
+      <strong>建议下一步</strong>
+      <ul>
+        <li>查看更新后的训练日历确认调整内容。</li>
+        <li>下次训练后及时记录反馈，持续评估恢复状态。</li>
+        ${riskLevel === "deescalate" ? "<li>如连续两次降级，考虑减少本周训练次数。</li>" : ""}
+      </ul>
+    </div>
+  `;
+}
+
+// ── Integration: NLP Profile Confirmation [product-profile][P1] ──
+
+function showNlpProfileConfirmation(changes = []) {
+  const container = document.getElementById("profileNlpConfirmation");
+  if (!container || !changes.length) {
+    if (container) container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  container.innerHTML = `
+    <h4>检测到画像变更</h4>
+    <p>系统从你的输入中提取到以下画像信息。请确认是否更新：</p>
+    <ul class="nlp-field-changes">
+      ${changes.map((change) => `
+        <li>
+          <span class="nlp-field-name">${escapeHtml(change.label || change.field)}</span>
+          ${change.oldValue ? `<span class="nlp-old-value">${escapeHtml(change.oldValue)}</span>` : ""}
+          <span class="nlp-new-value">${escapeHtml(change.newValue)}</span>
+        </li>
+      `).join("")}
+    </ul>
+    <div class="nlp-confirmation-actions">
+      <button class="primary-button compact-button" data-nlp-confirm>确认更新</button>
+      <button class="secondary-button compact-button" data-nlp-dismiss>忽略</button>
+    </div>
+  `;
+
+  container.querySelector("[data-nlp-confirm]")?.addEventListener("click", () => {
+    changes.forEach((change) => {
+      const input = document.querySelector(`[data-profile-field="${change.draftKey}"]`) ||
+                    document.querySelector(`[data-profile-editor-field="${change.field}"]`);
+      if (input) input.value = change.newValue;
+    });
+    saveProfileDraft();
+    container.hidden = true;
+  });
+
+  container.querySelector("[data-nlp-dismiss]")?.addEventListener("click", () => {
+    container.hidden = true;
+  });
+}
+
+// ── Integration: Feedback Detail Form Binding [product-feedback][P1] ──
+
+function initFeedbackDetailForm(container) {
+  if (!container) return;
+  // Progressive step navigation
+  container.querySelectorAll("[data-feedback-next]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const currentStep = button.closest("[data-feedback-step]");
+      const allSteps = Array.from(container.querySelectorAll("[data-feedback-step]"));
+      const currentIndex = allSteps.indexOf(currentStep);
+      if (currentIndex >= 0 && currentIndex < allSteps.length - 1) {
+        currentStep.hidden = true;
+        allSteps[currentIndex + 1].hidden = false;
+        const progressLabel = container.querySelector("[data-feedback-progress]");
+        if (progressLabel) progressLabel.textContent = `${currentIndex + 2}/${allSteps.length} 完成`;
+        allSteps[currentIndex + 1].querySelector("input, select, textarea")?.focus();
+      }
+    });
+  });
+
+  container.querySelectorAll("[data-feedback-prev]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const currentStep = button.closest("[data-feedback-step]");
+      const allSteps = Array.from(container.querySelectorAll("[data-feedback-step]"));
+      const currentIndex = allSteps.indexOf(currentStep);
+      if (currentIndex > 0) {
+        currentStep.hidden = true;
+        allSteps[currentIndex - 1].hidden = false;
+        const progressLabel = container.querySelector("[data-feedback-progress]");
+        if (progressLabel) progressLabel.textContent = `${currentIndex}/${allSteps.length} 完成`;
+      }
+    });
+  });
+
+  // Quick preset buttons
+  container.querySelectorAll("[data-feedback-quick]").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      const presetKey = radio.value === "已完成" ? "feedback_done" : radio.value === "部分完成" ? "feedback_partial" : "feedback_skipped";
+      const preset = FEEDBACK_QUICK_PRESETS[presetKey];
+      if (preset && container.closest(".day-modal")) {
+        applyFeedbackPreset(container.closest(".day-modal"), preset);
+      }
+    });
+  });
+}
+
+// ── Integration: Feedback Result Hook ──
+
+const _originalBuildFeedbackResultHtml = buildFeedbackResultHtml;
+buildFeedbackResultHtml = function(payload, affectedDays) {
+  const html = _originalBuildFeedbackResultHtml(payload, affectedDays);
+  renderAdaptiveExplanationAfterFeedback(payload);
+  return html;
+};
+
 async function bootstrap() {
   moveWorkspaceSectionsToDrawer();
   syncSideDrawerViewportState();
   resetPlanProgress();
+  renderRunnerIdentityCard(profileDraftToApi(getProfileDraft()));
+  updateQueryModeUi();
   await ping({ autoDetect: true });
   await Promise.allSettled([
     loadLlmOptions(),
@@ -5629,6 +6870,7 @@ async function bootstrap() {
     loadProfileDraft(),
   ]);
   renderPlanHistory();
+  updateWorkspaceSceneStatus();
 }
 
 bootstrap();

@@ -1,4 +1,3 @@
-import os
 import json
 import re
 import time
@@ -10,8 +9,8 @@ from typing import List, Dict, Any, Tuple, Optional
 from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage
-from dotenv import load_dotenv
-from marathon_qa_assistant.core.app_state import BASE_DIR, DEFAULT_VECTOR_DIR
+from marathon_qa_assistant.core.app_state import BASE_DIR, V2_VECTOR_DIR
+from marathon_qa_assistant.core.settings import get_settings, load_project_dotenv
 from marathon_qa_assistant.services.kb.graph_evidence import (
     evidence_from_graph_edge,
     graph_binding_to_legacy_evidence,
@@ -21,23 +20,19 @@ from marathon_qa_assistant.services.kb.graph_evidence import (
 logger = logging.getLogger("graph_engine")
 
 # 加载配置
-env_path = BASE_DIR / "graphrag_project" / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    load_dotenv()
-
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
-_raw = os.getenv("GRAPHRAG_API_KEY")
+load_project_dotenv(BASE_DIR / "graphrag_project" / ".env")
+_settings = get_settings()
+OLLAMA_BASE_URL = _settings.ollama_base_url
+OLLAMA_MODEL = _settings.ollama_model
+_raw = _settings.graphrag_api_key
 _stripped = (_raw or "").strip()
 if _stripped and _stripped != "default_token_for_dev":
     AUTH_TOKEN = _stripped
 else:
-    raise RuntimeError(
-        "GRAPHRAG_API_KEY environment variable is not set or is using the banned dev default. "
-        "Set a real token before starting the server."
+    logger.warning(
+        "GRAPHRAG_API_KEY 未设置或仍为开发默认值，知识图谱将初始化为空图。"
     )
+    AUTH_TOKEN = ""
 
 EXACT_RELATION_MAP = {
     "需要": "requires",
@@ -324,7 +319,21 @@ llm = ChatOllama(
     base_url=OLLAMA_BASE_URL
 )
 
-GRAPH_DATA_PATH = DEFAULT_VECTOR_DIR / "knowledge_graph.json"
+GRAPH_DATA_PATH = V2_VECTOR_DIR / "knowledge_graph.json"
+
+
+def _safe_resolve(path: Path) -> Path:
+    try:
+        return path.resolve()
+    except Exception:
+        return path.absolute()
+
+
+def _graph_source_label(graph_dir: Path) -> str:
+    resolved = _safe_resolve(graph_dir)
+    if resolved == _safe_resolve(V2_VECTOR_DIR):
+        return "v2"
+    return str(resolved)
 
 class GraphEngine:
     """
@@ -1561,6 +1570,37 @@ JSON 输出："""
         return res
 
 graph_engine = GraphEngine()
+
+
+def graph_runtime_health(
+    vector_health: Optional[Dict[str, Any]] = None,
+    graph_engine_instance: Optional[GraphEngine] = None,
+) -> Dict[str, Any]:
+    engine = graph_engine_instance or graph_engine
+    graph_path = Path(getattr(engine, "GRAPH_DATA_PATH", GRAPH_DATA_PATH))
+    graph_dir = graph_path.parent
+    graph_source = _graph_source_label(graph_dir)
+    vector_payload = dict(vector_health or {})
+    vector_dir_raw = str(vector_payload.get("vector_dir") or "")
+    vector_dir = Path(vector_dir_raw) if vector_dir_raw else V2_VECTOR_DIR
+    vector_source = str(vector_payload.get("source") or _graph_source_label(vector_dir))
+    graph_ready = bool(getattr(engine, "nodes", {}) or graph_path.exists())
+    source_aligned = _safe_resolve(graph_dir) == _safe_resolve(vector_dir)
+    reason = ""
+    if not source_aligned:
+        reason = f"graph_source_mismatch:{graph_source}!={vector_source}"
+    elif not graph_ready:
+        reason = "graph_unavailable"
+    graph_fusion_enabled = source_aligned and graph_ready
+    return {
+        "graph_path": str(graph_path),
+        "graph_source": graph_source,
+        "vector_source": vector_source,
+        "graph_ready": graph_ready,
+        "graph_vector_source_aligned": source_aligned,
+        "graph_fusion_enabled": graph_fusion_enabled,
+        "reason": reason,
+    }
 
 
 def plan_week_drafts(

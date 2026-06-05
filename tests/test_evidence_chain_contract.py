@@ -50,6 +50,33 @@ def test_evidence_chain_preserves_verified_source_metadata_without_public_source
     assert payload["source_path_leak_count"] == 0
 
 
+def test_evidence_confidence_downgrades_low_relevance_verified_source():
+    payload = build_evidence_chain_payload(
+        query="半马补给",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "low-relevance",
+                    "citation_label": "[1]",
+                    "source_file": "nutrition.md",
+                    "page": 3,
+                    "trace": {"source_url": "https://example.com/nutrition", "section": "fueling"},
+                    "evidence_domain": "nutrition_race_fueling",
+                    "prescription_permission": "can_write_core",
+                    "relevance_score": 0.42,
+                    "score_breakdown": {"relevance": 0.42},
+                }
+            ]
+        },
+    )
+
+    item = payload["items"][0]
+    assert item["confidence_level"] == "low"
+    assert item["display_mode"] == "needs_evidence"
+    assert payload["answer_source_mode"] == "needs_evidence"
+    assert "相关度低于" in item["user_facing_summary"]
+
+
 def test_model_general_knowledge_item_has_no_fake_citation_fields():
     item = build_model_general_knowledge_item("缺少本地证据时的保守说明。")
 
@@ -98,7 +125,7 @@ def test_display_modes_include_graph_and_legacy_boundaries():
 
 
 def test_runner_projection_hides_expert_evidence_fields():
-    from marathon_qa_assistant.apps.api_app import _project_runner_query_response
+    from marathon_qa_assistant.apps.response_projection import _project_runner_query_response
     from marathon_qa_assistant.apps.schemas import QueryResponse
 
     response = QueryResponse(
@@ -132,6 +159,64 @@ def test_runner_projection_hides_expert_evidence_fields():
     assert "chunk_id" not in item
     assert "expert_metadata" not in item
     assert "C:/private/approved.md" not in str(projected)
+
+
+def test_verified_explanation_source_bound_to_core_field_keeps_answer_in_needs_evidence_mode():
+    payload = build_evidence_chain_payload(
+        query="安排一次阈值跑",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-explanation",
+                    "citation_label": "[1]",
+                    "source_file": "candidate-training.url",
+                    "page": 1,
+                    "trace": {"source_url": "https://example.com/candidate", "section": "training"},
+                    "evidence_domain": "protocol",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "explanation_only",
+                    "allowed_use": "explanation",
+                    "field_binding": {"day_key": "w1d2", "field": "main_set"},
+                }
+            ],
+            "health": {"index_schema_version": "chunk_schema_v2", "runtime_core_prescription_enabled": True},
+        },
+        answer_text="候选资料只能解释，不能直接写主训练。",
+    )
+
+    item = payload["items"][0]
+    assert payload["answer_source_mode"] == "needs_evidence"
+    assert payload["core_permission_violations"][0]["field"] == "main_set"
+    assert item["display_mode"] == "verified_source"
+    assert "不能作为核心训练处方依据" in item["user_facing_summary"]
+
+
+def test_medical_safety_explanation_source_sets_medical_referral_answer_mode():
+    payload = build_evidence_chain_payload(
+        query="跑步时胸痛怎么办",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-medical",
+                    "citation_label": "[1]",
+                    "source_file": "heat-illness.url",
+                    "page": 1,
+                    "trace": {"source_url": "https://example.com/heat", "section": "red-flags"},
+                    "evidence_domain": "medical_safety",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "explanation_only",
+                    "allowed_use": "risk_gate",
+                }
+            ],
+            "health": {"index_schema_version": "chunk_schema_v2", "runtime_core_prescription_enabled": True},
+        },
+        answer_text="出现红旗症状应停止训练并寻求医疗帮助。",
+    )
+
+    item = payload["items"][0]
+    assert payload["answer_source_mode"] == "medical_referral"
+    assert item["display_mode"] == "verified_source"
+    assert "风险提醒" in item["user_facing_summary"]
 
 
 def test_validate_citation_faithfulness_blocks_unknown_numbered_reference():
@@ -208,6 +293,78 @@ def test_validate_citation_faithfulness_allows_verified_located_source():
     assert audit["fake_citation_count"] == 0
 
 
+def test_legacy_runtime_downgrade_preserves_safe_display_locator_fields():
+    payload = build_evidence_chain_payload(
+        query="nutrition plan",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-runtime-page-hint",
+                    "citation_label": "[1]",
+                    "source_file": "Nutrition for Marathon Running.pdf",
+                    "page": 3,
+                    "chunk_id": "2016+-+Nutrition+for+Marathon+Running_p0003_c0002",
+                    "text": "Carbohydrate intake guidance for marathon runners.",
+                    "trace": {"source_url": "https://example.com/nutrition", "section": "Fueling"},
+                    "evidence_domain": "protocol",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "can_write_core",
+                    "allowed_use": "core_prescription",
+                }
+            ],
+            "health": {
+                "index_schema_version": "legacy",
+                "runtime_core_prescription_enabled": False,
+            },
+        },
+    )
+
+    item = payload["items"][0]
+    assert item["display_mode"] == "legacy_explanation"
+    assert item["source_label"] == "Nutrition for Marathon Running.pdf"
+    assert item["text_span"] == "Carbohydrate intake guidance for marathon runners."
+    assert item["chunk_id"] == "2016+-+Nutrition+for+Marathon+Running_p0003_c0002"
+    assert item["source_url"] == ""
+    assert item["page"] is None
+    assert item["section"] == ""
+    assert item["page_hint"] == 3
+    assert "p.3" in item["locator_hint"]
+    assert "source_path" not in item
+    assert "local_path" not in item
+
+
+def test_chunk_id_page_hint_does_not_become_verified_page_without_source_url():
+    payload = build_evidence_chain_payload(
+        query="nutrition plan",
+        evidence_bundle={
+            "evidence_items": [
+                {
+                    "evidence_id": "chunk-page-hint-only",
+                    "source_file": "Nutrition for Marathon Running.pdf",
+                    "page": None,
+                    "chunk_id": "2016+-+Nutrition+for+Marathon+Running_p0003_c0002",
+                    "text": "Fueling guidance.",
+                    "evidence_domain": "sports_science_reference",
+                    "retrieval_mode": "vector",
+                    "prescription_permission": "explanation_only",
+                    "allowed_use": "explanation",
+                }
+            ],
+            "health": {
+                "index_schema_version": "legacy",
+                "runtime_core_prescription_enabled": False,
+            },
+        },
+    )
+
+    item = payload["items"][0]
+    assert item["display_mode"] == "legacy_explanation"
+    assert item["page"] is None
+    assert item["page_hint"] == 3
+    assert "p.3" in item["locator_hint"]
+    assert item["source_url"] == ""
+
+
 def test_legacy_runtime_downgrades_located_vector_source_to_legacy_explanation():
     payload = build_evidence_chain_payload(
         query="threshold run",
@@ -237,3 +394,29 @@ def test_legacy_runtime_downgrades_located_vector_source_to_legacy_explanation()
     assert item["source_url"] == ""
     assert payload["citation_gate"]["status"] == "failed"
     assert payload["fake_citation_violations"][0]["reason"] == "legacy_explanation_cited"
+
+
+def test_evidence_chain_limits_visible_items_to_default_top_k():
+    evidence_items = []
+    for index in range(10):
+        evidence_items.append(
+            {
+                "evidence_id": f"chunk-{index}",
+                "citation_label": f"[{index + 1}]",
+                "source_file": f"source-{index}.md",
+                "page": index + 1,
+                "trace": {"source_url": f"https://example.com/{index}", "section": "body"},
+                "evidence_domain": "protocol",
+                "retrieval_mode": "vector",
+                "prescription_permission": "can_write_core",
+            }
+        )
+
+    payload = build_evidence_chain_payload(
+        query="threshold run",
+        evidence_bundle={"evidence_items": evidence_items},
+    )
+
+    assert len(payload["items"]) == 8
+    assert payload["items"][0]["citation_label"] == "[1]"
+    assert payload["items"][-1]["citation_label"] == "[8]"

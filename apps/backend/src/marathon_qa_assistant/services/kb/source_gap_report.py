@@ -104,6 +104,40 @@ def _domain_pack_external_source_needs(release_report: Mapping[str, Any]) -> Lis
     )
 
 
+def _release_work_queue(release_report: Mapping[str, Any]) -> List[Dict[str, Any]]:
+    gaps = list(release_report.get("actionable_domain_gaps") or [])
+    if not gaps:
+        gaps = _domain_pack_external_source_needs(release_report)
+    work_items: List[Dict[str, Any]] = []
+    for item in gaps:
+        # 只复制脱敏后的 release 字段，避免把 registry_snapshot/local_path 带进报告。
+        work_items.append(
+            {
+                "domain_pack": str(item.get("domain_pack") or ""),
+                "subdomain": str(item.get("subdomain") or ""),
+                "gap_status": str(item.get("gap_status") or ""),
+                "can_write_core": bool(item.get("can_write_core")),
+                "required_quality_tier": str(
+                    item.get("minimum_quality_tier") or ("reviewed" if item.get("can_write_core") else "authoritative")
+                ),
+                "needed_source_count": int(item.get("needed_source_count") or 0),
+                "needed_rule_count": int(item.get("needed_rule_count") or 0),
+                "release_gate_impact": str(item.get("release_gate_impact") or "full_commercial_release"),
+                "next_action": str(item.get("next_action") or item.get("review_direction") or ""),
+            }
+        )
+    gap_rank = {"gap": 0, "partial": 1, "covered": 2}
+    return sorted(
+        work_items,
+        key=lambda item: (
+            item["release_gate_impact"] != "core_domain_gate",
+            gap_rank.get(str(item["gap_status"]), 9),
+            -item["needed_source_count"],
+            item["domain_pack"],
+        ),
+    )
+
+
 def build_source_gap_report(
     *,
     source_review_queue: Iterable[Mapping[str, Any]],
@@ -120,5 +154,6 @@ def build_source_gap_report(
             max_candidates_per_blocker=max_candidates_per_blocker,
         ),
         "domain_pack_external_source_needs": _domain_pack_external_source_needs(release_report),
+        "release_work_queue": _release_work_queue(release_report),
         "redaction_policy": "machine paths, raw prompts, and private health text are omitted",
     }

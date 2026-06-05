@@ -33,6 +33,11 @@
 - [ ] [discovery][P1] 为长题名资料和高噪声产物补 manifest。完成定义：`research/`、`data/uploads/seed/`、`artifacts/` 中需要索引的资料有 `short_id`、路径、主题、来源、用途和质量状态。
 - [ ] [discovery][P2] 分批消化当前命名例外。完成定义：每批迁移前后都运行引用搜索和链接检查，且不破坏既有论文、实验或产品引用链。
 
+## P2：可观测性
+
+- [x] [observability][P2] 建立 [可观测性基线](observability_baseline.md)。覆盖 SLI/SLO 定义、排查顺序、指标端点 (`/ops/metrics`)、request-id 关联和告警分级。
+- [x] [observability][P2] 结构化日志与安全脱敏。完成定义：`marathon_qa_assistant.core.observability` 和 `logging_middleware` 覆盖 request_id、path、method、status_code、duration_ms、generation_status 字段，日志不含 API key、token、OAuth secret。
+
 ## P1：测试门禁
 
 - [ ] [quality-gate][P1] 建立提交前最小验证组合。完成定义：[仓库治理规范](repository_governance.md) 中的改动类型验证矩阵覆盖 Python targeted tests、前端 build、workspace smoke、研究路径验证。

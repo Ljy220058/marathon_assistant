@@ -9,9 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-COPY requirements.txt .
+COPY pyproject.toml constraints.txt requirements-runtime.txt ./
+COPY src/ ./src/
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --target=/build/deps -r requirements.txt
+    pip install --no-cache-dir --target=/build/deps -r requirements-runtime.txt
 
 # ---- Stage 2: Runtime ----
 FROM python:3.11-slim-bookworm AS runtime
@@ -33,13 +34,17 @@ COPY src/ ./src/
 RUN chown -R marathon:marathon /app
 USER marathon
 
+ARG API_KEY=""
+ENV API_KEY=${API_KEY}
+
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONUTF8=1
 
 EXPOSE 8000
 
+# /health 已覆盖 KB + DB + Ollama 三项依赖探测，返回 healthy/degraded
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)" || exit 1
 
 CMD ["python", "-m", "uvicorn", "marathon_qa_assistant.apps.api_app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, timedelta
+import logging
 import re
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+logger = logging.getLogger("training_plan_skeleton")
 
 from marathon_qa_assistant.core.periodization import (
     BlockParams,
@@ -46,6 +50,7 @@ from marathon_qa_assistant.core.training_plan_models import (
 )
 from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
+    get_action_library_foundation_hits,
     normalize_workout_type_for_template,
 )
 
@@ -67,34 +72,9 @@ CHINESE_COUNT_MAP = {
     "七": 7,
     "7": 7,
 }
-WORKOUT_MAIN_SET_HINTS = {
-    "aerobic_threshold": "3×10分钟有氧阈值，组间3分钟慢跑，控制在Z3-Z4",
-    "tempo_run": "25分钟阈值节奏跑",
-    "vo2max_interval": "5×3分钟摄氧量间歇，组间慢跑3分钟",
-    "interval_run": "5×800m间歇，组间慢跑200m",
-    "anaerobic_threshold": "3×1600m巡航间歇，组间慢跑400m",
-    "marathon_pace": "2×15分钟马拉松配速跑，组间轻松跑5分钟",
-    "progression_run": "50分钟渐进跑，从轻松配速渐进到稳态配速",
-    "fartlek": "40分钟法特莱克自由变速",
-    "hill_repeats": "8×200m坡道跑，慢跑下坡恢复",
-    "strides": "6×100m短冲，组间慢跑100m",
-    "long_run": "90分钟稳定有氧长距离",
-    "easy_run": "40分钟轻松跑",
-}
-WORKOUT_NOTES = {
-    "aerobic_threshold": "来自用户个性化周结构要求，安排有氧阈刺激。",
-    "tempo_run": "来自用户个性化周结构要求，安排节奏跑刺激。",
-    "vo2max_interval": "来自用户个性化周结构要求，安排摄氧量训练刺激。",
-    "interval_run": "来自用户个性化周结构要求，安排间歇训练刺激。",
-    "anaerobic_threshold": "来自用户个性化周结构要求，安排无氧阈训练刺激。",
-    "marathon_pace": "来自用户个性化周结构要求，安排马拉松专项配速刺激。",
-    "progression_run": "来自用户个性化周结构要求，安排渐进跑刺激。",
-    "fartlek": "来自用户个性化周结构要求，安排法特莱克刺激。",
-    "hill_repeats": "来自用户个性化周结构要求，安排坡道训练刺激。",
-    "strides": "来自用户个性化周结构要求，安排短冲刺激。",
-    "long_run": "来自用户个性化周结构要求，安排长距离训练。",
-    "easy_run": "来自用户个性化周结构要求，安排轻松跑。",
-}
+# WORKOUT_MAIN_SET_HINTS 和 WORKOUT_NOTES 已移除。
+# _build_personalized_day() 现通过 SessionConstraint → _resolve_main_set_from_constraint()
+# 从动作库检索课表内容，不可用时由 _build_main_set_fallback() 生成降级描述。
 QUALITY_WORKOUT_TYPES = {
     "aerobic_threshold",
     "tempo_run",
@@ -108,7 +88,37 @@ QUALITY_WORKOUT_TYPES = {
     "strides",
 }
 
-TRAINING_DISTANCE_FRACTIONS = {
+
+@dataclass
+class SessionConstraint:
+    """训练课约束描述——替代硬编码 main_set 字符串。
+
+    骨架生成器不再硬编码具体训练课表文本（如 "12×400m @5K 配速"），
+    改为输出约束描述。调用方用约束从动作库检索具体课表候选项，
+    实现课表内容与骨架结构的解耦。
+
+    Fields:
+        workout_type: WORKOUT_TEMPLATE_REGISTRY 的 key，用于动作库检索
+        training_type_display: 中文显示名（如 "间歇跑"、"长距离"）
+        zone_range: 心率区间，如 "Z5-Z6"，来源于 WORKOUT_TEMPLATE_REGISTRY
+        target_duration_min: 目标主课时间（分钟），由骨架公式或模板估算
+        phase_context: 周期上下文，如 "base_week3"，用于动作库匹配过滤
+        intensity_hint: 动态计算的配速/强度提示（非硬编码，由用户门槛配速算出）
+        notes: 教练备注（保留原有的训练选择理由说明）
+    """
+    workout_type: str
+    training_type_display: str
+    zone_range: str
+    target_duration_min: int
+    phase_context: str
+    intensity_hint: str = ""
+    notes: str = ""
+
+# [coaching_practice fallback] 训练类型→(低, 高)周跑量比例
+# 数据来源为教练通用实践，不作为一次文献证据使用。
+# 当 _distance_fraction_from_literature() 无法从文献规则动态计算时，
+# 以此作为降级后备。不要直接引用此字典——优先使用 _main_km_for_type()。
+_TRAINING_DISTANCE_FRACTIONS_FALLBACK: Dict[str, Tuple[float, float]] = {
     "间歇跑": (0.06, 0.14),
     "无氧阈跑": (0.10, 0.18),
     "节奏跑": (0.10, 0.20),
@@ -124,13 +134,137 @@ TRAINING_DISTANCE_FRACTIONS = {
     "恢复跑": (0.06, 0.12),
 }
 
-FIXED_WARMUP_COOLDOWN = {
-    "quality": (3.0, 1.5),
-    "long_run": (2.0, 1.5),
-    "easy": (1.5, 1.5),
-    "recovery": (1.5, 1.5),
-    "rest": (0.0, 0.0),
+# 反向映射：中文训练类型显示名 → WORKOUT_TEMPLATE_REGISTRY 的 key，
+# 用于从动作库检索热身/冷身建议时做索引转换。
+_DISPLAY_NAME_TO_REGISTRY_KEY: Dict[str, str] = {
+    entry["display_name"]: key
+    for key, entry in WORKOUT_TEMPLATE_REGISTRY.items()
 }
+# 补充映射：恢复跑与轻松跑共用同一 registry 条目
+_DISPLAY_NAME_TO_REGISTRY_KEY["恢复跑"] = "easy_run"
+
+
+def _distance_fraction_from_literature(
+    training_type: str,
+    weekly_volume: float,
+) -> Optional[Tuple[float, float]]:
+    """尝试从文献规则动态计算训练类型的周跑量比例。
+
+    当前阶段尚未接入训练原则文献库，返回 None 走 fallback。
+    后续可在此函数内查询文献知识库，基于用户周跑量和训练类型
+    返回(低, 高)比例区间。
+
+    Args:
+        training_type: 训练类型中文显示名（如 "间歇跑"、"长距离"）
+        weekly_volume: 用户周跑量 (km)
+
+    Returns:
+        (low_fraction, high_fraction) 或 None（触发 fallback）
+    """
+    return None
+
+
+def _warmup_cooldown_from_action_library(training_type: str) -> Dict[str, Any]:
+    """从动作库检索给定训练类型的热身/冷身建议，并尝试解析为距离 (km)。
+
+    调用 workout_template_retriever.get_action_library_foundation_hits()
+    获取动作库条目，从条目中提取 warmup_suggestion / cooldown_suggestion 字段。
+    动作库无匹配或无法解析时，返回保守默认值并打 warning 日志。
+
+    Args:
+        training_type: 训练类型中文显示名（如 "间歇跑"、"长距离"）
+
+    Returns:
+        - 动作库匹配: {"warmup_km": float, "cooldown_km": float, "source": "action_library"}
+        - 降级默认: {"warmup_km": 1.0, "cooldown_km": 1.0, "source": "fallback_conservative"}
+    """
+    if not training_type:
+        logger.warning("_warmup_cooldown_from_action_library: 训练类型为空，返回保守默认值")
+        return {"warmup_km": 1.0, "cooldown_km": 1.0, "source": "fallback_conservative"}
+
+    registry_key = _DISPLAY_NAME_TO_REGISTRY_KEY.get(training_type)
+    if not registry_key:
+        logger.warning(
+            "_warmup_cooldown_from_action_library: 未找到训练类型 '%s' 的 registry key，返回保守默认值",
+            training_type,
+        )
+        return {"warmup_km": 1.0, "cooldown_km": 1.0, "source": "fallback_conservative"}
+
+    try:
+        hits = get_action_library_foundation_hits(registry_key)
+    except Exception as exc:
+        logger.warning(
+            "_warmup_cooldown_from_action_library: get_action_library_foundation_hits('%s') 失败: %s，返回保守默认值",
+            registry_key, exc,
+        )
+        return {"warmup_km": 1.0, "cooldown_km": 1.0, "source": "fallback_conservative"}
+
+    warmup_text = ""
+    cooldown_text = ""
+    for hit in hits:
+        warmup_text = warmup_text or str(hit.get("warmup_suggestion") or "").strip()
+        cooldown_text = cooldown_text or str(hit.get("cooldown_suggestion") or "").strip()
+        if warmup_text and cooldown_text:
+            break
+
+    if not warmup_text and not cooldown_text:
+        logger.warning(
+            "_warmup_cooldown_from_action_library: 动作库中 '%s' 无热身/冷身建议，返回保守默认值",
+            training_type,
+        )
+        return {"warmup_km": 1.0, "cooldown_km": 1.0, "source": "fallback_conservative"}
+
+    warmup_km = _parse_km_from_suggestion(warmup_text)
+    cooldown_km = _parse_km_from_suggestion(cooldown_text)
+
+    # 从建议文本可解析出距离时使用动作库数据，否则回退保守默认
+    if warmup_km is not None or cooldown_km is not None:
+        result = {
+            "warmup_km": warmup_km if warmup_km is not None else 1.0,
+            "cooldown_km": cooldown_km if cooldown_km is not None else 1.0,
+            "source": "action_library",
+        }
+        logger.debug(
+            "_warmup_cooldown_from_action_library: '%s' 从动作库解析 warmup=%.1fkm cooldown=%.1fkm",
+            training_type, result["warmup_km"], result["cooldown_km"],
+        )
+        return result
+
+    logger.warning(
+        "_warmup_cooldown_from_action_library: 无法从动作库建议文本中解析 '%s' 的距离值，返回保守默认值",
+        training_type,
+    )
+    return {"warmup_km": 1.0, "cooldown_km": 1.0, "source": "fallback_conservative"}
+
+
+def _parse_km_from_suggestion(suggestion_text: str) -> Optional[float]:
+    """从热身/冷身建议文本中尝试提取距离 (km)。
+
+    匹配模式:
+        - "3.2-4.8km" → 取最大值 4.8
+        - "10-15分钟慢跑" → 按 ~6:00/km 配速估算 → 1.7-2.5km，取最大值 2.5
+        - 无法解析时返回 None
+    """
+    if not suggestion_text:
+        return None
+
+    # 直接匹配距离值: "Xkm" 或 "X.Xkm"
+    km_matches = re.findall(r"(\d+(?:\.\d+)?)\s*km", suggestion_text, flags=re.IGNORECASE)
+    if km_matches:
+        return max(float(m) for m in km_matches)
+
+    # 从慢跑时长估算: "X分钟慢跑" 按 ~6:00/km 配速
+    minute_matches = re.findall(r"(\d+)\s*分钟\s*慢跑", suggestion_text)
+    if minute_matches:
+        max_minutes = max(int(m) for m in minute_matches)
+        return round(max_minutes / 6.0, 1)
+
+    # "慢跑" + 数字 (可能在其他位置)
+    jog_match = re.search(r"慢跑\s*(\d+)", suggestion_text)
+    if jog_match:
+        return round(int(jog_match.group(1)) / 6.0, 1)
+
+    return None
 
 
 def _parse_pace_seconds(pace: Any) -> int:
@@ -339,14 +473,32 @@ def _build_personalized_day(requirement: Dict[str, Any], fallback_day: str) -> D
     venue = "田径场/平路" if workout_type in QUALITY_WORKOUT_TYPES else "公路/绿道"
     if workout_type == "easy_run":
         venue = "公园/绿道"
+
+    # SessionConstraint → 动作库检索，替代已移除的硬编码字典
+    constraint = _session_constraint(
+        training_type_display=training_type,
+        target_duration_min=40,
+        phase_context="user_defined",
+        notes=f"来自用户个性化周结构要求，安排{training_type}。",
+    )
+    main_set, _ = _resolve_main_set_from_constraint(constraint)
+
+    wc = _warmup_cooldown_from_action_library(training_type)
+    if wc["source"] == "action_library":
+        warmup = f"慢跑{wc['warmup_km']}km + 动态拉伸"
+        cooldown = f"慢跑{wc['cooldown_km']}km + 静态拉伸"
+    else:
+        warmup = "慢跑15分钟 + 动态拉伸" if workout_type in QUALITY_WORKOUT_TYPES else "慢跑10分钟 + 动态拉伸"
+        cooldown = "慢跑10分钟 + 静态拉伸"
+
     return DayPlan(
         day=day,
         training_type=training_type,
-        warmup="慢跑15分钟 + 动态拉伸" if workout_type in QUALITY_WORKOUT_TYPES else "慢跑10分钟 + 动态拉伸",
-        main_set=WORKOUT_MAIN_SET_HINTS.get(workout_type, f"{training_type}主课"),
-        cooldown="慢跑10分钟 + 静态拉伸",
+        warmup=warmup,
+        main_set=main_set,
+        cooldown=cooldown,
         venue=venue,
-        notes=WORKOUT_NOTES.get(workout_type, "来自用户个性化周结构要求。"),
+        notes=constraint.notes,
     )
 
 
@@ -465,26 +617,31 @@ def _validate_weekly_structure_constraints(
     }
 
 
-def _resolve_macrocycle(profile: Dict[str, Any], total_weeks: int) -> Macrocycle:
-    macrocycle = Macrocycle.from_profile(profile)
+def _resolve_macrocycle(
+    profile: Dict[str, Any],
+    total_weeks: int,
+    advisory: Optional[Any] = None,
+) -> Macrocycle:
+    macrocycle = Macrocycle.from_profile(profile, advisory=advisory)
     if macrocycle is not None and macrocycle.total_weeks == total_weeks:
         return macrocycle
     return Macrocycle.from_race_date(
         race_date=date.today() + timedelta(weeks=max(1, total_weeks)),
         total_weeks=total_weeks,
         profile=profile,
+        advisory=advisory,
     )
 
 
 def _phase_to_load_level(phase_name: str, week_in_phase: int, phase_weeks: int) -> str:
     phase_name = str(phase_name or "")
-    if "减量" in phase_name or "调整" in phase_name:
+    if any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         return "taper"
-    if "巅峰" in phase_name:
+    if any(kw in phase_name for kw in ("巅峰", "Peak", "peak")):
         return "high"
-    if "建设" in phase_name and phase_weeks >= 3 and week_in_phase == phase_weeks:
+    if any(kw in phase_name for kw in ("建设", "Build", "build")) and phase_weeks >= 3 and week_in_phase == phase_weeks:
         return "high"
-    if "基础" in phase_name and phase_weeks >= 3 and week_in_phase == phase_weeks:
+    if any(kw in phase_name for kw in ("基础", "Base", "base")) and phase_weeks >= 3 and week_in_phase == phase_weeks:
         return "medium"
     return "medium" if week_in_phase > 1 else "low"
 
@@ -495,20 +652,29 @@ def _is_half_year_plan(total_weeks: int) -> bool:
 
 def _phase_family(phase_name: str) -> str:
     text = str(phase_name or "")
-    if "基础期-1" in text:
+    # 精确匹配（子阶段编号）
+    if any(kw in text for kw in ("基础期-1", "基础阶段-1", "Base 1", "General Phase 1")):
         return "base_1"
-    if "基础期-2" in text:
+    if any(kw in text for kw in ("基础期-2", "基础阶段-2", "Base 2", "General Phase 2")):
         return "base_2"
-    if "建设期-1" in text:
+    if any(kw in text for kw in ("建设期-1", "建设阶段-1", "Build 1")):
         return "build_1"
-    if "建设期-2" in text:
+    if any(kw in text for kw in ("建设期-2", "建设阶段-2", "Build 2")):
         return "build_2"
-    if "巅峰" in text:
+    # 精确匹配（HMP 协议阶段，在泛关键词前拦截）
+    if "比赛专项" in text:
         return "peak"
-    if "减量" in text or "调整" in text:
+    if "专项构建" in text:
+        return "build"
+    # 全马 / 通用阶段关键词
+    if any(kw in text for kw in ("巅峰", "Peak", "peak")):
+        return "peak"
+    if any(kw in text for kw in ("减量", "调整", "Taper", "taper")):
         return "taper"
-    if "基础" in text:
+    if any(kw in text for kw in ("基础", "Base", "base")):
         return "base"
+    if any(kw in text for kw in ("建设", "构建", "Build", "build")):
+        return "build"
     return "build"
 
 
@@ -522,11 +688,20 @@ def _resolve_training_slots(available_days: List[str]) -> Tuple[str, Optional[st
 
 
 def _resolve_goal_race_type(goal: Any) -> str:
+    """从 goal 文本解析赛事类型。
+
+    注意："全程" 有时指 "全马"（全程马拉松），但也有语境歧义；
+    优先看更明确的标识（全马/马拉松等），再回落看半马。
+    当全马和半马关键词同时出现时，"全马" 优先（全马是更特定目标）。
+    """
     text = str(goal or "").lower()
-    if "半马" in text or "半程" in text or "half" in text or "21k" in text or "21.1" in text:
-        return "half_marathon"
-    if "全马" in text or "全程" in text or "马拉松" in text or "marathon" in text or "42k" in text or "42.2" in text:
+    has_full = "全马" in text or "马拉松" in text or "marathon" in text or "42k" in text or "42.2" in text or "全程" in text
+    has_half = "半马" in text or "半程" in text or "half" in text or "21k" in text or "21.1" in text
+    # P0-3: 全马优先于半马，避免 "先半马后全马" 的描述被误判为半马
+    if has_full:
         return "marathon"
+    if has_half:
+        return "half_marathon"
     return "general"
 
 
@@ -624,7 +799,24 @@ def _build_hm_archetype_input(profile: Dict[str, Any], total_weeks: int) -> Runn
 def _build_hm_protocol_context(profile: Dict[str, Any], total_weeks: int, race_type: str) -> Dict[str, Any]:
     if race_type != "half_marathon":
         return {"active": False}
-    archetype_input = _build_hm_archetype_input(profile, total_weeks)
+
+    # ── 原型判断：优先走 LLM，不可用时降级到关键词匹配 ──
+    llm_archetype_input: Optional[RunnerArchetypeInput] = None
+    field_evidence: Dict[str, str] = {}
+    try:
+        from marathon_qa_assistant.core.archetype_advisor import (  # noqa: E402
+            get_archetype_advisory,
+        )
+        llm_archetype_input, field_evidence = get_archetype_advisory(profile, total_weeks)
+    except Exception as exc:
+        logger.debug("archetype advisor 调用失败，降级到关键词匹配: %s", exc)
+
+    archetype_input: RunnerArchetypeInput = (
+        llm_archetype_input
+        if llm_archetype_input is not None
+        else _build_hm_archetype_input(profile, total_weeks)
+    )
+
     decisions = recommend_archetypes(archetype_input)
     primary = decisions[0]
     preferred_rules = workout_rules_for_archetype(primary.archetype_id)
@@ -647,6 +839,8 @@ def _build_hm_protocol_context(profile: Dict[str, Any], total_weeks: int, race_t
         "archetype_candidates": [decision.to_dict() for decision in decisions],
         "phase_sequence": select_phase_sequence(total_weeks, recent_marathon=archetype_input.recent_marathon),
         "preferred_workouts": [rule.to_dict() for rule in preferred_rules],
+        "archetype_llm_generated": llm_archetype_input is not None,
+        "archetype_field_evidence": field_evidence,
     }
 
 
@@ -728,13 +922,124 @@ def _build_phase_objective_with_hm_protocol(
     return f"{base_objective}；HMP协议阶段目标：{phase_rule.objective}"
 
 
+def _resolve_main_set_from_constraint(
+    constraint: SessionConstraint,
+) -> Tuple[str, List[str]]:
+    """从 SessionConstraint 检索动作库，返回 (main_set_text, evidence_sources)。
+
+    优先从动作库（JSONL/FAISS）检索匹配的训练课表候选项，
+    不可用时回退到从约束字段生成文本描述。
+    返回的 evidence_sources 用于追溯 main_set 的来源（动作库 chunk 或 fallback）。
+    """
+    if not constraint or not constraint.workout_type:
+        return ("训练课待确认", [])
+
+    # 尝试从动作库检索
+    try:
+        hits = get_action_library_foundation_hits(constraint.workout_type)
+    except Exception as exc:
+        logger.debug("_resolve_main_set_from_constraint: 动作库检索失败 (%s)，使用 fallback", exc)
+        hits = []
+
+    if hits:
+        try:
+            card = build_daily_workout_template_card_from_hits(
+                workout_type=constraint.workout_type,
+                day="",
+                hits=hits,
+            )
+            candidates = card.get("main_set_candidates", [])
+            if candidates:
+                # 选取第一个候选项，附加配速/强度提示
+                main_set = candidates[0]
+                if constraint.intensity_hint:
+                    main_set = f"{main_set}（{constraint.intensity_hint}）"
+                sources = card.get("source", [])
+                logger.debug(
+                    "_resolve_main_set_from_constraint: '%s' 从动作库命中 %d 个候选项",
+                    constraint.workout_type, len(candidates),
+                )
+                return (main_set, sources)
+        except Exception as exc:
+            logger.debug(
+                "_resolve_main_set_from_constraint: build card 失败 (%s)，使用 fallback", exc,
+            )
+
+    # Fallback: 用约束字段生成文本描述，保留训练类型和配速信息
+    fallback = _build_main_set_fallback(constraint)
+    logger.debug(
+        "_resolve_main_set_from_constraint: '%s' 动作库未命中，使用 fallback 文本",
+        constraint.workout_type,
+    )
+    return (fallback, [])
+
+
+def _build_main_set_fallback(constraint: SessionConstraint) -> str:
+    """从 SessionConstraint 生成 main_set 文本描述（动作库不可用时的降级方案）。
+
+    该降级方案保留训练类型显示名和动态计算的配速信息，
+    但不再包含硬编码的训练课表结构（如 "3×2000m"）。
+    """
+    parts = [f"{constraint.training_type_display}：约{constraint.target_duration_min}分钟"]
+    if constraint.intensity_hint:
+        parts.append(constraint.intensity_hint)
+    return "，".join(parts)
+
+
+def _build_long_run_fallback(
+    minutes: int,
+    pace_range: str,
+    suffix: str = "",
+    training_type_display: str = "长距离",
+) -> str:
+    """长距离跑 main_set 降级文本——保留动态计算的距离/时间公式结果。
+
+    距离计算公式（如 weekly_volume * 0.25）属于数学计算而非硬编码模板，
+    此处保留计算结果；仅移除硬编码的具体训练结构描述。
+    """
+    text = f"{minutes}分钟，配速{pace_range}/km"
+    if suffix:
+        text += f"，{suffix}"
+    return text
+
+
+def _session_constraint(
+    training_type_display: str,
+    target_duration_min: int,
+    phase_context: str,
+    intensity_hint: str = "",
+    notes: str = "",
+) -> SessionConstraint:
+    """从训练类型中文名构建 SessionConstraint，自动查询 registry 获取 workout_type 和 zone_range。"""
+    registry_key = _DISPLAY_NAME_TO_REGISTRY_KEY.get(training_type_display)
+    if not registry_key:
+        logger.warning(
+            "_session_constraint: 未找到训练类型 '%s' 的 registry key，回退到 easy_run",
+            training_type_display,
+        )
+        registry_key = "easy_run"
+
+    entry = WORKOUT_TEMPLATE_REGISTRY.get(registry_key, {})
+    zone_range = entry.get("zone_range", "Z1-Z2")
+
+    return SessionConstraint(
+        workout_type=registry_key,
+        training_type_display=training_type_display,
+        zone_range=zone_range,
+        target_duration_min=target_duration_min,
+        phase_context=phase_context,
+        intensity_hint=intensity_hint,
+        notes=notes,
+    )
+
+
 def _build_quality_session(
     mesocycle: Mesocycle,
     week_index: int,
     threshold_pace_seconds: int,
     race_type: str = "general",
     total_weeks: int = 0,
-) -> Tuple[str, str, str]:
+) -> SessionConstraint:
     phase_name = mesocycle.name
     phase_family = _phase_family(phase_name)
     week_in_phase = week_index - mesocycle.start_week + 1
@@ -743,104 +1048,113 @@ def _build_quality_session(
     threshold_pace = _format_pace(threshold_pace_seconds)
     slower_threshold_pace = _format_pace(threshold_pace_seconds + 5)
     marathon_pace = _format_pace(threshold_pace_seconds + 18)
+    phase_ctx = f"{phase_family}_week{week_in_phase}"
+    easy_pace_range = _format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65)
+    sc = _session_constraint  # 局部别名以缩短行
 
     if long_plan and race_type == "half_marathon" and phase_family != "taper":
         options_by_phase = {
             "base_1": [
-                ("有氧阈值训练", f"3×2000m，配速{slower_threshold_pace}/km，组间慢跑400m", "半年级半马计划前段以有氧阈和动作稳定性打底。"),
-                ("节奏跑", f"20分钟，配速{threshold_pace}/km", "用短节奏跑建立半马专项配速感。"),
-                ("轻松跑", f"55分钟，配速{_format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65)}/km", "长周期前段控制强度，优先建立训练连续性。"),
-                ("短冲", f"6×100m，配速{interval_pace}/km，组间慢跑100m", "基础期轻量短冲引入速度元素，不带疲劳。"),
+                sc("有氧阈值训练", 35, phase_ctx, f"配速{slower_threshold_pace}/km", "半年级半马计划前段以有氧阈和动作稳定性打底。"),
+                sc("节奏跑", 20, phase_ctx, f"配速{threshold_pace}/km", "用短节奏跑建立半马专项配速感。"),
+                sc("轻松跑", 55, phase_ctx, f"配速{easy_pace_range}/km", "长周期前段控制强度，优先建立训练连续性。"),
+                sc("短冲", 20, phase_ctx, f"配速{interval_pace}/km", "基础期轻量短冲引入速度元素，不带疲劳。"),
             ],
             "base_2": [
-                ("无氧阈跑", f"3×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "在有氧基础上加入巡航间歇，提升阈值耐受。"),
-                ("渐进跑", f"45分钟，从{_format_pace(threshold_pace_seconds + 45)}/km渐进至{threshold_pace}/km", "通过渐进跑连接有氧基础与专项强度。"),
-                ("节奏跑", f"25分钟，配速{threshold_pace}/km", "逐步延长半马专项连续输出。"),
-                ("法特莱克", f"40分钟，配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km自由变速", "以速度游戏方式在不同强度间切换，提升有氧变通能力。"),
+                sc("无氧阈跑", 30, phase_ctx, f"配速{slower_threshold_pace}/km", "在有氧基础上加入巡航间歇，提升阈值耐受。"),
+                sc("渐进跑", 45, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 45)}/km渐进至{threshold_pace}/km", "通过渐进跑连接有氧基础与专项强度。"),
+                sc("节奏跑", 25, phase_ctx, f"配速{threshold_pace}/km", "逐步延长半马专项连续输出。"),
+                sc("法特莱克", 40, phase_ctx, f"配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km", "以速度游戏方式在不同强度间切换，提升有氧变通能力。"),
             ],
             "build_1": [
-                ("间歇跑", f"5×800m，配速{interval_pace}/km，组间慢跑200m", "建设期前段用中短间歇提升速度储备。"),
-                ("无氧阈跑", f"4×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "强化半马配速附近的稳定输出。"),
-                ("节奏跑", f"30分钟，配速{threshold_pace}/km", "把持续跑时间推进到专项区间。"),
-                ("坡道训练", f"8×200m上坡，配速{interval_pace}/km，慢跑下坡恢复", "利用坡道同时训练力量和跑步经济性。"),
+                sc("间歇跑", 25, phase_ctx, f"配速{interval_pace}/km", "建设期前段用中短间歇提升速度储备。"),
+                sc("无氧阈跑", 38, phase_ctx, f"配速{slower_threshold_pace}/km", "强化半马配速附近的稳定输出。"),
+                sc("节奏跑", 30, phase_ctx, f"配速{threshold_pace}/km", "把持续跑时间推进到专项区间。"),
+                sc("坡道训练", 25, phase_ctx, f"配速{interval_pace}/km", "利用坡道同时训练力量和跑步经济性。"),
             ],
             "build_2": [
-                ("摄氧量训练", f"5×3分钟，配速{interval_pace}/km，组间慢跑3分钟", "建设期后段保留摄氧量刺激但控制总量。"),
-                ("无氧阈跑", f"3×2000m，配速{slower_threshold_pace}/km，组间慢跑500m", "以更长巡航间歇提升专项耐力。"),
-                ("节奏跑", f"2×15分钟，配速{threshold_pace}/km，组间轻松跑5分钟", "把节奏跑拆组，减少长计划后段重复感。"),
-                ("坡道训练", f"6×300m上坡，配速{slower_threshold_pace}/km，慢跑下坡恢复", "用更长坡道段强化抗疲劳能力。"),
+                sc("摄氧量训练", 30, phase_ctx, f"配速{interval_pace}/km", "建设期后段保留摄氧量刺激但控制总量。"),
+                sc("无氧阈跑", 36, phase_ctx, f"配速{slower_threshold_pace}/km", "以更长巡航间歇提升专项耐力。"),
+                sc("节奏跑", 35, phase_ctx, f"配速{threshold_pace}/km", "把节奏跑拆组，减少长计划后段重复感。"),
+                sc("坡道训练", 25, phase_ctx, f"配速{slower_threshold_pace}/km", "用更长坡道段强化抗疲劳能力。"),
             ],
             "peak": [
-                ("节奏跑", f"35分钟，配速{threshold_pace}/km", "巅峰期强化半马专项持续输出。"),
-                ("摄氧量训练", f"4×4分钟，配速{interval_pace}/km，组间慢跑3分钟", "用较短总量维持高端能力。"),
-                ("无氧阈跑", f"2×3000m，配速{slower_threshold_pace}/km，组间慢跑600m", "接近比赛前用长巡航间歇巩固阈值。"),
+                sc("节奏跑", 35, phase_ctx, f"配速{threshold_pace}/km", "巅峰期强化半马专项持续输出。"),
+                sc("摄氧量训练", 25, phase_ctx, f"配速{interval_pace}/km", "用较短总量维持高端能力。"),
+                sc("无氧阈跑", 35, phase_ctx, f"配速{slower_threshold_pace}/km", "接近比赛前用长巡航间歇巩固阈值。"),
             ],
         }
         options = options_by_phase.get(phase_family, options_by_phase["build_1"])
     elif long_plan and race_type == "marathon" and phase_family != "taper":
         options_by_phase = {
             "base_1": [
-                ("轻松跑", f"60分钟，配速{_format_pace_range(threshold_pace_seconds + 50, threshold_pace_seconds + 70)}/km", "半年级全马前段优先扩展有氧容量。"),
-                ("马拉松配速跑", f"2×10分钟，配速{marathon_pace}/km，组间轻松跑5分钟", "早期轻量接触全马专项配速。"),
-                ("渐进跑", f"45分钟，从{_format_pace(threshold_pace_seconds + 60)}/km渐进至{_format_pace(threshold_pace_seconds + 25)}/km", "用渐进节奏提升有氧控制能力。"),
-                ("短冲", f"6×100m，配速{interval_pace}/km，组间慢跑100m", "基础期末尾短冲激活神经肌肉，不带疲劳。"),
+                sc("轻松跑", 60, phase_ctx, f"配速{_format_pace_range(threshold_pace_seconds + 50, threshold_pace_seconds + 70)}/km", "半年级全马前段优先扩展有氧容量。"),
+                sc("马拉松配速跑", 25, phase_ctx, f"配速{marathon_pace}/km", "早期轻量接触全马专项配速。"),
+                sc("渐进跑", 45, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 60)}/km渐进至{_format_pace(threshold_pace_seconds + 25)}/km", "用渐进节奏提升有氧控制能力。"),
+                sc("短冲", 20, phase_ctx, f"配速{interval_pace}/km", "基础期末尾短冲激活神经肌肉，不带疲劳。"),
             ],
             "base_2": [
-                ("马拉松配速跑", f"2×15分钟，配速{marathon_pace}/km，组间轻松跑5分钟", "巩固全马配速感。"),
-                ("渐进跑", f"55分钟，从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "连接有氧基础与专项耐力。"),
-                ("无氧阈跑", f"3×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "用较温和巡航间歇提高效率。"),
-                ("法特莱克", f"50分钟，配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km自由变速", "通过速度游戏累积不同区间的有氧时间。"),
+                sc("马拉松配速跑", 35, phase_ctx, f"配速{marathon_pace}/km", "巩固全马配速感。"),
+                sc("渐进跑", 55, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "连接有氧基础与专项耐力。"),
+                sc("无氧阈跑", 30, phase_ctx, f"配速{slower_threshold_pace}/km", "用较温和巡航间歇提高效率。"),
+                sc("法特莱克", 50, phase_ctx, f"配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km", "通过速度游戏累积不同区间的有氧时间。"),
             ],
             "build_1": [
-                ("马拉松配速跑", f"3×15分钟，配速{marathon_pace}/km，组间轻松跑5分钟", "建设期前段增加专项配速累计时间。"),
-                ("节奏跑", f"25分钟，配速{threshold_pace}/km", "提高乳酸阈值，为全马配速留余量。"),
-                ("渐进跑", f"65分钟，从{_format_pace(threshold_pace_seconds + 50)}/km渐进至{marathon_pace}/km", "强化后段稳定输出。"),
-                ("坡道训练", f"8×200m上坡，配速{interval_pace}/km，慢跑下坡恢复", "利用坡道同时训练力量与跑步经济性。"),
+                sc("马拉松配速跑", 55, phase_ctx, f"配速{marathon_pace}/km", "建设期前段增加专项配速累计时间。"),
+                sc("节奏跑", 25, phase_ctx, f"配速{threshold_pace}/km", "提高乳酸阈值，为全马配速留余量。"),
+                sc("渐进跑", 65, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 50)}/km渐进至{marathon_pace}/km", "强化后段稳定输出。"),
+                sc("坡道训练", 25, phase_ctx, f"配速{interval_pace}/km", "利用坡道同时训练力量与跑步经济性。"),
             ],
             "build_2": [
-                ("马拉松配速跑", f"2×25分钟，配速{marathon_pace}/km，组间轻松跑8分钟", "建设期后段突出全马专项耐力。"),
-                ("无氧阈跑", f"4×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "保留阈值刺激但不堆叠过高强度。"),
-                ("渐进跑", f"75分钟，从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "模拟长距离后段专项配速控制。"),
-                ("坡道训练", f"6×300m上坡，配速{slower_threshold_pace}/km，慢跑下坡恢复", "用更长坡道段强化抗疲劳能力。"),
+                sc("马拉松配速跑", 60, phase_ctx, f"配速{marathon_pace}/km", "建设期后段突出全马专项耐力。"),
+                sc("无氧阈跑", 38, phase_ctx, f"配速{slower_threshold_pace}/km", "保留阈值刺激但不堆叠过高强度。"),
+                sc("渐进跑", 75, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "模拟长距离后段专项配速控制。"),
+                sc("坡道训练", 25, phase_ctx, f"配速{slower_threshold_pace}/km", "用更长坡道段强化抗疲劳能力。"),
             ],
             "peak": [
-                ("马拉松配速跑", f"3×20分钟，配速{marathon_pace}/km，组间轻松跑6分钟", "巅峰期模拟比赛配速节奏。"),
-                ("渐进跑", f"70分钟，后30分钟配速{marathon_pace}/km", "把专项配速放在疲劳后段完成。"),
-                ("节奏跑", f"30分钟，配速{threshold_pace}/km", "用较短质量课维持跑步经济性。"),
+                sc("马拉松配速跑", 70, phase_ctx, f"配速{marathon_pace}/km", "巅峰期模拟比赛配速节奏。"),
+                sc("渐进跑", 70, phase_ctx, f"后段配速{marathon_pace}/km", "把专项配速放在疲劳后段完成。"),
+                sc("节奏跑", 30, phase_ctx, f"配速{threshold_pace}/km", "用较短质量课维持跑步经济性。"),
             ],
         }
         options = options_by_phase.get(phase_family, options_by_phase["build_1"])
-    elif "减量" in phase_name or "调整" in phase_name:
+    elif any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
+        taper_tempo_min = 20 + (week_index % 2) * 5
         options = [
-            ("节奏跑", f"{20 + (week_index % 2) * 5}分钟，配速{threshold_pace}/km", "保留节奏感，但总负荷下降。"),
-            ("间歇跑", f"{4 + (week_index % 2)}×400m，配速{interval_pace}/km，组间慢跑200m", "以短间歇维持步频与速度感。"),
+            sc("节奏跑", taper_tempo_min, phase_ctx, f"配速{threshold_pace}/km", "保留节奏感，但总负荷下降。"),
+            sc("间歇跑", 15, phase_ctx, f"配速{interval_pace}/km", "以短间歇维持步频与速度感。"),
         ]
-    elif "基础" in phase_name:
+    elif any(kw in phase_name for kw in ("基础", "Base", "base")):
+        base_tempo_min = 20 + (week_index % 3) * 5
+        base_prog_min = 40 + (week_index % 3) * 5
         options = [
-            ("有氧阈值训练", f"3×2000m，配速{slower_threshold_pace}/km，组间慢跑400m", "以有氧阈值训练建立脂肪代谢基础，保持低强度高有氧刺激。"),
-            ("节奏跑", f"{20 + (week_index % 3) * 5}分钟，配速{threshold_pace}/km", "以稳定阈值持续跑温和提升有氧基础。"),
-            ("渐进跑", f"{40 + (week_index % 3) * 5}分钟，从{_format_pace(threshold_pace_seconds + 45)}/km渐进至{threshold_pace}/km", "通过渐进跑温和引入强度元素，不急于堆高强度。"),
-            ("法特莱克", f"35分钟，配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km自由变速", "以速度游戏方式在不同强度间切换，低心理压力高有氧刺激。"),
+            sc("有氧阈值训练", 35, phase_ctx, f"配速{slower_threshold_pace}/km", "以有氧阈值训练建立脂肪代谢基础，保持低强度高有氧刺激。"),
+            sc("节奏跑", base_tempo_min, phase_ctx, f"配速{threshold_pace}/km", "以稳定阈值持续跑温和提升有氧基础。"),
+            sc("渐进跑", base_prog_min, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 45)}/km渐进至{threshold_pace}/km", "通过渐进跑温和引入强度元素，不急于堆高强度。"),
+            sc("法特莱克", 35, phase_ctx, f"配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km", "以速度游戏方式在不同强度间切换，低心理压力高有氧刺激。"),
         ]
-    elif race_type == "half_marathon" and "减量" not in phase_name and "调整" not in phase_name:
+    elif race_type == "half_marathon" and not any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         options = [
-            ("无氧阈跑", f"3×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "半马目标优先建立阈值耐受和专项节奏感。"),
-            ("节奏跑", f"25分钟，配速{threshold_pace}/km", "围绕半马专项配速感做连续输出。"),
-            ("间歇跑", f"5×800m，配速{interval_pace}/km，组间慢跑200m", "用较短间歇保持速度储备，避免首周过量。"),
+            sc("无氧阈跑", 30, phase_ctx, f"配速{slower_threshold_pace}/km", "半马目标优先建立阈值耐受和专项节奏感。"),
+            sc("节奏跑", 25, phase_ctx, f"配速{threshold_pace}/km", "围绕半马专项配速感做连续输出。"),
+            sc("间歇跑", 25, phase_ctx, f"配速{interval_pace}/km", "用较短间歇保持速度储备，避免首周过量。"),
         ]
-    elif race_type == "marathon" and "减量" not in phase_name and "调整" not in phase_name:
+    elif race_type == "marathon" and not any(kw in phase_name for kw in ("减量", "调整", "Taper", "taper")):
         options = [
-            ("马拉松配速跑", f"2×15分钟，配速{marathon_pace}/km，组间轻松跑5分钟", "全马目标优先建立可持续专项配速感。"),
-            ("渐进跑", f"50分钟，从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "用渐进节奏连接有氧基础与全马专项耐力。"),
-            ("轻松跑", f"55分钟，配速{_format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65)}/km", "首周先稳住有氧容量，不急于堆高强度。"),
+            sc("马拉松配速跑", 35, phase_ctx, f"配速{marathon_pace}/km", "全马目标优先建立可持续专项配速感。"),
+            sc("渐进跑", 50, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{marathon_pace}/km", "用渐进节奏连接有氧基础与全马专项耐力。"),
+            sc("轻松跑", 55, phase_ctx, f"配速{easy_pace_range}/km", "首周先稳住有氧容量，不急于堆高强度。"),
         ]
     else:
+        gen_interval_reps = 5 + (week_index % 3)
+        gen_threshold_reps = 4 + (week_index % 2)
+        gen_tempo_min = 25 + (week_index % 3) * 5
         options = [
-            ("间歇跑", f"{5 + (week_index % 3)}×1000m，配速{interval_pace}/km，组间慢跑200m", "围绕专项能力做主质量课。"),
-            ("无氧阈跑", f"{4 + (week_index % 2)}×1600m，配速{slower_threshold_pace}/km，组间慢跑400m", "强化比赛配速附近的耐受。"),
-            ("节奏跑", f"{25 + (week_index % 3) * 5}分钟，配速{threshold_pace}/km", "把持续跑时间推进到专项区间。"),
-            ("法特莱克", f"45分钟，配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km自由变速", "通过速度游戏丰富训练刺激，避免同型课重复。"),
-            ("坡道训练", f"8×200m上坡，配速{interval_pace}/km，慢跑下坡恢复", "利用坡道同时训练力量和跑步经济性。"),
+            sc("间歇跑", 30, phase_ctx, f"配速{interval_pace}/km", "围绕专项能力做主质量课。"),
+            sc("无氧阈跑", 38, phase_ctx, f"配速{slower_threshold_pace}/km", "强化比赛配速附近的耐受。"),
+            sc("节奏跑", gen_tempo_min, phase_ctx, f"配速{threshold_pace}/km", "把持续跑时间推进到专项区间。"),
+            sc("法特莱克", 45, phase_ctx, f"配速{_format_pace_range(threshold_pace_seconds + 25, threshold_pace_seconds)}/km", "通过速度游戏丰富训练刺激，避免同型课重复。"),
+            sc("坡道训练", 25, phase_ctx, f"配速{interval_pace}/km", "利用坡道同时训练力量和跑步经济性。"),
         ]
 
     option_index = week_in_phase - 1 if long_plan and phase_family != "taper" else week_index - 1
@@ -853,93 +1167,47 @@ def _build_secondary_session(
     threshold_pace_seconds: int,
     allow_quality: bool,
     total_weeks: int = 0,
-) -> Tuple[str, str, str]:
+) -> SessionConstraint:
     phase_family = _phase_family(mesocycle.name)
     long_plan = _is_half_year_plan(total_weeks)
     easy_pace = _format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65)
     threshold_pace = _format_pace(threshold_pace_seconds + 3)
+    phase_ctx = f"{phase_family}_week{week_index}"
+    sc = _session_constraint
 
     if long_plan and phase_family != "taper":
         if phase_family in {"base_1", "base_2"}:
             if week_index % 4 == 0:
-                return (
-                    "恢复跑",
-                    f"40分钟，配速{easy_pace}/km",
-                    "半年级长计划前半段把第二训练日留给恢复，减少重复感。",
-                )
+                return sc("恢复跑", 40, phase_ctx, f"配速{easy_pace}/km", "半年级长计划前半段把第二训练日留给恢复，减少重复感。")
             if phase_family == "base_2" and week_index % 2 == 0:
-                return (
-                    "轻松跑",
-                    f"50分钟，配速{easy_pace}/km",
-                    "通过轻松跑维持周跑量，减少周内双质量课频率。",
-                )
-            return (
-                "节奏跑",
-                f"20分钟，配速{threshold_pace}/km",
-                "在基础阶段后半程加入温和节奏刺激。",
-            )
+                return sc("轻松跑", 50, phase_ctx, f"配速{easy_pace}/km", "通过轻松跑维持周跑量，减少周内双质量课频率。")
+            return sc("节奏跑", 20, phase_ctx, f"配速{threshold_pace}/km", "在基础阶段后半程加入温和节奏刺激。")
         if phase_family in {"build_1", "build_2"}:
             if week_index % 3 == 0:
-                return (
-                    "马拉松配速跑",
-                    f"2×12分钟，配速{_format_pace(threshold_pace_seconds + 18)}/km，组间轻松跑5分钟",
-                    "建设期的第二训练日加入专项配速，但总量控制在可恢复范围。",
-                )
+                return sc("马拉松配速跑", 30, phase_ctx, f"配速{_format_pace(threshold_pace_seconds + 18)}/km", "建设期的第二训练日加入专项配速，但总量控制在可恢复范围。")
             if week_index % 2 == 0:
-                return (
-                    "节奏跑",
-                    f"25分钟，配速{threshold_pace}/km",
-                    "以节奏跑承接主课，避免每周都出现同型间歇。",
-                )
-            return (
-                "轻松跑",
-                f"45分钟，配速{easy_pace}/km",
-                "让长计划中的中段周内结构保留恢复窗口。",
-            )
+                return sc("节奏跑", 25, phase_ctx, f"配速{threshold_pace}/km", "以节奏跑承接主课，避免每周都出现同型间歇。")
+            return sc("轻松跑", 45, phase_ctx, f"配速{easy_pace}/km", "让长计划中的中段周内结构保留恢复窗口。")
         if phase_family == "peak":
             if week_index % 2 == 0:
-                return (
-                    "渐进跑",
-                    f"50分钟，从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{_format_pace(threshold_pace_seconds + 20)}/km",
-                    "峰值阶段第二训练日用渐进跑增强疲劳下配速控制。",
-                )
-            return (
-                "轻松跑",
-                f"40分钟，配速{easy_pace}/km",
-                "峰值阶段保留更明确的恢复窗口。",
-            )
+                return sc("渐进跑", 50, phase_ctx, f"从{_format_pace(threshold_pace_seconds + 55)}/km渐进至{_format_pace(threshold_pace_seconds + 20)}/km", "峰值阶段第二训练日用渐进跑增强疲劳下配速控制。")
+            return sc("轻松跑", 40, phase_ctx, f"配速{easy_pace}/km", "峰值阶段保留更明确的恢复窗口。")
 
-    if not allow_quality or "减量" in mesocycle.name or "调整" in mesocycle.name:
-        return (
-            "轻松跑",
-            f"{40 + (week_index % 3) * 5}分钟，配速{easy_pace}/km",
-            "用轻松跑承接主课后的恢复。",
-        )
+    if not allow_quality or any(kw in mesocycle.name for kw in ("减量", "调整", "Taper", "taper")):
+        easy_min = 40 + (week_index % 3) * 5
+        return sc("轻松跑", easy_min, phase_ctx, f"配速{easy_pace}/km", "用轻松跑承接主课后的恢复。")
 
     if phase_family == "build":
         if week_index % 2 == 0:
-            return (
-                "节奏跑",
-                f"{20 + (week_index % 2) * 5}分钟，配速{threshold_pace}/km",
-                "建设期次课以节奏跑维持乳酸阈值刺激。",
-            )
-        return (
-            "法特莱克",
-            f"35分钟，配速{easy_pace}/km自由变速",
-            "建设期奇数周以法特莱克丰富刺激，低心理压力。",
-        )
+            tempo_min = 20 + (week_index % 2) * 5
+            return sc("节奏跑", tempo_min, phase_ctx, f"配速{threshold_pace}/km", "建设期次课以节奏跑维持乳酸阈值刺激。")
+        return sc("法特莱克", 35, phase_ctx, f"配速{easy_pace}/km", "建设期奇数周以法特莱克丰富刺激，低心理压力。")
 
     if week_index % 2 == 0:
-        return (
-            "节奏跑",
-            f"{20 + (week_index % 2) * 5}分钟，配速{threshold_pace}/km",
-            "作为本周第二刺激点，保持与主课不同的刺激形式。",
-        )
-    return (
-        "轻松跑",
-        f"{45 + (week_index % 2) * 5}分钟，配速{easy_pace}/km",
-        "维持跑量，不再叠加额外高强度。",
-    )
+        tempo_min = 20 + (week_index % 2) * 5
+        return sc("节奏跑", tempo_min, phase_ctx, f"配速{threshold_pace}/km", "作为本周第二刺激点，保持与主课不同的刺激形式。")
+    easy_min = 45 + (week_index % 2) * 5
+    return sc("轻松跑", easy_min, phase_ctx, f"配速{easy_pace}/km", "维持跑量，不再叠加额外高强度。")
 
 
 def _build_long_run_main_set(
@@ -949,54 +1217,88 @@ def _build_long_run_main_set(
     threshold_pace_seconds: int,
     race_type: str = "general",
     total_weeks: int = 0,
-) -> str:
+) -> SessionConstraint:
+    """长距离跑主课约束描述。
+
+    距离计算公式（如 weekly_volume * 0.25、base_minutes + week_index * 3）
+    属于数学计算而非硬编码模板，此处保留计算结果。
+    特殊结构指令（如 "中段加入马拉松配速块"）放入 notes，由动作库检索解析。
+    """
     phase_family = _phase_family(mesocycle.name)
     long_plan = _is_half_year_plan(total_weeks)
+    week_in_phase = week_index - mesocycle.start_week + 1
+    phase_ctx = f"{phase_family}_week{week_in_phase}"
+    easy_range = _format_pace_range(threshold_pace_seconds + 35, threshold_pace_seconds + 55)
+    suffix = ""
+    structure_note = ""  # 特殊结构指令（动作库检索时作为 hints）
+
     if long_plan:
-        easy_range = _format_pace_range(threshold_pace_seconds + 35, threshold_pace_seconds + 55)
         if phase_family == "taper":
             taper_step = max(0, week_index - int(total_weeks or week_index) + 4)
             minutes = max(50, base_minutes - 26 - taper_step * 7)
             if taper_step >= 3:
-                return f"{minutes}分钟减量长距离，后半程保持轻松顺畅，不再追求专项配速"
-            return f"{minutes}分钟减量长距离，前半程轻松，后20分钟保持顺畅节奏"
-        cap = 150 if total_weeks >= 24 else 135
-        if race_type == "marathon":
-            cap = 185 if total_weeks >= 24 else 170
-        minutes = min(cap, base_minutes + week_index * 3)
-        if "巅峰" in mesocycle.name:
-            minutes = min(cap, base_minutes + 35 + (week_index % 3) * 5)
-        phase_weeks = mesocycle.weeks
-        week_in_phase = week_index - mesocycle.start_week + 1
-        load_level = _phase_to_load_level(mesocycle.name, week_in_phase, phase_weeks)
-        if load_level == "low" and week_index > 1:
-            minutes = max(base_minutes + 6, minutes - 10)
-            return f"{minutes}分钟恢复性长距离，配速{easy_range}/km，保留余力"
-        if week_index % 5 == 0:
-            return f"{minutes}分钟长距离，中段加入2×12分钟马拉松配速，组间轻松跑8分钟"
-        if week_index % 4 == 0:
-            return f"{minutes}分钟长距离，最后20分钟逐步加速到稳态配速"
-        if week_index % 3 == 0:
-            return f"{minutes}分钟长距离，前70%轻松，后30%提高到稳定有氧上沿"
-        suffix = "，后段保持稳定有氧并练习补给" if race_type == "marathon" else "，最后15分钟接近半马专项舒适配速"
-        return f"{minutes}分钟，配速{easy_range}/km{suffix}"
-
-    if "减量" in mesocycle.name or "调整" in mesocycle.name:
-        minutes = max(60, base_minutes - 20)
-        suffix = ""
-    elif race_type == "half_marathon":
-        minutes = min(125, base_minutes + week_index * 2)
-        suffix = "，最后15分钟接近半马专项舒适配速"
-    elif race_type == "marathon":
-        minutes = min(160, base_minutes + 15 + week_index * 4)
-        suffix = "，后段保持稳定有氧并练习补给"
-    elif "巅峰" in mesocycle.name:
-        minutes = min(150, base_minutes + 15)
-        suffix = ""
+                structure_note = "后半程保持轻松顺畅，不再追求专项配速"
+            else:
+                structure_note = "前半程轻松，后20分钟保持顺畅节奏"
+        else:
+            cap = 150 if total_weeks >= 24 else 135
+            if race_type == "marathon":
+                cap = 185 if total_weeks >= 24 else 170
+            minutes = min(cap, base_minutes + week_index * 3)
+            if any(kw in mesocycle.name for kw in ("巅峰", "Peak", "peak")):
+                minutes = min(cap, base_minutes + 35 + (week_index % 3) * 5)
+            phase_weeks = mesocycle.weeks
+            load_level = _phase_to_load_level(mesocycle.name, week_in_phase, phase_weeks)
+            if load_level == "low" and week_index > 1:
+                minutes = max(base_minutes + 6, minutes - 10)
+                structure_note = "恢复性长距离，保留余力"
+            elif week_index % 5 == 0:
+                structure_note = "中段加入马拉松配速块"
+            elif week_index % 4 == 0:
+                structure_note = "最后20分钟逐步加速到稳态配速"
+            elif week_index % 3 == 0:
+                structure_note = "前70%轻松，后30%提高到稳定有氧上沿"
+            elif race_type == "marathon":
+                structure_note = "后段保持稳定有氧并练习补给"
+            else:
+                structure_note = "最后15分钟接近半马专项舒适配速"
     else:
-        minutes = min(145, base_minutes + week_index * 3)
-        suffix = ""
-    return f"{minutes}分钟，配速{_format_pace_range(threshold_pace_seconds + 35, threshold_pace_seconds + 55)}/km{suffix}"
+        if any(kw in mesocycle.name for kw in ("减量", "调整", "Taper", "taper")):
+            minutes = max(60, base_minutes - 20)
+        elif race_type == "half_marathon":
+            minutes = min(125, base_minutes + week_index * 2)
+            structure_note = "最后15分钟接近半马专项舒适配速"
+        elif race_type == "marathon":
+            minutes = min(160, base_minutes + 15 + week_index * 4)
+            structure_note = "后段保持稳定有氧并练习补给"
+        elif any(kw in mesocycle.name for kw in ("巅峰", "Peak", "peak")):
+            minutes = min(150, base_minutes + 15)
+        else:
+            minutes = min(145, base_minutes + week_index * 3)
+
+    # 将特殊结构指令合并到 intensity_hint，便于动作库检索时做语义匹配
+    pace_hint = f"配速{easy_range}/km"
+    if structure_note:
+        pace_hint = f"{pace_hint}；{structure_note}"
+
+    # 长距离跑的训练笔记：合并动态计算信息和结构指令
+    notes_parts = [f"长距离跑，公式计算目标时间约{minutes}分钟"]
+    if structure_note:
+        notes_parts.append(structure_note)
+    if race_type == "marathon":
+        notes_parts.append("全马目标：关注补给策略执行")
+    elif race_type == "half_marathon":
+        notes_parts.append("半马目标：关注后半程配速保持")
+
+    return SessionConstraint(
+        workout_type="long_run",
+        training_type_display="长距离",
+        zone_range="Z2-Z3",
+        target_duration_min=minutes,
+        phase_context=phase_ctx,
+        intensity_hint=pace_hint,
+        notes="；".join(notes_parts),
+    )
 
 
 def _build_weekly_volume(
@@ -1022,9 +1324,17 @@ def _classify_day_label(training_type: str) -> str:
 
 
 def _main_km_for_type(training_type: str, target_km: float, ratio: str) -> float:
+    """按训练类型和周跑量目标，返回主课训练距离 (km)。
+
+    优先从文献规则动态计算距离比例，失败时回退到教练通用实践字典。
+    """
     if training_type in ("休息", ""):
         return 0.0
-    fraction = TRAINING_DISTANCE_FRACTIONS.get(training_type, (0.10, 0.18))
+    # 优先尝试文献规则动态计算
+    fraction = _distance_fraction_from_literature(training_type, target_km)
+    # 文献规则不可用时使用教练实践 fallback
+    if fraction is None:
+        fraction = _TRAINING_DISTANCE_FRACTIONS_FALLBACK.get(training_type, (0.10, 0.18))
     if ratio == "lower":
         return round(target_km * fraction[0], 1)
     elif ratio == "upper":
@@ -1058,6 +1368,16 @@ def _clean_hmp_ids_for_frontend(plan_dict: Dict[str, Any]) -> None:
 
 
 def _fixed_km_for_training_type(training_type: str, role: str) -> Tuple[float, float]:
+    """按训练类型和角色返回热身/冷身固定距离 (km)。
+
+    优先从动作库动态获取热身/冷身建议，不可用时回退到教练实践硬编码值。
+    """
+    result = _warmup_cooldown_from_action_library(training_type)
+    if result.get("source") == "action_library":
+        # 动作库提供了可解析的距离值，直接使用
+        return float(result.get("warmup_km", 1.5)), float(result.get("cooldown_km", 1.0))
+
+    # 动作库无匹配或无法解析 — 回退到教练实践硬编码值
     if role == "long_run":
         return 2.0, 1.5
     if training_type in ("轻松跑", "恢复跑", ""):
@@ -1393,17 +1713,17 @@ def _build_week_days(
     week_in_phase = week_index - mesocycle.start_week + 1
     weekly_volume_km = _build_weekly_volume(base_weekly_mileage, week_index, blocks)
 
-    primary_type, primary_main_set, primary_note = _build_quality_session(
+    primary_constraint = _build_quality_session(
         mesocycle, week_index, threshold_pace_seconds, race_type, total_weeks
     )
-    secondary_type, secondary_main_set, secondary_note = _build_secondary_session(
+    secondary_constraint = _build_secondary_session(
         mesocycle,
         week_index,
         threshold_pace_seconds,
         mesocycle.max_high_intensity_per_week >= 2,
         total_weeks,
     )
-    long_run_main_set = _build_long_run_main_set(
+    long_run_constraint = _build_long_run_main_set(
         mesocycle,
         week_index,
         min(120, max(80, max_session_minutes)),
@@ -1411,12 +1731,26 @@ def _build_week_days(
         race_type,
         total_weeks,
     )
+
+    # 用约束从动作库检索具体课表候选项，不可用时回退到约束字段生成的文本描述
+    primary_main_set, _ = _resolve_main_set_from_constraint(primary_constraint)
+    secondary_main_set, _ = _resolve_main_set_from_constraint(secondary_constraint)
+    long_run_main_set, _ = _resolve_main_set_from_constraint(long_run_constraint)
+
+    primary_type = primary_constraint.training_type_display
+    primary_note = primary_constraint.notes
+    secondary_type = secondary_constraint.training_type_display
+    secondary_note = secondary_constraint.notes
     hmp_week_decision: Dict[str, Any] = {}
     distance_based_long_run = False
     if hm_protocol_context and hm_protocol_context.get("active") and race_type == "half_marathon":
         phase_id = _hm_protocol_phase_id(mesocycle, week_index, total_weeks, hm_protocol_context) or ""
         selected = hm_protocol_context.get("selected_archetype") or {}
         pace_calibration = hm_protocol_context.get("pace_calibration") or {}
+        # 当前阶段分类 + 训练总课次，用于文献约束驱动强度课数量
+        current_phase_family = _phase_family(mesocycle.name)
+        total_training_sessions = len(available_days)
+
         hmp_week_decision = compose_hmp_week_sessions(
             week_index=week_index,
             total_weeks=total_weeks,
@@ -1434,6 +1768,8 @@ def _build_week_days(
                 recent_marathon=bool(hm_protocol_context.get("recent_marathon")),
                 fatigue_or_injury=_profile_flag(profile, "injury_or_fatigue", "fatigue", "injury"),
                 speed_calibration_available=bool(pace_calibration.get("speed_calibration_available")),
+                phase_family=current_phase_family,
+                total_training_sessions=total_training_sessions,
             ),
         )
         for session in hmp_week_decision.get("sessions") or []:
@@ -1456,7 +1792,12 @@ def _build_week_days(
             if effective_volume:
                 weekly_volume_km = min(float(weekly_volume_km), float(effective_volume))
                 distance_based_long_run = True
-        if capacity_budget.get("quality_sessions_max") == 1 and secondary_quality_day:
+        # 低频训练者长距离负荷约束 (来源: Pfitzinger 低频计划模板 + Gabbett ACWR)
+        if total_training_sessions <= 4 and secondary_quality_day and not capacity_budget.get("volume_basis"):
+            secondary_type = "轻松跑"
+            secondary_main_set = _easy_km_text(8.0, _format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65))
+            secondary_note = "周训练≤4天且含长距离课，强度课上限保持1节（Pfitzinger/Gabbett 约束）。本次课降级为轻松跑。"
+        elif capacity_budget.get("quality_sessions_max") == 1 and secondary_quality_day:
             secondary_type = "轻松跑"
             secondary_main_set = _easy_km_text(8.0, _format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65))
             secondary_note = "近4周跑量或恢复约束触发容量预算，本次次课降级为轻松跑。"
@@ -1494,10 +1835,23 @@ def build_structured_training_plan_skeleton(
     total_weeks = int(plan_context["resolved_plan_weeks"])
     available_days = _normalize_available_days(aligned_profile.get("available_days"))
     weekly_structure_constraints = _parse_weekly_structure_constraints(query)
-    macrocycle = _resolve_macrocycle(aligned_profile, total_weeks)
+    race_type = _resolve_goal_race_type(aligned_profile.get("goal"))
+
+    # RAG + LLM 周期化顾问：阶段模型选择决策
+    periodization_advisory = None
+    try:
+        from marathon_qa_assistant.core.periodization_advisor import (  # noqa: E402
+            get_periodization_advisory,
+        )
+        periodization_advisory = get_periodization_advisory(
+            aligned_profile, total_weeks, race_type,
+        )
+    except Exception as exc:
+        logger.debug("periodization advisor 调用失败，降级到确定性规则: %s", exc)
+
+    macrocycle = _resolve_macrocycle(aligned_profile, total_weeks, advisory=periodization_advisory)
     base_weekly_mileage = coerce_float_from_unit_text(aligned_profile.get("weekly_mileage"), default=40.0) or 40.0
     blocks = resolve_4week_blocks(total_weeks, base_weekly_mileage)
-    race_type = _resolve_goal_race_type(aligned_profile.get("goal"))
     hm_protocol_context = _build_hm_protocol_context(aligned_profile, total_weeks, race_type)
 
     phase_summary = [
@@ -1617,6 +1971,16 @@ def build_structured_training_plan_skeleton(
     if weekly_structure_constraints.get("required_workouts") or weekly_structure_constraints.get("forbidden_workouts") or weekly_structure_constraints.get("required_rest_days") or weekly_structure_constraints.get("weekly_frequency"):
         plan_dict["weekly_structure_constraints"] = weekly_structure_constraints
         plan_dict["weekly_structure_validation"] = _validate_weekly_structure_constraints(plan_dict, weekly_structure_constraints)
+    if periodization_advisory is not None and periodization_advisory.llm_generated:
+        plan_dict["periodization_advisory"] = {
+            "model_tier": periodization_advisory.model_tier,
+            "needs_introductory": periodization_advisory.needs_introductory,
+            "intro_weeks": periodization_advisory.intro_weeks,
+            "phase_adjustments": periodization_advisory.phase_adjustments,
+            "reasoning": periodization_advisory.reasoning,
+            "evidence_sources": periodization_advisory.evidence_sources,
+            "llm_generated": True,
+        }
     return plan_dict
 
 

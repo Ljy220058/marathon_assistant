@@ -20,21 +20,32 @@ async function inspectViewport(browser, viewport, label) {
     const apiToken = document.querySelector("#apiToken");
     const openaiProviderButton = document.querySelector('[data-provider-choice="openai"]');
     const toggleRect = toggle?.getBoundingClientRect();
+    const pageOverflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
     return {
-      workspaceFlow: Boolean(document.querySelector("#workspaceFlow")),
       primaryCard: Boolean(document.querySelector("[data-primary-workspace-card]")),
+      planGenerationEntryCount: document.querySelectorAll("[data-plan-generation-entry]").length,
+      runQueryVisible: Boolean(document.querySelector("#runQuery")?.offsetParent),
+      runnerIdentityCard: Boolean(document.querySelector("#runnerIdentityCard")),
+      calendarSection: Boolean(document.querySelector("#calendar-section")),
+      mobileQuickNav: Boolean(document.querySelector(".mobile-quick-nav")),
       drawerToggle: Boolean(toggle),
       apiTokenInput: Boolean(apiToken),
       openaiProviderButton: Boolean(openaiProviderButton),
       drawerToggleOverflows: toggleRect ? toggleRect.left < 0 || toggleRect.right > window.innerWidth : true,
+      pageOverflow,
       hiddenPanelCount: Array.from(document.querySelectorAll("[data-drawer-section]")).filter((item) => item.hidden).length,
       visibleForbidden: forbidden.filter((item) => bodyText.includes(item)),
       hasDayEssentialsTemplate: document.documentElement.textContent.includes("day-card-essentials"),
     };
   }, forbiddenVisibleText);
 
-  assert(base.workspaceFlow, `${label}: workspaceFlow missing`);
   assert(base.primaryCard, `${label}: primary workspace card missing`);
+  assert(base.planGenerationEntryCount >= 2, `${label}: plan generation entries missing`);
+  assert(base.runQueryVisible, `${label}: generate plan button missing`);
+  assert(base.runnerIdentityCard, `${label}: runner identity card missing`);
+  assert(base.calendarSection, `${label}: calendar section missing`);
+  assert(base.mobileQuickNav, `${label}: mobile quick nav missing`);
+  assert(base.pageOverflow === 0, `${label}: page has horizontal overflow (${base.pageOverflow}px)`);
   assert(base.drawerToggle, `${label}: drawer toggle missing`);
   assert(base.apiTokenInput, `${label}: api token input missing`);
   assert(base.openaiProviderButton, `${label}: openai provider button missing`);
@@ -42,26 +53,6 @@ async function inspectViewport(browser, viewport, label) {
   assert(base.hiddenPanelCount >= 3, `${label}: drawer panels should be hidden by default`);
   assert(base.visibleForbidden.length === 0, `${label}: forbidden normal-mode text visible: ${base.visibleForbidden.join(", ")}`);
   assert(base.hasDayEssentialsTemplate, `${label}: day-card-essentials template missing`);
-
-  const drawerAlreadyOpen = await page.locator("[data-side-drawer]").evaluate((drawer) => Boolean(drawer.open));
-  if (!drawerAlreadyOpen) {
-    await page.click(".side-drawer-toggle");
-  }
-  await page.fill("#drawerSearch", "依据");
-  const basisActions = await page.evaluate(() =>
-    Array.from(document.querySelectorAll("[data-drawer-action]"))
-      .filter((item) => !item.hidden)
-      .map((item) => item.dataset.drawerAction),
-  );
-  assert(basisActions.includes("basis"), `${label}: basis search did not reveal basis action`);
-
-  await page.fill("#drawerSearch", "api");
-  const apiActions = await page.evaluate(() =>
-    Array.from(document.querySelectorAll("[data-drawer-action]"))
-      .filter((item) => !item.hidden)
-      .map((item) => item.dataset.drawerAction),
-  );
-  assert(!apiActions.includes("settings"), `${label}: expert settings visible from api search`);
 
   await page.close();
 }

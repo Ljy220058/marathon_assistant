@@ -104,9 +104,105 @@ def _split_labeled_profile_line(line: str) -> Optional[Tuple[str, str]]:
     return field, value
 
 
+# P0-3: 从自由文本中提取赛事目标的正则模式
+_FREE_TEXT_GOAL_PATTERNS: List[Tuple[re.Pattern, str, Optional[str]]] = [
+    # "3小时30分全马" / "3小时30分 马拉松"
+    (re.compile(r'(\d+)\s*小时\s*(\d+)\s*分[^a-z0-9汉字]*?(?:全马|马拉松|marathon|全程)'), 'full'),
+    # "1小时30分半马" / "1小时30分 半程"
+    (re.compile(r'(\d+)\s*小时\s*(\d+)\s*分[^a-z0-9汉字]*?(?:半马|半程|half)'), 'half'),
+    # "全马3小时" (hours only, no minutes — 整数小时全马)
+    (re.compile(r'(?:全马|马拉松|marathon|全程)\s*(\d+)\s*小时\b(?!\s*\d+\s*分)'), 'full_hours'),
+    # "全马3小时30分" / "马拉松3小时30分"
+    (re.compile(r'(?:全马|马拉松|marathon|全程)\s*(\d+)\s*小时\s*(\d+)\s*分'), 'full'),
+    # "半马1小时" (hours only)
+    (re.compile(r'(?:半马|半程|half)\s*(\d+)\s*小时\b(?!\s*\d+\s*分)'), 'half_hours'),
+    # "半马1小时30分"
+    (re.compile(r'(?:半马|半程|half)\s*(\d+)\s*小时\s*(\d+)\s*分'), 'half'),
+    # "首个全马" / "第一次完成全马" / "完成首个全马" → 完赛全马 + 新手
+    (re.compile(r'(?:首个|第一次|完成)\s*全马'), 'full_completion'),
+    # "首个半马" / "第一次半马"
+    (re.compile(r'(?:首个|第一次|完成)\s*半马'), 'half_completion'),
+    # 简化版："全马330" / "全马 3:30"
+    (re.compile(r'(?:全马|马拉松|marathon)\s*(\d{2,3})\s*(?:小时)?\s*(\d{2})\s*分?'), 'full'),
+    (re.compile(r'(?:半马|半程)\s*(\d{2,3})\s*分?'), 'half_shorthand'),
+]
+
+# P0-3: 从自由文本中提取经验水平的模式
+_EXPERIENCE_LEVEL_PATTERNS: List[Tuple[re.Pattern, str]] = [
+    (re.compile(r'新手|入门|零基础|第一次|刚开始|小白'), '新手'),
+    (re.compile(r'进阶|有经验|跑过比赛|多年经验|老手'), '进阶'),
+]
+
+
+def _extract_goal_from_free_text(query: str) -> Optional[str]:
+    """P0-3: 从自然语言查询中提取赛事目标。"""
+    for pattern, race_type in _FREE_TEXT_GOAL_PATTERNS:
+        m = pattern.search(query)
+        if not m:
+            continue
+        if race_type == 'full':
+            return f"全马{m.group(1)}小时{m.group(2)}分"
+        if race_type == 'full_hours':
+            return f"全马{m.group(1)}小时"
+        if race_type == 'half':
+            return f"半马{m.group(1)}小时{m.group(2)}分"
+        if race_type == 'half_hours':
+            return f"半马{m.group(1)}小时"
+        if race_type == 'full_completion':
+            return "完赛全马"
+        if race_type == 'half_completion':
+            return "完赛半马"
+        if race_type == 'half_shorthand':
+            return f"半马{m.group(1)}分"
+    return None
+
+
+def _extract_experience_level_from_query(query: str) -> Optional[str]:
+    """P0-3: 从自然语言查询中提取经验水平。"""
+    # 优先匹配新手（更常见、更有意义的默认值）
+    for pattern, level in _EXPERIENCE_LEVEL_PATTERNS:
+        if pattern.search(query):
+            return level
+    return None
+
+
+# P1-5: 从自由文本中提取体重的模式
+_WEIGHT_FROM_TEXT_PATTERN = re.compile(r'(\d+)\s*kg', re.I)
+
+# P1-5: 从自由文本中提取周跑量的模式
+_MILEAGE_FROM_TEXT_PATTERNS: List[re.Pattern] = [
+    re.compile(r'周跑量\s*(\d{1,3}(?:\.\d+)?)', re.I),
+    re.compile(r'每周\s*(\d{1,3}(?:\.\d+)?)\s*(?:公里|km)', re.I),
+    re.compile(r'(\d{1,3})\s*km[^/]*周', re.I),
+    re.compile(r'跑量\s*(\d{1,3}(?:\.\d+)?)', re.I),
+]
+
+
+def _extract_weight_from_query(query: str) -> Optional[str]:
+    """P1-5: 从自然语言查询中提取体重 (kg)。"""
+    m = _WEIGHT_FROM_TEXT_PATTERN.search(query)
+    if m:
+        return int(m.group(1))
+    return None
+
+
+def _extract_weekly_mileage_from_query(query: str) -> Optional[str]:
+    """P1-5: 从自然语言查询中提取周跑量。"""
+    for pattern in _MILEAGE_FROM_TEXT_PATTERNS:
+        m = pattern.search(query)
+        if m:
+            return m.group(1)
+    return None
+
+
 def extract_plan_profile_overrides(query: str) -> Dict[str, Any]:
-    """从前端 prompt 或显式请求中提取本轮计划生成应优先采用的画像字段。"""
+    """从前端 prompt 或显式请求中提取本轮计划生成应优先采用的画像字段。
+
+    P0-3: 除了标签行解析外，还从自由文本中提取目标和经验水平。
+    P1-5: 从自由文本中提取体重和周跑量。
+    """
     overrides: Dict[str, Any] = {}
+    # 1. 解析标签行（如 "目标: 全马3小时"）
     for raw_line in str(query or "").splitlines():
         parsed = _split_labeled_profile_line(raw_line)
         if not parsed:
@@ -118,6 +214,29 @@ def extract_plan_profile_overrides(query: str) -> Dict[str, Any]:
             overrides[field] = ""
         else:
             overrides[field] = value
+
+    # 2. P0-3: 从自由文本提取（仅在未从标签行解析出时补充）
+    if "goal" not in overrides:
+        free_goal = _extract_goal_from_free_text(query)
+        if free_goal:
+            overrides["goal"] = free_goal
+
+    if "experience_level" not in overrides:
+        free_experience = _extract_experience_level_from_query(query)
+        if free_experience:
+            overrides["experience_level"] = free_experience
+
+    # 3. P1-5: 从自由文本提取体重和周跑量
+    if "weight_kg" not in overrides and "weight" not in overrides:
+        weight = _extract_weight_from_query(query)
+        if weight is not None:
+            overrides["weight_kg"] = weight
+
+    if "weekly_mileage" not in overrides:
+        mileage = _extract_weekly_mileage_from_query(query)
+        if mileage:
+            overrides["weekly_mileage"] = mileage
+
     return overrides
 
 

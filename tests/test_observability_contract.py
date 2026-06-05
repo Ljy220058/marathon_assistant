@@ -25,6 +25,7 @@ def test_ops_metrics_tracks_requests_and_generation_statuses():
     assert "errors_total" in after
     assert "generation_status_counts" in after
     assert "feedback_risk_reason_counts" in after
+    assert "plan_persist_status_counts" in after
     assert "llm_provider_error_counts" in after
     assert "plan_generation_duration_buckets" in after
     assert "request_route_counts" in after
@@ -76,3 +77,15 @@ def test_feedback_updates_observability_risk_metrics():
     after = client.get("/ops/metrics").json()
     assert after["medical_referral_total"] >= before + 1
     assert after["generation_status_counts"]["medical_referral"] >= 1
+
+
+def test_ops_metrics_requires_auth_when_binding_public_host_without_token(monkeypatch):
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_ENV", raising=False)
+    monkeypatch.setenv("MARATHON_DEV_ALLOW_PUBLIC_NO_AUTH", "1")
+    monkeypatch.setenv("MARATHON_HOST", "0.0.0.0")
+
+    response = client.get("/ops/metrics", headers={"X-Request-ID": "metrics-public-host"})
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Metrics endpoint requires auth when binding a public host."

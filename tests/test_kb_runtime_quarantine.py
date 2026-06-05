@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from marathon_qa_assistant.core.app_state import DATA_DIR
 from marathon_qa_assistant.services import vector_store
 from marathon_qa_assistant.services.kb.runtime_quarantine import (
     build_legacy_runtime_quarantine_report,
@@ -73,7 +74,8 @@ def test_vector_store_load_chunks_applies_legacy_quarantine_report(monkeypatch, 
 
 
 def test_generated_legacy_runtime_quarantine_report_blocks_known_book_review():
-    report = json.loads(Path("data/knowledge/governance/legacy_runtime_quarantine_report.json").read_text(encoding="utf-8"))
+    report_path = DATA_DIR / "knowledge" / "governance" / "legacy_runtime_quarantine_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
 
     assert "10078-60-2017-v60-2017-28.pdf" in report["quarantined_sources"]
     assert report["decision_counts"]["quarantine"] >= 1

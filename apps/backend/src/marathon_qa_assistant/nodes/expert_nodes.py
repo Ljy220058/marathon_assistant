@@ -5,6 +5,7 @@ try:
 except ImportError:
     RunnableConfig = Any
 
+from marathon_qa_assistant.core.profile_context import build_prompt_profile_summary
 from marathon_qa_assistant.core.state_models import (
     IntegratedState,
     build_adaptive_adjustment_contract,
@@ -21,14 +22,25 @@ from marathon_qa_assistant.nodes.common import (
 )
 
 
+QA_REPORT_REQUIRED_SECTIONS = [
+    "结论",
+    "训练建议",
+    "专项不受影响的边界",
+    "知识库可见证据",
+    "证据不足或待核验之处",
+]
+
+QA_REPORT_CONTRACT_INSTRUCTION = (
+    "QA 报告必须按顺序固定包含以下二级标题："
+    + "、".join(f"## {section}" for section in QA_REPORT_REQUIRED_SECTIONS)
+    + "。其中“知识库可见证据”必须覆盖本轮实际提供的本地知识库可见证据编号、来源和摘要；"
+    "如果没有可见证据，必须明确写明本轮未检索到可展示的本地知识库证据，不能编造引用。"
+)
+
+
 def _profile_summary(profile: Dict[str, Any]) -> str:
-    return (
-        f"经验水平: {profile.get('experience_level', '未知')}\n"
-        f"目标: {profile.get('goal', '未知')}\n"
-        f"周跑量: {profile.get('weekly_mileage', 0)} km\n"
-        f"LTHR: {profile.get('lthr', 0)}\n"
-        f"T-Pace: {profile.get('t_pace', '') or '未设置'}"
-    )
+    # 只把明确确认过的画像字段放进 prompt，避免默认体重/目标/经验污染回答。
+    return build_prompt_profile_summary(profile)
 
 
 def _format_wiki_context(wiki_context: str) -> str:
@@ -60,8 +72,8 @@ async def _run_expert_llm(
 知识图谱上下文：
 {state.get("graph_context", "") or "暂无直接图谱路径"}
 
-本地知识库证据：
-{format_state_evidence_lines(state, limit=5)}
+本地知识库可见证据（必须全部处理，不能只给结论）：
+{format_state_evidence_lines(state, limit=None)}
 
 Wiki 概念补充上下文：
 {_format_wiki_context(state.get("wiki_context", ""))}
@@ -74,6 +86,7 @@ Wiki 概念补充上下文：
 5. 没有本地知识库证据时，可以基于模型通用知识给出一般说明，但必须明确这是“未绑定外部证据的一般说明”；模型通用知识不得标成 [n] 证据，也不得替代核心训练处方字段的 evidence 来源。
 
 请输出简洁、可执行、可审核的中文 Markdown，严格遵守引用规则，避免编造资料来源。
+{QA_REPORT_CONTRACT_INSTRUCTION if state.get("intent_type") == "qa" else ""}
 {get_security_prompt_suffix()}"""
 
     try:
@@ -83,7 +96,7 @@ Wiki 概念补充上下文：
             f"## {fallback_title}\n"
             f"- 问题：{state.get('query', '')}\n"
             f"- 画像摘要：{profile.get('goal', '未知目标')} / {profile.get('weekly_mileage', 0)} km\n"
-            f"- 证据摘要：\n{format_state_evidence_lines(state, limit=5)}"
+            f"- 证据摘要：\n{format_state_evidence_lines(state, limit=None)}"
         )
         return fallback, ensure_usage(state.get("token_usage"))
 
@@ -383,13 +396,20 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
     workflow_kind = state.get("workflow_kind") or state.get("intent_type") or "qa"
     feedback: List[str] = []
 
-    invalid_citations = find_invalid_citations(draft, evidence_bundle)
-    if invalid_citations:
-        feedback.append(f"引用编号不存在：{', '.join(invalid_citations)}")
+    # P0-5: 当 evidence_bundle 无证据时，跳过引用编号检查，避免 coach 编造引用后 auditor 拒绝形成死循环
+    if evidence_items:
+        invalid_citations = find_invalid_citations(draft, evidence_bundle)
+        if invalid_citations:
+            feedback.append(f"引用编号不存在：{', '.join(invalid_citations)}")
+    else:
+        invalid_citations = []
 
     for item in evidence_items:
         tier = str(item.get("tier") or "")
-        if tier in {"kb_fallback", "action_library"} and not str(item.get("source_path") or "").strip():
+        # P0-2: 图谱来源的证据天然没有文档路径，跳过 source_path 检查
+        trace = item.get("trace") if isinstance(item, dict) else {}
+        is_graph_sourced = isinstance(trace, dict) and trace.get("graph_hit")
+        if tier in {"kb_fallback", "action_library"} and not is_graph_sourced and not str(item.get("source_path") or "").strip():
             feedback.append(f"证据 {item.get('citation_label', '')} 缺少 source_path")
             break
 

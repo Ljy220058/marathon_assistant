@@ -196,10 +196,19 @@ def build_feedback_risk_gate(feedback: Optional[Dict[str, Any]] = None, raw_text
     combined_text = f"{raw_text} {normalized.get('notes', '')}".lower()
     triggers: List[str] = []
 
+    # P1-6: \u6269\u5c55\u4e25\u91cd\u7ea2\u65d7\u5173\u952e\u8bcd\u5e93\uff0c\u8986\u76d6\u8dd1\u6b65\u4e13\u9879\u4f24\u75c5
     severe_keywords = {
-        "chest_pain": ["\u80f8\u75db", "\u80f8\u95f7", "chest pain", "chest tightness"],
+        "chest_pain": ["\u80f8\u75db", "\u80f8\u75db", "\u80f8\u95f7", "chest pain", "chest tightness"],
         "dizziness_or_syncope": ["\u5934\u6655", "\u7729\u6655", "\u6655\u53a5", "\u6655\u5012", "dizzy", "faint"],
         "heat_illness": ["\u4e2d\u6691", "\u70ed\u75c5", "\u70ed\u5c04\u75c5", "\u9ad8\u6e29\u5f02\u5e38", "heat illness", "heatstroke"],
+        "difculty_breathing": ["\u547c\u5438\u56f0\u96be", "\u5598\u4e0d\u4e0a\u6c14", "\u6c14\u77ed", "\u77ed\u6c14"],
+        "fracture": ["\u9aa8\u6298", "bone break", "fracture"],
+        # P1-6 \u65b0\u589e\u8dd1\u6b65\u4e13\u9879\u4f24\u75c5
+        "achilles_rupture": ["\u8ddf\u8171\u65ad\u88c2", "\u8ddf\u8171\u6495\u88c2", "\u5f39\u54cd", "achilles rupture", "achilles tear"],
+        "stress_fracture": ["\u5e94\u529b\u6027\u9aa8\u6298", "\u70b9\u538b\u75db", "\u8d1f\u91cd\u75db", "stress fracture", "\u9aa8\u88c2"],
+        "plantar_fasciitis": ["\u8db3\u5e95\u7b4b\u819c\u708e", "\u8db3\u8ddf\u75db", "plantar fasciitis"],
+        "severe_swelling": ["\u4e25\u91cd\u80bf\u80c0", "\u65e0\u6cd5\u627f\u91cd", "\u5173\u8282\u79ef\u6db2"],
+        "rhabdomyolysis": ["\u6a2a\u7eb9\u808c\u6eb6\u89e3", "\u9171\u6cb9\u5c3f", "\u8336\u8272\u5c3f", "rhabdomyolysis"],
     }
     for code, keywords in severe_keywords.items():
         if _contains_any(combined_text, keywords):
@@ -213,7 +222,14 @@ def build_feedback_risk_gate(feedback: Optional[Dict[str, Any]] = None, raw_text
         triggers.append("poor_sleep")
 
     triggers = list(dict.fromkeys(triggers))
-    severe = any(code in triggers for code in {"chest_pain", "dizziness_or_syncope", "heat_illness"})
+    # P1-6: 扩展严重红旗集合
+    _SEVERE_CODES = {
+        "chest_pain", "dizziness_or_syncope", "heat_illness",
+        "difculty_breathing", "fracture",
+        "achilles_rupture", "stress_fracture", "plantar_fasciitis",
+        "severe_swelling", "rhabdomyolysis",
+    }
+    severe = any(code in triggers for code in _SEVERE_CODES)
     if severe:
         return {
             "status": "blocked",
@@ -736,9 +752,20 @@ def normalize_workout_feedback(payload: Optional[Dict[str, Any]] = None, raw_tex
 
     pain_status = _normalize_text(payload.get("pain_status")).lower()
     if pain_status not in {"none", "watch", "risk"}:
-        if _contains_any(combined_text, ["疼痛", "痛感明显", "刺痛", "膝盖疼", "脚踝疼", "pain", "injury"]):
+        # P1-6: 扩展疼痛关键词库，覆盖跑步专项伤病
+        if _contains_any(combined_text, [
+            "疼痛", "痛感明显", "刺痛", "膝盖疼", "膝盖痛", "脚踝疼",
+            "跟腱疼", "跟腱痛", "跟腱不适",  # P1-6 新增
+            "足底筋膜炎", "足跟痛", "plantar fasciitis",  # P1-6 新增
+            "应力性骨折", "点压痛", "负重痛", "stress fracture", "骨裂",  # P1-6 新增
+            "严重肿胀", "无法承重", "关节积液",  # P1-6 新增
+            "pain", "injury",
+        ]):
             pain_status = "risk"
-        elif _contains_any(combined_text, ["有点不适", "轻微不适", "酸痛", "发紧"]):
+        elif _contains_any(combined_text, [
+            "有点不适", "轻微不适", "酸痛", "发紧",
+            "跟腱酸", "膝盖酸",  # P1-6 新增：轻微的跟腱/膝盖不适
+        ]):
             pain_status = "watch"
         else:
             pain_status = "none"
@@ -840,6 +867,18 @@ def build_adaptive_adjustment_contract(feedback: Optional[Dict[str, Any]] = None
     }
 
 
+class NutritionProfile(TypedDict):
+    weight_kg: float
+    sex: str                      # P1-8: "男" / "女" / "未提供"
+    diet_preference: str          # "无偏好" / "素食" / "低碳水" / "高蛋白" / etc.
+    allergies: List[str]          # 过敏食物列表
+    daily_calories: int           # 日均目标摄入 (kcal)
+    hydration_strategy: str       # 补水策略偏好
+    sweat_rate: str               # P1-8: 出汗率 "少" / "中等" / "多"
+    gi_sensitivity: str           # P1-8: 胃肠敏感度 "低" / "中等" / "高"
+    diet_type: str                # P1-8: 饮食类型 "均衡" / "素食" / "生酮" / etc.
+
+
 class UserProfile(TypedDict):
     experience_level: str
     weekly_mileage: float
@@ -858,6 +897,9 @@ class UserProfile(TypedDict):
     pace_zones: Optional[Dict[str, str]]
     target_race_date: Optional[str]
     plan_duration_weeks: Optional[int]
+    sex: Optional[str]            # P1-8: 性别 "男" / "女"
+    weight_kg: Optional[float]    # P1-8: 体重 (kg)
+    nutrition_profile: Optional[NutritionProfile]
     long_term_memory: Optional[List[str]]
     verified_facts: Optional[Dict[str, Any]]
 
@@ -978,6 +1020,8 @@ class IntegratedState(TypedDict):
     validation_result: Dict[str, Any]
     repair_suggestions: List[Dict[str, Any]]
     repair_attempts: int
+    nutritionist_done: bool
+    needs_nutrition_review: bool
 
 
 WorkingState = IntegratedState

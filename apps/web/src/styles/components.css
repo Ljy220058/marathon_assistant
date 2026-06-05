@@ -4,7 +4,7 @@
 .callout-card {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(21, 24, 33, 0.88);
+  background: var(--panel);
   box-shadow: var(--shadow);
 }
 
@@ -65,32 +65,29 @@
   align-items: center;
   width: 100%;
   min-height: 52px;
-  border: 1px solid rgba(34, 211, 238, 0.34);
+  border: 1px solid rgba(203, 213, 225, 0.96);
   border-radius: 14px;
-  background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(99, 102, 241, 0.1)),
-    rgba(21, 24, 33, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   color: var(--text);
   cursor: pointer;
   list-style: none;
   padding: 11px 13px;
   box-shadow:
-    0 8px 20px rgba(15, 23, 42, 0.24),
-    0 0 0 1px rgba(34, 211, 238, 0.08);
+    0 8px 20px rgba(15, 23, 42, 0.06),
+    0 0 0 1px rgba(148, 163, 184, 0.08);
   font-size: 13px;
   font-weight: 800;
 }
 
 .side-drawer-toggle:hover {
   transform: translateY(-1px);
-  border-color: rgba(34, 211, 238, 0.52);
+  border-color: rgba(37, 99, 235, 0.28);
+  background: #ffffff;
 }
 
 .side-drawer[open] .side-drawer-toggle {
-  border-color: rgba(34, 211, 238, 0.62);
-  background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.18), rgba(99, 102, 241, 0.16)),
-    rgba(12, 15, 22, 0.98);
+  border-color: rgba(37, 99, 235, 0.32);
+  background: #eff6ff;
 }
 
 .drawer-toggle-mark {
@@ -99,8 +96,8 @@
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: rgba(34, 211, 238, 0.14);
-  color: var(--accent-1);
+  background: #dbeafe;
+  color: var(--accent);
   font-size: 16px;
   line-height: 1;
 }
@@ -127,8 +124,8 @@
 
 .drawer-toggle-affordance {
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.12);
-  color: var(--accent-1);
+  background: #eef2ff;
+  color: var(--accent);
   padding: 5px 9px;
   font-size: 11px;
   font-weight: 800;
@@ -151,8 +148,8 @@
   margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(9, 11, 16, 0.98);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
   padding: 12px;
 }
 
@@ -187,8 +184,8 @@
   display: inline-flex;
   width: max-content;
   border-radius: 999px;
-  background: rgba(96, 165, 250, 0.1);
-  color: var(--accent-2);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--accent);
   padding: 4px 8px;
 }
 
@@ -200,7 +197,7 @@
   width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(21, 24, 33, 0.82);
+  background: var(--panel-muted);
   color: var(--text);
   cursor: pointer;
   padding: 10px;
@@ -214,17 +211,17 @@
   height: 8px;
   margin-top: 6px;
   border-radius: 999px;
-  background: var(--accent-3);
-  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1);
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
 }
 
 .drawer-action.primary {
-  border-color: rgba(34, 211, 238, 0.34);
+  border-color: rgba(37, 99, 235, 0.24);
 }
 
 .drawer-action.is-active {
-  border-color: rgba(34, 211, 238, 0.58);
-  background: rgba(34, 211, 238, 0.1);
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .drawer-action small {
@@ -295,7 +292,7 @@
   min-height: 42px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(16, 19, 26, 0.72);
+  background: var(--panel-muted);
   color: var(--muted);
   padding: 8px;
   text-align: left;
@@ -307,7 +304,7 @@
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(37, 99, 235, 0.08);
   color: var(--faint);
   font-size: 11px;
   font-weight: 800;
@@ -321,15 +318,15 @@
 }
 
 .workspace-flow-step.is-current {
-  border-color: rgba(34, 211, 238, 0.46);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(37, 99, 235, 0.06);
   color: var(--text);
 }
 
 .workspace-flow-step.is-current span,
 .workspace-flow-step.is-complete span {
-  background: rgba(34, 211, 238, 0.16);
-  color: var(--accent-3);
+  background: rgba(37, 99, 235, 0.14);
+  color: var(--accent);
 }
 
 .workspace-next-action {
@@ -400,8 +397,8 @@
 }
 
 .compact-report-panel[open] .report-panel-affordance {
-  color: var(--accent-3);
-  background: rgba(34, 211, 238, 0.08);
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .compact-report-panel #report {
@@ -445,8 +442,8 @@
 .quick-button:hover,
 .ghost-button:hover,
 .secondary-button:hover {
-  border-color: rgba(167, 139, 250, 0.55);
-  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .quick-button strong,
@@ -478,7 +475,7 @@ select {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   outline: none;
-  background: #0c0f16;
+  background: var(--panel);
   color: var(--text);
 }
 
@@ -526,8 +523,8 @@ textarea {
 }
 
 .model-provider-button.active {
-  border-color: rgba(96, 165, 250, 0.72);
-  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(37, 99, 235, 0.08);
   color: var(--text);
 }
 
@@ -552,8 +549,8 @@ textarea {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(96, 165, 250, 0.72);
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.12);
+  border-color: rgba(37, 99, 235, 0.72);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .status-note {
@@ -562,7 +559,7 @@ select:focus {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--muted);
-  background: var(--panel-muted);
+  background: #f8fbff;
   font-size: 12px;
   line-height: 1.45;
 }
@@ -620,20 +617,42 @@ select:focus {
   position: relative;
   height: 12px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(191, 219, 254, 0.9);
   border-radius: 999px;
-  background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 24px),
-    #0b1017;
+  background: linear-gradient(180deg, #eff3f8, #e6ebf1);
 }
 
 .progress-track-fill {
   position: absolute;
   inset: 0 auto 0 0;
   width: 0;
+  overflow: hidden;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--success), var(--accent-3), var(--warning));
+  background: linear-gradient(90deg, var(--accent), var(--success));
   transition: width 0.42s ease;
+}
+
+.progress-track-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.24),
+      rgba(255, 255, 255, 0) 28%,
+      rgba(255, 255, 255, 0.14) 56%,
+      rgba(255, 255, 255, 0) 84%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18) 0 1px,
+      transparent 1px 22px
+    );
+  opacity: 0.42;
+  pointer-events: none;
+  transform: translate3d(-35%, 0, 0);
+  will-change: auto;
 }
 
 .progress-runner {
@@ -642,12 +661,12 @@ select:focus {
   left: 0;
   width: 22px;
   height: 22px;
-  border: 2px solid #0b1017;
+  border: 2px solid #ffffff;
   border-radius: 50%;
-  background: var(--text);
+  background: var(--accent);
   box-shadow:
-    0 0 0 5px rgba(34, 211, 238, 0.14),
-    0 0 22px rgba(34, 211, 238, 0.45);
+    0 0 0 5px rgba(37, 99, 235, 0.12),
+    0 0 22px rgba(37, 99, 235, 0.22);
   transform: translate(-50%, -50%);
   transition: left 0.42s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -704,8 +723,8 @@ select:focus {
 }
 
 .progress-step.active i {
-  border-color: rgba(34, 211, 238, 0.8);
-  background: var(--accent-3);
+  border-color: rgba(37, 99, 235, 0.78);
+  background: var(--accent);
   animation: progressPulse 1.25s ease-in-out infinite;
 }
 
@@ -719,12 +738,12 @@ select:focus {
   gap: 10px;
   align-items: center;
   min-height: 38px;
-  border-left: 3px solid rgba(34, 211, 238, 0.55);
+  border-left: 3px solid rgba(37, 99, 235, 0.55);
   padding-left: 12px;
 }
 
 .progress-insight span {
-  color: var(--accent-3);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 800;
 }
@@ -742,8 +761,13 @@ select:focus {
 
 .plan-progress[data-status="running"] .progress-track-fill,
 .plan-progress[data-status="enriching"] .progress-track-fill {
-  background-size: 200% 100%;
-  animation: progressFlow 1.8s linear infinite;
+  background-size: auto;
+}
+
+.plan-progress[data-status="running"] .progress-track-fill::before,
+.plan-progress[data-status="enriching"] .progress-track-fill::before {
+  animation: progressShimmer 2.4s linear infinite;
+  will-change: transform;
 }
 
 .plan-progress[data-status="ready"] .progress-runner,
@@ -777,7 +801,7 @@ select:focus {
 
 .primary-button {
   border-color: transparent;
-  background: linear-gradient(135deg, #0f766e, #155e75 58%, #1d4ed8);
+  background: var(--accent);
   color: white;
   font-weight: 700;
 }
@@ -793,19 +817,19 @@ select:focus {
 @keyframes progressPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.28);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.24);
   }
   50% {
-    box-shadow: 0 0 0 7px rgba(34, 211, 238, 0);
+    box-shadow: 0 0 0 7px rgba(37, 99, 235, 0);
   }
 }
 
-@keyframes progressFlow {
+@keyframes progressShimmer {
   from {
-    background-position: 0 0;
+    transform: translate3d(-35%, 0, 0);
   }
   to {
-    background-position: 200% 0;
+    transform: translate3d(35%, 0, 0);
   }
 }
 

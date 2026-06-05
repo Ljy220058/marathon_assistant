@@ -27,7 +27,7 @@ def evaluate_plan_evidence(gate_hits: List[Dict[str, Any]], query: str, intent_t
         query_has_structure = (bool(re.search(PRESCRIPTION_PATTERN, normalized_query))
                                or bool(re.search(STRUCTURE_PATTERN, normalized_query))
                                or bool(re.search(NUMERIC_PRESCRIPTION_PATTERN, normalized_query)))
-        has_plan_evidence = is_strength_query or is_training_plan_request or (query_has_weekly and query_has_structure)
+        has_plan_evidence = is_strength_query or (query_has_weekly and query_has_structure)
         return {
             "required": True,
             "has_plan_evidence": has_plan_evidence,
@@ -55,7 +55,7 @@ def evaluate_plan_evidence(gate_hits: List[Dict[str, Any]], query: str, intent_t
     has_structure = kb_has_structure or query_has_structure
     has_numeric_prescription = kb_has_numeric or query_has_numeric
 
-    if is_strength_query or is_training_plan_request:
+    if is_strength_query:
         has_plan_evidence = True
     else:
         has_plan_evidence = has_weekly and (has_prescription or has_structure or has_numeric_prescription)
@@ -89,6 +89,10 @@ def entity_route_decision(state: IntegratedState):
     if is_plan_missing_evidence and state.get("mode") != "research":
         return "missing_info_handler"
 
+    # P0-4: QA 模式下营养类查询路由到 nutritionist 节点
+    if state.get("category") == "nutritionist":
+        return "nutritionist"
+
     workflow_kind = state.get("workflow_kind") or state.get("intent_type")
     if workflow_kind == "research":
         return "research_analyst"
@@ -103,6 +107,13 @@ def after_planner_route(state: IntegratedState):
     if not state.get("subtasks"):
         return "missing_info_handler"
     return "executor"
+
+
+def after_executor_route(state: IntegratedState):
+    """训练计划生成后，若包含长距离训练日 (>=90min)，先路由到营养师再审计。"""
+    if state.get("needs_nutrition_review") and not state.get("nutritionist_done"):
+        return "nutritionist"
+    return "critic_auditor"
 
 
 def after_therapist_route(state: IntegratedState):
@@ -133,10 +144,22 @@ def after_critic_auditor_route(state: IntegratedState):
         logger.warning(f"[critic_auditor] 已达最大审计迭代次数 ({state['iteration_count']})，强制转入引导节点")
         return "missing_info_handler"
 
-    if (state.get("workflow_kind") or state.get("intent_type")) == "plan":
+    # P0-5: QA 模式下无证据时，审计未通过也直接走 formatter，避免重试死循环
+    workflow_kind = state.get("workflow_kind") or state.get("intent_type") or "qa"
+    if workflow_kind == "qa":
+        evidence_bundle = state.get("evidence_bundle") if isinstance(state.get("evidence_bundle"), dict) else {}
+        evidence_items = [item for item in (evidence_bundle.get("evidence_items") or []) if isinstance(item, dict)]
+        if not evidence_items:
+            logger.warning("[critic_auditor] QA 模式无证据，跳过重试，直接格式化输出")
+            return "formatter"
+
+    if workflow_kind == "plan":
+        # 计划骨架已生成但审计未放行时，直接格式化带审计说明的结果，避免 fallback 执行器反复重入 executor。
+        if isinstance(state.get("structured_training_plan"), dict) and state.get("structured_training_plan"):
+            return "formatter"
         return "executor"
-    if (state.get("workflow_kind") or state.get("intent_type")) == "research":
+    if workflow_kind == "research":
         return "research_analyst"
-    if (state.get("workflow_kind") or state.get("intent_type")) == "adaptive":
+    if workflow_kind == "adaptive":
         return "adaptive_coach"
     return "coach"

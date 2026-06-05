@@ -1,8 +1,13 @@
+import os
 import sys
 import types
 import importlib.util
 from pathlib import Path
 
+# 安全加固后不再有硬编码默认值 — 测试需显式注入
+os.environ.setdefault("GRAPHRAG_API_KEY", "test-graphrag-key-for-ci")
+os.environ.setdefault("OLLAMA_API_KEY", "test-ollama-key-for-ci")
+os.environ.setdefault("API_KEY", "test-api-key-for-ci")
 
 root = Path(__file__).parents[1]
 if str(root) not in sys.path:
@@ -77,19 +82,6 @@ if (
     sys.modules["langchain_core"] = fake_langchain_core
     sys.modules["langchain_core.documents"] = fake_documents
     sys.modules["langchain_core.messages"] = fake_messages
-
-
-# ── Patch pre-existing missing symbol ────────────────────────────────────────
-# kb_bootstrap.py imports probe_vector_kb_health from vector_store, but this
-# function was never defined.  Mock it so the full API import chain works.
-import marathon_qa_assistant.services.vector_store as _vs_mod
-
-if not hasattr(_vs_mod, "probe_vector_kb_health"):
-
-    def _fake_probe_vector_kb_health(vector_path):
-        return {"ok": False, "ready": False, "reason": "mocked for test"}
-
-    _vs_mod.probe_vector_kb_health = _fake_probe_vector_kb_health
 
 
 # ── Test fixtures ────────────────────────────────────────────────────────────

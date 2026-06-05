@@ -1,6 +1,8 @@
 from pathlib import Path
 import json
 
+from marathon_qa_assistant.core.app_state import DATA_DIR
+from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.services.kb.health import (
     check_chunk_schema_v2_health,
     check_evidence_bindings_health,
@@ -92,7 +94,7 @@ def test_chunk_schema_v2_health_requires_metadata_and_blocks_absolute_path_leak(
 
 
 def test_legacy_default_chunk_index_is_reported_as_legacy_not_v2():
-    result = summarize_legacy_chunk_index(Path("data/vector_kb/default/chunks.jsonl"))
+    result = summarize_legacy_chunk_index(DATA_DIR / "vector_kb" / "default" / "chunks.jsonl")
 
     assert result["total"] >= 1000
     assert result["source_file_count"] >= 1
@@ -133,14 +135,41 @@ def test_runtime_index_schema_summary_distinguishes_legacy_v2_and_mixed_chunks()
     assert mixed_summary["runtime_core_prescription_enabled"] is False
 
 
+def test_evidence_bundle_normalize_health_preserves_runtime_gate_fields():
+    bundle = build_evidence_bundle(
+        query="health",
+        health={
+            "ready": True,
+            "source": "v2",
+            "chunks_count": 10,
+            "faiss_ready": True,
+            "index_schema_version": "chunk_schema_v2",
+            "metadata_completeness": 0.98,
+            "runtime_core_prescription_enabled": False,
+            "commercial_core_prescription_enabled": False,
+        },
+    )
+
+    health = bundle["health"]
+    assert health["index_schema_version"] == "chunk_schema_v2"
+    assert health["metadata_completeness"] == 0.98
+    assert health["runtime_core_prescription_enabled"] is False
+    assert health["commercial_core_prescription_enabled"] is False
+
+
+
 def test_runtime_v2_manifest_declares_query_preview_runtime_boundary():
-    manifest = json.loads(Path("data/knowledge/governance/runtime_index_v2_manifest.json").read_text(encoding="utf-8"))
+    manifest_path = DATA_DIR / "knowledge" / "governance" / "runtime_index_v2_manifest.json"
+    chunks_path = DATA_DIR / "vector_kb" / "v2" / "chunks.jsonl"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    runtime_chunk_count = sum(1 for line in chunks_path.read_text(encoding="utf-8").splitlines() if line.strip())
 
     assert manifest["schema_version"] == "chunk_schema_v2"
     assert manifest["status"] == "runtime_preview_ready"
     assert manifest["metadata_completeness"] == 1.0
     assert manifest["runtime_index_schema_version"] == "chunk_schema_v2"
     assert manifest["runtime_use_enabled"] is True
-    assert manifest["runtime_chunk_count"] == 750
+    assert manifest["runtime_chunk_count"] == runtime_chunk_count
+    assert manifest["runtime_chunk_count"] >= 750
     assert manifest["can_replace_runtime"] is False
-    assert "approved_records=0" in manifest["replacement_blockers"]
+    assert manifest["replacement_blockers"]

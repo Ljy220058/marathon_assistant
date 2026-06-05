@@ -10,6 +10,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from marathon_qa_assistant.core.settings import get_settings
+
 
 LOG_RECORD_ATTRS = {
     "request_id", "method", "path", "status_code",
@@ -34,6 +36,13 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
+def _log_client_ip(client_ip: str) -> str:
+    # 生产环境可关闭客户端 IP 记录，降低日志中的个人信息暴露。
+    if not get_settings().log_client_ip:
+        return "redacted"
+    return client_ip
+
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("X-Request-ID", str(uuid4()))
@@ -54,7 +63,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 "path": request.url.path,
                 "status_code": response.status_code,
                 "duration_ms": duration_ms,
-                "client_ip": request.client.host if request.client else "",
+                "client_ip": _log_client_ip(request.client.host if request.client else ""),
             },
         )
         return response
