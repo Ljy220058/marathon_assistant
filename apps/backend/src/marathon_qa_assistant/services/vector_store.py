@@ -183,6 +183,41 @@ QUERY_VARIANT_HINTS = {
     "疲劳恢复": "fatigue recovery muscle damage glycogen",
 }
 
+# 英文关键词 → 领域映射（模块级，避免每次调用 extract_semantic_terms 重复分配）
+_ENGLISH_DOMAIN_MAP: dict[str, tuple[str, ...]] = {
+    "nutrition": (
+        "nutrition", "nutrient", "carbohydrate", "carb", "protein",
+        "hydration", "electrolyte", "fueling", "glycogen", "dehydration",
+        "diet", "supplement", "caffeine", "nitrate", "meal",
+        "calcium", "zma", "glycerol", "hyperhydration", "intake",
+        "omega-3", "omega 3", "dha", "epa", "fatty acid", "dosage",
+        "calorie", "banana",
+    ),
+    "injury_safety": (
+        "injury", "overtraining", "overreaching", "strain", "overuse",
+        "tendon", "fracture", "bone stress", "plantar", "knee",
+        "muscle damage", "fatigue", "risk factor", "addiction",
+        "biomechanic", "tibial", "bsi", "return to run", "return-to-run",
+    ),
+    "medical_safety": (
+        "renal", "heat stroke", "heat stress", "hyperthermia",
+        "cardiac", "chest pain", "dizziness", "contraindication",
+        "symptom", "ibuprofen", "headache", "cold", "illness",
+        "hematological", "biomarker", "red-s", "ioc", "female athlete triad",
+    ),
+    "training_protocol": (
+        "training", "endurance", "aerobic", "anaerobic", "vo2max",
+        "lactate", "threshold", "periodization", "pace", "stride",
+        "cadence", "biomechanics", "marathon", "half marathon",
+        "interval", "tempo", "easy run", "long run", "taper",
+        "workout", "repetition", "mental fatigue",
+        "intensity zone", "intensity model", "norwegian",
+        "acute", "chronic", "workload", "running economy",
+        "runner", "running",
+    ),
+}
+
+
 DEFAULT_TEST_QUESTIONS = [
     "如何定义并安排周期化训练以支持长期跑步表现提升？",
     "马拉松训练期如何进行营养与补给规划？",
@@ -749,45 +784,13 @@ def extract_semantic_terms(text: str) -> dict:
         if term in value and domain not in domain_terms:
             domain_terms.append(domain)
 
-    # 英文关键词 → 领域（纯英文 query 无法命中中文关键词时走这里）
+    # 英文关键词 → 领域（使用模块级 _ENGLISH_DOMAIN_MAP，纯英文 query 无法命中中文关键词时走这里）
     value_lower = value.lower()
-    _ENGLISH_DOMAIN_MAP = {
-        "nutrition": (
-            "nutrition", "nutrient", "carbohydrate", "carb", "protein",
-            "hydration", "electrolyte", "fueling", "glycogen", "dehydration",
-            "diet", "supplement", "caffeine", "nitrate", "meal",
-            "calcium", "zma", "glycerol", "hyperhydration", "intake",
-            "omega-3", "omega 3", "dha", "epa", "fatty acid", "dosage",
-            "calorie", "banana",
-        ),
-        "injury_safety": (
-            "injury", "overtraining", "overreaching", "strain", "overuse",
-            "tendon", "fracture", "bone stress", "plantar", "knee",
-            "muscle damage", "fatigue", "risk factor", "addiction",
-            "biomechanic", "tibial", "bsi", "return to run", "return-to-run",
-        ),
-        "medical_safety": (
-            "renal", "heat stroke", "heat stress", "hyperthermia",
-            "cardiac", "chest pain", "dizziness", "contraindication",
-            "symptom", "ibuprofen", "headache", "cold", "illness",
-            "hematological", "biomarker", "red-s", "ioc", "female athlete triad",
-        ),
-        "training_protocol": (
-            "training", "endurance", "aerobic", "anaerobic", "vo2max",
-            "lactate", "threshold", "periodization", "pace", "stride",
-            "cadence", "biomechanics", "marathon", "half marathon",
-            "interval", "tempo", "easy run", "long run", "taper",
-            "workout", "repetition", "mental fatigue",
-            "intensity zone", "intensity model", "norwegian",
-            "acute", "chronic", "workload", "running economy",
-            "runner", "running",
-        ),
-    }
     for domain, keywords in _ENGLISH_DOMAIN_MAP.items():
         if any(kw in value_lower for kw in keywords):
             if domain not in domain_terms:
                 domain_terms.append(domain)
-        # 英文可匹配多个领域（如 "renal complications after marathon" → medical_safety + training_protocol）
+        # 英文可匹配多个领域
     return {
         "keywords_zh": list(dict.fromkeys(keywords_zh)),
         "keywords_en": list(dict.fromkeys(keywords_en)),
@@ -1244,7 +1247,11 @@ def _load_faiss_store(faiss_dir: Path, embeddings):
         return FAISS.load_local(str(faiss_dir), embeddings, allow_dangerous_deserialization=True)
     except Exception as exc:
         logger.warning("常规 FAISS 加载失败，尝试内存反序列化兜底: %s", exc)
-        return _load_faiss_store_from_files(faiss_dir, embeddings)
+        try:
+            return _load_faiss_store_from_files(faiss_dir, embeddings)
+        except Exception as fallback_exc:
+            logger.error("内存反序列化兜底也失败: %s", fallback_exc)
+            return None
 
 
 def _load_faiss_store_from_files(faiss_dir: Path, embeddings):
@@ -1757,8 +1764,6 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
     shards_to_search = _route_query_to_shards(variants[0])
     if not shards_to_search:
         return []  # 无领域匹配 → OOD，直接返回空
-    if not shards_to_search:
-        return []
 
     # 每个分库取 top_k 条，合并后排序
     per_shard_k = top_k if top_k is not None else 10
@@ -1817,8 +1822,8 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
                 return []
             all_chunks = [c for clist in shard_chunks.values() for c in clist]
             fallback_bm25 = build_bm25_fallback_index(all_chunks)
-            raw_hits = fallback_search(question, all_chunks, bm25=fallback_bm25, top_k=top_k)
-            return _filter_hits_by_domain(question, raw_hits) if get_settings().domain_filter_enabled else raw_hits
+            raw_hits = fallback_search(variants[0], all_chunks, bm25=fallback_bm25, top_k=top_k)
+            return _filter_hits_by_domain(variants[0], raw_hits) if get_settings().domain_filter_enabled else raw_hits
     else:
         hit_groups_by_variant: dict[str, list[dict]] = {}
         with ThreadPoolExecutor(max_workers=min(len(variants), 4)) as executor:
@@ -1836,8 +1841,8 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
                 return []
             all_chunks = [c for clist in shard_chunks.values() for c in clist]
             fallback_bm25 = build_bm25_fallback_index(all_chunks)
-            raw_hits = fallback_search(question, all_chunks, bm25=fallback_bm25, top_k=top_k)
-            return _filter_hits_by_domain(question, raw_hits) if get_settings().domain_filter_enabled else raw_hits
+            raw_hits = fallback_search(variants[0], all_chunks, bm25=fallback_bm25, top_k=top_k)
+            return _filter_hits_by_domain(variants[0], raw_hits) if get_settings().domain_filter_enabled else raw_hits
 
     return _merge_ranked_hits(hit_groups, top_k=top_k)
 
@@ -1909,7 +1914,8 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
             logger.error("混合检索失败: %s", exc)
             if not get_settings().bm25_fallback_enabled:
                 return []
-            return fallback_search(question, chunks, bm25=bm25, top_k=top_k)
+            raw_hits = fallback_search(variants[0], chunks, bm25=bm25, top_k=top_k)
+            return _filter_hits_by_domain(variants[0], raw_hits) if get_settings().domain_filter_enabled else raw_hits
     else:
         hit_groups_by_variant: dict[str, list[dict]] = {}
         with ThreadPoolExecutor(max_workers=min(len(variants), 4)) as executor:
@@ -1925,7 +1931,8 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
         if not any(hit_groups):
             if not get_settings().bm25_fallback_enabled:
                 return []
-            return fallback_search(question, chunks, bm25=bm25, top_k=top_k)
+            raw_hits = fallback_search(variants[0], chunks, bm25=bm25, top_k=top_k)
+            return _filter_hits_by_domain(variants[0], raw_hits) if get_settings().domain_filter_enabled else raw_hits
 
     return _merge_ranked_hits(hit_groups, top_k=top_k)
 
