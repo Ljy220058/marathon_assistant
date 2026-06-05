@@ -228,7 +228,12 @@ DEFAULT_TEST_QUESTIONS = [
 
 EMBEDDING_MODEL = "nomic-embed-text:latest" # bge-m3 对某些文本返回 NaN，改用 nomic
 EMBEDDING_CANDIDATE_MODELS = ("nomic-embed-text:latest", "bge-m3", "multilingual-e5")
-SEMANTIC_CHUNKING_STRATEGY = "semantic_v1"
+SEMANTIC_CHUNKING_STRATEGY = "semantic_v2_sentence_window"  # v2：小块索引 + 句子窗口上下文
+
+# Sentence Window 配置：小块负责精确召回，parent_text 负责为 LLM 提供完整上下文
+SENTENCE_WINDOW_CHUNK_SIZE = 250   # 索引用小块，提高 embedding 区分度
+SENTENCE_WINDOW_OVERLAP = 30       # 小块之间的小量重叠
+SENTENCE_WINDOW_CONTEXT_CHARS = 600  # parent_text 前后扩展的字符数，约 3-5 句
 
 # 分库检索：马拉松相关领域列表（external_reference 不参与默认检索）
 MARATHON_DOMAIN_SHARDS = ("training_protocol", "nutrition", "injury_safety", "medical_safety")
@@ -1032,10 +1037,14 @@ def collect_chunks(input_dir: Path | List[Path], chunk_size: int, chunk_overlap:
                         file_domain_terms,
                         semantic_terms.get("domain_terms") or [],
                     )
-                    # Parent-Child：小块（text）负责召回，大块（parent_text）负责提供上下文
-                    parent_start = max(0, (chunk.get("char_start") or 0) - 500)
-                    parent_end = min(len(cleaned_page), (chunk.get("char_end") or 0) + 500)
-                    parent_text = cleaned_page[parent_start:parent_end].strip() if chunk.get("char_start") is not None else cleaned_page[:1500]
+                    # Sentence Window：小块（text）负责精确召回，大块（parent_text）负责提供上下文
+                    # parent_text 取 ±SENTENCE_WINDOW_CONTEXT_CHARS 字符范围，确保 LLM 看到完整语义
+                    if chunk.get("char_start") is not None:
+                        parent_start = max(0, (chunk.get("char_start") or 0) - SENTENCE_WINDOW_CONTEXT_CHARS)
+                        parent_end = min(len(cleaned_page), (chunk.get("char_end") or 0) + SENTENCE_WINDOW_CONTEXT_CHARS)
+                        parent_text = cleaned_page[parent_start:parent_end].strip()
+                    else:
+                        parent_text = cleaned_page[:SENTENCE_WINDOW_CHUNK_SIZE + SENTENCE_WINDOW_CONTEXT_CHARS * 2]
                     all_chunks.append(
                         {
                             "chunk_id": chunk_id,
@@ -1847,13 +1856,22 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
     return _merge_ranked_hits(hit_groups, top_k=top_k)
 
 
-def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int | None, bm25=None) -> list[dict]:
+def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int | None, bm25=None,
+             *, rerank: bool = False, rerank_candidate_k: int = 20) -> list[dict]:
     """
     执行检索逻辑。这里的 matrix 实际上是 FAISS 实例，或分库模式下的 shard_stores dict。
+
+    Args:
+        rerank: 是否启用 bge-reranker 二阶段精排。启用时 FAISS 粗排取 top rerank_candidate_k
+                条，再经 reranker 精排到 top_k 条。
+        rerank_candidate_k: 送 reranker 的候选数，默认 20。
     """
     # 分库检索路径：bm25 是 shard_bm25 dict（由 load_sharded_kb 返回）
     if get_settings().sharded_retrieval_enabled:
-        return _retrieve_sharded(question, chunks, matrix, bm25, top_k) if isinstance(bm25, dict) else _retrieve_sharded(question, chunks, matrix, {}, top_k)
+        result = _retrieve_sharded(question, chunks, matrix, bm25, top_k) if isinstance(bm25, dict) else _retrieve_sharded(question, chunks, matrix, {}, top_k)
+        if rerank:
+            result = _apply_rerank(question, result, top_k, rerank_candidate_k)
+        return result
 
     faiss_store = matrix
     if not faiss_store:
@@ -1934,7 +1952,24 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
             raw_hits = fallback_search(variants[0], chunks, bm25=bm25, top_k=top_k)
             return _filter_hits_by_domain(variants[0], raw_hits) if get_settings().domain_filter_enabled else raw_hits
 
-    return _merge_ranked_hits(hit_groups, top_k=top_k)
+    result = _merge_ranked_hits(hit_groups, top_k=top_k)
+    if rerank:
+        result = _apply_rerank(question, result, top_k, rerank_candidate_k)
+    return result
+
+
+def _apply_rerank(question: str, hits: list[dict], top_k: int | None, candidate_k: int) -> list[dict]:
+    """对检索结果应用 bge-reranker 精排。候选池不足 candidate_k 时直接用全部候选。"""
+    if not hits:
+        return []
+    from marathon_qa_assistant.services.reranker import rerank_hits, reranker_available
+    if not reranker_available():
+        return hits[:top_k] if top_k is not None else hits
+    candidates = hits[:candidate_k]
+    final_k = top_k if top_k is not None else 5
+    reranked = rerank_hits(question, candidates, top_k=final_k)
+    return reranked
+
 
 def build_answer(hits: list[dict]) -> str:
     """从检索结果构建简短回答片段（供调试/测试用）"""
@@ -2007,8 +2042,8 @@ def main() -> None:
     parser.add_argument("--input-dir", default="domain_docs")
     parser.add_argument("--output-dir", default="vector_kb")
     parser.add_argument("--report-file", default="vector_kb_report.json")
-    parser.add_argument("--chunk-size", type=int, default=500)
-    parser.add_argument("--chunk-overlap", type=int, default=50)
+    parser.add_argument("--chunk-size", type=int, default=SENTENCE_WINDOW_CHUNK_SIZE)
+    parser.add_argument("--chunk-overlap", type=int, default=SENTENCE_WINDOW_OVERLAP)
     parser.add_argument("--vector-dir", default="vector_kb")
     parser.add_argument("--test-output", default="rag_test_results.json")
     parser.add_argument("--top-k", type=int, default=5)

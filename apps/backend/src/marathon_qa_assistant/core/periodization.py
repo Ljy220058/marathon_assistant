@@ -2,11 +2,39 @@
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 import re as _re
 
 logger = logging.getLogger("workflow_engine")
+
+# ── LLM advisor 约束：每个周数范围允许的模型层级 ──
+_HM_VALID_TIER_MAP: Dict[Tuple[int, int], Tuple[str, ...]] = {
+    (1, 4): ("short",),
+    (5, 8): ("short", "compact"),
+    (9, 14): ("short", "compact", "medium"),
+    (15, 20): ("compact", "medium", "standard"),
+    (21, 26): ("medium", "standard", "long"),
+}
+_FM_VALID_TIER_MAP: Dict[Tuple[int, int], Tuple[str, ...]] = {
+    (1, 6): ("short",),
+    (7, 12): ("short", "medium"),
+    (13, 26): ("medium", "long"),
+}
+
+
+def _is_valid_hm_tier(tier: str, total_weeks: int) -> bool:
+    for (lo, hi), valid in _HM_VALID_TIER_MAP.items():
+        if lo <= total_weeks <= hi:
+            return tier in valid
+    return False
+
+
+def _is_valid_fm_tier(tier: str, total_weeks: int) -> bool:
+    for (lo, hi), valid in _FM_VALID_TIER_MAP.items():
+        if lo <= total_weeks <= hi:
+            return tier in valid
+    return False
 
 
 @dataclass
@@ -47,16 +75,17 @@ class Macrocycle:
         race_date: date,
         total_weeks: Optional[int] = None,
         profile: Optional[Dict] = None,
+        advisory: Optional[Any] = None,
     ) -> "Macrocycle":
         if total_weeks is None:
             total_weeks = int((profile or {}).get("plan_duration_weeks", 12) or 12)
         total_weeks = max(1, min(total_weeks, 26))
         race_type = _resolve_race_type(profile) if profile else "general"
-        mesocycles = cls._compute_mesocycles(total_weeks, race_type=race_type)
+        mesocycles = cls._compute_mesocycles(total_weeks, race_type=race_type, advisory=advisory)
         return cls(race_date=race_date, total_weeks=total_weeks, mesocycles=mesocycles)
 
     @classmethod
-    def from_profile(cls, profile: Dict) -> Optional["Macrocycle"]:
+    def from_profile(cls, profile: Dict, advisory: Optional[Any] = None) -> Optional["Macrocycle"]:
         target_str = str(profile.get("target_race_date", "") or "").strip()
         if not target_str or target_str.lower() in ("none", "null", "未设置", ""):
             return None
@@ -81,14 +110,23 @@ class Macrocycle:
                 return None
 
         total_weeks = int(profile.get("plan_duration_weeks", 12) or 12)
-        return cls.from_race_date(race_date=parsed, total_weeks=total_weeks, profile=profile)
+        return cls.from_race_date(race_date=parsed, total_weeks=total_weeks, profile=profile, advisory=advisory)
 
     @staticmethod
-    def _compute_mesocycles(total_weeks: int, race_type: str = "general") -> List[Mesocycle]:
-        """根据总周数和赛事类型选择对应的阶段模型。"""
+    def _compute_mesocycles(
+        total_weeks: int,
+        race_type: str = "general",
+        advisory: Optional[Any] = None,
+    ) -> List[Mesocycle]:
+        """根据总周数和赛事类型选择对应的阶段模型。
+
+        advisory 为可选 LLM 顾问建议，可覆写模型层级、导入期需求、
+        阶段权重调整。不可用时走确定性规则。
+        """
         if race_type == "marathon":
-            return Macrocycle._marathon_phases(total_weeks)
-        # 半马和通用类型使用现有 HMP 阶段模型
+            return Macrocycle._marathon_phases(total_weeks, advisory=advisory)
+        if race_type == "half_marathon":
+            return Macrocycle._half_marathon_phases(total_weeks, advisory=advisory)
         if total_weeks <= 4:
             return Macrocycle._phases_short(total_weeks)
         elif total_weeks <= 8:
@@ -99,12 +137,290 @@ class Macrocycle:
             return Macrocycle._phases_long(total_weeks)
 
     # ------------------------------------------------------------------
+    # 半马专属阶段模型，对齐 HMP 协议（基础→专项构建→比赛专项）
+    # Phase family 映射：基础→"general", 专项构建→"race_supportive", 比赛专项→"race_specific"
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _half_marathon_phases(
+        total_weeks: int,
+        advisory: Optional[Any] = None,
+    ) -> List[Mesocycle]:
+        total_weeks = max(1, total_weeks)
+
+        # LLM 可覆写模型层级
+        tier = ""
+        if advisory is not None and getattr(advisory, "llm_generated", False):
+            tier = str(getattr(advisory, "model_tier", "") or "").strip().lower()
+            # 验证 LLM 选择的层级不超出总周数约束
+            if not _is_valid_hm_tier(tier, total_weeks):
+                logger.warning(
+                    "HMP periodization: LLM model_tier=%s 对 %dw 无效，降级到确定性规则",
+                    tier, total_weeks,
+                )
+                tier = ""
+            else:
+                logger.info(
+                    "HMP periodization: LLM advisory model_tier=%s intro=%s adjustments=%s",
+                    tier,
+                    getattr(advisory, "needs_introductory", False),
+                    getattr(advisory, "phase_adjustments", {}),
+                )
+
+        # ── tier → phase generator 映射 ──
+        _generators = {
+            "short": Macrocycle._hm_short,
+            "compact": Macrocycle._hm_compact,
+            "medium": Macrocycle._hm_medium,
+            "standard": Macrocycle._hm_standard,
+            "long": Macrocycle._hm_long,
+        }
+        if tier in _generators:
+            mesos = _generators[tier](total_weeks)
+        else:
+            # 确定性 fallback
+            if total_weeks <= 4:
+                mesos = Macrocycle._hm_short(total_weeks)
+            elif total_weeks <= 8:
+                mesos = Macrocycle._hm_compact(total_weeks)
+            elif total_weeks <= 14:
+                mesos = Macrocycle._hm_medium(total_weeks)
+            elif total_weeks <= 20:
+                mesos = Macrocycle._hm_standard(total_weeks)
+            else:
+                mesos = Macrocycle._hm_long(total_weeks)
+
+        # ── 导入期注入 ──
+        if advisory is not None and getattr(advisory, "needs_introductory", False):
+            intro_weeks = max(1, min(4, int(getattr(advisory, "intro_weeks", 0) or 2)))
+            intro = Mesocycle(
+                name="导入期 (Introductory Phase)",
+                weeks=intro_weeks,
+                start_week=1,
+                goal="恢复身体和精神能量，重新引入上个周期缺失的训练元素，以体感训练为主，避免高负荷专项课。",
+                max_high_intensity_per_week=0,
+                min_easy_days=6,
+                long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.65,
+            )
+            # 后续阶段起止周顺延，总周数不变：从各非减量阶段各减一周
+            shifted: List[Mesocycle] = []
+            remaining = intro_weeks
+            for m in mesos:
+                if remaining <= 0 or "减量" in m.name or "Taper" in m.name:
+                    shifted.append(m)
+                else:
+                    shrink = min(m.weeks - 2, remaining)
+                    if shrink > 0:
+                        shifted.append(Mesocycle(
+                            name=m.name,
+                            weeks=m.weeks - shrink,
+                            start_week=-1,  # 后续重算
+                            goal=m.goal,
+                            max_high_intensity_per_week=m.max_high_intensity_per_week,
+                            min_easy_days=m.min_easy_days,
+                            long_run_zone=m.long_run_zone,
+                            weekly_mileage_ratio=m.weekly_mileage_ratio,
+                        ))
+                        remaining -= shrink
+                    else:
+                        shifted.append(m)
+            mesos = [intro] + shifted
+
+        # ── 阶段权重微调 ──
+        if advisory is not None:
+            adjustments = getattr(advisory, "phase_adjustments", {}) or {}
+            if adjustments and len(mesos) >= 2:
+                mesos = Macrocycle._apply_phase_adjustments(mesos, adjustments)
+
+        # 重算 start_week
+        start = 1
+        for m in mesos:
+            m.start_week = start
+            start += m.weeks
+
+        return mesos
+
+    @staticmethod
+    def _hm_short(total_weeks: int) -> List[Mesocycle]:
+        """≤4 周半马：直奔比赛专项，保证赛前体感适应。"""
+        return [Mesocycle(
+            name="比赛专项阶段 (Race-Specific Phase)",
+            weeks=total_weeks, start_week=1,
+            goal="短期内最大化比赛配速体感适应，以 100% HMP 核心课和巡航恢复为主，避免大跑量冲击。",
+            max_high_intensity_per_week=1, min_easy_days=4, long_run_zone="Z2-Z3",
+            weekly_mileage_ratio=0.85,
+        )]
+
+    @staticmethod
+    def _hm_compact(total_weeks: int) -> List[Mesocycle]:
+        """5-8 周半马：压缩专项构建 + 比赛专项，不设独立基础阶段。"""
+        race_w = max(3, int(total_weeks * 0.55))
+        support_w = total_weeks - race_w
+        mesos = []
+        start = 1
+        if support_w > 0:
+            mesos.append(Mesocycle(
+                name="专项构建阶段 (Race-Supportive Phase)", weeks=support_w, start_week=start,
+                goal="建立 90-95% HMP 耐力支撑与 105-110% HMP 速度支撑，为比赛专项大课做铺垫。",
+                max_high_intensity_per_week=2, min_easy_days=3, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=0.95,
+            ))
+            start += support_w
+        mesos.append(Mesocycle(
+            name="比赛专项阶段 (Race-Specific Phase)", weeks=race_w, start_week=start,
+            goal="最大化 95-105% HMP 区间能力，100% HMP 长间歇+巡航恢复，95% HMP 长距离快速跑。",
+            max_high_intensity_per_week=2, min_easy_days=2, long_run_zone="Z3",
+            weekly_mileage_ratio=1.00,
+        ))
+        return mesos
+
+    @staticmethod
+    def _hm_medium(total_weeks: int) -> List[Mesocycle]:
+        """9-14 周半马：基础阶段 + 专项构建 + 比赛专项 三段式。"""
+        race_w = max(3, int(total_weeks * 0.35))
+        support_w = max(3, int(total_weeks * 0.30))
+        base_w = total_weeks - support_w - race_w
+        mesos = []
+        start = 1
+        if base_w > 0:
+            mesos.append(Mesocycle(
+                name="基础阶段 (General Phase)", weeks=base_w, start_week=start,
+                goal="稳步提升总跑量，建立覆盖多配速区间的宽厚体能基础，发展阈值、有氧功率和基础耐力。长距离递增至 16-20km。",
+                max_high_intensity_per_week=1, min_easy_days=5, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.85,
+            ))
+            start += base_w
+        if support_w > 0:
+            mesos.append(Mesocycle(
+                name="专项构建阶段 (Race-Supportive Phase)", weeks=support_w, start_week=start,
+                goal="建立 90-95% HMP 耐力支撑与 105-110% HMP 速度支撑，为比赛专项阶段大课做铺垫。",
+                max_high_intensity_per_week=2, min_easy_days=3, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=1.00,
+            ))
+            start += support_w
+        mesos.append(Mesocycle(
+            name="比赛专项阶段 (Race-Specific Phase)", weeks=race_w, start_week=start,
+            goal="最大化 95-105% HMP 区间能力，100% HMP 长间歇+巡航恢复，95% HMP 长距离快速跑至 20-25km。",
+            max_high_intensity_per_week=2, min_easy_days=2, long_run_zone="Z3",
+            weekly_mileage_ratio=0.95,
+        ))
+        return mesos
+
+    @staticmethod
+    def _hm_standard(total_weeks: int) -> List[Mesocycle]:
+        """15-20 周半马：基础阶段 + 专项构建 + 比赛专项 + 赛前减量。"""
+        taper_w = max(2, int(total_weeks * 0.12))
+        race_w = max(4, int(total_weeks * 0.30))
+        support_w = max(4, int(total_weeks * 0.28))
+        base_w = total_weeks - taper_w - race_w - support_w
+        mesos = []
+        start = 1
+        if base_w > 0:
+            mesos.append(Mesocycle(
+                name="基础阶段 (General Phase)", weeks=base_w, start_week=start,
+                goal="稳步提升总跑量，建立覆盖多配速区间的宽厚体能基础，发展阈值、有氧功率、跑步经济性和基础耐力。长距离递增至 18-22km。",
+                max_high_intensity_per_week=1, min_easy_days=5, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.82,
+            ))
+            start += base_w
+        if support_w > 0:
+            mesos.append(Mesocycle(
+                name="专项构建阶段 (Race-Supportive Phase)", weeks=support_w, start_week=start,
+                goal="建立 90-95% HMP 耐力支撑与 105-110% HMP 速度支撑，为比赛专项阶段大课做铺垫。",
+                max_high_intensity_per_week=2, min_easy_days=3, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=1.00,
+            ))
+            start += support_w
+        if race_w > 0:
+            mesos.append(Mesocycle(
+                name="比赛专项阶段 (Race-Specific Phase)", weeks=race_w, start_week=start,
+                goal="最大化 95-105% HMP 区间能力，100% HMP 长间歇+巡航恢复（累计约 15km 目标配速），95% HMP 长距离快速跑至 20-25km。",
+                max_high_intensity_per_week=2, min_easy_days=2, long_run_zone="Z3-Z4",
+                weekly_mileage_ratio=1.00,
+            ))
+            start += race_w
+        if taper_w > 0:
+            mesos.append(Mesocycle(
+                name="赛前减量 (Taper)", weeks=taper_w, start_week=start,
+                goal="大幅降低训练负荷与跑量（至巅峰期 50-60%），消除累积疲劳，维持配速感，储备体能迎接半马比赛。",
+                max_high_intensity_per_week=1, min_easy_days=6, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.55,
+            ))
+        return mesos
+
+    @staticmethod
+    def _hm_long(total_weeks: int) -> List[Mesocycle]:
+        """21-26 周半马：基础阶段-1/-2 + 专项构建 + 比赛专项 + 赛前减量。"""
+        taper_w = max(2, int(total_weeks * 0.12))
+        race_w = max(4, int(total_weeks * 0.26))
+        support_w = max(4, int(total_weeks * 0.22))
+        remaining = total_weeks - taper_w - race_w - support_w
+        base2_w = max(3, int(remaining * 0.45))
+        base1_w = remaining - base2_w
+        mesos = []
+        start = 1
+        if base1_w > 0:
+            mesos.append(Mesocycle(
+                name="基础阶段-1 (General Phase 1)", weeks=base1_w, start_week=start,
+                goal="建立有氧基础，以轻松跑和渐进长距离为核心，逐步增加跑量，长距离递增至 16-18km。引入法特莱克。",
+                max_high_intensity_per_week=1, min_easy_days=5, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.78,
+            ))
+            start += base1_w
+        if base2_w > 0:
+            mesos.append(Mesocycle(
+                name="基础阶段-2 (General Phase 2)", weeks=base2_w, start_week=start,
+                goal="巩固有氧能力，引入节奏跑和阈值训练，逐步提升训练强度，长距离递增至 20-22km。",
+                max_high_intensity_per_week=1, min_easy_days=4, long_run_zone="Z2",
+                weekly_mileage_ratio=0.92,
+            ))
+            start += base2_w
+        if support_w > 0:
+            mesos.append(Mesocycle(
+                name="专项构建阶段 (Race-Supportive Phase)", weeks=support_w, start_week=start,
+                goal="建立 90-95% HMP 耐力支撑与 105-110% HMP 速度支撑，为比赛专项阶段大课做铺垫。",
+                max_high_intensity_per_week=2, min_easy_days=3, long_run_zone="Z2-Z3",
+                weekly_mileage_ratio=1.02,
+            ))
+            start += support_w
+        if race_w > 0:
+            mesos.append(Mesocycle(
+                name="比赛专项阶段 (Race-Specific Phase)", weeks=race_w, start_week=start,
+                goal="最大化 95-105% HMP 区间能力，100% HMP 长间歇+巡航恢复（累计约 15km 目标配速），95% HMP 长距离快速跑至 20-25km。",
+                max_high_intensity_per_week=2, min_easy_days=2, long_run_zone="Z3-Z4",
+                weekly_mileage_ratio=1.00,
+            ))
+            start += race_w
+        if taper_w > 0:
+            mesos.append(Mesocycle(
+                name="赛前减量 (Taper)", weeks=taper_w, start_week=start,
+                goal="大幅降低训练负荷与跑量（至巅峰期 50-60%），消除累积疲劳，维持配速感，储备体能迎接半马比赛。",
+                max_high_intensity_per_week=1, min_easy_days=6, long_run_zone="Z1-Z2",
+                weekly_mileage_ratio=0.55,
+            ))
+        return mesos
+
+    # ------------------------------------------------------------------
     # 全马专属阶段模型 (Base / Build / Peak / Taper)
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _marathon_phases(total_weeks: int) -> List[Mesocycle]:
+    def _marathon_phases(
+        total_weeks: int,
+        advisory: Optional[Any] = None,
+    ) -> List[Mesocycle]:
         """全马专属四阶段模型，长距离每周递增到 30-35km。"""
+        tier = ""
+        if advisory is not None and getattr(advisory, "llm_generated", False):
+            tier = str(getattr(advisory, "model_tier", "") or "").strip().lower()
+        _generators = {
+            "short": Macrocycle._marathon_phases_short,
+            "medium": Macrocycle._marathon_phases_medium,
+            "long": Macrocycle._marathon_phases_long,
+        }
+        if tier in _generators:
+            return _generators[tier](total_weeks)
         if total_weeks <= 6:
             return Macrocycle._marathon_phases_short(total_weeks)
         elif total_weeks <= 12:
@@ -343,6 +659,58 @@ class Macrocycle:
                                        weekly_mileage_ratio=rt))
                 start += wks
         return mesos
+
+    @staticmethod
+    def _apply_phase_adjustments(mesos: List[Mesocycle], adjustments: Dict[str, int]) -> List[Mesocycle]:
+        """按 LLM 建议微调阶段周数，保持总周数不变。
+
+        adjustments: {"base": 1, "specific": -1} 表示基础阶段+1周、专项-1周。
+        调整仅作用于非减量/Taper 阶段，且每阶段保留至少 2 周。
+        """
+        if not adjustments or len(mesos) < 2:
+            return mesos
+
+        # 建立阶段名 → 索引映射
+        _phase_keys = {
+            "base": ("基础", "Base", "base"),
+            "base_1": ("基础阶段-1", "基础期-1", "General Phase 1"),
+            "base_2": ("基础阶段-2", "基础期-2", "General Phase 2"),
+            "build": ("建设", "Build", "build", "专项构建"),
+            "support": ("专项构建", "Supportive"),
+            "specific": ("比赛专项", "Race-Specific", "Specific"),
+            "peak": ("巅峰", "Peak", "peak"),
+            "taper": ("减量", "Taper", "taper"),
+        }
+
+        def _match_phase(name: str, keys: Tuple[str,...]) -> bool:
+            return any(k in name for k in keys)
+
+        # 应用调整
+        for adj_key, delta in adjustments.items():
+            if delta == 0:
+                continue
+            keys = _phase_keys.get(adj_key, (adj_key,))
+            for i, m in enumerate(mesos):
+                if _match_phase(m.name, keys):
+                    # 找一个反方向的非 tapert 阶段平衡
+                    for j, other in enumerate(mesos):
+                        if j == i:
+                            continue
+                        if _match_phase(other.name, _phase_keys.get("taper", ())):
+                            continue
+                        if delta > 0 and other.weeks - abs(delta) >= 2:
+                            m.weeks += delta
+                            other.weeks -= delta
+                            logger.info(
+                                "[periodization advisor] 阶段调整：%s %+d周 → %s %+d周",
+                                m.name, delta, other.name, -delta,
+                            )
+                            break
+                    break
+
+        return mesos
+
+    # ── LLM advisor 约束（模块级常量，避免 dataclass field 误解析）──
 
     def get_phase_for_week(self, week_num: int) -> Optional[Mesocycle]:
         for meso in self.mesocycles:

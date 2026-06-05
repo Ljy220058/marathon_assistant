@@ -90,7 +90,7 @@
 }
 
 .phase-timeline-segment.completed .phase-timeline-bar {
-  background: var(--success);
+  background: var(--accent-primary);
 }
 
 .phase-timeline-label {
@@ -181,11 +181,25 @@
   font-weight: 700;
   padding: 1px var(--space-2);
   border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
 }
 
-.completion-high { background: var(--success-subtle); color: var(--success); }
-.completion-medium { background: var(--warning-subtle); color: var(--warning); }
-.completion-low { background: var(--danger-subtle); color: var(--danger); }
+.completion-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+}
+
+.completion-high::before { background: var(--success); }
+.completion-medium::before { background: var(--warning); }
+.completion-low::before { background: var(--danger); }
 
 .completed-week-phase {
   font-size: var(--text-xs);
@@ -219,7 +233,7 @@
 
 .completed-week-progress {
   height: 3px;
-  background: var(--surface-lowered);
+  background: #e5e7eb;
   border-radius: var(--radius-full);
   margin-top: var(--space-2);
   overflow: hidden;
@@ -227,7 +241,7 @@
 
 .completed-week-fill {
   height: 100%;
-  background: var(--success);
+  background: var(--accent-primary);
   border-radius: var(--radius-full);
   transition: width 0.4s ease;
 }
@@ -260,7 +274,7 @@
   padding: var(--space-3);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  background: var(--surface-base);
+  background: #ffffff;
 }
 
 .adjustment-history-card-head {

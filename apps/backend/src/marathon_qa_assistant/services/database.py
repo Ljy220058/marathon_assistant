@@ -1,6 +1,5 @@
 import json
 import hashlib
-import os
 import re
 import sqlite3
 import threading
@@ -10,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from marathon_qa_assistant.core.app_state import RUNTIME_DATA_DIR
+from marathon_qa_assistant.core.settings import get_settings
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
 
 def _get_fernet():
@@ -18,7 +18,7 @@ def _get_fernet():
         from cryptography.fernet import Fernet
     except ImportError:
         return None
-    key = os.getenv("MARATHON_FERNET_KEY", "").strip()
+    key = get_settings().fernet_key
     if not key:
         return None
     try:
@@ -32,6 +32,8 @@ def _encrypt_token(token: str) -> str:
         return ""
     fernet = _get_fernet()
     if fernet is None:
+        if get_settings().is_production:
+            raise RuntimeError("MARATHON_FERNET_KEY is required to store tokens in production.")
         return token
     return fernet.encrypt(token.encode("utf-8")).decode("utf-8")
 
@@ -49,6 +51,7 @@ def _decrypt_token(encrypted: str) -> str:
 
 DB_PATH = RUNTIME_DATA_DIR / "marathon_assistant.db"
 MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
+SQLITE_BUSY_TIMEOUT_MS = 5000
 
 
 SCHEMA_SQL = """
@@ -202,6 +205,7 @@ class _Database:
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_MS}")
             self._local.conn = conn
         return self._local.conn
 
@@ -351,6 +355,13 @@ class _Database:
         if hasattr(self._local, "conn") and self._local.conn:
             self._local.conn.close()
             self._local.conn = None
+
+    def health_check(self) -> bool:
+        try:
+            self._get_conn().execute("SELECT 1").fetchone()
+            return True
+        except Exception:
+            return False
 
     # ---- 用户管理 ----
 
@@ -587,105 +598,109 @@ class _Database:
         start = self._normalize_start_date(training_start_date or str(meta.get("training_start_date") or ""))
         default_time = self._normalize_start_time(default_start_time or str(meta.get("default_start_time") or ""))
         conn = self._get_conn()
-        conn.execute(
-            """INSERT INTO training_plans
-                (id, user_id, goal, experience_level, requested_weeks, actual_weeks,
-                 plan_type, start_date, target_race_date, status, source_query,
-                 structured_plan_json, render_version)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
-            (
-                plan_id,
-                user_id,
-                str(meta.get("goal") or "训练计划"),
-                str(meta.get("experience_level") or ""),
-                int(meta.get("requested_weeks") or len(plan.get("week_plans") or []) or 1),
-                int(meta.get("actual_weeks") or len(plan.get("week_plans") or []) or 1),
-                str(meta.get("plan_type") or "multi_week"),
-                start.isoformat(),
-                str(meta.get("target_race_date") or ""),
-                source_query,
-                json.dumps(plan, ensure_ascii=False),
-                str(meta.get("render_version") or "v1"),
-            ),
-        )
-        if calendar_days:
-            grouped_weeks: Dict[int, Dict[str, Any]] = {}
-            for index, raw_day in enumerate(calendar_days, start=1):
-                if not isinstance(raw_day, dict):
-                    continue
-                week_no = int(raw_day.get("week_index") or ((index - 1) // 7 + 1))
-                day_label = str(raw_day.get("day_label") or raw_day.get("day") or "")
-                event_day = {
-                    **raw_day,
-                    "day": day_label,
-                    "training_type": raw_day.get("training_type_label") or raw_day.get("training_type") or "",
-                }
-                grouped_weeks.setdefault(
-                    week_no,
-                    {
-                        "week_index": week_no,
-                        "phase": str(raw_day.get("phase") or ""),
-                        "load_level": str(raw_day.get("load_level") or ""),
-                        "days": [],
-                    },
-                )["days"].append(event_day)
-            if grouped_weeks:
-                plan = {
-                    **plan,
-                    "week_plans": [grouped_weeks[key] for key in sorted(grouped_weeks)],
-                }
-        for week in plan.get("week_plans") or []:
-            week_no = int(week.get("week_index") or 0)
-            phase = str(week.get("phase") or "")
-            load_level = str(week.get("load_level") or "")
-            for index, day in enumerate(week.get("days") or [], start=1):
-                day_label = str(day.get("day") or "")
-                day_no = self._weekday_to_day_no(day_label) or index
-                event_date = start + timedelta(days=(week_no - 1) * 7 + day_no - 1)
-                training_type = str(day.get("training_type") or "训练")
-                main_set = str(day.get("main_set") or "")
-                workout_type = self._infer_workout_type(training_type, main_set)
-                duration_min = self._infer_duration_min(main_set, workout_type)
-                event_id = str(uuid.uuid4())
-                total_km = float(day.get("warmup_km") or 0) + float(day.get("main_km") or 0) + float(day.get("cooldown_km") or 0)
-                event_start_time = self._normalize_start_time(str(day.get("start_time") or default_time))
-                conn.execute(
-                    """INSERT INTO training_calendar_events
-                        (id, plan_id, user_id, week_no, day_no, day_label, scheduled_date,
-                         start_time, duration_min, title, workout_type, intensity_zone, warmup, main_set,
-                         cooldown, venue, notes, warmup_km, main_km, cooldown_km, total_km,
-                         phase, load_level, content_json, ics_uid)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        event_id,
-                        plan_id,
-                        user_id,
+        try:
+            conn.execute(
+                """INSERT INTO training_plans
+                    (id, user_id, goal, experience_level, requested_weeks, actual_weeks,
+                     plan_type, start_date, target_race_date, status, source_query,
+                     structured_plan_json, render_version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
+                (
+                    plan_id,
+                    user_id,
+                    str(meta.get("goal") or "????"),
+                    str(meta.get("experience_level") or ""),
+                    int(meta.get("requested_weeks") or len(plan.get("week_plans") or []) or 1),
+                    int(meta.get("actual_weeks") or len(plan.get("week_plans") or []) or 1),
+                    str(meta.get("plan_type") or "multi_week"),
+                    start.isoformat(),
+                    str(meta.get("target_race_date") or ""),
+                    source_query,
+                    json.dumps(plan, ensure_ascii=False),
+                    str(meta.get("render_version") or "v1"),
+                ),
+            )
+            if calendar_days:
+                grouped_weeks: Dict[int, Dict[str, Any]] = {}
+                for index, raw_day in enumerate(calendar_days, start=1):
+                    if not isinstance(raw_day, dict):
+                        continue
+                    week_no = int(raw_day.get("week_index") or ((index - 1) // 7 + 1))
+                    day_label = str(raw_day.get("day_label") or raw_day.get("day") or "")
+                    event_day = {
+                        **raw_day,
+                        "day": day_label,
+                        "training_type": raw_day.get("training_type_label") or raw_day.get("training_type") or "",
+                    }
+                    grouped_weeks.setdefault(
                         week_no,
-                        day_no,
-                        day_label,
-                        event_date.isoformat(),
-                        event_start_time,
-                        duration_min,
-                        f"第{week_no}周{day_label}｜{training_type}",
-                        workout_type,
-                        str(day.get("intensity_zone") or day.get("heart_rate_zone") or day.get("zone_range") or ""),
-                        sanitize_all_pace(str(day.get("warmup") or "")),
-                        sanitize_all_pace(main_set),
-                        sanitize_all_pace(str(day.get("cooldown") or "")),
-                        str(day.get("venue") or ""),
-                        str(day.get("notes") or ""),
-                        float(day.get("warmup_km") or 0),
-                        float(day.get("main_km") or 0),
-                        float(day.get("cooldown_km") or 0),
-                        total_km,
-                        phase,
-                        load_level,
-                        json.dumps(day, ensure_ascii=False),
-                        f"{plan_id}-{week_no}-{day_no}",
-                    ),
-                )
-        conn.commit()
-        return plan_id
+                        {
+                            "week_index": week_no,
+                            "phase": str(raw_day.get("phase") or ""),
+                            "load_level": str(raw_day.get("load_level") or ""),
+                            "days": [],
+                        },
+                    )["days"].append(event_day)
+                if grouped_weeks:
+                    plan = {
+                        **plan,
+                        "week_plans": [grouped_weeks[key] for key in sorted(grouped_weeks)],
+                    }
+            for week in plan.get("week_plans") or []:
+                week_no = int(week.get("week_index") or 0)
+                phase = str(week.get("phase") or "")
+                load_level = str(week.get("load_level") or "")
+                for index, day in enumerate(week.get("days") or [], start=1):
+                    day_label = str(day.get("day") or "")
+                    day_no = self._weekday_to_day_no(day_label) or index
+                    event_date = start + timedelta(days=(week_no - 1) * 7 + day_no - 1)
+                    training_type = str(day.get("training_type") or "??")
+                    main_set = str(day.get("main_set") or "")
+                    workout_type = self._infer_workout_type(training_type, main_set)
+                    duration_min = self._infer_duration_min(main_set, workout_type)
+                    event_id = str(uuid.uuid4())
+                    total_km = float(day.get("warmup_km") or 0) + float(day.get("main_km") or 0) + float(day.get("cooldown_km") or 0)
+                    event_start_time = self._normalize_start_time(str(day.get("start_time") or default_time))
+                    conn.execute(
+                        """INSERT INTO training_calendar_events
+                            (id, plan_id, user_id, week_no, day_no, day_label, scheduled_date,
+                             start_time, duration_min, title, workout_type, intensity_zone, warmup, main_set,
+                             cooldown, venue, notes, warmup_km, main_km, cooldown_km, total_km,
+                             phase, load_level, content_json, ics_uid)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            event_id,
+                            plan_id,
+                            user_id,
+                            week_no,
+                            day_no,
+                            day_label,
+                            event_date.isoformat(),
+                            event_start_time,
+                            duration_min,
+                            f"\u7b2c{week_no}\u5468{day_label}\uff5c{training_type}",
+                            workout_type,
+                            str(day.get("intensity_zone") or day.get("heart_rate_zone") or day.get("zone_range") or ""),
+                            sanitize_all_pace(str(day.get("warmup") or "")),
+                            sanitize_all_pace(main_set),
+                            sanitize_all_pace(str(day.get("cooldown") or "")),
+                            str(day.get("venue") or ""),
+                            str(day.get("notes") or ""),
+                            float(day.get("warmup_km") or 0),
+                            float(day.get("main_km") or 0),
+                            float(day.get("cooldown_km") or 0),
+                            total_km,
+                            phase,
+                            load_level,
+                            json.dumps(day, ensure_ascii=False),
+                            f"{plan_id}-{week_no}-{day_no}",
+                        ),
+                    )
+            conn.commit()
+            return plan_id
+        except Exception:
+            conn.rollback()
+            raise
 
     def get_plan(self, plan_id: str) -> Optional[Dict[str, Any]]:
         row = self._get_conn().execute(
@@ -969,54 +984,57 @@ class _Database:
     ) -> List[Dict[str, Any]]:
         conn = self._get_conn()
         affected: List[Dict[str, Any]] = []
-        for patch in feedback_replan.get("patches") or []:
-            event_id = str(patch.get("event_id") or "")
-            row = self.get_event(plan_id, event_id, user_id)
-            if not row:
-                continue
-            old_content = self._event_content(row)
-            new_content = dict(old_content)
-            event_replan = dict(feedback_replan)
-            event_replan["patches"] = [patch]
-            if apply_patch:
-                event_replan["status"] = "applied"
-                suggested = patch.get("suggested") or {}
-                new_content["card_status"] = "feedback_replan_applied"
-                new_content["generation_status"] = "feedback_replan_applied"
-                new_content["adjustment_hint"] = str(suggested.get("main_set") or "")
-            new_content["feedback_replan"] = event_replan
-            # 反馈重规划写入 content_json，保留原字段用于追溯 old/new patch。
-            conn.execute(
-                """UPDATE training_calendar_events SET
-                    content_json = ?, sync_status = 'not_synced', updated_at = datetime('now')
-                WHERE id = ?""",
-                (json.dumps(new_content, ensure_ascii=False), event_id),
-            )
-            conn.execute(
-                """INSERT INTO training_event_exceptions
-                    (id, event_id, plan_id, user_id, exception_type, reason,
-                     old_scheduled_date, new_scheduled_date, old_start_time, new_start_time,
-                     old_content_json, new_content_json, is_applied)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    str(uuid.uuid4()),
-                    event_id,
-                    plan_id,
-                    user_id,
-                    exception_type,
-                    str(feedback_id),
-                    row.get("scheduled_date"),
-                    row.get("scheduled_date"),
-                    row.get("start_time"),
-                    row.get("start_time"),
-                    row.get("content_json") or json.dumps(old_content, ensure_ascii=False),
-                    json.dumps(new_content, ensure_ascii=False),
-                    1 if apply_patch else 0,
-                ),
-            )
-            affected.append({"event_id": event_id, "feedback_replan": event_replan})
-        conn.commit()
-        return affected
+        try:
+            for patch in feedback_replan.get("patches") or []:
+                event_id = str(patch.get("event_id") or "")
+                row = self.get_event(plan_id, event_id, user_id)
+                if not row:
+                    continue
+                old_content = self._event_content(row)
+                new_content = dict(old_content)
+                event_replan = dict(feedback_replan)
+                event_replan["patches"] = [patch]
+                if apply_patch:
+                    event_replan["status"] = "applied"
+                    suggested = patch.get("suggested") or {}
+                    new_content["card_status"] = "feedback_replan_applied"
+                    new_content["generation_status"] = "feedback_replan_applied"
+                    new_content["adjustment_hint"] = str(suggested.get("main_set") or "")
+                new_content["feedback_replan"] = event_replan
+                conn.execute(
+                    """UPDATE training_calendar_events SET
+                        content_json = ?, sync_status = 'not_synced', updated_at = datetime('now')
+                    WHERE id = ?""",
+                    (json.dumps(new_content, ensure_ascii=False), event_id),
+                )
+                conn.execute(
+                    """INSERT INTO training_event_exceptions
+                        (id, event_id, plan_id, user_id, exception_type, reason,
+                         old_scheduled_date, new_scheduled_date, old_start_time, new_start_time,
+                         old_content_json, new_content_json, is_applied)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        str(uuid.uuid4()),
+                        event_id,
+                        plan_id,
+                        user_id,
+                        exception_type,
+                        str(feedback_id),
+                        row.get("scheduled_date"),
+                        row.get("scheduled_date"),
+                        row.get("start_time"),
+                        row.get("start_time"),
+                        row.get("content_json") or json.dumps(old_content, ensure_ascii=False),
+                        json.dumps(new_content, ensure_ascii=False),
+                        1 if apply_patch else 0,
+                    ),
+                )
+                affected.append({"event_id": event_id, "feedback_replan": event_replan})
+            conn.commit()
+            return affected
+        except Exception:
+            conn.rollback()
+            raise
 
     def list_plan_feedback(self, plan_id: str) -> list:
         rows = self._get_conn().execute(

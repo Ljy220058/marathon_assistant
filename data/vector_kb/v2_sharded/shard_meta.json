@@ -1,0 +1,12 @@
+{
+  "embedding_model": "nomic-embed-text:latest",
+  "shards": {
+    "training_protocol": 5548,
+    "nutrition": 3863,
+    "injury_safety": 732,
+    "medical_safety": 390,
+    "external_reference": 3773
+  },
+  "total_chunks": 14306,
+  "total_build_time_s": 2207.6
+}

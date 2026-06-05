@@ -3,12 +3,14 @@
 // 使用 IIFE 隔离命名空间，避免与 app.js 全局函数冲突。
 
 (function () {
-  const LOCAL_API_BASE = "http://127.0.0.1:8010";
+  const LOCAL_API_BASE = "http://127.0.0.1:8000";
+  const FULL_QUERY_TIMEOUT_SEC = 120;
+  const FULL_QUERY_TIMEOUT_MS = 120000;
   const CONFIGURED_API_BASE = String(
     window.MARATHON_API_BASE || document.body?.dataset?.apiBase || ""
   ).trim().replace(/\/$/, "");
   const DEFAULT_API_BASE = CONFIGURED_API_BASE || LOCAL_API_BASE;
-  const API_BASE_CANDIDATES = [DEFAULT_API_BASE, LOCAL_API_BASE, "http://127.0.0.1:8011", "http://127.0.0.1:8000"];
+  const API_BASE_CANDIDATES = [DEFAULT_API_BASE, LOCAL_API_BASE, "http://127.0.0.1:8001", "http://127.0.0.1:8010", "http://127.0.0.1:8011"];
 
   function _getApiBase() {
     const input = document.getElementById("apiBase");
@@ -68,11 +70,11 @@
     const apiBase = base || _getApiBase();
     const message = String(error?.message || error || "").trim();
     if (message.includes("请求超时")) {
-      return `${apiBase} 响应超时。健康检查超时通常是本地训练服务未启动、端口被占用，或模型/RAG 初始化卡住。`;
+      return `${apiBase} 已连接，但 AI 生成超过等待时间。当前可能是 DeepSeek/RAG 检索或报告生成较慢，请稍后重试。`;
     }
     if (message.includes("Failed to fetch") || message.includes("NetworkError") ||
         message.includes("Load failed") || message.includes("Network request failed")) {
-      return `本地训练服务不可用：无法连接 ${apiBase}。请确认本地服务正在该端口运行，当前推荐端口是 8010。`;
+      return `本地训练服务不可用：无法连接 ${apiBase}。请确认本地服务正在该端口运行，当前推荐端口是 8000。`;
     }
     return `${apiBase} 返回错误：${message || "未知错误"}`;
   }
@@ -107,14 +109,18 @@
     const llmModelInput = document.getElementById("llmModel");
     return {
       query, mode: "team", user_id: "default_user", stream: false,
-      llm_provider: llmProviderInput?.value || "ollama",
+      llm_provider: llmProviderInput?.value || "ds",
       llm_model: (llmModelInput?.value || "").trim(),
       response_mode: responseMode, timeout_sec: timeoutSec,
     };
   }
 
+  function isQueryTimeoutError(error) {
+    return String(error?.message || error || "").includes("请求超时");
+  }
+
   async function requestQueryPayloadFromBase(query, base, { planLike, controller, retry = false } = {}) {
-    const responseMode = planLike ? "skeleton" : "full";
+    const responseMode = planLike ? "skeleton" : "qa_fast";
     const timeoutSec = planLike ? (retry ? 90 : 60) : 45;
     const timeoutMs = planLike ? (retry ? 100000 : 70000) : 52000;
     return apiFetch("/query", {
@@ -143,7 +149,13 @@
           localStorage.setItem("marathon-api-base", base);
         }
         return payload;
-      } catch (error) { lastError = error; }
+      } catch (error) {
+        // /query 已经连上后端但生成超时，不再切换到其它端口，避免把慢响应误报成本地服务不可用。
+        if (isQueryTimeoutError(error)) {
+          throw error;
+        }
+        lastError = error;
+      }
     }
     throw lastError || new Error("请求失败。");
   }
@@ -174,9 +186,18 @@
     }
   }
 
+  async function loadKnowledgeSourceSummary() {
+    return apiFetch("/knowledge/sources/summary", { timeoutMs: 15000 });
+  }
+
+  async function loadKnowledgeSources() {
+    return apiFetch("/knowledge/sources", { timeoutMs: 30000 });
+  }
+
   // 挂载到 window 供外部引用
   window.__apiClient = {
     apiFetch, detectApiBase, requestQueryPayload, submitFeedback, loadPlanDetail,
     explainApiError, requestQueryPayloadFromBase,
+    loadKnowledgeSourceSummary, loadKnowledgeSources,
   };
 })();

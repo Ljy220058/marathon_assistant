@@ -8,7 +8,6 @@ import asyncio
 import copy
 import hmac
 import json
-import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -17,9 +16,21 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from marathon_qa_assistant.apps.response_projection import (
+    _project_feedback_response_for_role as _shared_project_feedback_response_for_role,
+    _project_plan_detail_response_for_role as _shared_project_plan_detail_response_for_role,
+    _project_query_response_for_role as _shared_project_query_response_for_role,
+    _project_training_calendar_response_for_role as _shared_project_training_calendar_response_for_role,
+)
+from marathon_qa_assistant.apps.security.response_role import _response_role as _shared_response_role
 from marathon_qa_assistant.services.database import get_db
+from marathon_qa_assistant.services.plan_query_classifier import (
+    has_plan_generation_profile as _has_plan_generation_profile,
+    is_plan_query as _is_plan_query,
+)
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile, sync_user_zones
-from marathon_qa_assistant.apps.schemas import QueryRequest, QueryResponse, TrainingCalendarResponse
+from marathon_qa_assistant.core.settings import get_settings
+from marathon_qa_assistant.apps.schemas import QueryRequest
 
 
 DEFAULT_API_USER_ID = "default_user"
@@ -27,19 +38,36 @@ DEFAULT_API_USER_ID = "default_user"
 # -------- auth / user resolution ---------------------------------------------
 
 def _resolve_user_id(request: Request) -> str:
-    """从请求状态获取已认证的 user_id；未认证时返回默认用户。"""
+    """从请求状态或 API token 获取 user_id；未认证时返回默认用户。"""
     uid = getattr(request.state, "user_id", None)
-    return str(uid) if uid else DEFAULT_API_USER_ID
+    if uid:
+        return str(uid)
+    token = _request_api_token(request)
+    if token:
+        try:
+            user = get_db().get_user_by_token(token)
+            if user:
+                return str(user["id"])
+        except Exception:
+            pass
+        configured = _configured_api_token()
+        if configured and hmac.compare_digest(token, configured):
+            return DEFAULT_API_USER_ID
+    return DEFAULT_API_USER_ID
 
 
 def _configured_api_token() -> str:
     """保留向后兼容：检查是否配置了旧版单 token。"""
-    return os.getenv("MARATHON_API_TOKEN", "").strip()
+    return get_settings().api_token
+
+
+def _is_production_mode() -> bool:
+    return get_settings().is_production
 
 
 def _auth_enabled() -> bool:
     """判断是否强制 API 认证。"""
-    return bool(_configured_api_token())
+    return get_settings().auth_enabled
 
 
 def _require_default_user(user_id: str):
@@ -55,241 +83,11 @@ def _request_api_token(request: Request) -> str:
     return request.headers.get("X-Marathon-API-Key", "").strip()
 
 
-def _configured_expert_api_token() -> str:
-    return os.getenv("MARATHON_EXPERT_API_TOKEN", "").strip()
-
-
-def _request_expert_api_token(request: Request) -> str:
-    return request.headers.get("X-Marathon-Expert-Key", "").strip()
-
-
-def _request_has_expert_response_access(request: Request) -> bool:
-    expected = _configured_expert_api_token()
-    supplied = _request_expert_api_token(request)
-    return bool(expected and supplied and hmac.compare_digest(supplied, expected))
-
-
-def _response_role(request: Request) -> str:
-    requested = str(request.headers.get("X-Marathon-Response-Role") or "").strip().lower()
-    if requested == "runner":
-        return "runner"
-    if requested == "expert":
-        if _request_has_expert_response_access(request):
-            return "expert"
-        if not _auth_enabled() and not _configured_expert_api_token():
-            return "expert"
-        raise HTTPException(status_code=403, detail="专家响应需要有效专家凭据。")
-    if requested:
-        raise HTTPException(status_code=400, detail="无效 response role。")
-    if _auth_enabled() or _configured_expert_api_token():
-        return "runner"
-    return "expert"
-
-
-# -------- response payload / projection --------------------------------------
-
-_RUNNER_EXPERT_ONLY_NESTED_KEYS = {
-    "content_json",
-    "field_sources",
-    "protocol_check",
-    "action_match",
-    "kb_fallback",
-    "risk_gate",
-    "protocol_recheck",
-    "workflow_trace",
-    "trace",
-    "training_load_factors",
-    "raw_text",
-    "expert_metadata",
-    "source_registry_id",
-    "retrieval_mode",
-    "score",
-    "source_path",
-    "local_path",
-    "chunk_id",
-    "rag_eval",
-    "source_quality",
-}
-
-
-def _response_payload(value: Any) -> Dict[str, Any]:
-    if hasattr(value, "model_dump"):
-        return value.model_dump()
-    if hasattr(value, "dict"):
-        return value.dict()
-    return dict(value or {})
-
-
-def _drop_expert_keys_deep(value: Any, keys: Optional[set] = None) -> Any:
-    blocked = keys or _RUNNER_EXPERT_ONLY_NESTED_KEYS
-    if isinstance(value, dict):
-        return {
-            key: _drop_expert_keys_deep(item, blocked)
-            for key, item in value.items()
-            if key not in blocked
-        }
-    if isinstance(value, list):
-        return [_drop_expert_keys_deep(item, blocked) for item in value]
-    return value
-
-
-def _public_risk_gate(risk_gate: Dict[str, Any]) -> Dict[str, Any]:
-    gate = risk_gate if isinstance(risk_gate, dict) else {}
-    return {
-        key: gate.get(key)
-        for key in ("status", "product_status", "adjustment_action", "decision_reason", "triggers")
-        if gate.get(key) not in (None, "", [])
-    }
-
-
-def _public_protocol_recheck(protocol_recheck: Dict[str, Any]) -> Dict[str, Any]:
-    recheck = protocol_recheck if isinstance(protocol_recheck, dict) else {}
-    return {
-        "allowed": bool(recheck.get("allowed", True)),
-        "risk_gate_status": str(recheck.get("risk_gate_status") or ""),
-    }
-
-
-def _project_runner_training_plan_review(review: Dict[str, Any]) -> Dict[str, Any]:
-    public_review = _drop_expert_keys_deep(copy.deepcopy(review or {}))
-    summary = public_review.get("summary")
-    if isinstance(summary, dict):
-        summary["review_scope"] = [
-            item
-            for item in summary.get("review_scope", [])
-            if str(item) not in {"field_sources", "workflow_trace", "risk_gate", "protocol_recheck"}
-        ]
-    return public_review
-
-
-# -------- query response projection ------------------------------------------
-
-def _project_runner_query_response(response: QueryResponse) -> Dict[str, Any]:
-    payload = _response_payload(response)
-    payload["workflow_trace"] = {}
-    payload["token_usage"] = {}
-    payload["audit_scores"] = {}
-    payload["half_marathon_protocol_validation"] = None
-    for key in (
-        "structured_training_plan",
-        "structured_report",
-        "training_explanation_panel",
-        "monthly_training_calendar",
-        "daily_schedule_cards",
-        "phases",
-        "training_load_summary",
-    ):
-        payload[key] = _drop_expert_keys_deep(payload.get(key))
-    payload["training_plan_review"] = _project_runner_training_plan_review(payload.get("training_plan_review") or {})
-    payload["evidence_chain"] = _drop_expert_keys_deep(payload.get("evidence_chain") or {})
-    return payload
-
-
-def _project_query_response_for_role(response: QueryResponse, role: str) -> Any:
-    if role == "expert":
-        return response
-    return _project_runner_query_response(response)
-
-
-# -------- feedback response projection ---------------------------------------
-
-def _project_runner_feedback_summary(feedback: Dict[str, Any]) -> Dict[str, Any]:
-    latest = feedback if isinstance(feedback, dict) else {}
-    allowed_keys = {
-        "id", "feedback_id", "event_id", "plan_id",
-        "completion_status", "completion_quality",
-        "subjective_fatigue", "pain_status", "sleep_quality",
-        "notes", "reason_codes", "next_day_adjustment",
-        "weekly_adjustment", "alternative_workout",
-        "risk_alert", "rationale", "created_at",
-    }
-    return {
-        key: _drop_expert_keys_deep(value)
-        for key, value in latest.items()
-        if key in allowed_keys and value not in (None, "")
-    }
-
-
-def _project_runner_feedback_response(payload: Dict[str, Any]) -> Dict[str, Any]:
-    projected = copy.deepcopy(payload)
-    projected["risk_gate"] = _public_risk_gate(projected.get("risk_gate") or {})
-    projected["protocol_recheck"] = _public_protocol_recheck(projected.get("protocol_recheck") or {})
-    adaptive_feedback = projected.get("adaptive_feedback") if isinstance(projected.get("adaptive_feedback"), dict) else {}
-    projected["adaptive_feedback"] = {
-        key: _drop_expert_keys_deep(value)
-        for key, value in adaptive_feedback.items()
-        if key in {"reason_codes", "reasons", "source"}
-    }
-    projected["workflow_trace"] = {}
-    return projected
-
-
-def _project_feedback_response_for_role(payload: Dict[str, Any], role: str) -> Dict[str, Any]:
-    if role == "expert":
-        return payload
-    return _project_runner_feedback_response(payload)
-
-
-# -------- plan detail response projection ------------------------------------
-
-def _project_runner_plan_event(event: Dict[str, Any]) -> Dict[str, Any]:
-    projected = _drop_expert_keys_deep(copy.deepcopy(event or {}))
-    latest = event.get("latest_feedback") if isinstance(event, dict) else None
-    if isinstance(latest, dict):
-        projected["latest_feedback"] = _project_runner_feedback_summary(latest)
-    return projected
-
-
-def _project_runner_adjustment_history(history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    projected = []
-    for item in history or []:
-        if not isinstance(item, dict):
-            continue
-        public_item = {
-            key: _drop_expert_keys_deep(value)
-            for key, value in item.items()
-            if key not in {"risk_gate", "protocol_recheck"}
-        }
-        projected.append(public_item)
-    return projected
-
-
-def _project_runner_plan_detail_response(payload: Dict[str, Any]) -> Dict[str, Any]:
-    projected = copy.deepcopy(payload)
-    plan = dict(projected.get("plan") or {})
-    plan.pop("structured_plan_json", None)
-    projected["plan"] = plan
-    projected["structured_training_plan"] = _drop_expert_keys_deep(projected.get("structured_training_plan") or {})
-    projected["workflow_trace"] = {}
-    projected["events"] = [_project_runner_plan_event(event) for event in projected.get("events") or []]
-    projected["adjustment_history"] = _project_runner_adjustment_history(projected.get("adjustment_history") or [])
-    projected["execution_status_summary"] = _drop_expert_keys_deep(projected.get("execution_status_summary") or {})
-    projected["training_plan_review"] = _project_runner_training_plan_review(projected.get("training_plan_review") or {})
-    projected["evidence_chain"] = _drop_expert_keys_deep(projected.get("evidence_chain") or {})
-    return projected
-
-
-def _project_plan_detail_response_for_role(payload: Dict[str, Any], role: str) -> Dict[str, Any]:
-    if role == "expert":
-        return payload
-    return _project_runner_plan_detail_response(payload)
-
-
-# -------- training calendar response projection ------------------------------
-
-def _project_runner_training_calendar_response(response: TrainingCalendarResponse) -> Dict[str, Any]:
-    payload = _response_payload(response)
-    for key in ("days", "phases", "monthly_training_calendar", "daily_schedule_cards", "training_load_summary"):
-        payload[key] = _drop_expert_keys_deep(payload.get(key))
-    payload["training_plan_review"] = _project_runner_training_plan_review(payload.get("training_plan_review") or {})
-    payload["evidence_chain"] = _drop_expert_keys_deep(payload.get("evidence_chain") or {})
-    return payload
-
-
-def _project_training_calendar_response_for_role(response: TrainingCalendarResponse, role: str) -> Any:
-    if role == "expert":
-        return response
-    return _project_runner_training_calendar_response(response)
+_response_role = _shared_response_role
+_project_query_response_for_role = _shared_project_query_response_for_role
+_project_feedback_response_for_role = _shared_project_feedback_response_for_role
+_project_plan_detail_response_for_role = _shared_project_plan_detail_response_for_role
+_project_training_calendar_response_for_role = _shared_project_training_calendar_response_for_role
 
 
 # -------- profile helpers ----------------------------------------------------
@@ -333,47 +131,6 @@ def _extract_profile_suggestions(text: str) -> Dict[str, Any]:
         suggestions["goal"] = goal_match.group(1).strip()
 
     return suggestions
-
-
-# -------- query plan detection -----------------------------------------------
-
-PLAN_QUERY_KEYWORDS = (
-    "训练计划", "周计划", "月历", "日历", "课表", "生成计划", "制定", "安排",
-    "备赛", "半马", "全马", "马拉松",
-    "half marathon", "marathon", "training plan", "training feedback",
-    "adjust next week", "adjusted plan", "adaptive plan",
-    "race prep", "race preparation", "sub ", "pb",
-)
-
-# P1-7: 营养/补给类关键词 — 包含这些词的查询不应被误判为训练计划请求
-NUTRITION_EXCLUSION_KEYWORDS = (
-    "营养", "补给", "吃", "喝", "补水", "蛋白", "碳水", "恢复餐",
-    "能量胶", "电解质", "饮食", "素食", "生酮", "空腹", "低血糖",
-    "hydration", "fuel", "nutrition", "diet",
-)
-
-
-def _is_plan_query(query: str) -> bool:
-    text = str(query or "").lower()
-    # P1-7: 若查询包含营养/补给关键词，不应判定为训练计划请求
-    if any(keyword.lower() in text for keyword in NUTRITION_EXCLUSION_KEYWORDS):
-        return False
-    return any(keyword.lower() in text for keyword in PLAN_QUERY_KEYWORDS)
-
-
-def _has_plan_generation_profile(profile: Dict[str, Any]) -> bool:
-    if not isinstance(profile, dict):
-        return False
-    plan_fields = (
-        profile.get("goal"), profile.get("current_half_time"),
-        profile.get("target_half_time"), profile.get("target_race_date"),
-        profile.get("weekly_mileage"), profile.get("recent_four_week_mileage"),
-        profile.get("recent_4_week_mileage"), profile.get("last_month_mileage"),
-        profile.get("available_days"), profile.get("target_pace"),
-        profile.get("injury_or_fatigue"), profile.get("injury"),
-        profile.get("recovery_state"),
-    )
-    return any(value not in (None, "", []) for value in plan_fields)
 
 
 # -------- plan persistence helpers -------------------------------------------

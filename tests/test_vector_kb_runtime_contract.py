@@ -4,6 +4,8 @@ from pathlib import Path
 
 import faiss
 
+from marathon_qa_assistant.apps import response_builders
+from marathon_qa_assistant.services import knowledge_graph
 from marathon_qa_assistant.services import vector_store
 
 
@@ -115,6 +117,70 @@ def test_kb_source_label_resolves_repo_v2_directory():
     assert vector_store._kb_source_label(vector_store.V2_VECTOR_DIR) == "v2"
 
 
+def test_graph_engine_runtime_path_defaults_to_v2_directory():
+    from marathon_qa_assistant.core import app_state
+
+    assert knowledge_graph.GRAPH_DATA_PATH == app_state.V2_VECTOR_DIR / "knowledge_graph.json"
+
+
+def test_graph_runtime_health_disables_graph_fusion_when_graph_source_mismatches_vector_runtime(tmp_path):
+    vector_dir = tmp_path / "v2"
+    graph_dir = tmp_path / "default"
+    fake_engine = knowledge_graph.GraphEngine.__new__(knowledge_graph.GraphEngine)
+    fake_engine.GRAPH_DATA_PATH = graph_dir / "knowledge_graph.json"
+    fake_engine.nodes = {"node-1": {"label": "tempo"}}
+
+    health = knowledge_graph.graph_runtime_health(
+        {
+            "source": "v2",
+            "vector_dir": str(vector_dir),
+            "ready": True,
+            "faiss_ready": True,
+            "index_schema_version": "chunk_schema_v2",
+            "runtime_core_prescription_enabled": True,
+        },
+        graph_engine_instance=fake_engine,
+    )
+
+    assert health["graph_source"] == str(graph_dir.resolve())
+    assert health["vector_source"] == "v2"
+    assert health["graph_vector_source_aligned"] is False
+    assert health["graph_fusion_enabled"] is False
+    assert "graph_source_mismatch" in health["reason"]
+
+
+def test_public_rag_health_exposes_graph_alignment_and_disables_graph_fusion_when_mismatched(monkeypatch):
+    monkeypatch.setattr(
+        response_builders,
+        "graph_runtime_health",
+        lambda _health=None: {
+            "graph_path": "C:/graph/default/knowledge_graph.json",
+            "graph_source": "default",
+            "vector_source": "v2",
+            "graph_ready": True,
+            "graph_vector_source_aligned": False,
+            "graph_fusion_enabled": False,
+            "reason": "graph_source_mismatch:default!=v2",
+        },
+    )
+
+    payload = response_builders._public_rag_health(
+        {
+            "source": "v2",
+            "vector_dir": "C:/vector/v2",
+            "index_schema_version": "chunk_schema_v2",
+            "runtime_core_prescription_enabled": True,
+            "chunks_count": 12,
+            "faiss_ready": True,
+            "ready": True,
+        }
+    )
+
+    assert payload["graph_source"] == "default"
+    assert payload["graph_vector_source_aligned"] is False
+    assert payload["graph_fusion_enabled"] is False
+
+
 def test_load_faiss_store_rejects_untrusted_external_dir(monkeypatch, tmp_path):
     faiss_dir = tmp_path / "external" / "faiss_db"
     faiss_dir.mkdir(parents=True)
@@ -179,3 +245,24 @@ def test_load_faiss_store_falls_back_to_memory_deserialization_for_trusted_dir(m
     assert store.index == "index:index-bytes"
     assert store.docstore == "docstore"
     assert store.index_to_docstore_id == {0: "doc-0"}
+
+
+def test_load_vector_kb_does_not_deserialize_untrusted_external_dir(monkeypatch, tmp_path):
+    vector_dir = tmp_path / "external"
+    _write_vector_dir(vector_dir, [{"chunk_id": "legacy-1", "source_file": "legacy.pdf", "page": 1, "text": "legacy"}])
+    calls = []
+
+    def fake_load_local(*args, **kwargs):
+        calls.append((args, kwargs))
+        return "should-not-load"
+
+    monkeypatch.setattr(vector_store, "get_embeddings", lambda: object())
+    monkeypatch.setattr(vector_store.FAISS, "load_local", fake_load_local)
+
+    chunks, vectorizer, matrix, bm25 = vector_store.load_vector_kb(vector_dir)
+
+    assert chunks
+    assert vectorizer == "faiss_vectorizer"
+    assert matrix is None
+    assert bm25["doc_count"] == 1
+    assert calls == []

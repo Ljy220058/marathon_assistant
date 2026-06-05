@@ -76,20 +76,10 @@ def has_vector_kb_artifacts(vector_dir: Path) -> bool:
 
 def get_preferred_vector_dir() -> Path:
     """
-    返回当前应优先加载的向量库目录。
-    Monorepo 新路径优先，旧根目录路径保留一轮兼容。
+    返回运行时唯一允许加载的 v2 向量库目录。
+    v2-only runtime 不参与 user/default/legacy fallback，避免旧索引进入生产问答链路。
     """
-    for candidate in (
-        USER_VECTOR_DIR,
-        V2_VECTOR_DIR,
-        RUNTIME_USER_VECTOR_DIR,
-        LEGACY_USER_VECTOR_DIR,
-        DEFAULT_VECTOR_DIR,
-        LEGACY_DEFAULT_VECTOR_DIR,
-    ):
-        if has_vector_kb_artifacts(candidate):
-            return candidate
-    return DEFAULT_VECTOR_DIR
+    return V2_VECTOR_DIR
 
 # 全局知识图谱高亮词
 DEFAULT_HIGHLIGHTS = [
@@ -110,7 +100,9 @@ global_state = GlobalState()
 
 async def check_ollama_status():
     """检查 Ollama 服务是否在线"""
-    ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    from marathon_qa_assistant.core.settings import get_settings
+
+    ollama_url = get_settings().ollama_base_url
     host = ollama_url.split("//")[-1].split(":")[0]
     port = int(ollama_url.split(":")[-1])
     try:

@@ -27,10 +27,21 @@
 .feedback-progress-label {
   font-size: var(--text-xs);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
-  background: var(--accent-primary-alpha);
+  background: #eff6ff;
   color: var(--accent-primary);
+}
+
+.feedback-progress-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-primary);
 }
 
 .feedback-step {
@@ -68,12 +79,12 @@
 
 .feedback-radio-group label:hover {
   border-color: var(--accent-primary);
-  background: var(--accent-primary-subtle);
+  background: #eff6ff;
 }
 
 .feedback-radio-group label:has(input:checked) {
   border-color: var(--accent-primary);
-  background: var(--accent-primary-alpha);
+  background: #ffffff;
   font-weight: 600;
 }
 
@@ -100,7 +111,7 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  background: var(--surface-base);
+  background: #ffffff;
   color: var(--text-primary);
   font-family: inherit;
 }
@@ -165,14 +176,14 @@
 }
 
 .adjustment-significant {
-  border-color: var(--warning);
-  border-width: 2px;
-  background: var(--warning-subtle);
+  border-color: var(--border-default);
+  border-width: 1px;
+  background: #ffffff;
 }
 
 .adjustment-minor {
-  border-color: var(--success-alpha);
-  background: var(--success-subtle);
+  border-color: var(--border-default);
+  background: #ffffff;
 }
 
 .adjustment-notice-head {
@@ -188,20 +199,22 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 999px;
   font-size: var(--text-lg);
   font-weight: 700;
   flex-shrink: 0;
+  background: #eff6ff;
+  color: var(--accent-primary);
 }
 
 .adjustment-significant .adjustment-icon {
-  background: var(--warning);
-  color: white;
+  background: #fff7ed;
+  color: var(--warning);
 }
 
 .adjustment-minor .adjustment-icon {
-  background: var(--success);
-  color: white;
+  background: #ecfdf5;
+  color: var(--success);
 }
 
 .adjustment-notice-head h3 {
@@ -215,11 +228,13 @@
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
   margin-left: auto;
+  background: #ffffff;
+  border: 1px solid var(--border-default);
 }
 
 .adjustment-badge.deescalate { background: var(--danger-subtle); color: var(--danger); }
-.adjustment-badge.attention { background: var(--warning-subtle); color: var(--warning); }
-.adjustment-badge.normal { background: var(--success-subtle); color: var(--success); }
+.adjustment-badge.attention { background: #fff7ed; color: var(--warning); }
+.adjustment-badge.normal { background: #ecfdf5; color: var(--success); }
 
 .adjustment-notice-body {
   font-size: var(--text-sm);
@@ -234,7 +249,7 @@
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   padding: var(--space-3);
-  background: var(--surface-base);
+  background: #ffffff;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
 }

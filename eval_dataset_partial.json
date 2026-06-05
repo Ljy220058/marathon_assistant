@@ -1,0 +1,38 @@
+[
+  {
+    "question": "What combination of nutrients during exercise was found to improve performance and reduce muscle damage?",
+    "ground_truth": "A carbohydrate and protein combination taken during exercise significantly improved performance and reduced muscle damage. The effective nutrient gel provided 0.146 grams of carbohydrate per kilogram of body weight and 0.0365 grams of protein per kilogram, administered throughout exhaustive exercise bouts.",
+    "reference_chunk_id": "j02",
+    "sample_type": "positive"
+  },
+  {
+    "question": "What are the observed renal complications after marathon running?",
+    "ground_truth": "Marathon running exerts extreme stress on the renal system. Acute kidney injury, acute tubular necrosis, and fluid/electrolyte imbalances are frequently observed after marathons. The long-term effects on renal function and chronic kidney disease remain unclear.",
+    "reference_chunk_id": "j06",
+    "sample_type": "positive"
+  },
+  {
+    "question": "What hematological biomarker alterations are commonly observed after a marathon race?",
+    "ground_truth": "A marathon race may lead to a certain degree of hemolysis, indicated by increased levels of free hemoglobin, indirect bilirubin, and LDH, along with decreased haptoglobin levels.",
+    "reference_chunk_id": "j12",
+    "sample_type": "positive"
+  },
+  {
+    "question": "What percentage of reviewed studies recognized addressing biomechanical abnormalities as important for return-to-running?",
+    "ground_truth": "62% of the reviewed studies acknowledged that addressing lower extremity biomechanical abnormalities thought to contribute to the initial injury is crucial when returning to running after a tibial bone stress injury.",
+    "reference_chunk_id": "j13",
+    "sample_type": "positive"
+  },
+  {
+    "question": "What are the effects of calcium supplementation on health and exercise performance?",
+    "ground_truth": "Calcium supplementation may be beneficial for populations at risk of osteoporosis and can promote fat metabolism to help manage body composition. However, it provides no ergogenic effect, meaning it does not improve exercise performance.",
+    "reference_chunk_id": "j14",
+    "sample_type": "positive"
+  },
+  {
+    "question": "What do studies on glycerol hyperhydration indicate about its effects on athletic performance?",
+    "ground_truth": "Studies on glycerol hyperhydration show mixed results. One study found it significantly improved VO2max performance in hot conditions, while three other studies reported no improvement in cycling distance, cardiovascular/thermoregulatory functions, or anaerobic power in wrestlers.",
+    "reference_chunk_id": "j20",
+    "sample_type": "positive"
+  }
+]

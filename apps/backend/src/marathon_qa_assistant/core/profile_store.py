@@ -1,11 +1,11 @@
 import json
 import logging
-import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from .app_state import USER_PROFILE_PATH
+from .settings import get_settings
 from .physiology import calculate_hr_zones, calculate_pace_zones, is_zone_empty
 
 logger = logging.getLogger("workflow_engine")
@@ -85,7 +85,7 @@ def _encrypt_data(data: str) -> str:
         from cryptography.fernet import Fernet
     except ImportError:
         return data
-    key = os.getenv("MARATHON_FERNET_KEY", "").strip()
+    key = get_settings().fernet_key
     if not key:
         return data
     try:
@@ -99,7 +99,7 @@ def _decrypt_data(encrypted: str) -> str:
         from cryptography.fernet import Fernet
     except ImportError:
         return encrypted
-    key = os.getenv("MARATHON_FERNET_KEY", "").strip()
+    key = get_settings().fernet_key
     if not key:
         return encrypted
     try:

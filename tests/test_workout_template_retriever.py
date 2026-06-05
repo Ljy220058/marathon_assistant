@@ -387,9 +387,9 @@ def test_single_day_daily_workout_card_matrix_for_all_training_types():
             "main_set": "专项配速",
             "expected_key": "marathon_pace",
             "day": "周六",
-            "expected_title": "周六｜配速训练课",
+            "expected_title": "周六｜马拉松配速训练课",
             "expected_label": "马拉松配速跑（专项配速训练）",
-            "expected_intensity": "Z3-Z4 稳态有氧区至有氧阈值区",
+            "expected_intensity": "Z4-Z5 比赛配速区（100% HMP），配合 85-90% HMP 巡航恢复",
             "expected_objective_keyword": "配速",
             "hit": {
                 "source_file": "动作库.pdf",
@@ -792,7 +792,7 @@ def test_structured_report_renders_daily_cards_for_all_training_types():
             "training_type": "马拉松配速跑",
             "main_set": "专项配速",
             "expected_key": "marathon_pace",
-            "expected_title": "周六｜配速训练课",
+            "expected_title": "周六｜马拉松配速训练课",
             "text": """
             【马拉松配速跑】
             name：马拉松配速跑（Marathon Pace）

@@ -7,6 +7,8 @@ from typing import Tuple, Dict, Any, List
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from marathon_qa_assistant.core.settings import get_settings
+
 logger = logging.getLogger("security_utils")
 
 class InputGuard:
@@ -106,11 +108,11 @@ class SafetyClassifier:
     """使用LLM实现的安全分类器"""
 
     def __init__(self, model_name=None, base_url=None):
-        import os
+        settings = get_settings()
         self.llm = ChatOllama(
-            model=model_name or os.getenv("OLLAMA_MODEL", "qwen2.5:latest"),
+            model=model_name or settings.ollama_model,
             temperature=0.1,
-            base_url=base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=base_url or settings.ollama_base_url,
         )
 
     async def classify(self, text: str) -> Dict[str, Any]:
@@ -147,13 +149,14 @@ class SecureCourseAssistant:
     """集成安全护栏的课程助手"""
 
     def __init__(self):
+        settings = get_settings()
         self.input_guard = InputGuard()
         self.output_guard = OutputGuard()
         self.classifier = SafetyClassifier()
         self.llm = ChatOllama(
-            model="qwen2.5:latest",
+            model=settings.ollama_model,
             temperature=0.7,
-            base_url="http://localhost:11434"
+            base_url=settings.ollama_base_url
         )
         self.security_log = []
 

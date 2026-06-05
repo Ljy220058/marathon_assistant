@@ -139,13 +139,283 @@ def test_build_expert_preview_chunks_preserves_permission_boundary(tmp_path):
     )
 
     chunks = [json.loads(line) for line in preview_out.read_text(encoding="utf-8").splitlines() if line.strip()]
+    base_chunk = next(item for item in chunks if item["source_registry_id"] == "src_base")
     expert_chunk = next(item for item in chunks if item["source_registry_id"] == "src_test_heat_guideline")
 
     assert report["base_chunk_count"] == 1
     assert report["expert_chunk_count"] == 1
     assert report["total_chunk_count"] == 2
+    assert base_chunk["domain_terms"] == ["training_protocol"]
+    assert expert_chunk["domain_terms"] == ["training_protocol"]
     assert expert_chunk["knowledge_layer"] == "document_index"
     assert expert_chunk["allowed_use"] == "explanation"
     assert expert_chunk["prescription_permission"] == "explanation_only"
     assert expert_chunk["needs_review"] is True
     assert "Heat Safety for Runners" in expert_chunk["text"]
+
+
+def test_build_expert_preview_chunks_refreshes_existing_generated_source(tmp_path):
+    base_preview = tmp_path / "chunk_schema_v2_preview.jsonl"
+    registry = tmp_path / "source_registry_v2_expert.jsonl"
+    preview_out = tmp_path / "chunk_schema_v2_expert_preview.jsonl"
+    _write_jsonl(
+        base_preview,
+        [
+            {
+                "chunk_id": "chunkv2_src_test_heat_guideline_0001",
+                "source_registry_id": "src_test_heat_guideline",
+                "source_file": "expert_heat_safety.url",
+                "source_url": "https://example.com/heat-safety",
+                "local_path": "data/knowledge/expert_heat_safety.url",
+                "page": 1,
+                "section": "expert_source_registry",
+                "text": "Old generated source summary",
+                "language": "en",
+                "evidence_domain": "environment_race_context",
+                "knowledge_layer": "document_index",
+                "domain_pack": "environment_race_context",
+                "allowed_use": "explanation",
+                "prescription_permission": "explanation_only",
+                "quality_tier": "candidate",
+                "needs_review": True,
+                "review_status": "candidate",
+            }
+        ],
+    )
+    _write_jsonl(registry, [_candidate_source(metadata={"summary": "Updated bilingual heat safety summary."})])
+
+    report = build_expert_preview_chunks(
+        registry_path=registry,
+        base_preview_path=base_preview,
+        preview_out=preview_out,
+    )
+
+    chunks = [json.loads(line) for line in preview_out.read_text(encoding="utf-8").splitlines() if line.strip()]
+    expert_chunk = next(item for item in chunks if item["source_registry_id"] == "src_test_heat_guideline")
+
+    assert report["expert_chunk_count"] == 0
+    assert report["refreshed_expert_chunk_count"] == 1
+    assert expert_chunk["chunk_id"] == "chunkv2_src_test_heat_guideline_0001"
+    assert "Updated bilingual heat safety summary" in expert_chunk["text"]
+
+
+def test_build_expert_preview_chunks_can_split_pdf_candidate_by_paragraph(tmp_path):
+    base_preview = tmp_path / "chunk_schema_v2_preview.jsonl"
+    registry = tmp_path / "source_registry_v2_expert.jsonl"
+    preview_out = tmp_path / "chunk_schema_v2_expert_preview.jsonl"
+    pdf_path = tmp_path / "candidate.pdf"
+    pdf_path.write_bytes(b"%PDF-1.7 fake test file")
+    _write_jsonl(base_preview, [])
+    _write_jsonl(
+        registry,
+        [
+            _candidate_source(
+                source_registry_id="src_test_pdf_candidate",
+                title="Norway Method Candidate",
+                source_file="candidate.pdf",
+                source_path=str(pdf_path),
+                local_path=str(pdf_path),
+                evidence_domain="sports_science_reference",
+                domain_pack="training_load",
+                metadata={
+                    "summary": "Threshold training candidate source.",
+                    "runtime_chunking": "paragraph",
+                },
+            )
+        ],
+    )
+
+    report = build_expert_preview_chunks(
+        registry_path=registry,
+        base_preview_path=base_preview,
+        preview_out=preview_out,
+        page_loader=lambda _path: [
+            (
+                2,
+                "第一段讲阈值训练。\n第二段讲强度控制。\n\n第三段讲双阈值训练。",
+            )
+        ],
+    )
+
+    chunks = [json.loads(line) for line in preview_out.read_text(encoding="utf-8").splitlines() if line.strip()]
+    paragraph_chunks = [item for item in chunks if item["section"] == "pdf_paragraph_candidate"]
+
+    assert report["expert_chunk_count"] == 4
+    assert len(chunks) == 4
+    assert len(paragraph_chunks) == 3
+    assert [item["page"] for item in paragraph_chunks] == [2, 2, 2]
+    assert [item["paragraph_index"] for item in paragraph_chunks] == [1, 2, 3]
+    assert all(item["source_registry_id"] == "src_test_pdf_candidate" for item in paragraph_chunks)
+    assert all(item["domain_terms"] == ["training_protocol"] for item in paragraph_chunks)
+    assert all(item["review_status"] == "candidate" for item in paragraph_chunks)
+    assert all(item["prescription_permission"] == "explanation_only" for item in paragraph_chunks)
+    assert all(item["exclude_from_training_generation"] is True for item in paragraph_chunks)
+    assert "第一段讲阈值训练" in paragraph_chunks[0]["text"]
+
+
+def test_build_expert_preview_chunks_avoids_duplicate_chunk_ids_for_pdf_candidates(tmp_path):
+    base_preview = tmp_path / "chunk_schema_v2_preview.jsonl"
+    registry = tmp_path / "source_registry_v2_expert.jsonl"
+    preview_out = tmp_path / "chunk_schema_v2_expert_preview.jsonl"
+    pdf_path = tmp_path / "candidate.pdf"
+    pdf_path.write_bytes(b"%PDF-1.7 fake test file")
+    _write_jsonl(
+        base_preview,
+        [
+            {
+                "chunk_id": "chunkv2_src_test_pdf_candidate_0003",
+                "source_registry_id": "src_test_pdf_candidate",
+                "source_file": "candidate.pdf",
+                "source_url": "https://example.com/candidate.pdf",
+                "local_path": str(pdf_path),
+                "page": 1,
+                "section": "expert_source_registry",
+                "text": "Old generated summary",
+                "language": "en",
+                "evidence_domain": "sports_science_reference",
+                "knowledge_layer": "document_index",
+                "domain_pack": "training_load",
+                "allowed_use": "explanation",
+                "prescription_permission": "explanation_only",
+                "quality_tier": "candidate",
+                "needs_review": True,
+                "review_status": "candidate",
+            }
+        ],
+    )
+    _write_jsonl(
+        registry,
+        [
+            _candidate_source(
+                source_registry_id="src_test_pdf_candidate",
+                title="Norway Method Candidate",
+                source_file="candidate.pdf",
+                source_path=str(pdf_path),
+                local_path=str(pdf_path),
+                evidence_domain="sports_science_reference",
+                domain_pack="training_load",
+                metadata={
+                    "summary": "Threshold training candidate source.",
+                    "runtime_chunking": "paragraph",
+                },
+            )
+        ],
+    )
+
+    build_expert_preview_chunks(
+        registry_path=registry,
+        base_preview_path=base_preview,
+        preview_out=preview_out,
+        page_loader=lambda _path: [
+            (
+                2,
+                "First paragraph about threshold training.\n\nSecond paragraph about intensity control.\n\nThird paragraph about 45/15 sessions.",
+            )
+        ],
+    )
+
+    chunks = [json.loads(line) for line in preview_out.read_text(encoding="utf-8").splitlines() if line.strip()]
+    chunk_ids = [item["chunk_id"] for item in chunks]
+    paragraph_chunks = [item for item in chunks if item["section"] == "pdf_paragraph_candidate"]
+
+    assert len(chunks) == 4
+    assert len(chunk_ids) == len(set(chunk_ids))
+    assert next(item for item in chunks if item["section"] == "expert_source_registry")["chunk_id"] == "chunkv2_src_test_pdf_candidate_0003"
+    assert len(paragraph_chunks) == 3
+    assert all(item["chunk_id"] != "chunkv2_src_test_pdf_candidate_0003" for item in paragraph_chunks)
+
+
+def test_build_expert_preview_chunks_splits_local_markdown_documents_by_default(tmp_path):
+    base_preview = tmp_path / "chunk_schema_v2_preview.jsonl"
+    registry = tmp_path / "source_registry_v2_expert.jsonl"
+    preview_out = tmp_path / "chunk_schema_v2_expert_preview.jsonl"
+    markdown_path = tmp_path / "action-library.md"
+    markdown_path.write_text(
+        "# Warmup Library\n\n"
+        "Easy running warmup should prepare joints and breathing.\n\n"
+        "- Main sets must keep intensity inside the approved training boundary.\n"
+        "- Cooldown helps return the runner to easy effort.",
+        encoding="utf-8",
+    )
+    _write_jsonl(
+        base_preview,
+        [
+            {
+                "chunk_id": "chunkv2_src_test_action_library_0007",
+                "source_registry_id": "src_test_action_library",
+                "source_file": "action-library.md",
+                "source_url": "internal://action-library",
+                "local_path": str(markdown_path),
+                "page": 1,
+                "section": "registry_preview",
+                "text": "Old registry preview",
+                "language": "en",
+                "evidence_domain": "action_library",
+                "knowledge_layer": "document_index",
+                "domain_pack": "action_library",
+                "allowed_use": "core_prescription",
+                "prescription_permission": "can_write_core",
+                "quality_tier": "approved",
+                "needs_review": False,
+                "review_status": "approved",
+            }
+        ],
+    )
+    _write_jsonl(
+        registry,
+        [
+            _candidate_source(
+                source_registry_id="src_test_action_library",
+                title="Action Library",
+                source_file="action-library.md",
+                source_path=str(markdown_path),
+                local_path=str(markdown_path),
+                evidence_domain="action_library",
+                domain_pack="action_library",
+                allowed_use="core_prescription",
+                prescription_permission="can_write_core",
+                needs_review=False,
+                review_status="approved",
+                quality_tier="approved",
+                metadata={"summary": "Approved action library source."},
+            )
+        ],
+    )
+
+    report = build_expert_preview_chunks(
+        registry_path=registry,
+        base_preview_path=base_preview,
+        preview_out=preview_out,
+    )
+
+    chunks = [json.loads(line) for line in preview_out.read_text(encoding="utf-8").splitlines() if line.strip()]
+    paragraph_chunks = [item for item in chunks if item["section"] == "document_paragraph"]
+
+    assert report["paragraph_source_count"] == 1
+    assert report["refreshed_expert_chunk_count"] == 1
+    assert all(item["section"] != "registry_preview" for item in chunks)
+    assert next(item for item in chunks if item["section"] == "expert_source_registry")["chunk_id"] == "chunkv2_src_test_action_library_0007"
+    assert len(paragraph_chunks) == 4
+    assert all(item["review_status"] == "approved" for item in paragraph_chunks)
+    assert all(item["prescription_permission"] == "can_write_core" for item in paragraph_chunks)
+    assert all(item["exclude_from_training_generation"] is False for item in paragraph_chunks)
+
+
+def test_build_expert_preview_chunks_leaves_url_only_sources_as_summaries(tmp_path):
+    base_preview = tmp_path / "chunk_schema_v2_preview.jsonl"
+    registry = tmp_path / "source_registry_v2_expert.jsonl"
+    preview_out = tmp_path / "chunk_schema_v2_expert_preview.jsonl"
+    _write_jsonl(base_preview, [])
+    _write_jsonl(registry, [_candidate_source()])
+
+    report = build_expert_preview_chunks(
+        registry_path=registry,
+        base_preview_path=base_preview,
+        preview_out=preview_out,
+    )
+
+    chunks = [json.loads(line) for line in preview_out.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+    assert report["paragraph_source_count"] == 0
+    assert len(chunks) == 1
+    assert chunks[0]["section"] == "expert_source_registry"

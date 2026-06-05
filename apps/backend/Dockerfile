@@ -9,9 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 
-COPY requirements.txt .
+COPY pyproject.toml constraints.txt requirements-runtime.txt ./
+COPY src/ ./src/
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --target=/build/deps -r requirements.txt
+    pip install --no-cache-dir --target=/build/deps -r requirements-runtime.txt
 
 # ---- Stage 2: Runtime ----
 FROM python:3.11-slim-bookworm AS runtime

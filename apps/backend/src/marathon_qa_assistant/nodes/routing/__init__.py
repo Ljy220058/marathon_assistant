@@ -27,7 +27,7 @@ def evaluate_plan_evidence(gate_hits: List[Dict[str, Any]], query: str, intent_t
         query_has_structure = (bool(re.search(PRESCRIPTION_PATTERN, normalized_query))
                                or bool(re.search(STRUCTURE_PATTERN, normalized_query))
                                or bool(re.search(NUMERIC_PRESCRIPTION_PATTERN, normalized_query)))
-        has_plan_evidence = is_strength_query or is_training_plan_request or (query_has_weekly and query_has_structure)
+        has_plan_evidence = is_strength_query or (query_has_weekly and query_has_structure)
         return {
             "required": True,
             "has_plan_evidence": has_plan_evidence,
@@ -55,7 +55,7 @@ def evaluate_plan_evidence(gate_hits: List[Dict[str, Any]], query: str, intent_t
     has_structure = kb_has_structure or query_has_structure
     has_numeric_prescription = kb_has_numeric or query_has_numeric
 
-    if is_strength_query or is_training_plan_request:
+    if is_strength_query:
         has_plan_evidence = True
     else:
         has_plan_evidence = has_weekly and (has_prescription or has_structure or has_numeric_prescription)
@@ -154,6 +154,9 @@ def after_critic_auditor_route(state: IntegratedState):
             return "formatter"
 
     if workflow_kind == "plan":
+        # 计划骨架已生成但审计未放行时，直接格式化带审计说明的结果，避免 fallback 执行器反复重入 executor。
+        if isinstance(state.get("structured_training_plan"), dict) and state.get("structured_training_plan"):
+            return "formatter"
         return "executor"
     if workflow_kind == "research":
         return "research_analyst"

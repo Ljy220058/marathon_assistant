@@ -73,7 +73,18 @@ class _RateLimitedAsyncClient:
         return _RateLimitedResponse()
 
 
-def test_ai_invoke_supports_openai_responses_provider(monkeypatch):
+def test_ai_invoke_defaults_to_deepseek_provider(monkeypatch):
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("DS_API_KEY", raising=False)
+
+    with pytest.raises(common.LLMProviderError, match="DeepSeek API Key") as error:
+        asyncio.run(common.ai_invoke("生成训练解释", {"configurable": {}}, None))
+
+    assert error.value.provider == "ds"
+    assert error.value.error_code == "missing_key"
+
+
     _FakeAsyncClient.calls = []
     monkeypatch.setattr(common.httpx, "AsyncClient", _FakeAsyncClient)
 

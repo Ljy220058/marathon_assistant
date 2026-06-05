@@ -1,0 +1,1202 @@
+[
+  {
+    "id": "training_taper_volume",
+    "question": "减量期应该如何安排训练强度和训练量？",
+    "ground_truth": "减量期通常保留一定训练强度，同时减少训练量，让疲劳下降并维持比赛专项能力。",
+    "reference_chunk_id": "chunkv2_src_train_tapering_meta_2023_0017",
+    "relevant_ids": [
+      "chunkv2_src_train_tapering_meta_2023_0017",
+      "chunkv2_src_train_tapering_meta_2023_0081",
+      "chunkv2_src_train_tapering_meta_2023_0016"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis. Page 2. Previous meta-analyses (249 swimmers, 80 road cyclists, and 110 track runners) confirmed the benefits of pre-competition tapering on improving sports performance and suggested that a duration of 14-day, with no change in training intensity nor frequency, but with training volume exponentially reduced by 41–60%, appears to be the most effective pre-competition tapering strategy [27]. Despite this meta-analysis evaluating the effects of taper component changes on performance in competitive athletes, the limitation is that this study focused not only on endurance athletes but also sprinters. We did not perform a comparative analysis of the reported type of sports event, and therefore the authors could not provide more specific recommendations on endurance sports. Given the differences sport-to-sport and athlete-to-athlete, these findings might not accurately reflect the characteristics of tapering for endurance sports. Although the application effects of tapering in endurance events have received much attention in the last decade [13,22,28–31], it is very difficult for athletes, coaches, and researchers to find tapering strategies to increase performance in endurance athletes.",
+    "reference_source_file": "train_tapering_meta_2023.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_periodization",
+    "question": "什么是周期化训练，它为什么适合马拉松备赛？",
+    "ground_truth": "周期化训练把备赛拆成不同训练阶段，通过负荷、强度和恢复的有计划变化支持长期适应。",
+    "reference_chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0073",
+    "relevant_ids": [
+      "chunkv2_src_train_world_class_middle_distance_2021_0073",
+      "chunkv2_src_train_world_class_middle_distance_2021_0070",
+      "chunkv2_src_train_tid_theory_2025_0017"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Page 1. The historical development underlying today’s practices for variation and periodization among world-class middle-distance runners is described in Table 3. The training organization models outlined in the 1950s, 1960s and 1970s are still valid, as we and others have systematically quantified the training of successful endurance athletes in a range of sports and reported a “polarized” (i.e., significant proportions of both high- and low-intensity training and a smaller proportion of threshold training) or pyramidal (i.e., most training is at low intensity, with gradually decreasing proportions of threshold and high-intensity training) intensity distribution. Modern endurance training practice among elite performers in numerous sports is dominated by frequent sessions and high total volumes of low intensity training combined with smaller volumes of high intensity training organized as 2–4 “key workouts” in most training weeks. This training organization also holds true for well-trained and world-leading middle-distance runners, although 800-m runners apply a greater proportion of training at higher intensities than 1500-m runners (see Sect. 6.3).",
+    "reference_source_file": "train_world_class_middle_distance_2021.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_easy_run_share",
+    "question": "轻松跑和低强度跑在总跑量中应该承担什么作用？",
+    "ground_truth": "轻松跑用于积累有氧基础和可恢复训练量，是耐力训练分布中的重要组成部分。",
+    "reference_chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0095",
+    "relevant_ids": [
+      "chunkv2_src_train_world_class_middle_distance_2021_0095",
+      "chunkv2_src_train_tid_theory_2025_0154",
+      "chunkv2_src_train_world_class_middle_distance_2021_0078"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Page 1. Previous studies have shown that elite endurance athletes seem to converge on a typical intensity distribution in which ~ 80% of annual training sessions are dominated by low-intensive work (< 2 mmol·L−1 blood lactate) and ~ 20% are dominated by training at or above the anaerobic threshold (e.g., interval training). While this intensity distribution for running sessions also seems to apply for world-leading 1500-m athletes, corresponding 800-m runners seem to follow a 70/30- or 60/40-distribution. However, although 800-m runners perform intensive training sessions more frequently, total effective interval time/distance remain relatively short due to the high intensities with long recovery times between intervals. Hence, approximately 90% of all running sessions for 800-m athletes is performed at low intensity based on the time-in-zone approach, in line with endurance sports.",
+    "reference_source_file": "train_world_class_middle_distance_2021.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_interval_pace",
+    "question": "间歇训练的配速和恢复应该如何控制？",
+    "ground_truth": "间歇训练应围绕目标强度控制配速，并通过间歇时长和恢复安排管理整体负荷。",
+    "reference_chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0081",
+    "relevant_ids": [
+      "chunkv2_src_train_world_class_middle_distance_2021_0081",
+      "chunkv2_src_train_tid_theory_2025_0074",
+      "chunkv2_src_train_tid_theory_2025_0105"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Page 1. Standardized intensity scales can be criticized for several reasons. Firstly, they fail to account for individual variation in the relationship among physiological variables (e.g., between heart rate and blood lactate concentration). Secondly, the method of training intensity quantification can affect the computation of the training intensity distribution. Thirdly, prescribing exercise intensity based on a fixed percentage of maximal physiological anchors (e.g., VO2max or maximal heart rate) has little merit for eliciting distinct or domain-specific homeostatic perturbations. Finally, running pace can be affected by varying wind and temperature conditions, the rigors of training, “the mysteries” of the body and day-to-day variation in recovery and readiness to train. Athletes must therefore cultivate an ability to “feel” the proper intensity, as intensity integrates three forms of feedback: running pace, physiological responses and perception of effort. Intensity scales are imperfect tools, but the above-mentioned potential sources of error seem to be outweighed by the improved communication between coach and athlete that a common scale facilitates.",
+    "reference_source_file": "train_world_class_middle_distance_2021.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_long_run_frequency",
+    "question": "长距离跑在马拉松训练中应如何安排频率？",
+    "ground_truth": "长距离跑用于建立专项耐力，应结合总负荷、恢复能力和比赛目标周期性安排。",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0363",
+    "relevant_ids": [
+      "chunkv2_src_train_marathon_physiology_2025_0363",
+      "chunkv2_src_train_marathon_physiology_2025_0211",
+      "chunkv2_src_train_marathon_physiology_2025_0197"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Physiology and Pathophysiology of Marathon Running: A narrative Review. Page 1. The influence of marathon training and running on the central nervous system is not well understood. Positive effects, especially on cognitive function, have been reported, which would be of great clinical importance, especially in elderly marathoners, as dementia becomes an increasing problem in the ageing population. Strenuous exercise such as marathon training has been shown to be neuroprotective, to improve cognition and to beneficially influence symptom severity and onset of dementia. In patients with mild cognitive impairment, regular endurance exercise improved global cognitive ability and memory. A study comparing elderly marathon runners to a sedentary control group found significantly better performance in executive functions (see Table 12). A recent study showed a positive correlation between high-demand working memory tasks, other domains of higher-demand executive function, and marathon training. Other studies described improved executive function, cognitive speed and working memory immediately after a marathon run. Conversely, some studies found no effect of marathon training and running on cognitive function in elderly marathon runners (see Table 12).",
+    "reference_source_file": "train_marathon_physiology_2025.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_threshold",
+    "question": "乳酸阈训练对耐力跑者有什么意义？",
+    "ground_truth": "乳酸阈训练帮助跑者在较高速度下维持代谢稳定，是提升耐力表现的重要训练刺激。",
+    "reference_chunk_id": "chunkv2_src_local_norway_method_book_2026_0017",
+    "relevant_ids": [
+      "chunkv2_src_local_norway_method_book_2026_0017",
+      "chunkv2_src_train_tid_theory_2025_0168",
+      "chunkv2_src_train_tid_theory_2025_0077"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "The Norway Method / 挪威训练法的应用 Domain pack: training_load. Evidence domain: sports_science_reference. Permission: explanation_only. 中文候选解释材料：挪威训练法、阈值训练、乳酸阈值、强度控制、双阈值训练、45/15、训练负荷、耐久性、恢复、过度训练警示和长期跑步健康。English candidate source about the Norway method, threshold training, lactate threshold, intensity control, double-threshold sessions, load management, durability, recovery, overtraining warning signs, and long-term running health. Use only for candidate explanation until license and source provenance are reviewed.",
+    "reference_source_file": "the-norway-method-compressed-left-to-right.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_strength_balance",
+    "question": "力量训练和耐力训练如何放在同一个计划里？",
+    "ground_truth": "力量训练应服务于跑步经济性和抗伤能力，同时通过时机和负荷控制避免干扰关键耐力课。",
+    "reference_chunk_id": "chunkv2_src_pmc_strength_training_running_economy_2024_0035",
+    "relevant_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0035",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0010",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0163"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Effect of Strength Training Programs in Middle- and Long-Distance Runners Economy at Different Running Speeds: A Systematic Review with Meta-analysis. Page 1. Category Inclusion criteria Exclusion criteria Population Amateur and competitive middle- and long-distance runners (i.e., running distances ≥ 1500 m), aged > 16 years old, without restriction to sex or training/competitive level Subject with injuries, comorbidities, or non-runners endurance athletes Intervention A strength training programme (i.e., HL, SL, PL, ISO, or a combination of them) which was in addition to, or in partial replacement (i.e., matched training load) of endurance running training, lasting ≥ 3 weeks, with ≥ 1 weekly session The programme includes alternative methods in addition to strength training (e.g., electrical stimulation or body vibration), and/or supplementations (e.g., creatin) Comparator Control group that performed endurance running training but did not receive strength training or received it with low loads (< 40% 1 RM or > 20 RM) Absence of control group Outcome Running economy was recorded in at least one speed before and after the strength training intervention Baseline and/or follow-up data not available Study design Randomised and non-randomized controlled studies Cross-sectional, observational, or case studies",
+    "reference_source_file": "src_pmc_strength_training_running_economy_2024.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_load_progression",
+    "question": "增加跑量时为什么需要控制负荷进展？",
+    "ground_truth": "跑量进展过快会增加疲劳和伤病风险，训练计划需要用可恢复的负荷递增支持适应。",
+    "reference_chunk_id": "chunkv2_src_safety_subjective_load_2018_0003",
+    "relevant_ids": [
+      "chunkv2_src_safety_subjective_load_2018_0003",
+      "chunkv2_src_safety_subjective_load_2018_0046",
+      "chunkv2_src_safety_subjective_load_2018_0028"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "The Current State of Subjective Training Load Monitoring: a Practical Perspective and Call to Action. Page 1. Subjective measures may be able to reflect mental fatigue, effort, stress, and motivation. These factors appear to be important moderators of the relationship TL has with performance and injury, and they also seem to differ between open and closed skill sports. As such, mental factors may affect the interaction between TL, performance, and injury in different sports. Further, modeling these interactions may be limited due to the assumption that an independent signal can adequately account for the performance or injury outcomes. An independent signal model does not accurately reflect training environments where multiple stressors (e.g., mechanical, emotional, nutritional) impact adaptations. Common issues with using subjective TL monitoring, including a lack of differentiation between biomechanical, physiological, and cognitive load, may be overcome by considering psychometric measurement best practices, finer graded scales, and differential ratings of perceived exertion. Methods of calculating TL,including different acute and chronic time periods, may also need to be individualized to different sports and potentially different individuals within the same sport.",
+    "reference_source_file": "safety_subjective_load_2018.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_tid",
+    "question": "耐力训练强度分布为什么会影响长期表现？",
+    "ground_truth": "强度分布决定低强度容量和高强度刺激的比例，影响恢复、适应和比赛表现。",
+    "reference_chunk_id": "chunkv2_src_train_tid_theory_2025_0162",
+    "relevant_ids": [
+      "chunkv2_src_train_tid_theory_2025_0162",
+      "chunkv2_src_train_tid_theory_2025_0232",
+      "chunkv2_src_train_tid_theory_2025_0017"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Recent advances in training intensity distribution theory for cyclic endurance sports. Page 1. The latest research indicates that the Training Intensity Distribution (TID) of top cross-country skiers may still maintain a pyramidal structure even during peak competition periods, with High Volume Low Intensity Training (HVLIT) comprising up to 88% of the training regimen. This suggests that some athletes depend heavily on low-intensity training to facilitate recovery and physiological adaptation even amid repeated high-intensity racing.",
+    "reference_source_file": "train_tid_theory_2025.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "training_race_pace",
+    "question": "马拉松目标配速应该如何和训练课连接？",
+    "ground_truth": "目标配速应通过专项训练、节奏控制和渐进负荷连接到比赛需求，而不是孤立设定。",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0135",
+    "relevant_ids": [
+      "chunkv2_src_train_marathon_physiology_2025_0135",
+      "chunkv2_src_train_marathon_physiology_2025_0034",
+      "chunkv2_src_train_marathon_physiology_2025_0011"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Physiology and Pathophysiology of Marathon Running: A narrative Review. Page 1. Fluid and electrolyte imbalances are commonly seen during long-distance running competitions (see Table 1 and Fig. 3). There is a wide variation in the incidence of electrolyte disturbances in the literature due to environmental factors such as weather conditions (e.g., heat). All in all, sodium seems to be the most affected electrolyte, especially with plasma volume changes. Particularly, exercise-associated hyponatremia (EAH) is of great clinical significance as it occurs frequently in marathon athletes, with reported prevalence being 1 and 20%. Typically, endurance runners suffering from EAH present either asymptomatically or with nonspecific symptoms, including nausea, emesis, headache, and confusion. Nevertheless, in rare cases, EAH can cause severe complications such as noncardiogenic pulmonary edema, seizures, cerebral edema, coma, and death. A retrospective study found significantly elevated post-race plasma sodium levels compared to baseline in marathoners, with only 15% of readings outside the normal range in non-collapsed runners. However, no significant difference in plasma sodium changes was observed between collapsed and non-collapsed runners.",
+    "reference_source_file": "train_marathon_physiology_2025.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "nutrition_carb_loading",
+    "question": "赛前碳水加载应该关注哪些原则？",
+    "ground_truth": "赛前碳水策略旨在提高糖原储备，应结合比赛时长、日常饮食和胃肠耐受来安排。",
+    "reference_chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0025",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_distance_runners_2019_0025",
+      "chunkv2_src_nutrition_acsm_position_2016_0148",
+      "chunkv2_src_nutrition_distance_runners_2019_0051"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 3. Table 2 Nutrition Strategies for High-Performance Athletes in Key Distance Events in Athletics Issues and general guidelines 10,000-m track race 10-km cross country 21.1-km half marathon 20-km race walk 42.2-km marathon 50-km race walk Prerace refueling Normalization of glycogen = 7–12 g·kg−1·day−1 for 24 hr CHO loading =10–12 g·kg −1·day−1 for 36 –48 hr Glycogen normalization Glycogen normalization Glycogen normalization Accentuated glycogen normalization CHO loading,especially with a low-residue diet CHO loading,especially with a low-residue diet Prerace meal 1–4 g·kg −1 CHO in 1- to 4-hr prerace Reduced fat, ﬁber, and protein intake according to the risk of gut issues during the race Familiar prerace meal Familiar prerace meal Familiar prerace meal + CHO after warm-up Familiar prerace meal + CHO after warm-up Familiar prerace meal + CHO after warm-up Familiar prerace meal + CHO after warm-up Opportunities for in-race nutrition (availability of drink stations)Nil(if extremely hot, water stations may be provided on an outside lane of the track if extremely hot)Nil Typically, every 5 km in elite races Frequency differs in large city races Every lap of 2 km loop course(sometimes",
+    "reference_source_file": "nutrition_distance_runners_2019.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_during_race",
+    "question": "马拉松比赛中应该如何补充碳水？",
+    "ground_truth": "比赛中碳水摄入要根据时长和强度安排，目标是在可耐受范围内维持可用能量。",
+    "reference_chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0002",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_distance_runners_2019_0002",
+      "chunkv2_src_nutrition_distance_runners_2019_0156",
+      "chunkv2_src_nutrition_distance_runners_2019_0029"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 1. Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers Louise M. Burke Australian Institute of Sport and Australian Catholic University Asker E. Jeukendrup Loughborough University Andrew M. Jones University of Exeter Martin Mooses University of Tartu Distance events in Athletics include cross country, 10,000-m track race, half-marathon and marathon road races, and 20- and 50-km race walking events over different terrain and environmental conditions. Race times for elite performers span ∼26 min to>4 hr, with key factors for success being a high aerobic power, the ability to exercise at a large fraction of this power, and high running/walking economy. Nutrition-related contributors include body mass and anthropometry, capacity to use fuels, particularly carbohydrate (CHO) to produce adenosine triphosphate economically over the duration of the event, and maintenance of reasonable hydration status in the face of sweat losses induced by exercise intensity and the environment.",
+    "reference_source_file": "nutrition_distance_runners_2019.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_hydration_pre",
+    "question": "训练或比赛前补水应该怎么做？",
+    "ground_truth": "运动前应促进良好水合状态，例如提前摄入适量水或运动饮料，同时避免过量。",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0227",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_issn_review_2018_0227",
+      "chunkv2_src_nutrition_issn_review_2018_0446",
+      "chunkv2_src_nutrition_issn_review_2018_0428"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Page 19. Next, athletes can promote optimal pre-exercise hydration by ingesting 500 mL of water or sports drinks the night before a competition, another 500 mL upon waking and then another 400 –600 mL of cool water or sports drink 20 –30 min before the onset of exercise. Once exercise commences, the athlete should strive to consume a sufficient amount of water and/or glucose-electrolyte solutions(i.e., sports drinks) during exercise to maintain hydration status. Consequently, to maintain fluid balance and prevent dehydration, athletes need to plan on ingesting 0.5 to 2 L/hour of fluid to offset weight loss. This requires frequent (every 5 –15 min) ingestion of 12 –16 fluid ounces of cold water or a sports drink during exercise[128, 163–166]. Athletes should not depend on thirst to prompt them to drink because people do not typically get thirsty until they have lost a significant amount of fluid through sweat. Addition ally, athletes should weigh themselves prior to and following exercise training to monitor changes in fluid balance and then can work to replace their lost fluid [128, 163–166].",
+    "reference_source_file": "nutrition_issn_review_2018.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_dehydration",
+    "question": "脱水为什么会影响耐力表现？",
+    "ground_truth": "脱水会影响体温调节和运动能力，限制体液丢失是耐力运动营养策略的重要部分。",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0226",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_issn_review_2018_0226",
+      "chunkv2_src_nutrition_issn_review_2018_0428",
+      "chunkv2_src_nutrition_acsm_position_2016_0234"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Page 19. Water The most important nutritional ergogenic aid for athletes is water and limiting dehydration during exercise is one of the most effective ways to maintain exercise capacity. Before starting exercise, it is highly recommended that individuals are adequately hydrated [ 162]. Exercise performance can be significantly impaired when 2% or more of body weight is lost through sweat (i.e., a 1.4 kg body weight loss from a 70-kg athlete). When one considers that average sweat rates are reported to be 0.5 –2.0 L/hour during exercise and training [ 128, 162], performance losses due to water loss can occur after just 60–90 min of exercise. Further, weight loss of more than 4% of body weight during exercise may lead to heat illness, heat exhaustion, heat stroke, and possibly death[128]. For this reason, it is critical that athletes adopt a mind set to prevent dehydration first by promoting optimal levels of pre-exercise hydration. Throughout the day and without any consideration of when exercise is occurring, a key goal is for an athlete to drink enough fluids to maintain their body weight.",
+    "reference_source_file": "nutrition_issn_review_2018.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_electrolytes",
+    "question": "长距离跑中电解质补充有什么作用？",
+    "ground_truth": "电解质策略主要用于配合补水和出汗损失管理，但应根据环境、汗率和个体耐受调整。",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0162",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_issn_review_2018_0162",
+      "chunkv2_src_nutrition_acsm_position_2016_0237",
+      "chunkv2_src_nutrition_acsm_position_2016_0296"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Page 15. Minerals Minerals are essential inorganic elements necessary for a host of metabolic processes. Minerals serve as structure for tissue, important components of enzymes and hormones, and regulators of metabolic and neural control. In athletic populations, some minerals have been found to be deficient while other minerals are reduced secondary to training and/or prolonged exercise. Notably, acute changes in sodium, potassium and magnesium throughout a continued bout of moderate to high intensity exercise are consid erable. In these situations,athletes must work to ingest foods and fluids to replace these losses, while physiological adaptations to sweat composition and fluid retention will also occur to promote a necessary balance. Like vitamins, when mineral status is inadequate, exercise capacity may be reduced and when minerals are supplemented in deficient athletes, exercise capacity has been shown to improve[151]. However, scientific reports consistently fail to document a performance improvement due to mineral supplementation when vitamin and mineral status is adequate [ 134, 152, 153]. T able 2 describes minerals that have been purported to affect exercise capacity in athletes.",
+    "reference_source_file": "nutrition_issn_review_2018.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_recovery_protein",
+    "question": "赛后或高负荷训练后蛋白质补充应该关注什么？",
+    "ground_truth": "恢复期蛋白质摄入应支持肌肉修复和适应，并与总能量和碳水补充一起考虑。",
+    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0192",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0192",
+      "chunkv2_src_nutrition_issn_review_2018_0459",
+      "chunkv2_src_nutrition_acsm_position_2016_0193"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "Position of the Academy of Nutrition and Dietetics, Dietitians of Canada, and ACSM: Nutrition and Athletic Performance. Page 18. Protein Timing as a Trigger for Metabolic Adaptation Laboratory based studies show that MPS is optimized in response to exercise by the consumption of high biological value protein , providing ~10 g essential amino acids in the early recovery phase ( 0 to 2 hours after exercise).40,53 This translates to a recommended protein intake of 0.25-0.3g/kg BW or 15 to 25 g protein across the typical range of athlete body sizes ,although the guidelines may need to be fine -tuned for athletes at extreme ends of the weight spectrum. 54 Higher doses ( i.e., >40 g dietary protein) have not yet been shown to further augment MPS and may only be prudent for the largest athletes, or during weight loss.54 The exercise-enhancement of MPS, determined by the timing and pattern of protein intake, responds to further intake of protein within the 24-hour period after exercise,55 and may ultimately translate into chronic muscle protein accretion and functional change. While protein timing affects MPS rates , the magnitude of mass and strength changes over time are less clear.",
+    "reference_source_file": "nutrition_acsm_position_2016.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_gi_tolerance",
+    "question": "比赛补给为什么要提前在训练中测试？",
+    "ground_truth": "补给策略需要考虑胃肠耐受，训练中测试能降低比赛中消化不适和执行失败的风险。",
+    "reference_chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0070",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_distance_runners_2019_0070",
+      "chunkv2_src_nutrition_issn_nutrient_timing_2017_0056",
+      "chunkv2_src_nutrition_acsm_position_2016_0153"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 6. Strategies for Hot Environments Major championships are often held in hot and/or humid environments, with the Doha 2019 World Championships and Tokyo 2020 Olympic Games being the immediate targets at the time of preparation of this review. There are multiple and circular interactions between the hot environment and nutrition; exercise in the heat creates extra challenges in terms of increased rates of ﬂuid loss and glycogen use (Jentjens et al., 2002), with dehydration increasing the risk of gastrointestinal discomfort/upset ( Rehrer et al., 1990 )a n d further interference with nutrition status and goals. Meanwhile,ﬂuid intake reduces thermal stress ( Montain & Coyle, 1992 ), and CHO intake reduces gut damage (Snipe et al., 2017). The performance and health challenges associated with racing in hot weather should be addressed by strategies, such as acclimatization, appropriate pacing,and precooling activities (Racinais et al., 2015). Adjustment to race nutrition strategies, if practical, may also assist (Table 2).",
+    "reference_source_file": "nutrition_distance_runners_2019.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_hot_conditions",
+    "question": "高温条件下营养和补水策略需要怎么调整？",
+    "ground_truth": "高温会增加体液和热压力，补水、降温和碳水策略需要结合环境条件调整。",
+    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0237",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0237",
+      "chunkv2_src_nutrition_acsm_position_2016_0296",
+      "chunkv2_src_nutrition_acsm_position_2016_0301"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "Position of the Academy of Nutrition and Dietetics, Dietitians of Canada, and ACSM: Nutrition and Athletic Performance. Page 25. Before Exercise Some athletes begin exercise in a hypohydrated state, which may adversely affect athletic performances.105,110 Purposeful dehydration to “make weight” may result in a significant fluid deficit , which may be difficult to restore between “weigh -in” and start of competition. Similarly, athletes may be hypohydrated at the onset of exercise due to recent,prolonged training sessions in the heat or to multiple events in a day.104,105,108,110 Athletes may achieve euhydration prior to exercise by consuming a fluid volume equivalent to 5 -10 ml/kg BW in the 2 to 4 hours before exercise to achieve urine that is pale yellow in color while allowing for sufficient time for excess fluid to be voided .104,108 Sodium consumed in pre -exercise fluids and foods may help with fluid retention. Although some athletes attempt to hyperhydrate prior to exercise in hot conditions where the rates of sweat loss or restrictions on fluid intake inevitably lead to a significant fluid deficit, the use of glycerol and other plasma expanders for this purpose is now prohibited by the World Anti -Doping Agency(www.wada-ama.org).",
+    "reference_source_file": "nutrition_acsm_position_2016.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_daily_carbs",
+    "question": "耐力训练日常碳水摄入为什么要随训练目标变化？",
+    "ground_truth": "碳水需求会随训练量、强度和表现目标变化，不能只用固定摄入量覆盖所有阶段。",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0100",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_issn_review_2018_0100",
+      "chunkv2_src_nutrition_issn_review_2018_0095",
+      "chunkv2_src_nutrition_issn_review_2018_0102"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Page 11. performance goal can typically meet daily carbohydrate needs by consuming a normal diet (i.e., 45 –55% CHO [3 –5 g/kg/day], 15–20% PRO [0.8 –1.2 g/kg/day], and 25 –35%fat [0.5–1.5 g/kg/day]). However, athletes involved in moderate and high-volume training need greater amounts of carbohydrate and protein (discussed later) in their diet to meet macronutrient needs [ 50]. In terms of carbohydrate needs, athletes involved in moderate amounts of intense training (e.g., 2–3 h per day of intense exercise performed 5–6 times per week) typically need to consume a diet consisting of 5 –8 g/kg/day or 250 –1200 g/day for 50 –150 kg athletes of carbohydrate to maintain liver and muscle glycogen stores [23, 24, 50]. Research has also shown that athletes involved in high volume intense training (e.g.,3–6 h per day of intense training in 1 –2 daily workouts for 5–6 days per week) may need to consume 8 –10 g/day of carbohydrate (i.e., 400–1500 g/day for 50 –150 kg athletes)in order to maintain muscle glycogen levels [ 50]. Preferably, the majority of dietary carbohydrate should come from whole grains, vegetables, fruits, etc.",
+    "reference_source_file": "nutrition_issn_review_2018.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "nutrition_caffeine",
+    "question": "咖啡因作为比赛营养策略需要注意什么？",
+    "ground_truth": "咖啡因可能改善表现，但应考虑剂量、时机、个体反应和副作用。",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0403",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_issn_review_2018_0403",
+      "chunkv2_src_nutrition_distance_runners_2019_0179",
+      "chunkv2_src_nutrition_issn_review_2018_0438"
+    ],
+    "expected_domain": "nutrition",
+    "sample_type": "positive",
+    "reference_context": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Page 30. In addition to potential ergogenic impact,these authors also reported that caffeine significantly improved various indicators of mood state [ 438, 440], lowered ratings of perceived exertion and decreased perception of muscle pain [ 439, 441] when acute doses of caffeine (5 mg/kg) were provided before maximal resistance exercise. As illustrated, when evaluating the research on caffeine for its ability to impact strength and muscular performance, the findings are equivocal, and, subsequently, more research is needed to better determine what situations may best predict caffeine ’s ability to impact strength performance. For example, trained subjects have demonstrated more ergogenic effects compared to untrained subjects [442, 443]. Also, people who drink caffeinated drinks regularly, however, appear to experience less ergogenic benefits from caffeine [ 444]. Some concern has been expressed that ingestion of caffeine prior to exercise may contribute to dehydration, although several studies have not supported this concern [ 430, 445, 446]. Caffeine,from anhydrous and coffee sources are both equally ergogenic [ 434].",
+    "reference_source_file": "nutrition_issn_review_2018.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_runner_knee",
+    "question": "跑者膝或髌股疼痛在跑者中常见吗？",
+    "ground_truth": "髌股疼痛综合征是跑步相关肌骨损伤中的常见问题，需要结合疼痛和负荷管理处理。",
+    "reference_chunk_id": "chunkv2_src_safety_running_msk_injuries_2012_0065",
+    "relevant_ids": [
+      "chunkv2_src_safety_running_msk_injuries_2012_0065",
+      "chunkv2_src_safety_running_msk_injuries_2012_0063",
+      "chunkv2_src_safety_running_msk_injuries_2012_0082"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review. Page 1. Patellofemoral syndrome was common during ultra-marathon races and it was the third most prevalent RRMI among the ultra-marathoners. The most frequently cited aetiology for the patellofemoral syndrome is the abnormal patellar tracking plus high compressive loads generated by the quadriceps femoris muscle contraction that lead to an increased stress on the joint. The repetitive contractions of the quadriceps femoris during running may contribute to the high compressive loads in the patellofemoral joint favouring the development of patellofemoral syndrome. A prospective study that enrolled marathon runners concluded that participating in a marathon race for the first time, use of medication and running few kilometres per week were considered to be risk factors for the development of patellofemoral syndrome. Another prospective study showed that an increase of distance (kilometres) and the number of hours of training per week were considered to be protective factors against knee injuries in marathon runners. This was classified as strong evidence in a systematic review about this topic.",
+    "reference_source_file": "safety_running_msk_injuries_2012.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_achilles",
+    "question": "跟腱疼痛时还能继续跑步吗？",
+    "ground_truth": "跟腱疼痛提示可能存在肌腱负荷问题，应降低刺激并根据疼痛、功能和恢复情况决定是否跑步。",
+    "reference_chunk_id": "chunkv2_src_safety_running_injuries_state_art_2021_0012",
+    "relevant_ids": [
+      "chunkv2_src_safety_running_injuries_state_art_2021_0012",
+      "chunkv2_src_safety_running_msk_injuries_2012_0032",
+      "chunkv2_src_safety_running_msk_injuries_2012_0056"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "The Prevention and Treatment of Running Injuries: A State of the Art. Page 1. Causal frameworks provide an important path forward for running injury prevention and treatment efforts by considering how training loads interact with modifiers (i.e., risk factors). Bertelsen et al introduced a causal framework for the aetiology of running injuries that identified the complex interplay of training load (i.e., number of running steps) with the distribution of biomechanical loading across anatomical structures, magnitude of internal biomechanical loads, and an anatomical structure’s capacity to tolerate the load. For instance, male masters runners have an elevated risk for Achilles tendinopathy due in large part to age-related reductions in Achilles tendon stiffness. Rapid increases in hill running or speedwork distribute a greater degree of biomechanical loads on the Achilles tendon, potentially resulting in an injurious training load in the masters runner. Importantly, runners who are not at-risk for Achilles tendinopathy, such as adolescent runners, may not experience the same injury under similar training loads.",
+    "reference_source_file": "safety_running_injuries_state_art_2021.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_bone_stress_return",
+    "question": "胫骨骨应力损伤后恢复跑步要看哪些条件？",
+    "ground_truth": "骨应力损伤回跑应满足症状、负荷承受和功能标准，再从低量低强度逐步恢复。",
+    "reference_chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0057",
+    "relevant_ids": [
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0057",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0092",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0056"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review. Page 1. injury Running speed Start 30–50% usual pace Start at a slower pace Pace reduced by 1 m/s Progression of speed Progress from jogging to running Progress from walk-jog to jog-run Increase intensity by 10% weekly Progress to half pace strides then gradually progress to full pace striding Increase distance prior to speed Criteria prior to speed changes 45 min 40 min 6 track laps walk/6 laps jogging (1.5 miles total) 30 min 1 mile Temporarily reduce running volume when increasing speed Hold distance steady when increasing speed Running surface Start on level asphalt Start on running track Track may increase strain Start on treadmill Start on level surface Start on moderate firmness surface Hard surfaces risk factor/ avoid Start on softer surfaces initially Hills can increase strain/risk Irregular/uneven/soft surfaces can increase strain/risk Limit multiple terrains initially Vary terrain once back to normal training Biomechanics Address lower extremity biomechanics Gait retraining Reduce stride length/ increase cadence [, ] To reduce vertical loading rates Modify initial foot contact Risk factors Excessively supinated or pronated feet Reduced dorsiflexion range Increased peak hip adduc",
+    "reference_source_file": "src_pmc_return_running_tibial_bsi_2024.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_load_errors",
+    "question": "训练负荷错误为什么会增加跑步伤病风险？",
+    "ground_truth": "负荷变化过快、恢复不足或强度安排不当会超过组织适应能力，提高过用损伤风险。",
+    "reference_chunk_id": "chunkv2_src_safety_training_errors_2012_0009",
+    "relevant_ids": [
+      "chunkv2_src_safety_training_errors_2012_0009",
+      "chunkv2_src_safety_injury_continuum_2023_0088",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0044"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "Training Errors and Running Related Injuries: A Systematic Review. Domain pack: load_injury_safety. Permission: explanation_only.",
+    "reference_source_file": "safety_training_errors_2012.metadata",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_overuse_risk",
+    "question": "过用性跑步损伤有哪些常见风险因素？",
+    "ground_truth": "过用损伤风险与训练负荷、既往伤病、身体条件和恢复状态等因素相关。",
+    "reference_chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0192",
+    "relevant_ids": [
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0192",
+      "chunkv2_src_safety_running_msk_injuries_2012_0054",
+      "chunkv2_src_safety_running_msk_injuries_2012_0065"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review. Page 1. Running-related biomechanical risk factors for overuse injuries in distance runners: a systematic review considering injury specificity and the potentials for future research",
+    "reference_source_file": "src_pmc_return_running_tibial_bsi_2024.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_fatigue_monitoring",
+    "question": "主观疲劳和心率指标为什么能用于监控训练风险？",
+    "ground_truth": "疲劳监控能帮助识别负荷累积和恢复不足，降低训练过量带来的风险。",
+    "reference_chunk_id": "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+    "relevant_ids": [
+      "chunkv2_src_safety_fatigue_recreational_runners_2024_0013",
+      "chunkv2_src_safety_subjective_load_2018_0041",
+      "chunkv2_src_safety_subjective_load_2018_0050"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "Monitoring fatigue state with heart rate-based and subjective methods during intensified training in recreational runners. Domain pack: load_injury_safety. Permission: explanation_only.",
+    "reference_source_file": "safety_fatigue_recreational_runners_2024.metadata",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_mtsk",
+    "question": "胫骨内侧应力综合征和跑量有什么关系？",
+    "ground_truth": "胫骨相关疼痛常与重复冲击和负荷管理有关，应关注跑量进展和症状反应。",
+    "reference_chunk_id": "chunkv2_src_safety_running_msk_injuries_2012_0054",
+    "relevant_ids": [
+      "chunkv2_src_safety_running_msk_injuries_2012_0054",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0108",
+      "chunkv2_src_safety_running_msk_injuries_2012_0050"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review. Page 1. Medial tibial stress syndrome (also known as shin splints) was reported in all three prospective studies and ranked first in two of the studies and second in the other. There are two possible reasons why medial tibial stress syndrome is so frequent among runners. The first is during the landing and propulsion of running; repetitive contraction of the posterior tibial, soleus and/or flexor digitorum longus muscles would generate excessive stress on the tibia, resulting in inflammation from insertion of the periosteal. The second is the insufficient capacity for bone remodelling constituted by repetitive and persistent stress on the tibia caused not only by the muscle contraction but also on the vertical ground reaction during the landing phase in running. A prospective cohort study on running injuries also indicated that a greater knee varus, the frequency of change in different types of running shoes and interval training are the three potential risk factors for shin running injuries. However, it must be stressed that direct cause-effect relationships of this kind of RRMI has yet to be determined.",
+    "reference_source_file": "safety_running_msk_injuries_2012.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_return_progression",
+    "question": "伤后回跑为什么要逐步进展而不是直接恢复原跑量？",
+    "ground_truth": "伤后组织承受能力需要重新建立，逐步进展可以观察症状反应并降低复发风险。",
+    "reference_chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0057",
+    "relevant_ids": [
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0057",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0056",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0084"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review. Page 1. injury Running speed Start 30–50% usual pace Start at a slower pace Pace reduced by 1 m/s Progression of speed Progress from jogging to running Progress from walk-jog to jog-run Increase intensity by 10% weekly Progress to half pace strides then gradually progress to full pace striding Increase distance prior to speed Criteria prior to speed changes 45 min 40 min 6 track laps walk/6 laps jogging (1.5 miles total) 30 min 1 mile Temporarily reduce running volume when increasing speed Hold distance steady when increasing speed Running surface Start on level asphalt Start on running track Track may increase strain Start on treadmill Start on level surface Start on moderate firmness surface Hard surfaces risk factor/ avoid Start on softer surfaces initially Hills can increase strain/risk Irregular/uneven/soft surfaces can increase strain/risk Limit multiple terrains initially Vary terrain once back to normal training Biomechanics Address lower extremity biomechanics Gait retraining Reduce stride length/ increase cadence [, ] To reduce vertical loading rates Modify initial foot contact Risk factors Excessively supinated or pronated feet Reduced dorsiflexion range Increased peak hip adduc",
+    "reference_source_file": "src_pmc_return_running_tibial_bsi_2024.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_pain_signal",
+    "question": "跑步疼痛什么时候应当被视为训练风险信号？",
+    "ground_truth": "持续、加重或影响功能的疼痛应被视为风险信号，需要调整训练并考虑专业评估。",
+    "reference_chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0056",
+    "relevant_ids": [
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0056",
+      "chunkv2_src_safety_running_injuries_state_art_2021_0019",
+      "chunkv2_src_pmc_return_running_tibial_bsi_2024_0111"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review. Page 1. Component of process Recommendation Detail References Introduction of running load (time/distance) Walk-run Start with 30-s running increments Start with 100-m running increments Start with 1-min running intervals Start with 400-m running increments Start with 5-min running increments Progress running increments by 1–2 min Progress running increments by 100–400 m Progress running increments by 5 min Progress total distance but keep the same running increments length Gradual progression Alternate days For first 4 weeks For first 2 weeks Rest days included During progression During normal training Daily depending on symptoms 10% progression As part of usual training/for injury prevention Acknowledges lack of evidence Not generalisable, runners may tolerate different rates of progression 15–20% progressionProgression guided by pain If pain rest and resume at a lower level If pain less than 3/10 at rest and resume at lower level Specify the athlete should be pain-free during and following Progression guided by goals and previous running level Progression guided by whether location is low-risk (posteromedial) or high-risk (anterior tibial cortex) Progression guided by grade/severity of",
+    "reference_source_file": "src_pmc_return_running_tibial_bsi_2024.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "injury_prevention_strength",
+    "question": "力量训练对跑步伤病预防可能有什么帮助？",
+    "ground_truth": "合适的力量训练可改善组织承受能力和跑步经济性，但需要与跑步负荷协调。",
+    "reference_chunk_id": "chunkv2_src_safety_running_msk_injuries_2012_0069",
+    "relevant_ids": [
+      "chunkv2_src_safety_running_msk_injuries_2012_0069",
+      "chunkv2_src_safety_running_msk_injuries_2012_0050",
+      "chunkv2_src_safety_running_msk_injuries_2012_0016"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_context": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review. Page 1. Most of the studies in this systematic review presented a moderate risk of bias. One of them had not achieved a score of 4 out of possible score of 9. Although most of the studies have a clear definition of RRMIs the definitions always differ between studies. For instance, in one study, the injury was defined as “injuries sufficiently severe to impair their performance” while for another study, RRMIs were defined as “injuries that markedly hampered running training or competition for at least 1 week.” It should be noted that since 2007, it has been suggested in the sports medicine community that a standard RRMI definition should be adopted but, to our knowledge, there is no consensus about the most appropriate definition for an RRMI. All articles included in this review described the type of runners (e.g. ultra-marathoners ) or their characteristics of training (e.g. running at least five times per week ), or race participation (runners of a 10 km race ).",
+    "reference_source_file": "safety_running_msk_injuries_2012.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_chest_pain",
+    "question": "跑步时出现胸痛应该怎么办？",
+    "ground_truth": "跑步时胸痛属于红旗信号，应停止运动并根据症状严重程度及时寻求医疗帮助。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heart_attack_symptoms_0012",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0012",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0016",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0015"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC About Heart Attack Symptoms, Risk, and Recovery. Page 1. - Chest pain or discomfort. Most heart attacks involve discomfort in the center or left side of the chest that lasts for more than a few minutes or that goes away and comes back. The discomfort can feel like uncomfortable pressure, squeezing, fullness, or pain.",
+    "reference_source_file": "cdc_heart_attack_symptoms.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_heat_stroke",
+    "question": "热射病有哪些关键识别信号？",
+    "ground_truth": "热射病是最严重的热相关疾病，体温失控、意识异常等情况需要紧急处理。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_illnesses_0030",
+      "chunkv2_src_external_cdc_heat_illnesses_0017"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat-Related Illnesses. Page 1. Heat stroke is the most serious heat-related illness. It occurs when the body can no longer control its temperature: the body's temperature rises rapidly, the sweating mechanism fails, and the body is unable to cool down. When heat stroke occurs, the body temperature can rise to 106°F or higher within 10 to 15 minutes. Heat stroke can cause permanent disability or death if the person does not receive emergency treatment.",
+    "reference_source_file": "cdc_heat_related_illnesses.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_heat_exhaustion",
+    "question": "热衰竭和热射病为什么不能当作普通疲劳处理？",
+    "ground_truth": "热相关疾病可能快速恶化，应停止暴露、降温并根据症状升级处理。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_illnesses_0029",
+      "chunkv2_src_external_cdc_heat_illnesses_0019"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat-Related Illnesses. Page 1. Heat stroke is the most serious heat-related illness. It occurs when the body can no longer control its temperature: the body's temperature rises rapidly, the sweating mechanism fails, and the body is unable to cool down. When heat stroke occurs, the body temperature can rise to 106°F or higher within 10 to 15 minutes. Heat stroke can cause permanent disability or death if the person does not receive emergency treatment.",
+    "reference_source_file": "cdc_heat_related_illnesses.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_dizziness",
+    "question": "跑步中头晕或晕厥还能继续跑吗？",
+    "ground_truth": "头晕或晕厥提示潜在安全风险，应停止跑步、评估原因并在需要时就医。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0046",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_illnesses_0046",
+      "chunkv2_src_internal_medical_dizziness_or_fainting_1_0329",
+      "chunkv2_src_internal_medical_dizziness_or_fainting_2_0330"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat-Related Illnesses. Page 1. Heat syncope is a fainting (syncope) episode or dizziness that usually occurs when standing for too long or suddenly standing up after sitting or lying. Factors that may contribute to heat syncope include dehydration and lack of acclimatization.",
+    "reference_source_file": "cdc_heat_related_illnesses.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_stop_refer",
+    "question": "什么情况下跑者必须停止训练并考虑转诊？",
+    "ground_truth": "胸痛、晕厥、严重热病、神经症状或其他红旗症状应优先停止训练并寻求医疗评估。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heart_attack_symptoms_0030",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0030",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0004",
+      "chunkv2_src_pmc_running_overuse_risk_factors_2020_0082"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC About Heart Attack Symptoms, Risk, and Recovery. Page 1. Cardiac rehabilitation: Cardiac rehabilitation is an important program for anyone recovering from a heart attack, heart failure, or other heart problem that required surgery or medical care. Cardiac rehab is a supervised program that includes:",
+    "reference_source_file": "cdc_heart_attack_symptoms.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_heart_attack_symptoms",
+    "question": "心脏病发作相关症状有哪些不应忽视？",
+    "ground_truth": "胸部不适、上肢或背部不适、呼吸急促、冷汗、恶心或头晕等都不应忽视。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heart_attack_symptoms_0017",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0017",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0004",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0016"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC About Heart Attack Symptoms, Risk, and Recovery. Page 1. Other symptoms of a heart attack could include unusual or unexplained tiredness and nausea or vomiting. Women are more likely to have these other symptoms. Learn more about women and heart disease .",
+    "reference_source_file": "cdc_heart_attack_symptoms.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_heat_first_aid",
+    "question": "怀疑热射病时第一步处理原则是什么？",
+    "ground_truth": "怀疑热射病时应立即停止运动、呼叫急救并尽快降温，而不是继续训练。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_illnesses_0015",
+      "chunkv2_src_external_cdc_heat_illnesses_0019"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat-Related Illnesses. Page 1. Heat stroke is the most serious heat-related illness. It occurs when the body can no longer control its temperature: the body's temperature rises rapidly, the sweating mechanism fails, and the body is unable to cool down. When heat stroke occurs, the body temperature can rise to 106°F or higher within 10 to 15 minutes. Heat stroke can cause permanent disability or death if the person does not receive emergency treatment.",
+    "reference_source_file": "cdc_heat_related_illnesses.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_breath_short",
+    "question": "跑步时异常呼吸困难是否属于安全信号？",
+    "ground_truth": "异常呼吸困难可能提示医疗风险，特别是伴随胸痛、晕厥或其他症状时应停止并评估。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heart_attack_symptoms_0004",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0004",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0016",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0019"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC About Heart Attack Symptoms, Risk, and Recovery Domain pack: medical_risk. Evidence domain: medical_safety. Permission: explanation_only. Support medical red-flag handling for chest pain, shortness of breath, light-headedness, faintness, and emergency referral.",
+    "reference_source_file": "cdc_heart_attack_symptoms.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_confusion_heat",
+    "question": "高温中出现意识混乱为什么危险？",
+    "ground_truth": "意识混乱可能提示严重热病或热射病，需要立即停止运动和紧急处理。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0010",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_illnesses_0010",
+      "chunkv2_src_external_cdc_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_illnesses_0013"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat-Related Illnesses. Page 1. - Confusion, altered mental status, slurred speech",
+    "reference_source_file": "cdc_heat_related_illnesses.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "medical_do_not_prescribe",
+    "question": "医疗风险场景为什么不能直接生成核心训练处方？",
+    "ground_truth": "医疗风险证据只能用于安全解释和转诊提示，不能替代医生评估或写入核心训练处方。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heart_attack_symptoms_0004",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0004",
+      "chunkv2_src_external_medlineplus_heart_warning_signs_0010",
+      "chunkv2_src_pmc_running_overuse_risk_factors_2020_0001"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_context": "CDC About Heart Attack Symptoms, Risk, and Recovery Domain pack: medical_risk. Evidence domain: medical_safety. Permission: explanation_only. Support medical red-flag handling for chest pain, shortness of breath, light-headedness, faintness, and emergency referral.",
+    "reference_source_file": "cdc_heart_attack_symptoms.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "environment_heat_adjust",
+    "question": "高温天气训练应该如何调整？",
+    "ground_truth": "高温训练应降低热压力，调整强度和时段，重视补水、降温和停止信号。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_athletes_0020",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_athletes_0020",
+      "chunkv2_src_external_cdc_heat_athletes_0009",
+      "chunkv2_src_external_cdc_heat_athletes_0004"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat and Athletes. Page 1. - Take a CDC training course. Learn more on how to spot heat-related illness by participating in this course designed for coaches, teachers, parents, and high school athletes.",
+    "reference_source_file": "cdc_heat_athletes.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_humidity",
+    "question": "湿热环境为什么会影响跑步表现？",
+    "ground_truth": "湿热环境会削弱散热并提高热压力，配速和补水计划需要更保守。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_athletes_0011",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_athletes_0011",
+      "chunkv2_src_nutrition_acsm_position_2016_0295",
+      "chunkv2_src_external_cdc_heat_athletes_0009"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat and Athletes. Page 1. - Schedule workouts and practices earlier or later in the day when the temperature is cooler.",
+    "reference_source_file": "cdc_heat_athletes.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_altitude",
+    "question": "高海拔比赛准备需要考虑什么？",
+    "ground_truth": "高海拔会改变生理压力和营养需求，备赛应考虑适应、强度控制和恢复。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_athletes_0004",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_athletes_0004",
+      "chunkv2_src_internal_environment_altitude_1_0587",
+      "chunkv2_src_internal_environment_altitude_2_0588"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "CDC Heat and Athletes. Page 1. - People who exercise on hot days are more likely to become dehydrated and get heat-related illness.",
+    "reference_source_file": "cdc_heat_athletes.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_race_travel",
+    "question": "旅行和比赛环境变化会怎样影响赛前计划？",
+    "ground_truth": "旅行、时差和环境变化会影响恢复与执行，赛前计划需要留出适应和调整空间。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+      "chunkv2_src_internal_environment_travel_fatigue_1_0599",
+      "chunkv2_src_internal_environment_travel_fatigue_2_0600"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "CDC Travelers Health Heat Illnesses Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Support travel/race heat illness explanation, serious symptom boundaries, and environment adjustment context.",
+    "reference_source_file": "external_cdc_travel_heat_illnesses.url",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_hills",
+    "question": "坡道或丘陵比赛应如何影响配速策略？",
+    "ground_truth": "坡道比赛应以努力程度和地形变化管理配速，避免用平路目标配速硬套全程。",
+    "reference_chunk_id": "chunkv2_src_internal_environment_hilly_route_1_0591",
+    "relevant_ids": [
+      "chunkv2_src_internal_environment_hilly_route_1_0591",
+      "chunkv2_src_internal_environment_hilly_route_2_0592",
+      "chunkv2_src_internal_environment_hilly_route_3_0593"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "environment_hilly_route_1. Domain pack: environment_race_context. Permission: explanation_only.",
+    "reference_source_file": "environment_hilly_route_1.json",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_rain",
+    "question": "雨天比赛策略需要关注哪些风险？",
+    "ground_truth": "雨天比赛应关注体温、抓地、装备和补给执行，策略要随环境风险调整。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_treatment_0005",
+      "chunkv2_src_external_cdc_heat_athletes_0037"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "CDC Travelers Health Heat Illnesses Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Support travel/race heat illness explanation, serious symptom boundaries, and environment adjustment context.",
+    "reference_source_file": "external_cdc_travel_heat_illnesses.url",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_cold",
+    "question": "寒冷天气训练和比赛要注意什么？",
+    "ground_truth": "寒冷环境需要关注保暖、热身、路面风险和补给执行，训练强度也应结合安全调整。",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0405",
+    "relevant_ids": [
+      "chunkv2_src_train_marathon_physiology_2025_0405",
+      "chunkv2_src_train_marathon_physiology_2025_0025",
+      "chunkv2_src_external_cdc_heat_athletes_0020"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Physiology and Pathophysiology of Marathon Running: A narrative Review. Page 1. This review, however, has some limitations due to the heterogeneity of marathon runners, ranging from adolescents to runners aged above 80 years, differing in sex, and performance levels (i.e., elite vs. recreational runners). This may impair the generalizability of certain findings as there was no individual analysis regarding age, sex, and performance level. For example, elite runners might show a less pronounced reaction of some biomarkers due to their training volume. Additionally, event locations and types of marathon races were not considered (e.g., weather, ambient temperature, climate, altitude, mountain marathon, downhill race, etc.). This further impairs generalizability as certain confounding factors might be present. The lack of quality assessment for included studies may also introduce selection bias, weakening the generalizability and reliability of the conclusions.",
+    "reference_source_file": "train_marathon_physiology_2025.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_fueling_race",
+    "question": "比赛环境变化为什么会影响补给执行？",
+    "ground_truth": "温度、湿度、赛道和补给站条件会影响水分、碳水摄入和胃肠耐受，应提前演练。",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0150",
+    "relevant_ids": [
+      "chunkv2_src_train_marathon_physiology_2025_0150",
+      "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_treatment_0005"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "Physiology and Pathophysiology of Marathon Running: A narrative Review. Page 1. Additionally, carbohydrate loading (~ 10 g/kg body mass per day) 24–36 h prior to the race was shown to improve the ability to maintain a steady pace for longer and should be encouraged for races > 30 km. Other studies reported dietary restrictions prior to the race to prevent GI distress as certain nutritional elements e.g., fat and protein, have been suggested to induce exercise-induced GI symptoms. The most commonly omitted foods were milk products (rich in fat and protein), high protein, high-fiber, chocolate, and caffeine. The most recent study on GI cell injury after running the Boston Marathon found that intestinal cell injury and GI symptoms decreased from the marathon finish to the day after the marathon and the reduction was influenced by hydration status.",
+    "reference_source_file": "train_marathon_physiology_2025.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_heat_safety_boundary",
+    "question": "高温训练何时应从训练调整升级为安全停止？",
+    "ground_truth": "当出现热病或红旗症状时，应从配速调整升级为停止训练和安全处理。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_athletes_0024",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_athletes_0024",
+      "chunkv2_src_external_cdc_heat_treatment_0005",
+      "chunkv2_src_external_cdc_heat_athletes_0020"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "near_miss",
+    "reference_context": "CDC Heat and Athletes. Page 1. Heat-related illness in athletes can be prevented if coaches and athletes are properly educated about heat safety. Provided below are links to resources states are using to support this effort. In addition, we have provided links to two heat-related illness courses and a study on the effectiveness of heat acclimatization guidelines.",
+    "reference_source_file": "cdc_heat_athletes.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "environment_race_pacing",
+    "question": "比赛日配速为什么要根据环境而不是只看目标成绩？",
+    "ground_truth": "环境会改变同一配速的生理成本，比赛日应根据天气、地形和身体反应调整目标。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_travel_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_treatment_0005",
+      "chunkv2_src_external_cdc_heat_athletes_0037"
+    ],
+    "expected_domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_context": "CDC Travelers Health Heat Illnesses Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Support travel/race heat illness explanation, serious symptom boundaries, and environment adjustment context.",
+    "reference_source_file": "external_cdc_travel_heat_illnesses.url",
+    "negative_candidate_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0274",
+      "chunkv2_src_safety_injury_continuum_2023_0056",
+      "chunkv2_src_safety_injury_continuum_2023_0060"
+    ]
+  },
+  {
+    "id": "negative_rag_definition",
+    "question": "RAG 是什么？",
+    "ground_truth": "这是信息检索与生成系统问题，不属于马拉松训练处方；标准检索不应返回核心训练处方证据。",
+    "reference_chunk_id": "chunkv2_src_ai_healthcare_rag_review_2025_0010",
+    "relevant_ids": [
+      "chunkv2_src_ai_healthcare_rag_review_2025_0010",
+      "chunkv2_src_ai_healthcare_rag_review_2025_0185",
+      "chunkv2_src_ai_healthcare_rag_review_2025_0143"
+    ],
+    "expected_domain": "",
+    "sample_type": "out_of_domain",
+    "reference_context": "Retrieval augmented generation for large language models in healthcare: A systematic review. Page 1. ∗ mbangula_lameck.amugongo@boehringer-ingelheim.com Abstract Large Language Models (LLMs) have demonstrated promising capabilities to solve complex tasks in critical sectors such as healthcare. However, LLMs are limited by their training data which is often outdated, the tendency to generate inaccurate (“hallucinated”)content and a lack of transparency in the content they generate. T o address these limitations, retrieval augmented generation (RAG) grounds the responses of LLMs by exposing them to external knowledge sources. However, in the healthcare domain there is currently a lack of systematic understanding of which datasets, RAG methodologies and evaluation frameworks are available. This review aims to bridge this gap by assessing RAG-based approaches employed by LLMs in healthcare, focusing on the different steps of retrieval, augmentation and generation. Additionally, we identify the limitations, strengths and gaps in the existing literature. Our synthesis shows that 78.9% of studies used English datasets and 21.1% of the datasets are in Chinese. We find that a range of techniques are employed RAG-based LLMs in healthcare, including Naive RAG,Advanced RAG, and Modular RAG.",
+    "reference_source_file": "ai_healthcare_rag_review_2025.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "negative_python_code",
+    "question": "怎么用 Python 写一个网页爬虫？",
+    "ground_truth": "这是编程问题，不属于马拉松助手知识库的训练、营养或安全问答范围。",
+    "reference_chunk_id": "chunkv2_src_ai_rag_survey_2023_0066",
+    "relevant_ids": [
+      "chunkv2_src_ai_rag_survey_2023_0066",
+      "chunkv2_src_ai_rag_foundation_2020_0012",
+      "chunkv2_src_ai_rag_foundation_2020_0198"
+    ],
+    "expected_domain": "",
+    "sample_type": "out_of_domain",
+    "reference_context": "Retrieval-Augmented Generation for Large Language Models: A Survey. Page 6. nce ITER-RETGEN [14] Wikipedia Text Chunk Inference Iterative IRCoT [61] Wikipedia Text Chunk Inference Recursive LLM-Knowledge-Boundary [62] Wikipedia Text Chunk Inference Once RAPTOR [63] Dataset-base Text Chunk Inference Recursive RECITE [22] LLMs Text Chunk Inference Once ICRALM [64] Pile,Wikipedia Text Chunk Inference Iterative Retrieve-and-Sample [65] Dataset-base Text Doc Tuning Once Zemi [66] C4 Text Doc Tuning Once CRAG [67] Arxiv Text Doc Inference Once 1-PAGER [68] Wikipedia Text Doc Inference Iterative PRCA [69] Dataset-base Text Doc Inference Once QLM-Doc-ranking [70] Dataset-base Text Doc Inference Once Recomp [71] Wikipedia Text Doc Inference Once DSP [23] Wikipedia Text Doc Inference Iterative RePLUG [72] Pile Text Doc Inference Once ARM-RAG [73] Dataset-base Text Doc Inference Iterative GenRead [13] LLMs Text Doc Inference Iterative UniMS-RAG [74] Dataset-base Text Multi Tuning Once CREA-ICL [19] Dataset-base Crosslingual,Text Sentence Inference Once PKG [75] LLM Tabular,Text Chunk Inference Once SANTA [76] Dataset-base Code,Text Item Pre-training Once SURGE [77] Freebase KG Sub-Graph Tuning Once MK-ToD [78] Dataset-base KG Entity Tuning Once Dual-Feedback-ToD [79]",
+    "reference_source_file": "ai_rag_survey_2023.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "negative_meal_recipe",
+    "question": "晚饭做番茄炒蛋要放多少盐？",
+    "ground_truth": "这是通用烹饪问题，不应召回马拉松核心训练处方证据。",
+    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0310",
+    "relevant_ids": [
+      "chunkv2_src_nutrition_acsm_position_2016_0310",
+      "chunkv2_src_nutrition_issn_review_2018_0228",
+      "chunkv2_src_nutrition_acsm_position_2016_0274"
+    ],
+    "expected_domain": "",
+    "sample_type": "out_of_domain",
+    "reference_context": "Position of the Academy of Nutrition and Dietetics, Dietitians of Canada, and ACSM: Nutrition and Athletic Performance. Page 36. , biochemistry, anthropometry) Blood, urine analysis, body composition and physiological testing results, including hydration status Dietary prescription and education  Dietary strategies to support behaviour change for improvements with health, physical performance, body composition goals and/or eating disorders Dietary recommendations prescribed relative to athlete’s personal goals and chief concerns related to training, body composition, and/or competition nutrition, tapering, and/or periodized fat/weight loss Quantity, quality, and timing for food and fluid intake before, during and after training and/or competition to enhance exercise training capacity, endurance and performance Medical nutritional therapeutic advice pertaining to unique dietary considerations (eating disorders, food allergies, diabetes, gastrointestinal issues, etc.) Menu planning, time management, grocery shopping, food preparation, food storage, food budgeting, food security, and recipe modification for training and/or competition days Food selection related to travel, restaurants, and training and competition venue choices Supplementation, ergogenic aids, fortified foods, etc.",
+    "reference_source_file": "nutrition_acsm_position_2016.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "negative_ai_hallucination",
+    "question": "如何评估大语言模型幻觉？",
+    "ground_truth": "这是 AI 评测问题，最多属于解释性外部参考，不应进入马拉松训练处方证据。",
+    "reference_chunk_id": "chunkv2_src_ai_ragas_2023_0021",
+    "relevant_ids": [
+      "chunkv2_src_ai_ragas_2023_0021",
+      "chunkv2_src_ai_ragas_2023_0011",
+      "chunkv2_src_ai_ragas_2023_0066"
+    ],
+    "expected_domain": "external_reference",
+    "sample_type": "negative",
+    "reference_context": "Ragas: Automated Evaluation of Retrieval Augmented Generation. Page 3. First, Faithfulness refers to the idea that the answer should be grounded in the given context. This is important to avoid hallucinations, and to ensure that the retrieved context can act as a justification for the generated answer. Indeed, RAG systems are often used in applications where the factual consistency of the generated text w.r.t. the grounded sources is highly important, e.g. in domains such as law, where information is constantly evolving. Second, Answer Relevance refers to the idea that the generated answer should address the actual question that was provided. Finally,Context Relevance refers to the idea that the retrieved context should be focused, containing as little irrelevant information as possible. This is important given the cost associated with feeding long context passages to LLMs. Moreover, when context passages are too long, LLMs are often less effective in exploiting that context, especially for information that is provided in the middle of the context passage (Liu et al., 2023).",
+    "reference_source_file": "ai_ragas_2023.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "negative_ui_design",
+    "question": "健康推荐系统界面怎么设计才透明？",
+    "ground_truth": "这是 HCI/推荐系统解释性问题，不应召回核心训练处方证据。",
+    "reference_chunk_id": "chunkv2_src_hci_cognitive_forcing_2021_0223",
+    "relevant_ids": [
+      "chunkv2_src_hci_cognitive_forcing_2021_0223",
+      "chunkv2_src_hci_health_recommender_review_2023_0090",
+      "chunkv2_src_hci_health_recommender_review_2023_0017"
+    ],
+    "expected_domain": "external_reference",
+    "sample_type": "negative",
+    "reference_context": "To Trust or to Think: Cognitive Forcing Functions Can Reduce Overreliance on AI in AI-assisted Decision-making. Page 20. [47] Martijn Millecamp, Nyi Nyi Htun, Cristina Conati, and Katrien Verbert. 2019. To Explain or Not to Explain: The Effects of Personal Characteristics When Explaining Music Recommendations. In Proceedings of the 24th International Conference on Intelligent User Interfaces (Marina del Ray, California) (IUI ’19). Association for Computing Machinery,New York, NY, USA, 397–407. https://doi.org/10.1145/3301275.3302313[48] Martijn Millecamp, Nyi Nyi Htun, Cristina Conati, and Katrien Verbert. 2020. What’s in a User? Towards Personalising Transparency for Music Recommender Interfaces. In Proceedings of the 28th ACM Conference on User Modeling,Adaptation and Personalization (Genoa, Italy) (UMAP ’20). Association for Computing Machinery, New York, NY, USA,173–182. https://doi.org/10.1145/3340631.3394844[49] Carol-anne E Moulton, Glenn Regehr, Maria Mylopoulos, and Helen M MacRae. 2007. Slowing down when you should:a new model of expert judgment. Academic Medicine 82, 10 (2007), S109–S116.",
+    "reference_source_file": "hci_cognitive_forcing_2021.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "near_miss_cold_run",
+    "question": "感冒了可以继续跑步吗？",
+    "ground_truth": "感冒跑步属于边界健康问题，应优先识别症状严重程度，不应直接给高负荷训练处方。",
+    "reference_chunk_id": "chunkv2_src_pmc_running_overuse_risk_factors_2020_0082",
+    "relevant_ids": [
+      "chunkv2_src_pmc_running_overuse_risk_factors_2020_0082",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0020",
+      "chunkv2_src_external_cdc_heart_attack_symptoms_0030"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "near_miss",
+    "reference_context": "Risk factors for overuse injuries in short- and long-distance running: A systematic review. Page 1. 5 Mixed distances Self-reported complaints of muscles, joints, tendons or bones in the lower extremity, due to running activities by which the running intensity or frequency was reduced, or medical consultation was needed Training characteristics and sociodemographic variables Overall running-related injuries Wen et al. (1998) 32 weeks 355/255 (71)Injured: 90 41.8 ± 10.8 107/148 M: 25.6aF: 23.8a Long distance:marathon training program A running injury met the following criteria: having had “injury or pain” to an anatomic part; having had to stop training, slow pace, stop interval or otherwise having had to modify training and a “gradual” vs. “immediate” onset of injury or a self-reported diagnosis that is generally considered an overuse injury Lower extremity alignment Overall running-related injuries",
+    "reference_source_file": "src_pmc_running_overuse_risk_factors_2020.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "near_miss_knee_race",
+    "question": "膝盖疼但周末有比赛，还能硬跑吗？",
+    "ground_truth": "这是伤病和比赛目标冲突的边界场景，应优先评估疼痛和安全，不应只召回配速策略。",
+    "reference_chunk_id": "chunkv2_src_safety_running_msk_injuries_2012_0078",
+    "relevant_ids": [
+      "chunkv2_src_safety_running_msk_injuries_2012_0078",
+      "chunkv2_src_safety_running_msk_injuries_2012_0065",
+      "chunkv2_src_safety_running_msk_injuries_2012_0032"
+    ],
+    "expected_domain": "injury_safety",
+    "sample_type": "near_miss",
+    "reference_context": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review. Page 1. In order to compare the incidence or prevalence rates of RRMIs among different studies, it is necessary to express these injury rates in a comparable or common unit. Some studies with runners as the subjects reported RRMI rates by using the number of injuries per 1000 hours of exposure to running and this is more appropriate because the amount of exposure to the load (running) may influence the development of musculoskeletal injuries. Among the eight articles, only two of them stated the overall incidence ratio of RRMIs per 1000 hours of exposure to running and no study stated the incidence or prevalence ratio of each RRMI. We suggest that future studies should standardize the expression of RRMI data by the ratio of the number of injuries per hour of exposure to running. This would enable comparison or pooling of data for meta-analysis. In addition, future studies should be conducted to determine a consensus about the definition of RRMIs, as well as aim to identify the main RRMIs in different types of runners (e.g. ultra-marathoners, marathoners, elite, recreational, race runners, etc.).",
+    "reference_source_file": "safety_running_msk_injuries_2012.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "near_miss_heat_pr",
+    "question": "热浪天气还能按 PB 配速跑马拉松吗？",
+    "ground_truth": "热浪天气下目标配速必须服从安全约束，应降低目标并关注热病信号。",
+    "reference_chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0008",
+    "relevant_ids": [
+      "chunkv2_src_external_cdc_heat_illnesses_0008",
+      "chunkv2_src_external_cdc_heat_illnesses_0007",
+      "chunkv2_src_external_cdc_heat_illnesses_0015"
+    ],
+    "expected_domain": "medical_safety",
+    "sample_type": "near_miss",
+    "reference_context": "CDC Heat-Related Illnesses. Page 1. Heat stroke is the most serious heat-related illness. It occurs when the body can no longer control its temperature: the body's temperature rises rapidly, the sweating mechanism fails, and the body is unable to cool down. When heat stroke occurs, the body temperature can rise to 106°F or higher within 10 to 15 minutes. Heat stroke can cause permanent disability or death if the person does not receive emergency treatment.",
+    "reference_source_file": "cdc_heat_related_illnesses.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "negative_competitor",
+    "question": "竞品跑步 App 的商业化功能怎么设计？",
+    "ground_truth": "这是产品竞品分析问题，不应召回可写入核心训练处方的证据。",
+    "reference_chunk_id": "chunkv2_src_external_strava_uploads_api_0014",
+    "relevant_ids": [
+      "chunkv2_src_external_strava_uploads_api_0014",
+      "chunkv2_src_external_trainingpeaks_structured_workout_0039",
+      "chunkv2_src_external_runna_personalized_plans_0043"
+    ],
+    "expected_domain": "external_reference",
+    "sample_type": "negative",
+    "reference_context": "Strava Uploads API Domain pack: competitor_product_tasks. Evidence domain: competitor_product_reference. Permission: explanation_only. Product task reference for activity upload and asynchronous device-data ingestion design.",
+    "reference_source_file": "strava_uploads_api.md",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  },
+  {
+    "id": "negative_profile_privacy",
+    "question": "用户画像案例可以直接用来生成训练处方吗？",
+    "ground_truth": "用户画像案例最多用于解释性线索和隐私治理，不应直接作为核心训练处方来源。",
+    "reference_chunk_id": "chunkv2_src_ai_healthcare_rag_review_2025_0164",
+    "relevant_ids": [
+      "chunkv2_src_ai_healthcare_rag_review_2025_0164",
+      "chunkv2_src_internal_user_case_placeholder_001_0651",
+      "chunkv2_src_internal_user_case_placeholder_002_0652"
+    ],
+    "expected_domain": "external_reference",
+    "sample_type": "negative",
+    "reference_context": "Retrieval augmented generation for large language models in healthcare: A systematic review. Page 21. Data analysis Fig 4a presents the distribution of languages of common retrieval datasets used for RAG in medical domain. It is evident that the majority (70.8%) of the datasets are in English, except for four datasets which are in Chinese. As seen in Fig 4b, the majority of the studies that employed RAG in the healthcare setting made use of proprietary models such as OpenAI’ s GPT-3.5/4 models. However, the use of these models raises privacy issues, especially when dealing with sensitive information such as patient data. In such cases, open-source models deployed in a controlled environment may be a suitable solution. However, it is worth noting that open-source models generally have lower performance compared to proprietary models and have a more limited context window [149]. A recent study comparing open-source and proprietary models, has shown that RAG with proprietary GPT-4o as the backbone LLM outperforms all others, demonstrating its superior adaptability with KG integration [114].",
+    "reference_source_file": "ai_healthcare_rag_review_2025.pdf",
+    "negative_candidate_ids": [
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0082",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0138",
+      "chunkv2_src_pmc_strength_training_running_economy_2024_0073"
+    ]
+  }
+]

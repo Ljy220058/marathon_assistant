@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request
 
+from marathon_qa_assistant.apps.async_db import run_db
 from marathon_qa_assistant.apps.schemas import (
     DayDetailResponse,
     EventScheduleRequest,
@@ -19,18 +20,21 @@ from marathon_qa_assistant.apps.response_builders import (
     _public_rag_health,
     _safe_workflow_error_summary,
 )
+from marathon_qa_assistant.apps.response_projection import (
+    _project_plan_detail_response_for_role,
+    _project_training_calendar_response_for_role,
+)
 from marathon_qa_assistant.apps.routers._shared import (
     _auth_enabled,
     _build_adjustment_history,
     _event_with_latest_feedback,
     _load_structured_plan,
-    _project_plan_detail_response_for_role,
-    _project_training_calendar_response_for_role,
+    _request_api_token,
     _require_default_user,
     _resolve_user_id,
-    _response_role,
     DEFAULT_API_USER_ID,
 )
+from marathon_qa_assistant.apps.security.response_role import _response_role
 from marathon_qa_assistant.core.state_models import build_execution_status_summary
 from marathon_qa_assistant.core.profile_store import load_user_profile
 from marathon_qa_assistant.core.working_state import build_working_state
@@ -48,7 +52,7 @@ router = APIRouter()
 async def list_plans(http_request: Request, user_id: str = DEFAULT_API_USER_ID):
     """列出本地已保存训练计划。空列表表示暂无历史，不应返回 404。"""
     uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
-    return {"plans": get_db().list_training_plans(user_id=uid)}
+    return {"plans": await run_db(get_db().list_training_plans, user_id=uid)}
 
 
 @router.post("/plans")
@@ -58,7 +62,8 @@ async def save_plan(request: SavePlanRequest, http_request: Request):
     if not request.structured_training_plan:
         raise HTTPException(status_code=400, detail="structured_training_plan 不能为空。")
     calendar_settings = request.calendar_settings or {}
-    plan_id = get_db().save_training_plan(
+    plan_id = await run_db(
+        get_db().save_training_plan,
         request.structured_training_plan,
         source_query=request.source_query,
         user_id=uid,
@@ -72,12 +77,14 @@ async def save_plan(request: SavePlanRequest, http_request: Request):
 @router.get("/plans/{plan_id}", response_model=PlanDetailResponse)
 async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_API_USER_ID):
     """返回单个已保存训练计划及其日历事件。"""
-    _require_default_user(user_id)
-    plan = get_db().get_plan(plan_id)
-    if not plan or plan.get("user_id") != user_id:
+    uid = _resolve_user_id(http_request) if _auth_enabled() else (_resolve_user_id(http_request) if _request_api_token(http_request) else user_id)
+    _require_default_user(uid)
+    plan = await run_db(get_db().get_plan, plan_id)
+    if not plan or plan.get("user_id") != uid:
         raise HTTPException(status_code=404, detail="训练计划不存在。")
     structured_plan = _load_structured_plan(plan)
-    events = [_event_with_latest_feedback(event) for event in get_db().list_events(plan_id)]
+    raw_events = await run_db(get_db().list_events, plan_id)
+    events = [_event_with_latest_feedback(event) for event in raw_events]
     calendar_day_contract = events
     training_plan_review_result = (
         build_training_plan_review(
@@ -91,7 +98,7 @@ async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_A
     response_payload = {
         "plan": plan,
         "structured_training_plan": structured_plan,
-        "workflow_trace": structured_plan.get("workflow_trace", {}) if isinstance(structured_plan, dict) else {},
+        "workflow_trace": {},
         "events": events,
         "execution_status_summary": build_execution_status_summary(
             events,
@@ -112,10 +119,10 @@ async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_A
 async def delete_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_API_USER_ID):
     """删除已保存的训练计划及其日历事件。"""
     uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
-    plan = get_db().get_plan(plan_id)
+    plan = await run_db(get_db().get_plan, plan_id)
     if not plan or plan.get("user_id") != uid:
         raise HTTPException(status_code=404, detail="训练计划不存在。")
-    if not get_db().delete_training_plan(plan_id):
+    if not await run_db(get_db().delete_training_plan, plan_id):
         raise HTTPException(status_code=404, detail="训练计划不存在。")
     return {"deleted": True, "plan_id": plan_id}
 
@@ -125,17 +132,20 @@ async def update_plan_event_schedule(
     plan_id: str,
     event_id: str,
     request: EventScheduleRequest,
+    http_request: Request,
     user_id: str = DEFAULT_API_USER_ID,
 ):
     """更新已保存训练日历事件的日期、开始时间和时长。"""
-    _require_default_user(user_id)
-    plan = get_db().get_plan(plan_id)
-    if not plan or plan.get("user_id") != user_id:
+    uid = _resolve_user_id(http_request) if _auth_enabled() else (_resolve_user_id(http_request) if _request_api_token(http_request) else user_id)
+    _require_default_user(uid)
+    plan = await run_db(get_db().get_plan, plan_id)
+    if not plan or plan.get("user_id") != uid:
         raise HTTPException(status_code=404, detail="训练计划不存在。")
-    events = get_db().list_events(plan_id)
+    events = await run_db(get_db().list_events, plan_id)
     if not any(event.get("id") == event_id for event in events):
         raise HTTPException(status_code=404, detail="训练日历事件不存在。")
-    updated = get_db().update_event_schedule(
+    updated = await run_db(
+        get_db().update_event_schedule,
         event_id,
         scheduled_date=request.scheduled_date,
         start_time=request.start_time,

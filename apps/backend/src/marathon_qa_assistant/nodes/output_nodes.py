@@ -741,8 +741,6 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             adaptive_feedback=state.get("adaptive_feedback") if isinstance(state.get("adaptive_feedback"), dict) else None,
             adaptive_adjustment=adaptive_adjustment if isinstance(adaptive_adjustment, dict) else None,
         )
-    if isinstance(structured_training_plan, dict):
-        structured_training_plan["workflow_trace"] = workflow_trace
     training_explanation_panel = _build_training_explanation_panel(
         structured_training_plan,
         training_plan_weeks,

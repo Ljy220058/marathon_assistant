@@ -51,6 +51,28 @@ def test_lifespan_startup_runs_without_error():
     assert response.status_code == 200
 
 
+def test_lifespan_startup_records_kb_bootstrap_report(monkeypatch):
+    sentinel_report = {
+        "ok": False,
+        "ready": False,
+        "mode": "empty",
+        "vector_dir": "",
+        "source": "startup-test",
+        "reason": "kb unavailable during startup",
+        "chunks_count": 0,
+        "faiss_ready": False,
+        "index_schema_version": "empty",
+        "metadata_completeness": 0.0,
+        "runtime_core_prescription_enabled": False,
+        "health_reports": [],
+    }
+
+    monkeypatch.setattr(api_app, "bootstrap_knowledge_base", lambda: sentinel_report)
+
+    with TestClient(api_app.app):
+        assert api_app.app.state.rag_bootstrap == sentinel_report
+
+
 def test_startup_ensures_default_user():
     """After startup the app should have a default user provisioned."""
     client = TestClient(api_app.app)
@@ -96,3 +118,31 @@ def test_token_auth_is_disabled_by_default(monkeypatch):
     client = TestClient(api_app.app)
     response = client.get("/plans")
     assert response.status_code == 200
+
+
+def test_runtime_config_allows_localhost_without_token(monkeypatch):
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_ENV", raising=False)
+    monkeypatch.delenv("MARATHON_DEV_ALLOW_PUBLIC_NO_AUTH", raising=False)
+
+    assert api_app._runtime_config_errors("127.0.0.1") == []
+    assert api_app._runtime_config_errors("localhost") == []
+    assert api_app._runtime_config_errors("::1") == []
+
+
+def test_runtime_config_blocks_public_host_without_token(monkeypatch):
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_ENV", raising=False)
+    monkeypatch.delenv("MARATHON_DEV_ALLOW_PUBLIC_NO_AUTH", raising=False)
+
+    assert api_app._runtime_config_errors("0.0.0.0") == [
+        "MARATHON_API_TOKEN is required when binding a public host."
+    ]
+
+
+def test_runtime_config_allows_public_host_with_dev_override(monkeypatch):
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_ENV", raising=False)
+    monkeypatch.setenv("MARATHON_DEV_ALLOW_PUBLIC_NO_AUTH", "1")
+
+    assert api_app._runtime_config_errors("0.0.0.0") == []

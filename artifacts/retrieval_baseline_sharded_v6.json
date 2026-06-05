@@ -1,0 +1,221 @@
+{
+  "eval_config": {
+    "top_k": 5,
+    "domain_filter_enabled": true,
+    "positive_count": 56,
+    "negative_count": 10
+  },
+  "metrics": {
+    "exact_chunk_recall": {
+      "hits": 26,
+      "total": 56,
+      "rate": 0.4643
+    },
+    "same_page_recall": {
+      "hits": 39,
+      "total": 56,
+      "rate": 0.6964
+    },
+    "same_source_recall": {
+      "hits": 44,
+      "total": 56,
+      "rate": 0.7857
+    },
+    "mrr": 0.5229,
+    "mrr_values": [
+      1.0,
+      0.5,
+      1.0,
+      1.0,
+      0.3333333333333333,
+      0.5,
+      1.0,
+      0.3333333333333333,
+      0.0,
+      1.0,
+      1.0,
+      0.5,
+      1.0,
+      0.3333333333333333,
+      0.5,
+      0.5,
+      0.3333333333333333,
+      1.0,
+      0.5,
+      0.3333333333333333,
+      0.5,
+      1.0,
+      1.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.3333333333333333,
+      0.5,
+      0.5,
+      1.0,
+      0.5,
+      0.5,
+      0.5,
+      0.3333333333333333,
+      0.5,
+      0.0,
+      0.0,
+      1.0,
+      0.3333333333333333,
+      1.0,
+      0.3333333333333333,
+      0.5,
+      0.3333333333333333,
+      0.3333333333333333,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.3333333333333333,
+      0.5,
+      0.25,
+      0.5,
+      0.2,
+      0.3333333333333333
+    ],
+    "precision_at_k": 0.5107,
+    "precision_values": [
+      0.4,
+      0.4,
+      0.4,
+      0.4,
+      0.6,
+      0.8,
+      0.8,
+      0.6,
+      0.0,
+      0.4,
+      0.8,
+      0.6,
+      0.8,
+      0.6,
+      0.4,
+      0.8,
+      0.6,
+      0.6,
+      0.8,
+      0.6,
+      0.4,
+      0.8,
+      0.8,
+      0.0,
+      0.4,
+      0.0,
+      0.0,
+      0.6,
+      0.8,
+      0.6,
+      0.4,
+      0.6,
+      0.8,
+      0.8,
+      0.2,
+      0.6,
+      0.0,
+      0.0,
+      0.6,
+      0.6,
+      0.8,
+      0.6,
+      0.8,
+      0.4,
+      0.6,
+      0.6,
+      0.0,
+      0.8,
+      0.0,
+      1.0,
+      0.6,
+      0.4,
+      0.4,
+      0.4,
+      0.2,
+      0.6
+    ],
+    "negative_hit_rate": {
+      "hits": 10,
+      "total": 10,
+      "rate": 1.0,
+      "out_of_domain_hits": 6,
+      "near_miss_hits": 4
+    },
+    "domain_mismatch_rate": {
+      "mismatched_hits": 69,
+      "total_labeled_hits": 280,
+      "rate": 0.2464
+    },
+    "unsafe_retrieval_rate": {
+      "unsafe": 0,
+      "total_medical_near_miss": 4,
+      "rate": 0.0
+    }
+  },
+  "score_distribution": {
+    "positive": {
+      "mean": 0.8073,
+      "median": 0.7724,
+      "stdev": 0.1344,
+      "min": 0.4121,
+      "max": 1.0,
+      "bandwidth": 0.5879
+    },
+    "negative": {
+      "mean": 0.7224,
+      "median": 0.6338,
+      "stdev": 0.1824,
+      "min": 0.5293,
+      "max": 1.0
+    }
+  },
+  "per_domain_exact_recall": {
+    "nutrition": {
+      "hits": 9,
+      "total": 18,
+      "rate": 0.5
+    },
+    "medical_safety": {
+      "hits": 4,
+      "total": 9,
+      "rate": 0.4444
+    },
+    "injury_safety": {
+      "hits": 5,
+      "total": 13,
+      "rate": 0.3846
+    },
+    "training_protocol": {
+      "hits": 8,
+      "total": 16,
+      "rate": 0.5
+    }
+  },
+  "per_domain_loose_recall": {
+    "nutrition": {
+      "hits": 16,
+      "total": 18,
+      "rate": 0.8889
+    },
+    "medical_safety": {
+      "hits": 7,
+      "total": 9,
+      "rate": 0.7778
+    },
+    "injury_safety": {
+      "hits": 6,
+      "total": 13,
+      "rate": 0.4615
+    },
+    "training_protocol": {
+      "hits": 15,
+      "total": 16,
+      "rate": 0.9375
+    }
+  }
+}

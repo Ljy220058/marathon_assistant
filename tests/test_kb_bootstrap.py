@@ -1,14 +1,11 @@
 from pathlib import Path
 
 from marathon_qa_assistant.core import kb_bootstrap
+from marathon_qa_assistant.core import app_state
 
 
-def test_default_kb_candidate_dirs_prefers_v2_runtime_before_legacy_default():
-    dirs = kb_bootstrap.default_kb_candidate_dirs()
-
-    assert kb_bootstrap.V2_VECTOR_DIR in dirs
-    assert dirs.index(kb_bootstrap.V2_VECTOR_DIR) < dirs.index(kb_bootstrap.RUNTIME_USER_VECTOR_DIR)
-    assert dirs.index(kb_bootstrap.V2_VECTOR_DIR) < dirs.index(kb_bootstrap.DEFAULT_VECTOR_DIR)
+def test_default_kb_candidate_dirs_only_contains_v2_runtime():
+    assert kb_bootstrap.default_kb_candidate_dirs() == [app_state.V2_VECTOR_DIR]
 
 
 def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
@@ -79,7 +76,7 @@ def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
     assert "高强度间歇" in warm_calls[0]
 
 
-def test_bootstrap_knowledge_base_loads_v2_before_runtime_user_legacy(monkeypatch):
+def test_bootstrap_knowledge_base_ignores_runtime_user_and_legacy_candidates(monkeypatch):
     v2_dir = Path("C:/fake/vector_kb/v2")
     runtime_user_dir = Path("C:/fake/runtime/vector_kb_user")
     loaded = []
@@ -124,67 +121,47 @@ def test_bootstrap_knowledge_base_loads_v2_before_runtime_user_legacy(monkeypatc
 
     assert loaded == [v2_dir]
     assert report["source"] == "v2"
+    assert all(item.get("source") != "runtime_user" for item in report["health_reports"])
 
 
-def test_bootstrap_knowledge_base_falls_back_from_user_to_default(monkeypatch):
+def test_bootstrap_knowledge_base_rejects_non_v2_candidates_and_enters_empty_mode(monkeypatch):
     user_dir = Path("C:/fake/vector_kb_user")
     default_dir = Path("C:/fake/vector_kb")
-    loaded = []
     set_calls = []
 
     def fake_probe(path):
-        if path == user_dir:
-            return {
-                "ok": False,
-                "source": "user",
-                "vector_dir": str(path),
-                "reason": "FAISS 索引不可用",
-                "chunks_count": 2,
-                "faiss_ready": False,
-            }
-        return {
-            "ok": True,
-            "source": "default",
-            "vector_dir": str(path),
-            "reason": "",
-            "chunks_count": 3,
-            "faiss_ready": True,
-            "index_schema_version": "chunk_schema_v2",
-            "metadata_completeness": 1.0,
-            "runtime_core_prescription_enabled": True,
-        }
-
-    def fake_load(path):
-        loaded.append(path)
-        return ([{"chunk_id": "c1"}], "vec", object(), "bm25")
+        raise AssertionError(f"non-v2 path should not be probed: {path}")
 
     def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
         set_calls.append({"chunks": list(chunks), "vectorizer": vectorizer, "matrix": matrix, "bm25": bm25})
 
     monkeypatch.setattr(kb_bootstrap, "probe_vector_kb_health", fake_probe)
-    monkeypatch.setattr(kb_bootstrap, "load_vector_kb", fake_load)
+    monkeypatch.setattr(
+        kb_bootstrap,
+        "load_vector_kb",
+        lambda path: (_ for _ in ()).throw(AssertionError(f"non-v2 path should not load: {path}")),
+    )
     monkeypatch.setattr(kb_bootstrap, "set_kb_data", fake_set)
 
     report = kb_bootstrap.bootstrap_knowledge_base([user_dir, default_dir])
 
-    assert report["ok"] is True
-    assert report["source"] == "default"
-    assert loaded == [default_dir]
-    assert set_calls[0]["chunks"] == [{"chunk_id": "c1"}]
-    assert report["health_reports"][0]["source"] == "user"
-    assert report["index_schema_version"] == "chunk_schema_v2"
-    assert report["runtime_core_prescription_enabled"] is True
+    assert report["ok"] is False
+    assert report["mode"] == "empty"
+    assert report["source"] == "empty"
+    assert report["reason"] == ""
+    assert report["health_reports"] == []
+    assert set_calls[0]["chunks"] == []
+    assert set_calls[0]["matrix"] is None
 
 
-def test_bootstrap_knowledge_base_enters_empty_mode_when_all_candidates_fail(monkeypatch):
-    user_dir = Path("C:/fake/vector_kb_user")
-    default_dir = Path("C:/fake/vector_kb")
+def test_bootstrap_knowledge_base_enters_empty_mode_when_v2_candidate_fails(monkeypatch):
+    v2_dir = Path("C:/fake/vector_kb/v2")
     set_calls = []
 
     def fake_probe(path):
         return {
             "ok": False,
-            "source": "user" if path == user_dir else "default",
+            "source": "v2",
             "vector_dir": str(path),
             "reason": "缺少产物",
             "chunks_count": 0,
@@ -198,12 +175,11 @@ def test_bootstrap_knowledge_base_enters_empty_mode_when_all_candidates_fail(mon
     monkeypatch.setattr(kb_bootstrap, "load_vector_kb", lambda path: (_ for _ in ()).throw(AssertionError("should not load unhealthy KB")))
     monkeypatch.setattr(kb_bootstrap, "set_kb_data", fake_set)
 
-    report = kb_bootstrap.bootstrap_knowledge_base([user_dir, default_dir])
+    report = kb_bootstrap.bootstrap_knowledge_base([v2_dir])
 
     assert report["ok"] is False
     assert report["mode"] == "empty"
     assert report["source"] == "empty"
-    assert "user:缺少产物" in report["reason"]
-    assert "default:缺少产物" in report["reason"]
+    assert report["reason"] == "v2:缺少产物"
     assert set_calls[0]["chunks"] == []
     assert set_calls[0]["matrix"] is None

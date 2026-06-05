@@ -8,12 +8,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import httpx
 
 try:
-    from dotenv import load_dotenv
-except ImportError:
-    def load_dotenv(*args, **kwargs):
-        return False
-
-try:
     from langchain_core.messages import HumanMessage
 except ImportError:
     class HumanMessage:
@@ -32,7 +26,10 @@ except ImportError:
 
 from marathon_qa_assistant.core import kb_runtime
 from marathon_qa_assistant.core.app_state import BASE_DIR
+from marathon_qa_assistant.core.kb_bootstrap import get_knowledge_base_health_snapshot
 from marathon_qa_assistant.core.observability import record_llm_provider_error
+from marathon_qa_assistant.core.settings import get_settings
+from marathon_qa_assistant.services.knowledge_graph import graph_runtime_health
 try:
     from marathon_qa_assistant.services.knowledge_graph import graph_engine
 except ImportError:
@@ -64,19 +61,13 @@ except ImportError:
 
 logger = logging.getLogger("workflow_engine")
 
-env_path = BASE_DIR / "graphrag_project" / ".env"
-if os.getenv("PYTHON_DOTENV_DISABLED") != "1":
-    if env_path.exists():
-        load_dotenv(env_path)
-    else:
-        load_dotenv()
-
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
-DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", os.getenv("DS_MODEL", "deepseek-v4-pro"))
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.aisz.mom/v1")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
+_default_settings = get_settings()
+OLLAMA_BASE_URL = _default_settings.ollama_base_url
+OLLAMA_MODEL = _default_settings.ollama_model
+DEEPSEEK_BASE_URL = _default_settings.deepseek_base_url
+DEEPSEEK_MODEL = _default_settings.deepseek_model
+OPENAI_BASE_URL = _default_settings.openai_base_url
+OPENAI_MODEL = _default_settings.openai_model
 
 llm = (
     ChatOllama(
@@ -230,24 +221,20 @@ def _extract_llm_settings(config: Optional[RunnableConfig]) -> Dict[str, Any]:
         if isinstance(raw, dict):
             configurable = raw
 
-    provider = str(configurable.get("llm_provider") or os.getenv("LLM_PROVIDER", "ollama")).strip().lower()
+    app_settings = get_settings()
+    provider = str(configurable.get("llm_provider") or app_settings.llm_provider).strip().lower()
     model = str(configurable.get("llm_model") or "").strip()
     if not model:
-        if provider in {"ds", "deepseek"}:
-            model = DEEPSEEK_MODEL
-        elif provider in {"openai", "gpt"}:
-            model = OPENAI_MODEL
-        else:
-            model = OLLAMA_MODEL
+        model = app_settings.model_for_provider(provider)
     return {
         "provider": provider,
         "model": model,
-        "ds_api_key": str(configurable.get("ds_api_key") or os.getenv("DEEPSEEK_API_KEY") or os.getenv("DS_API_KEY") or "").strip(),
-        "openai_api_key": str(configurable.get("openai_api_key") or os.getenv("OPENAI_API_KEY") or "").strip(),
-        "openai_base_url": str(configurable.get("openai_base_url") or OPENAI_BASE_URL).strip(),
-        "deepseek_base_url": str(configurable.get("deepseek_base_url") or DEEPSEEK_BASE_URL).strip(),
-        "ollama_base_url": str(configurable.get("ollama_base_url") or OLLAMA_BASE_URL).strip(),
-        "timeout_sec": float(configurable.get("llm_timeout_sec") or os.getenv("LLM_TIMEOUT_SEC", "60")),
+        "ds_api_key": str(configurable.get("ds_api_key") or app_settings.deepseek_api_key).strip(),
+        "openai_api_key": str(configurable.get("openai_api_key") or app_settings.openai_api_key).strip(),
+        "openai_base_url": str(configurable.get("openai_base_url") or app_settings.openai_base_url).strip(),
+        "deepseek_base_url": str(configurable.get("deepseek_base_url") or app_settings.deepseek_base_url).strip(),
+        "ollama_base_url": str(configurable.get("ollama_base_url") or app_settings.ollama_base_url).strip(),
+        "timeout_sec": float(configurable.get("llm_timeout_sec") or app_settings.llm_timeout_sec),
     }
 
 
@@ -701,9 +688,19 @@ def build_mermaid_from_result(result: Dict[str, Any]) -> str:
     return "flowchart TD\n  Empty[No direct graph path found]"
 
 
+def graph_fusion_runtime_enabled() -> bool:
+    try:
+        health = graph_runtime_health(get_knowledge_base_health_snapshot(), graph_engine)
+    except Exception:
+        return False
+    return bool(health.get("graph_fusion_enabled"))
+
+
 def get_graph_context(entities: List[str]) -> Tuple[str, str]:
     if not entities:
         return "", "flowchart TD\n  Empty[No entities]"
+    if not graph_fusion_runtime_enabled():
+        return "", "flowchart TD\n  Empty[Graph fusion disabled]"
 
     try:
         result = graph_engine.search_graph(entities, max_hops=2)
@@ -735,7 +732,7 @@ def format_evidence_lines(rag_sources: List[Dict[str, Any]], limit: int = 3) -> 
     return "\n".join(lines)
 
 
-def format_state_evidence_lines(state: Dict[str, Any], limit: int = 3) -> str:
+def format_state_evidence_lines(state: Dict[str, Any], limit: Optional[int] = None) -> str:
     bundle = state.get("evidence_bundle") if isinstance(state, dict) else {}
     if isinstance(bundle, dict) and bundle.get("evidence_items"):
         from marathon_qa_assistant.core.evidence_bundle import format_evidence_bundle_lines

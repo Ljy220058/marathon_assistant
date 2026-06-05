@@ -1,0 +1,64 @@
+<h2>方案 A 细化：答案优先 · 按主题折叠引用</h2>
+<p class="subtitle">这是选定方向的页面结构稿：保持输入区干净，回答优先，证据按主题折叠；证据不足时在答案顶部明显提示。</p>
+
+<div class="mockup">
+  <div class="mockup-header">依据页升级为「知识库问答 + 引用依据」</div>
+  <div class="mockup-body" style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;background:#f6f8fb;">
+    <aside style="border:1px solid #dbe3ef;border-radius:18px;background:#fff;padding:14px;display:grid;gap:10px;align-content:start;">
+      <div style="font-size:12px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;">训练导航</div>
+      <div style="padding:10px;border-radius:12px;background:#eef6ff;color:#0f172a;font-weight:700;">依据</div>
+      <div style="padding:10px;border-radius:12px;color:#64748b;">今日训练</div>
+      <div style="padding:10px;border-radius:12px;color:#64748b;">训练日历</div>
+      <div style="padding:10px;border-radius:12px;color:#64748b;">我的情况</div>
+    </aside>
+
+    <main style="display:grid;gap:14px;">
+      <section style="border:1px solid #dbe3ef;border-radius:22px;background:#fff;padding:18px;display:grid;gap:14px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:start;">
+          <div>
+            <div style="font-size:12px;color:#64748b;letter-spacing:.08em;text-transform:uppercase;">智能文档</div>
+            <h3 style="margin:4px 0 0;">问知识库，查训练依据</h3>
+          </div>
+          <span style="font-size:12px;color:#0f766e;background:#ccfbf1;border-radius:999px;padding:6px 10px;">知识库已连接</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="mock-input" style="flex:1;" placeholder="输入你的问题，例如：膝盖疼还能继续跑吗？" />
+          <button class="mock-button">发送</button>
+        </div>
+      </section>
+
+      <section style="border:1px solid #dbe3ef;border-radius:22px;background:#fff;padding:18px;display:grid;gap:14px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+          <strong>AI 回答</strong>
+          <span style="font-size:12px;color:#64748b;">基于 4 组依据生成</span>
+        </div>
+        <div style="border-left:4px solid #f59e0b;background:#fffbeb;border-radius:12px;padding:10px 12px;color:#92400e;font-size:13px;">
+          证据覆盖不足：当前知识库缺少你的疼痛持续时间和疼痛等级，建议补充后再判断是否继续训练。
+        </div>
+        <p style="margin:0;line-height:1.65;color:#111827;">如果是轻微不适，可以优先降低强度并观察；如果疼痛持续、加重或影响步态，应停止跑步并寻求专业评估。下面依据按主题折叠，便于核对来源。</p>
+      </section>
+
+      <section style="border:1px solid #dbe3ef;border-radius:22px;background:#fff;padding:18px;display:grid;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>引用依据</strong>
+          <button class="mock-button" style="background:#f8fafc;color:#111827;border:1px solid #dbe3ef;">全部展开</button>
+        </div>
+        <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#f8fafc;display:flex;justify-content:space-between;"><span>伤病风险依据 · 2 条</span><span>▾</span></div>
+        <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#f8fafc;display:flex;justify-content:space-between;"><span>训练强度调整 · 3 条</span><span>▾</span></div>
+        <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#f8fafc;display:flex;justify-content:space-between;"><span>恢复与营养建议 · 1 条</span><span>▾</span></div>
+        <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#f8fafc;display:flex;justify-content:space-between;"><span>官方/论文来源 · 4 条</span><span>▾</span></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="section">
+  <h3>设计原则映射</h3>
+  <ul>
+    <li><strong>NN/g Dashboard Design：</strong>核心任务前置，状态摘要清晰，避免把引用列表变成噪声。</li>
+    <li><strong>Microsoft / Google Human-AI：</strong>明确 AI 能力边界，证据不足时主动提示。</li>
+    <li><strong>WCAG 2.2：</strong>信息不只依赖颜色；提示、折叠按钮和状态文本均可读。</li>
+    <li><strong>Carbon / TDesign / Material 3：</strong>卡片分区、层级清晰、状态标签明确、移动端可纵向堆叠。</li>
+    <li><strong>Linear Method：</strong>单一主路径：提问 → 答案 → 展开依据 → 继续追问。</li>
+  </ul>
+</div>

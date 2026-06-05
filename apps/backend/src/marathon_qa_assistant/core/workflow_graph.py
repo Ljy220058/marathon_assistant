@@ -29,6 +29,9 @@ class FallbackIntegratedApp:
     def __init__(self, node_handlers):
         self.node_handlers = node_handlers
 
+    def _route_after_executor(self, state: Dict[str, Any]) -> str:
+        return after_executor_route(state)
+
     async def _run_node(self, name: str, state: Dict[str, Any], config=None) -> Dict[str, Any]:
         handler = self.node_handlers[name]
         # P0-1 diagnostics: trace node entry
@@ -75,7 +78,7 @@ class FallbackIntegratedApp:
         if current == "planner":
             return after_planner_route(state)
         if current == "executor":
-            return "critic_auditor"
+            return self._route_after_executor(state)
         if current == "coach":
             return "therapist"
         if current == "adaptive_coach":
@@ -99,7 +102,13 @@ class FallbackIntegratedApp:
     async def astream(self, input_state: Dict[str, Any], config=None):
         state = input_state  # P0-1 fix: use same reference so ainvoke sees mutations
         current = "security_gate"
+        visited_steps = 0
+        max_steps = 50
         while current != END:
+            visited_steps += 1
+            if visited_steps > max_steps:
+                logger.error("[trace] workflow exceeded max_steps=%s at node=%s", max_steps, current)
+                raise RuntimeError(f"workflow exceeded max_steps={max_steps}")
             output = await self._run_node(current, state, config=config)
             yield {current: output}
             next_node = self._next_node(current, state)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from marathon_qa_assistant.core.training_plan_context import coerce_float_from_unit_text
 
@@ -14,6 +14,8 @@ def build_half_marathon_capacity_budget(
     recent_marathon: bool = False,
     fatigue_or_injury: bool = False,
     speed_calibration_available: bool = True,
+    phase_family: str = "general",          # _phase_family() 返回值
+    total_training_sessions: Optional[int] = None,  # 一周训练总课次, 默认=available_days_count
 ) -> Dict[str, Any]:
     """按当前画像把 Sub-70 理想课表容量缩放为可执行预算。"""
     planned_volume = _safe_float(weekly_volume_km) or 40.0
@@ -28,9 +30,22 @@ def build_half_marathon_capacity_budget(
     constrained_days = days > 0 and days < 4
     recovery_risk = bool(recent_marathon or fatigue_or_injury)
 
-    quality_sessions_max = 2
+    # 强度课约束: 文献约束范围取上限作为 quality_sessions_max
+    # (Seiler 2010 B 级 + Pfitzinger/Daniels A 级 + Gabbett 2016 B 级)
+    total_sessions = int(total_training_sessions or days or 3)
+    intensity_lower, intensity_upper = _compute_intensity_bounds(
+        total_sessions=total_sessions,
+        phase_family=phase_family,
+        profile={
+            "injury_or_fatigue": fatigue_or_injury,
+            "recent_marathon": recent_marathon,
+        },
+    )
+    quality_sessions_max = intensity_upper
+
+    # 原有的降级条件作为附加安全阀: 触发时强制上限为 1
     if low_volume or constrained_days or recovery_risk or phase_id == "introductory":
-        quality_sessions_max = 1
+        quality_sessions_max = min(quality_sessions_max, 1)
 
     multiplier = 1.0
     if low_volume:
@@ -111,6 +126,73 @@ def _round_km(value: float) -> float:
 
 def _safe_float(value: Any) -> Optional[float]:
     return coerce_float_from_unit_text(value)
+
+
+# ── 训练频次→强度课约束范围（Seiler 2010 + Pfitzinger + Gabbett 2016）──
+
+def _frequency_bounds(total_sessions: int) -> Tuple[int, int]:
+    """训练总课次 → 强度课范围 (lower, upper)。
+
+    来源标注：
+    - 上限: Seiler 2010 (20% sessions), Stoggl 2014 POL 验证 (B 级)
+    - 下限: Pfitzinger Advanced Marathoning, Daniels Running Formula (A 级)
+    - 6-7 练区间: 组合外推, 非直接实验证据
+    """
+    if total_sessions <= 0:
+        raise ValueError(f"total_sessions 必须为正整数, 收到 {total_sessions}")
+    # ≤3 和 ≤5 分两支以保留文献来源标注的差异
+    #   (1,3): 三练中一练是长距离，天然占去强度负荷
+    #   (4,5): 五一训练者的经典结构，Seiler 20%×5=1.0
+    if total_sessions <= 3:
+        return 1, 1
+    elif total_sessions <= 5:
+        return 1, 1
+    elif total_sessions <= 7:
+        return 1, 2
+    elif total_sessions <= 10:
+        return 1, 2
+    else:
+        return 2, 3
+
+
+def _compute_intensity_bounds(
+    total_sessions: int,
+    phase_family: str,
+    profile: Optional[Dict[str, Any]] = None,
+) -> Tuple[int, int]:
+    """根据训练频次、阶段、画像返回强度课范围 (lower, upper)。
+
+    Args:
+        total_sessions: 一周训练总课次 (当前 = len(available_days))
+        phase_family: _phase_family() 返回值 (base_1/base_2/build/peak/taper/intro)
+        profile: 跑者画像, 可选。用于伤病/中断修正。
+
+    Returns:
+        (lower, upper) — 强度课数量约束范围, 两端均为闭区间。
+        代码层安全边界: 1 ≤ lower ≤ 3, 1 ≤ upper ≤ 3。
+    """
+    profile = profile or {}
+
+    # 1. 文献约束表 → 基础范围
+    lower, upper = _frequency_bounds(total_sessions)
+
+    # 2. 阶段修正 (来源: Bompa 周期化理论 + Pfitzinger 阶段模板)
+    if phase_family in ("base_1", "base_2", "intro"):
+        upper = lower  # 基础期: 只用下限
+    elif phase_family == "build":
+        upper = max(lower, upper - 1)  # 建设期: 取中间值
+    elif phase_family == "peak":
+        lower = upper  # 比赛专项期: 用上限
+    elif phase_family == "taper":
+        return 1, 1  # 减量期: 强制 1 节
+
+    # 3. 画像修正: 伤病/近全马 → 强制 1 节
+    #    (来源: Gabbett 2016 ACWR + 教练实践 A/B 级)
+    if profile.get("injury_or_fatigue") or profile.get("recent_marathon"):
+        return 1, 1
+
+    # 4. 安全裁剪
+    return max(1, lower), min(3, upper)
 
 
 __all__ = ["build_half_marathon_capacity_budget"]

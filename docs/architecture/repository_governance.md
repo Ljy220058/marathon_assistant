@@ -35,8 +35,31 @@
 | 后端 API | `pytest tests/test_api_app.py tests/test_api_cli_startup_contract.py -q` | API 契约和启动入口不变 |
 | 训练计划骨架 | `pytest tests/test_training_plan_skeleton.py tests/test_volume_allocation.py -q` | 结构化计划和跑量约束不回归 |
 | 日程生成 | `pytest tests/test_daily_schedule_generator.py -q` | 月历、证据、风险门输出稳定 |
-| 前端 | `cd apps/web; npm run build; npm run smoke:workspace` | Astro build 和 workspace smoke 通过 |
+| 前端 | `cd apps/web; npm run lint; npm run build; npm run check; npm run smoke; npm run test` | lint、构建、类型检查、workspace smoke 和脚本测试全部通过 |
 | 研究 / 数据 | `python tools/dev/check_repo.py --scope hygiene` + 项目 smoke | manifest、路径和大文件状态可审计 |
+
+## 后端依赖入口
+
+- `apps/backend/requirements-runtime.txt`
+  - 当前后端运行时入口；默认安装 `pyproject.toml` 中的 runtime 依赖和 `ocr` extra。
+- `apps/backend/requirements-dev.txt`
+  - 本地开发、pytest、coverage、RAG 评测入口；在 runtime 基础上追加 `dev` 和 `eval` extras。
+- `apps/backend/constraints.txt`
+  - 约束 OpenAI / LangChain / LangGraph / RAGAS 等高变动依赖，避免 CI、Docker 和本地环境漂移。
+- `apps/backend/requirements.txt`
+  - 兼容旧脚本，当前仅转发到 `requirements-dev.txt`；新文档和 CI 不应再直接把它当作唯一权威入口。
+
+## Coverage Gate
+
+- Coverage gate 现在以根目录 `pytest.ini` 为单一来源。
+- 当前统一阈值：`--cov-fail-under=70`。
+- CI 不再单独覆盖该阈值，避免本地与 CI 口径漂移。
+
+## 运行边界提醒
+
+- 当前 SQLite persistence 仍是本地 MVP / 开发者预览边界，不应对外描述成多实例生产数据库。
+- 当前 `/ops/metrics` 与进程内限流都属于开发/测试兜底能力，不应对外描述成正式生产观测或生产限流方案。
+- 当前前端测试入口已经具备 `lint / build / check / smoke / test`，但测试深度仍以契约与轻量 smoke 为主，不等于完整端到端 UI 自动化体系。
 
 ## PR 管理
 

@@ -1,11 +1,12 @@
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from cryptography.fernet import Fernet
+
+from marathon_qa_assistant.core.settings import get_settings
 
 try:
     from google.auth.transport.requests import Request
@@ -43,7 +44,7 @@ WORKOUT_COLOR_MAP = {
 
 
 def _get_encryption_key() -> Optional[bytes]:
-    key = os.getenv("MARATHON_SYNC_KEY", "")
+    key = get_settings().sync_key
     if key:
         return key.encode()
     return None

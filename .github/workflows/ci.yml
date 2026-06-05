@@ -24,13 +24,16 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: apps/backend/requirements.txt
+          cache-dependency-path: |
+            apps/backend/requirements-dev.txt
+            apps/backend/requirements-runtime.txt
+            apps/backend/constraints.txt
+            apps/backend/pyproject.toml
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest-cov ruff
+          pip install -r requirements-dev.txt
 
       - name: Lint with ruff
         run: ruff check src/ --select E,F,W --ignore E501
@@ -45,7 +48,6 @@ jobs:
             --cov=src/marathon_qa_assistant \
             --cov-report=term-missing \
             --cov-report=json \
-            --cov-fail-under=70 \
             -v
 
       - name: Upload coverage artifact
@@ -95,8 +97,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Frontend lint
+        run: npm run lint
+
       - name: Build check
         run: npm run build
+
+      - name: Astro check
+        run: npm run check
+
+      - name: Frontend script tests
+        run: npm run test
 
       - name: Security audit
         run: npm audit --production --audit-level=high

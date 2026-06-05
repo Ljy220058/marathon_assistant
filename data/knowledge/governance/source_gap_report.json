@@ -1,1256 +1,572 @@
 {
   "candidate_blocker_groups": {
-    "download_not_verified": [
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
-      }
-    ],
-    "license_not_checked": [
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
-      }
-    ],
     "local_file_missing": [
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_injury_continuum_2023",
-        "title": "The Running Injury Continuum: A qualitative examination of recreational runners' description and management of injury"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "nutrition_hydration_race_fueling",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_nutrition_acsm_position_2016",
-        "title": "Position of the Academy of Nutrition and Dietetics, Dietitians of Canada, and ACSM: Nutrition and Athletic Performance"
-      }
-    ],
-    "missing_locatable_source": [
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
+        "domain_pack": "training_protocols",
+        "evidence_domain": "protocol",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
+        "source_registry_id": "src_external_acsm_fitt_vp",
+        "title": "ACSM Exercise Testing and Prescription FITT-VP"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "load_injury_safety",
+        "domain_pack": "training_load",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
+        "source_registry_id": "src_external_ioc_load_injury_2016",
+        "title": "IOC consensus statement on load in sport and risk of injury"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_runna_personalized_plans",
+        "title": "Runna Personalized Running Plans"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_trainingpeaks_structured_workout",
+        "title": "TrainingPeaks Structured Workout Builder"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "ai_rag_evidence_explanation",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_who_ai_health_ethics",
+        "title": "WHO Ethics and Governance of AI for Health"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "seed_only_not_runtime_source"
+        ],
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
+        "prescription_permission": "can_write_core",
+        "review_status": "seed_only",
+        "source_registry_id": "src_internal_action_cross_training_base_advanced_1",
+        "title": "Cross Training base advanced v1"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "seed_only_not_runtime_source"
+        ],
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
+        "prescription_permission": "can_write_core",
+        "review_status": "seed_only",
+        "source_registry_id": "src_internal_action_cross_training_base_advanced_2",
+        "title": "Cross Training base advanced v2"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "seed_only_not_runtime_source"
+        ],
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
+        "prescription_permission": "can_write_core",
+        "review_status": "seed_only",
+        "source_registry_id": "src_internal_action_cross_training_base_beginner_1",
+        "title": "Cross Training base beginner v1"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "seed_only_not_runtime_source"
+        ],
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
+        "prescription_permission": "can_write_core",
+        "review_status": "seed_only",
+        "source_registry_id": "src_internal_action_cross_training_base_beginner_2",
+        "title": "Cross Training base beginner v2"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "seed_only_not_runtime_source"
+        ],
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
+        "prescription_permission": "can_write_core",
+        "review_status": "seed_only",
+        "source_registry_id": "src_internal_action_cross_training_base_intermediate_1",
+        "title": "Cross Training base intermediate v1"
       }
     ],
     "needs_review": [
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
+        "source_registry_id": "src_ai_factscore_2023",
+        "title": "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
+        "source_registry_id": "src_ai_generate_citations_2023",
+        "title": "Enabling Large Language Models to Generate Text with Citations"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
+        "source_registry_id": "src_ai_healthcare_rag_review_2025",
+        "title": "Retrieval augmented generation for large language models in healthcare: A systematic review"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
+        "source_registry_id": "src_ai_rag_foundation_2020",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
+          "needs_review",
+          "not_approved",
+          "pdf_text_quality_not_verified",
+          "url_reachability_not_verified"
+        ],
+        "domain_pack": "ai_rag_evidence_explanation",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_ai_rag_survey_2023",
+        "title": "Retrieval-Augmented Generation for Large Language Models: A Survey"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "pdf_text_quality_not_verified",
+          "url_reachability_not_verified"
+        ],
+        "domain_pack": "ai_rag_evidence_explanation",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_ai_ragas_2023",
+        "title": "Ragas: Automated Evaluation of Retrieval Augmented Generation"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
+        "domain_pack": "training_protocols",
+        "evidence_domain": "protocol",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
+        "source_registry_id": "src_external_acsm_fitt_vp",
+        "title": "ACSM Exercise Testing and Prescription FITT-VP"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "load_injury_safety",
+        "domain_pack": "training_load",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
+        "source_registry_id": "src_external_ioc_load_injury_2016",
+        "title": "IOC consensus statement on load in sport and risk of injury"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_runna_personalized_plans",
+        "title": "Runna Personalized Running Plans"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_trainingpeaks_structured_workout",
+        "title": "TrainingPeaks Structured Workout Builder"
       }
     ],
     "not_approved": [
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
+        "source_registry_id": "src_ai_factscore_2023",
+        "title": "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
+        "source_registry_id": "src_ai_generate_citations_2023",
+        "title": "Enabling Large Language Models to Generate Text with Citations"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
+        "source_registry_id": "src_ai_healthcare_rag_review_2025",
+        "title": "Retrieval augmented generation for large language models in healthcare: A systematic review"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
+        "source_registry_id": "src_ai_rag_foundation_2020",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
+          "needs_review",
+          "not_approved",
+          "pdf_text_quality_not_verified",
+          "url_reachability_not_verified"
+        ],
+        "domain_pack": "ai_rag_evidence_explanation",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_ai_rag_survey_2023",
+        "title": "Retrieval-Augmented Generation for Large Language Models: A Survey"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "pdf_text_quality_not_verified",
+          "url_reachability_not_verified"
+        ],
+        "domain_pack": "ai_rag_evidence_explanation",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_ai_ragas_2023",
+        "title": "Ragas: Automated Evaluation of Retrieval Augmented Generation"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
+        "domain_pack": "training_protocols",
+        "evidence_domain": "protocol",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
+        "source_registry_id": "src_external_acsm_fitt_vp",
+        "title": "ACSM Exercise Testing and Prescription FITT-VP"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "load_injury_safety",
+        "domain_pack": "training_load",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
+        "source_registry_id": "src_external_ioc_load_injury_2016",
+        "title": "IOC consensus statement on load in sport and risk of injury"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_runna_personalized_plans",
+        "title": "Runna Personalized Running Plans"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_trainingpeaks_structured_workout",
+        "title": "TrainingPeaks Structured Workout Builder"
       }
     ],
     "pdf_text_quality_not_verified": [
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
+        "source_registry_id": "src_ai_factscore_2023",
+        "title": "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
+        "source_registry_id": "src_ai_generate_citations_2023",
+        "title": "Enabling Large Language Models to Generate Text with Citations"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
+        "source_registry_id": "src_ai_healthcare_rag_review_2025",
+        "title": "Retrieval augmented generation for large language models in healthcare: A systematic review"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
+        "source_registry_id": "src_ai_rag_foundation_2020",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
+        "source_registry_id": "src_ai_rag_survey_2023",
+        "title": "Retrieval-Augmented Generation for Large Language Models: A Survey"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
+        "source_registry_id": "src_ai_ragas_2023",
+        "title": "Ragas: Automated Evaluation of Retrieval Augmented Generation"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "load_injury_safety",
+        "domain_pack": "hci_health_recommender_systems",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
+        "source_registry_id": "src_hci_cognitive_forcing_2021",
+        "title": "To Trust or to Think: Cognitive Forcing Functions Can Reduce Overreliance on AI in AI-assisted Decision-making"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "load_injury_safety",
+        "domain_pack": "hci_health_recommender_systems",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
+        "source_registry_id": "src_hci_human_ai_guidelines_2019",
+        "title": "Guidelines for Human-AI Interaction"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
+          "pdf_text_quality_not_verified"
         ],
-        "domain_pack": "load_injury_safety",
+        "domain_pack": "training_load",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_safety_injury_continuum_2023",
-        "title": "The Running Injury Continuum: A qualitative examination of recreational runners' description and management of injury"
+        "source_registry_id": "src_local_norway_method_book_2026",
+        "title": "The Norway Method / 挪威训练法的应用"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
@@ -1272,12 +588,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_beginner_build",
-        "title": "protocol_5K_beginner_build"
+        "source_registry_id": "src_internal_action_cross_training_base_advanced_1",
+        "title": "Cross Training base advanced v1"
       },
       {
         "blocking_reasons": [
@@ -1286,12 +602,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_beginner_specific",
-        "title": "protocol_5K_beginner_specific"
+        "source_registry_id": "src_internal_action_cross_training_base_advanced_2",
+        "title": "Cross Training base advanced v2"
       },
       {
         "blocking_reasons": [
@@ -1300,12 +616,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_intermediate_base",
-        "title": "protocol_5K_intermediate_base"
+        "source_registry_id": "src_internal_action_cross_training_base_beginner_1",
+        "title": "Cross Training base beginner v1"
       },
       {
         "blocking_reasons": [
@@ -1314,12 +630,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_intermediate_build",
-        "title": "protocol_5K_intermediate_build"
+        "source_registry_id": "src_internal_action_cross_training_base_beginner_2",
+        "title": "Cross Training base beginner v2"
       },
       {
         "blocking_reasons": [
@@ -1328,12 +644,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_intermediate_specific",
-        "title": "protocol_5K_intermediate_specific"
+        "source_registry_id": "src_internal_action_cross_training_base_intermediate_1",
+        "title": "Cross Training base intermediate v1"
       },
       {
         "blocking_reasons": [
@@ -1342,12 +658,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_advanced_base",
-        "title": "protocol_5K_advanced_base"
+        "source_registry_id": "src_internal_action_cross_training_base_intermediate_2",
+        "title": "Cross Training base intermediate v2"
       },
       {
         "blocking_reasons": [
@@ -1356,12 +672,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_advanced_build",
-        "title": "protocol_5K_advanced_build"
+        "source_registry_id": "src_internal_action_cross_training_build_advanced_1",
+        "title": "Cross Training build advanced v1"
       },
       {
         "blocking_reasons": [
@@ -1370,12 +686,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_5K_advanced_specific",
-        "title": "protocol_5K_advanced_specific"
+        "source_registry_id": "src_internal_action_cross_training_build_advanced_2",
+        "title": "Cross Training build advanced v2"
       },
       {
         "blocking_reasons": [
@@ -1384,12 +700,12 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_10K_beginner_build",
-        "title": "protocol_10K_beginner_build"
+        "source_registry_id": "src_internal_action_cross_training_build_beginner_1",
+        "title": "Cross Training build beginner v1"
       },
       {
         "blocking_reasons": [
@@ -1398,252 +714,102 @@
           "not_approved",
           "seed_only_not_runtime_source"
         ],
-        "domain_pack": "training_protocols",
-        "evidence_domain": "protocol",
+        "domain_pack": "action_library",
+        "evidence_domain": "action_library",
         "prescription_permission": "can_write_core",
         "review_status": "seed_only",
-        "source_registry_id": "src_internal_protocol_10K_beginner_specific",
-        "title": "protocol_10K_beginner_specific"
+        "source_registry_id": "src_internal_action_cross_training_build_beginner_2",
+        "title": "Cross Training build beginner v2"
       }
     ],
     "url_reachability_not_verified": [
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_marathon_physiology_2025",
-        "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review"
+        "source_registry_id": "src_ai_factscore_2023",
+        "title": "FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_tid_theory_2025",
-        "title": "Recent advances in training intensity distribution theory for cyclic endurance sports"
+        "source_registry_id": "src_ai_generate_citations_2023",
+        "title": "Enabling Large Language Models to Generate Text with Citations"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_low_intensity_2025",
-        "title": "Why low-intensity endurance training for athletes?"
+        "source_registry_id": "src_ai_healthcare_rag_review_2025",
+        "title": "Retrieval augmented generation for large language models in healthcare: A systematic review"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_world_class_middle_distance_2021",
-        "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners"
+        "source_registry_id": "src_ai_rag_foundation_2020",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_tapering_meta_2023",
-        "title": "Effects of tapering on performance in endurance athletes: A systematic review and meta-analysis"
+        "source_registry_id": "src_ai_rag_survey_2023",
+        "title": "Retrieval-Augmented Generation for Large Language Models: A Survey"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "pdf_text_quality_not_verified",
           "url_reachability_not_verified"
         ],
-        "domain_pack": "endurance_training_protocols",
+        "domain_pack": "ai_rag_evidence_explanation",
         "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_train_app_data_marathon_2021",
-        "title": "Retrospective Analysis of Training and Its Response in Marathon Finishers Based on Fitness App Data"
+        "source_registry_id": "src_ai_ragas_2023",
+        "title": "Ragas: Automated Evaluation of Retrieval Augmented Generation"
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_injuries_state_art_2021",
-        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "pdf_text_quality_not_verified",
-          "url_reachability_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_running_msk_injuries_2012",
-        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
-      }
-    ],
-    "web_canonical_not_verified": [
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "endurance_training_protocols",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_train_recreational_endurance_2020",
-        "title": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "load_injury_safety",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_safety_ioc_load_injury_2016",
-        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "nutrition_hydration_race_fueling",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_nutrition_carb_during_exercise_2014",
-        "title": "A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
@@ -1658,28 +824,7 @@
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
-          "needs_review",
-          "not_approved",
-          "url_reachability_not_verified",
-          "web_canonical_not_verified"
-        ],
-        "domain_pack": "ai_rag_evidence_explanation",
-        "evidence_domain": "sports_science_reference",
-        "prescription_permission": "explanation_only",
-        "review_status": "candidate",
-        "source_registry_id": "src_external_who_ai_health_ethics",
-        "title": "WHO Ethics and Governance of AI for Health"
-      },
-      {
-        "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
-          "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
@@ -1694,10 +839,84 @@
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_runna_personalized_plans",
+        "title": "Runna Personalized Running Plans"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_trainingpeaks_structured_workout",
+        "title": "TrainingPeaks Structured Workout Builder"
+      }
+    ],
+    "web_canonical_not_verified": [
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "training_protocols",
+        "evidence_domain": "protocol",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_acsm_fitt_vp",
+        "title": "ACSM Exercise Testing and Prescription FITT-VP"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "training_load",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_ioc_load_injury_2016",
+        "title": "IOC consensus statement on load in sport and risk of injury"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "competitor_product_tasks",
+        "evidence_domain": "competitor_product_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_external_runna_personalized_plans",
+        "title": "Runna Personalized Running Plans"
+      },
+      {
+        "blocking_reasons": [
+          "local_file_missing",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
@@ -1712,21 +931,88 @@
       },
       {
         "blocking_reasons": [
-          "download_not_verified",
-          "license_not_checked",
           "local_file_missing",
-          "missing_locatable_source",
           "needs_review",
           "not_approved",
           "url_reachability_not_verified",
           "web_canonical_not_verified"
         ],
-        "domain_pack": "competitor_product_tasks",
-        "evidence_domain": "competitor_product_reference",
+        "domain_pack": "ai_rag_evidence_explanation",
+        "evidence_domain": "sports_science_reference",
         "prescription_permission": "explanation_only",
         "review_status": "candidate",
-        "source_registry_id": "src_external_runna_personalized_plans",
-        "title": "Runna Personalized Running Plans"
+        "source_registry_id": "src_external_who_ai_health_ethics",
+        "title": "WHO Ethics and Governance of AI for Health"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "hci_health_recommender_systems",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "reviewed",
+        "source_registry_id": "src_hci_ai_physical_activity_2024",
+        "title": "A scoping review of methodologies for applying artificial intelligence to physical activity interventions"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "medical_risk",
+        "evidence_domain": "medical_safety",
+        "prescription_permission": "explanation_only",
+        "review_status": "reviewed",
+        "source_registry_id": "src_pmc_running_overuse_risk_factors_2020",
+        "title": "Risk factors for overuse injuries in short- and long-distance running: A systematic review"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "load_injury_safety",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_safety_ioc_load_injury_2016",
+        "title": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "load_injury_safety",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "reviewed",
+        "source_registry_id": "src_safety_running_injuries_state_art_2021",
+        "title": "The Prevention and Treatment of Running Injuries: A State of the Art"
+      },
+      {
+        "blocking_reasons": [
+          "needs_review",
+          "not_approved",
+          "url_reachability_not_verified",
+          "web_canonical_not_verified"
+        ],
+        "domain_pack": "load_injury_safety",
+        "evidence_domain": "sports_science_reference",
+        "prescription_permission": "explanation_only",
+        "review_status": "candidate",
+        "source_registry_id": "src_safety_running_msk_injuries_2012",
+        "title": "What are the Main Running-Related Musculoskeletal Injuries? A Systematic Review"
       }
     ]
   },
@@ -1844,11 +1130,11 @@
   ],
   "domain_pack_readiness": {
     "action_library": {
-      "approved_records": 5,
+      "approved_records": 1,
       "candidate_records": 0,
-      "ready_core_records": 5,
-      "runtime_ready_records": 5,
-      "seed_records": 176,
+      "ready_core_records": 1,
+      "runtime_ready_records": 1,
+      "seed_records": 180,
       "total_records": 181
     },
     "ai_rag_evidence_explanation": {
@@ -1863,13 +1149,13 @@
       "approved_records": 4,
       "candidate_records": 2,
       "ready_core_records": 0,
-      "runtime_ready_records": 4,
+      "runtime_ready_records": 0,
       "seed_records": 40,
       "total_records": 46
     },
     "endurance_training_protocols": {
-      "approved_records": 0,
-      "candidate_records": 7,
+      "approved_records": 4,
+      "candidate_records": 3,
       "ready_core_records": 0,
       "runtime_ready_records": 0,
       "seed_records": 0,
@@ -1879,13 +1165,13 @@
       "approved_records": 3,
       "candidate_records": 0,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 36,
       "total_records": 39
     },
     "hci_health_recommender_systems": {
-      "approved_records": 0,
-      "candidate_records": 6,
+      "approved_records": 3,
+      "candidate_records": 2,
       "ready_core_records": 0,
       "runtime_ready_records": 0,
       "seed_records": 0,
@@ -1893,7 +1179,7 @@
     },
     "load_injury_safety": {
       "approved_records": 0,
-      "candidate_records": 4,
+      "candidate_records": 3,
       "ready_core_records": 0,
       "runtime_ready_records": 0,
       "seed_records": 0,
@@ -1903,21 +1189,21 @@
       "approved_records": 3,
       "candidate_records": 0,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 42,
-      "total_records": 45
+      "total_records": 46
     },
     "mobility_recovery": {
       "approved_records": 3,
       "candidate_records": 0,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 48,
       "total_records": 51
     },
     "nutrition_hydration_race_fueling": {
-      "approved_records": 0,
-      "candidate_records": 4,
+      "approved_records": 1,
+      "candidate_records": 3,
       "ready_core_records": 0,
       "runtime_ready_records": 0,
       "seed_records": 0,
@@ -1927,40 +1213,40 @@
       "approved_records": 3,
       "candidate_records": 0,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 48,
       "total_records": 51
     },
     "rehab_return_to_run": {
-      "approved_records": 3,
+      "approved_records": 4,
       "candidate_records": 0,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 42,
-      "total_records": 45
+      "total_records": 46
     },
     "strength_conditioning": {
-      "approved_records": 3,
+      "approved_records": 4,
       "candidate_records": 0,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 72,
-      "total_records": 75
+      "total_records": 76
     },
     "training_load": {
       "approved_records": 3,
-      "candidate_records": 1,
+      "candidate_records": 2,
       "ready_core_records": 0,
-      "runtime_ready_records": 3,
+      "runtime_ready_records": 0,
       "seed_records": 36,
-      "total_records": 40
+      "total_records": 41
     },
     "training_protocols": {
-      "approved_records": 5,
+      "approved_records": 1,
       "candidate_records": 1,
-      "ready_core_records": 5,
-      "runtime_ready_records": 5,
-      "seed_records": 59,
+      "ready_core_records": 1,
+      "runtime_ready_records": 1,
+      "seed_records": 63,
       "total_records": 65
     },
     "user_profile_cases": {
@@ -2097,5 +1383,5 @@
     }
   ],
   "report_schema_version": "source_gap_report_v1",
-  "total_source_records": 766
+  "total_source_records": 770
 }

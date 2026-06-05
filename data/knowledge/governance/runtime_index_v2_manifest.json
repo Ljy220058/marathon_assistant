@@ -6,7 +6,7 @@
   "current_runtime_vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
   "metadata_completeness": 1.0,
   "planned_runtime_vector_dir": "data/vector_kb/v2",
-  "preview_chunk_count": 750,
+  "preview_chunk_count": 14306,
   "ready_records": 27,
   "replacement_blockers": [
     "all_domain_packs_still_have_gaps"
@@ -18,11 +18,35 @@
   "ok": true,
   "preview_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\knowledge\\governance\\chunk_schema_v2_preview.jsonl",
   "runtime_vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
-  "runtime_chunk_count": 750,
+  "runtime_chunk_count": 14306,
   "runtime_use_enabled": true,
   "outputs": {
     "chunks_file": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\chunks.jsonl",
-    "faiss_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\faiss_db"
+    "faiss_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\faiss_db",
+    "embedding_model": "nomic-embed-text:latest",
+    "embedding_candidates": [
+      "nomic-embed-text:latest",
+      "bge-m3",
+      "multilingual-e5"
+    ],
+    "embedding_validation": {
+      "embedding_model": "nomic-embed-text:latest",
+      "embedding_validation_sample_size": 3,
+      "embedding_validation_errors": []
+    },
+    "stripped_docstore_text_count": 14306,
+    "chunking_strategy": "semantic_v1",
+    "chunk_quality": {
+      "chunking_strategy": "semantic_v1",
+      "chunk_count": 14306,
+      "average_chunk_length": 269.31,
+      "short_chunk_count": 1549,
+      "long_chunk_count": 881,
+      "metadata_completeness": 0.8571,
+      "locatable_source_ratio": 1.0,
+      "domain_labeled_count": 14306,
+      "domain_coverage_ratio": 1.0
+    }
   },
   "skipped_empty_text_chunk_count": 0,
   "skipped_empty_text_chunk_ids": [],

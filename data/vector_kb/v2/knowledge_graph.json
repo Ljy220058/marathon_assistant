@@ -1,0 +1,1223 @@
+{
+  "nodes": {
+    "622c28f2e495": {
+      "label": "每周质量课最多 2 次",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_quality_sessions_weekly_cap",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "quality_sessions_per_week <= 2",
+      "description": "限制节奏跑、无氧阈、摄氧量、重复跑等高质量训练的周频次。"
+    },
+    "b78c6990a839": {
+      "label": "高质量课间隔至少 48 小时",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_quality_gap_48h",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "hours_between_quality_sessions >= 48",
+      "description": "避免连续高强度刺激，保留恢复窗口。"
+    },
+    "3f920d191613": {
+      "label": "每周长距离最多 1 次",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_long_run_weekly_cap",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "long_run_sessions_per_week <= 1",
+      "description": "防止长距离课过量堆叠。"
+    },
+    "349978cd99e7": {
+      "label": "长距离时长不得超过单次上限",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_long_run_duration_cap",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "long_run_duration_min <= athlete.max_session_minutes",
+      "description": "长距离模板必须受用户单次最长训练时长约束。"
+    },
+    "1fea7b1e836b": {
+      "label": "高质量课后优先恢复或轻松跑",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_easy_after_quality",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "day_after_quality in {'easy_run','recovery','rest'}",
+      "description": "控制高强度训练后的次日安排。"
+    },
+    "9afde815a2d3": {
+      "label": "轻松跑模板 30-60min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_easy_run_duration_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "30-60",
+        "intensity": "Z1",
+        "rest": "无",
+        "surface": "公园|公路"
+      },
+      "workout_labels": [
+        "轻松跑",
+        "恢复跑"
+      ],
+      "constraint_ids": [
+        "c_easy_after_quality"
+      ]
+    },
+    "9c41243c6647": {
+      "label": "轻松跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "3b770ebe9b04": {
+      "label": "Z1",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c107898b38de": {
+      "label": "有氧基础",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c16a0f05a917": {
+      "label": "恢复能力",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "4609562a769d": {
+      "label": "基础耐力",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "1e46f49d866c": {
+      "label": "恢复跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "11abcc540863": {
+      "label": "长距离模板 80-120min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_long_run_base_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "80-120",
+        "intensity": "Z2",
+        "progression": "optional_last_20min",
+        "surface": "公路|公园"
+      },
+      "workout_labels": [
+        "长距离",
+        "长距离有氧"
+      ],
+      "constraint_ids": [
+        "c_long_run_weekly_cap",
+        "c_long_run_duration_cap"
+      ]
+    },
+    "e88515ef1ebd": {
+      "label": "长距离",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "5cb7e380d019": {
+      "label": "Z2",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "8b58c7712c5f": {
+      "label": "脂代谢",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "456948bd9aae": {
+      "label": "耐力提升",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "bee4a93050d9": {
+      "label": "长距离有氧",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c333911c7c20": {
+      "label": "有氧阈模板 30-50min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_aerobic_threshold_continuous_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "30-50",
+        "intensity": "Z3",
+        "rest": "无",
+        "surface": "公路|跑道"
+      },
+      "workout_labels": [
+        "有氧阈"
+      ],
+      "constraint_ids": [
+        "c_quality_gap_48h"
+      ]
+    },
+    "6d18c7cfc4b8": {
+      "label": "有氧阈",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "a61d1457beb4": {
+      "label": "Z3",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "be23814a2875": {
+      "label": "稳态耐力",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "cddc27121683": {
+      "label": "节奏跑模板 20-40min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_tempo_continuous_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "20-40",
+        "intensity": "Z4",
+        "rest": "无",
+        "surface": "公路|跑道"
+      },
+      "workout_labels": [
+        "节奏跑",
+        "阈值节奏跑"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "4ed8e16481e9": {
+      "label": "节奏跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "8ed54f04419f": {
+      "label": "Z4",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c5e2c38af141": {
+      "label": "乳酸阈",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "0c7f73061a61": {
+      "label": "阈值提升",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "bafcac0dd6d6": {
+      "label": "阈值节奏跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "48c975526bcb": {
+      "label": "无氧阈模板 4x1600m",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_threshold_cruise_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "reps": "4",
+        "distance": "1600m",
+        "intensity": "Z5",
+        "rest": "2min jog"
+      },
+      "workout_labels": [
+        "无氧阈"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "3a5b9cd61b9b": {
+      "label": "无氧阈",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "4afbd36dfbe0": {
+      "label": "Z5",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "fe79aea8b868": {
+      "label": "高阈值耐受",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c5f29fd38c73": {
+      "label": "摄氧量模板 6x1km",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_vo2_1k_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "reps": "5-6",
+        "distance": "1km",
+        "intensity": "Z8",
+        "rest": "90s jog"
+      },
+      "workout_labels": [
+        "摄氧量",
+        "高强度间歇"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "ba10f3a62475": {
+      "label": "摄氧量",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "298a60807e4f": {
+      "label": "Z8",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "5fb3e0d2372d": {
+      "label": "vo2max",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "bf3ce3ba1d45": {
+      "label": "最大摄氧量提升",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "07b02d9c5087": {
+      "label": "高强度间歇",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "67af6064d1a9": {
+      "label": "重复跑模板 8x400m",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_repetition_400_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "reps": "8",
+        "distance": "400m",
+        "intensity": "Z9",
+        "rest": "200m walk"
+      },
+      "workout_labels": [
+        "重复跑",
+        "极限间歇"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "19ed4a54cb28": {
+      "label": "重复跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "1fde6c364c9c": {
+      "label": "Z9",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "4ee9e31ef0f5": {
+      "label": "跑步经济性",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "6b1810a7901b": {
+      "label": "神经肌肉刺激",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "317219044935": {
+      "label": "极限间歇",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    }
+  },
+  "edges": [
+    {
+      "source": "9c41243c6647",
+      "target": "9afde815a2d3",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "轻松跑 -> 轻松跑模板 30-60min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "9c41243c6647",
+      "target": "3b770ebe9b04",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "轻松跑 -> Z1",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "9c41243c6647",
+      "target": "c107898b38de",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "轻松跑 -> 有氧基础",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "9c41243c6647",
+      "target": "c16a0f05a917",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "轻松跑 -> 恢复能力",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "9c41243c6647",
+      "target": "4609562a769d",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "轻松跑 -> 基础耐力",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "1e46f49d866c",
+      "target": "9afde815a2d3",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "恢复跑 -> 轻松跑模板 30-60min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "1e46f49d866c",
+      "target": "3b770ebe9b04",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "恢复跑 -> Z1",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "1e46f49d866c",
+      "target": "c107898b38de",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "恢复跑 -> 有氧基础",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "1e46f49d866c",
+      "target": "c16a0f05a917",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "恢复跑 -> 恢复能力",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "1e46f49d866c",
+      "target": "4609562a769d",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "恢复跑 -> 基础耐力",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "9afde815a2d3",
+      "target": "1fea7b1e836b",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "轻松跑模板 30-60min -> 高质量课后优先恢复或轻松跑",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "e88515ef1ebd",
+      "target": "11abcc540863",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离 -> 长距离模板 80-120min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "e88515ef1ebd",
+      "target": "5cb7e380d019",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离 -> Z2",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "e88515ef1ebd",
+      "target": "8b58c7712c5f",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离 -> 脂代谢",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "e88515ef1ebd",
+      "target": "c107898b38de",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离 -> 有氧基础",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "e88515ef1ebd",
+      "target": "456948bd9aae",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离 -> 耐力提升",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bee4a93050d9",
+      "target": "11abcc540863",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离有氧 -> 长距离模板 80-120min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bee4a93050d9",
+      "target": "5cb7e380d019",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离有氧 -> Z2",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bee4a93050d9",
+      "target": "8b58c7712c5f",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离有氧 -> 脂代谢",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bee4a93050d9",
+      "target": "c107898b38de",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离有氧 -> 有氧基础",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bee4a93050d9",
+      "target": "456948bd9aae",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离有氧 -> 耐力提升",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "11abcc540863",
+      "target": "3f920d191613",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离模板 80-120min -> 每周长距离最多 1 次",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "11abcc540863",
+      "target": "349978cd99e7",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "长距离模板 80-120min -> 长距离时长不得超过单次上限",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "6d18c7cfc4b8",
+      "target": "c333911c7c20",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "有氧阈 -> 有氧阈模板 30-50min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "6d18c7cfc4b8",
+      "target": "a61d1457beb4",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "有氧阈 -> Z3",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "6d18c7cfc4b8",
+      "target": "6d18c7cfc4b8",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "有氧阈 -> 有氧阈",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "6d18c7cfc4b8",
+      "target": "be23814a2875",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "有氧阈 -> 稳态耐力",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "c333911c7c20",
+      "target": "b78c6990a839",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "有氧阈模板 30-50min -> 高质量课间隔至少 48 小时",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "4ed8e16481e9",
+      "target": "cddc27121683",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "节奏跑 -> 节奏跑模板 20-40min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "4ed8e16481e9",
+      "target": "8ed54f04419f",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "节奏跑 -> Z4",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "4ed8e16481e9",
+      "target": "c5e2c38af141",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "节奏跑 -> 乳酸阈",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "4ed8e16481e9",
+      "target": "0c7f73061a61",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "节奏跑 -> 阈值提升",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bafcac0dd6d6",
+      "target": "cddc27121683",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "阈值节奏跑 -> 节奏跑模板 20-40min",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bafcac0dd6d6",
+      "target": "8ed54f04419f",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "阈值节奏跑 -> Z4",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bafcac0dd6d6",
+      "target": "c5e2c38af141",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "阈值节奏跑 -> 乳酸阈",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "bafcac0dd6d6",
+      "target": "0c7f73061a61",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "阈值节奏跑 -> 阈值提升",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "cddc27121683",
+      "target": "622c28f2e495",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "节奏跑模板 20-40min -> 每周质量课最多 2 次",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "cddc27121683",
+      "target": "b78c6990a839",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "节奏跑模板 20-40min -> 高质量课间隔至少 48 小时",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "3a5b9cd61b9b",
+      "target": "48c975526bcb",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "无氧阈 -> 无氧阈模板 4x1600m",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "3a5b9cd61b9b",
+      "target": "4afbd36dfbe0",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "无氧阈 -> Z5",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "3a5b9cd61b9b",
+      "target": "c5e2c38af141",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "无氧阈 -> 乳酸阈",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "3a5b9cd61b9b",
+      "target": "fe79aea8b868",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "无氧阈 -> 高阈值耐受",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "48c975526bcb",
+      "target": "622c28f2e495",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "无氧阈模板 4x1600m -> 每周质量课最多 2 次",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "48c975526bcb",
+      "target": "b78c6990a839",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "无氧阈模板 4x1600m -> 高质量课间隔至少 48 小时",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "ba10f3a62475",
+      "target": "c5f29fd38c73",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "摄氧量 -> 摄氧量模板 6x1km",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "ba10f3a62475",
+      "target": "298a60807e4f",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "摄氧量 -> Z8",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "ba10f3a62475",
+      "target": "5fb3e0d2372d",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "摄氧量 -> vo2max",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "ba10f3a62475",
+      "target": "bf3ce3ba1d45",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "摄氧量 -> 最大摄氧量提升",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "07b02d9c5087",
+      "target": "c5f29fd38c73",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "高强度间歇 -> 摄氧量模板 6x1km",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "07b02d9c5087",
+      "target": "298a60807e4f",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "高强度间歇 -> Z8",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "07b02d9c5087",
+      "target": "5fb3e0d2372d",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "高强度间歇 -> vo2max",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "07b02d9c5087",
+      "target": "bf3ce3ba1d45",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "高强度间歇 -> 最大摄氧量提升",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "c5f29fd38c73",
+      "target": "622c28f2e495",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "摄氧量模板 6x1km -> 每周质量课最多 2 次",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "c5f29fd38c73",
+      "target": "b78c6990a839",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "摄氧量模板 6x1km -> 高质量课间隔至少 48 小时",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "19ed4a54cb28",
+      "target": "67af6064d1a9",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "重复跑 -> 重复跑模板 8x400m",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "19ed4a54cb28",
+      "target": "1fde6c364c9c",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "重复跑 -> Z9",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "19ed4a54cb28",
+      "target": "4ee9e31ef0f5",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "重复跑 -> 跑步经济性",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "19ed4a54cb28",
+      "target": "6b1810a7901b",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "重复跑 -> 神经肌肉刺激",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "317219044935",
+      "target": "67af6064d1a9",
+      "relation": "parameterized_by",
+      "canonical_relation": "parameterized_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "极限间歇 -> 重复跑模板 8x400m",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "317219044935",
+      "target": "1fde6c364c9c",
+      "relation": "uses_zone",
+      "canonical_relation": "uses_zone",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "极限间歇 -> Z9",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "317219044935",
+      "target": "4ee9e31ef0f5",
+      "relation": "targets",
+      "canonical_relation": "targets",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "极限间歇 -> 跑步经济性",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "317219044935",
+      "target": "6b1810a7901b",
+      "relation": "produces",
+      "canonical_relation": "produces",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "极限间歇 -> 神经肌肉刺激",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "67af6064d1a9",
+      "target": "622c28f2e495",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "重复跑模板 8x400m -> 每周质量课最多 2 次",
+        "confidence": 0.98
+      }
+    },
+    {
+      "source": "67af6064d1a9",
+      "target": "b78c6990a839",
+      "relation": "constrained_by",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "decision_graph_registry",
+        "chunk_id": "decision_graph_registry_v1",
+        "text_span": "重复跑模板 8x400m -> 高质量课间隔至少 48 小时",
+        "confidence": 0.98
+      }
+    }
+  ],
+  "processed_chunks": {}
+}

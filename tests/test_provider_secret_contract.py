@@ -29,7 +29,23 @@ def test_query_config_ignores_legacy_request_body_provider_key():
     }
 
 
-def test_google_calendar_client_secret_is_encrypted_before_persistence(monkeypatch):
+def test_query_config_defaults_to_deepseek_without_request_body_secret(monkeypatch):
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("DEEPSEEK_MODEL", raising=False)
+    monkeypatch.delenv("DS_MODEL", raising=False)
+    request = QueryRequest(query="easy run guidance", timeout_sec=12)
+
+    config = api_app._build_llm_config(request)
+
+    assert config == {
+        "configurable": {
+            "llm_provider": "ds",
+            "llm_model": "deepseek-v4-pro",
+            "llm_timeout_sec": 12,
+        }
+    }
+
+
     from cryptography.fernet import Fernet
     from marathon_qa_assistant.services import google_calendar_provider as provider
 

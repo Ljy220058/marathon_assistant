@@ -20,6 +20,48 @@ from marathon_qa_assistant.core.profile_store import load_user_profile
 
 router = APIRouter()
 
+PROFILE_FIELD_ALLOWLIST = {
+    "goal",
+    "experience_level",
+    "recent_four_week_mileage",
+    "current_half_time",
+    "target_race_date",
+    "available_days",
+    "max_session_minutes",
+    "target_pace",
+    "t_pace",
+    "lthr",
+    "vo2max",
+    "terrain_preference",
+    "training_types",
+    "notes",
+    "weekly_mileage",
+    "weight_kg",
+    "sex",
+    "diet_type",
+    "sweat_rate",
+    "gi_sensitivity",
+    "target_half_time",
+    "pb_5k",
+    "pb_10k",
+    "pb_half",
+    "pb_full",
+}
+
+
+def _validated_profile_patch(profile: dict | None) -> dict:
+    payload = dict(profile or {})
+    invalid = [
+        key for key in payload
+        if not key or str(key).startswith("_") or str(key) not in PROFILE_FIELD_ALLOWLIST
+    ]
+    if invalid:
+        raise HTTPException(
+            status_code=422,
+            detail=f"画像字段名无效: {', '.join(str(item) for item in invalid)}",
+        )
+    return payload
+
 
 @router.get("/profile")
 async def get_profile(http_request: Request, user_id: str = DEFAULT_API_USER_ID):
@@ -32,7 +74,7 @@ async def get_profile(http_request: Request, user_id: str = DEFAULT_API_USER_ID)
 async def save_profile(request: ProfileRequest, http_request: Request):
     """保存 Astro 工作台提交的跑者画像草稿。"""
     uid = _resolve_user_id(http_request)
-    profile = _save_profile_patch(request.profile or {}, user_id=uid)
+    profile = _save_profile_patch(_validated_profile_patch(request.profile), user_id=uid)
     return {"user_id": uid, "profile": profile}
 
 
@@ -47,7 +89,7 @@ async def get_profile_by_user(user_id: str, http_request: Request):
 async def put_profile_by_user(user_id: str, request: ProfileRequest, http_request: Request):
     """按设计文档路径更新用户画像；当前单用户模式下采用合并写入。"""
     uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
-    profile = _save_profile_patch(request.profile or {}, user_id=uid)
+    profile = _save_profile_patch(_validated_profile_patch(request.profile), user_id=uid)
     return {"user_id": uid, "profile": profile}
 
 
@@ -55,9 +97,7 @@ async def put_profile_by_user(user_id: str, request: ProfileRequest, http_reques
 async def patch_profile_field(user_id: str, field_key: str, request: ProfileFieldRequest, http_request: Request):
     """更新单个画像字段，并同步由画像衍生的强度区间。"""
     uid = _resolve_user_id(http_request) if _auth_enabled() else user_id
-    if not field_key or field_key.startswith("_"):
-        raise HTTPException(status_code=400, detail="画像字段名无效。")
-    profile = _save_profile_patch({field_key: request.value}, user_id=uid)
+    profile = _save_profile_patch(_validated_profile_patch({field_key: request.value}), user_id=uid)
     return {"user_id": uid, "field_key": field_key, "profile": profile}
 
 

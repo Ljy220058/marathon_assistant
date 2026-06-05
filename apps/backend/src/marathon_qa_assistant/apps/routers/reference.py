@@ -2,17 +2,20 @@
 
 import asyncio
 import hmac
-import os
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
-from marathon_qa_assistant.apps.schemas import ZoneReference
+from marathon_qa_assistant.apps.schemas import (
+    KnowledgeSourcesResponse,
+    ZoneReference,
+)
 from marathon_qa_assistant.apps.response_builders import _normalize_provider
 from marathon_qa_assistant.apps.routers._shared import (
-    _auth_enabled,
-    _configured_api_token,
     _request_api_token,
 )
+from marathon_qa_assistant.apps.security.response_role import _response_role
+from marathon_qa_assistant.core.app_state import V2_VECTOR_DIR
+from marathon_qa_assistant.core.settings import get_settings
 from marathon_qa_assistant.services.workout_template_retriever import (
     EVIDENCE_TIER_LABELS,
     ZONE_LABELS,
@@ -22,9 +25,35 @@ from marathon_qa_assistant.services.kb.evidence_chain import (
     ANSWER_SOURCE_MODES,
     EVIDENCE_CHAIN_DISPLAY_MODES,
 )
+from marathon_qa_assistant.services.kb.source_inventory import (
+    load_source_inventory_summary,
+    public_source_inventory_summary,
+)
 
 
 router = APIRouter()
+
+
+def _require_expert_source_access(request: Request) -> None:
+    if _response_role(request) != "expert":
+        raise HTTPException(status_code=403, detail="Expert access required.")
+
+
+@router.get("/knowledge/sources", response_model=KnowledgeSourcesResponse)
+def list_knowledge_sources(request: Request):
+    _require_expert_source_access(request)
+    chunks_path = V2_VECTOR_DIR / "chunks.jsonl"
+    if not chunks_path.exists():
+        return KnowledgeSourcesResponse()
+    return load_source_inventory_summary(chunks_path)
+
+
+@router.get("/knowledge/sources/summary", response_model=KnowledgeSourcesResponse)
+def get_knowledge_sources_summary():
+    chunks_path = V2_VECTOR_DIR / "chunks.jsonl"
+    if not chunks_path.exists():
+        return KnowledgeSourcesResponse()
+    return public_source_inventory_summary(chunks_path)
 
 
 @router.get("/zone-reference", response_model=ZoneReference)
@@ -84,15 +113,16 @@ async def get_evidence_tier_reference():
 @router.get("/llm-options")
 async def get_llm_options(request: Request):
     """返回前端模型选择控件所需的可用模型清单。"""
-    ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
-    deepseek_model = os.getenv("DEEPSEEK_MODEL", os.getenv("DS_MODEL", "deepseek-v4-pro"))
-    openai_model = os.getenv("OPENAI_MODEL", "gpt-5.5")
-    default_provider = _normalize_provider(os.getenv("LLM_PROVIDER", "ollama"))
+    settings = get_settings()
+    ollama_model = settings.ollama_model
+    deepseek_model = settings.deepseek_model
+    openai_model = settings.openai_model
+    default_provider = _normalize_provider(settings.llm_provider)
     default_model = {
         "ds": deepseek_model,
         "openai": openai_model,
     }.get(default_provider, ollama_model)
-    configured_token = _configured_api_token()
+    configured_token = settings.api_token
     can_show_private_config = not configured_token or hmac.compare_digest(_request_api_token(request), configured_token)
     return {
         "default": {
@@ -111,7 +141,7 @@ async def get_llm_options(request: Request):
                 "label": "DeepSeek",
                 "default_model": deepseek_model,
                 "models": [deepseek_model],
-                "api_key_configured": bool(os.getenv("DEEPSEEK_API_KEY") or os.getenv("DS_API_KEY")) if can_show_private_config else False,
+                "api_key_configured": bool(settings.deepseek_api_key) if can_show_private_config else False,
                 "api_key_config_visible": bool(can_show_private_config),
             },
             {
@@ -119,7 +149,7 @@ async def get_llm_options(request: Request):
                 "label": "OpenAI GPT",
                 "default_model": openai_model,
                 "models": [openai_model],
-                "api_key_configured": bool(os.getenv("OPENAI_API_KEY")) if can_show_private_config else False,
+                "api_key_configured": bool(settings.openai_api_key) if can_show_private_config else False,
                 "api_key_config_visible": bool(can_show_private_config),
             },
         ],

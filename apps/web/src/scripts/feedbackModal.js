@@ -1,13 +1,38 @@
-// Feedback Modal — 快捷反馈、反馈表单、反馈结果卡和生成调整版计划入口。
-// 使用 IIFE 隔离，通过 window.__feedbackModal 暴露 API。
-
+// Feedback modal helper API used before app.js fully takes over.
 (function () {
-
   const FEEDBACK_QUICK_PRESETS = {
-    feedback_done: { completion: "已完成", fatigue: "轻微", pain: "没有疼痛", sleep: "良好", notes: "" },
-    feedback_partial: { completion: "部分完成", fatigue: "明显", pain: "轻微不适", sleep: "一般", notes: "训练部分完成，需要下调后续负荷。" },
-    feedback_skipped: { completion: "未完成", fatigue: "高疲劳", pain: "疼痛风险", sleep: "较差", notes: "训练中出现不适或疼痛信号，需要保守调整后续安排。" },
+    feedback_done: {
+      completion: "已完成",
+      fatigue: "轻微",
+      pain: "没有疼痛",
+      sleep: "良好",
+      notes: "",
+    },
+    feedback_partial: {
+      completion: "部分完成",
+      fatigue: "明显",
+      pain: "轻微不适",
+      sleep: "一般",
+      notes: "训练部分完成，需要下调后续负荷。",
+    },
+    feedback_skipped: {
+      completion: "未完成",
+      fatigue: "高疲劳",
+      pain: "疼痛风险",
+      sleep: "较差",
+      notes: "训练中出现不适或疼痛信号，需要保守调整后续安排。",
+    },
   };
+
+  function sanitizeText(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;")
+      .replace(/javascript:/gi, "javascript&#058;");
+  }
 
   function applyFeedbackPreset(formContainer, preset) {
     if (!formContainer || !preset) return;
@@ -25,51 +50,63 @@
 
   function buildFeedbackResultHtml(payload) {
     const status = payload?.generation_status || payload?.save_status || "unknown";
-    const statusLabel = {
-      generated: "已生成调整建议",
-      partial_generated: "部分生成调整建议",
-      medical_referral: "停止训练，建议专业医疗评估",
-      risk_refused: "安全阻断，未生成调整建议",
-      suggested: "已生成本周调整建议",
-      applied: "已应用到日历",
-      dismissed: "已暂不采用",
-      needs_manual_choice: "本周没有可安全安排的训练日",
-      blocked_medical: "不能直接恢复跑步训练",
-    }[status] || status;
+    const statusLabel =
+      {
+        generated: "已生成调整建议",
+        partial_generated: "部分生成调整建议",
+        medical_referral: "停止训练，建议专业医疗评估",
+        risk_refused: "安全阻断，未生成调整建议",
+        suggested: "已生成本周调整建议",
+        applied: "已应用到日历",
+        dismissed: "已暂不采用",
+        needs_manual_choice: "本周没有可安全安排的训练日",
+        blocked_medical: "不能直接恢复跑步训练",
+      }[status] || status;
 
     const isMedical = status === "medical_referral";
     const nextDayAdj = payload?.next_day_adjustment || "";
     const weeklyAdj = payload?.weekly_adjustment || "";
-    const affectedEvents = payload?.affected_events || [];
+    const affectedEvents = Array.isArray(payload?.affected_events) ? payload.affected_events : [];
     const replan = payload?.feedback_replan || null;
 
-    let html = `<div class="feedback-result-card" data-feedback-product-state="${status}"${isMedical ? ' data-feedback-medical-referral' : ''}>`;
-    html += `<strong>${statusLabel}</strong>`;
+    let html = `<div class="feedback-result-card" data-feedback-product-state="${sanitizeText(status)}"${isMedical ? " data-feedback-medical-referral" : ""}>`;
+    html += `<strong>${sanitizeText(statusLabel)}</strong>`;
 
     if (isMedical) {
-      html += `<p class="medical-referral-notice">出于安全边界，建议暂停训练并寻求专业医疗评估。评估前安排：${payload?.pre_evaluation_plan || "暂不提供训练安排"}</p>`;
-      html += `<p class="medical-prohibition">禁止事项：${payload?.prohibited_activities || "不进行高强度或长距离训练"}</p>`;
+      html += `<p class="medical-referral-notice">出于安全边界，建议暂停训练并寻求专业医疗评估。评估前安排：${sanitizeText(payload?.pre_evaluation_plan || "暂不提供训练安排")}</p>`;
+      html += `<p class="medical-prohibition">禁止事项：${sanitizeText(payload?.prohibited_activities || "不进行高强度或长距离训练")}</p>`;
     }
 
-    if (nextDayAdj) html += `<p><span>明日调整：</span>${nextDayAdj}</p>`;
-    if (weeklyAdj) html += `<p><span>本周微调：</span>${weeklyAdj}</p>`;
+    if (nextDayAdj) {
+      html += `<p><span>明日调整：</span>${sanitizeText(nextDayAdj)}</p>`;
+    }
+    if (weeklyAdj) {
+      html += `<p><span>本周微调：</span>${sanitizeText(weeklyAdj)}</p>`;
+    }
     if (affectedEvents.length) {
-      html += `<p><span>可能影响的后续训练：</span>${affectedEvents.map(e => e.day_label || e.event_id).join("、")}</p>`;
+      const labels = affectedEvents
+        .map((event) => sanitizeText(event?.day_label || event?.event_id || "后续训练日"))
+        .join("、");
+      html += `<p><span>可能影响的后续训练：</span>${labels}</p>`;
     }
 
     if (replan?.patches?.length) {
       html += `<div class="feedback-replan" data-feedback-replan>`;
-      html += replan.patches.map((patch, i) => `
+      html += replan.patches
+        .map(
+          (patch, index) => `
         <div class="replan-patch">
-          <p>原安排：${patch.original?.main_set || "-"}</p>
-          <p>建议：${patch.suggested?.main_set || "-"}</p>
+          <p>原安排：${sanitizeText(patch?.original?.main_set || "-")}</p>
+          <p>建议：${sanitizeText(patch?.suggested?.main_set || "-")}</p>
           <div class="replan-actions">
-            <button type="button" data-feedback-replan-action="accept" data-patch-index="${i}">按调整执行</button>
-            <button type="button" data-feedback-replan-action="replan" data-patch-index="${i}">重新排本周</button>
-            <button type="button" data-feedback-replan-action="dismiss" data-patch-index="${i}">暂不采用</button>
+            <button type="button" data-feedback-replan-action="accept" data-patch-index="${index}">按调整执行</button>
+            <button type="button" data-feedback-replan-action="replan" data-patch-index="${index}">重新排本周</button>
+            <button type="button" data-feedback-replan-action="dismiss" data-patch-index="${index}">暂不采用</button>
           </div>
         </div>
-      `).join("");
+      `,
+        )
+        .join("");
       html += `</div>`;
     }
 
@@ -78,7 +115,6 @@
   }
 
   async function submitFeedbackApi(root) {
-    // 委托给 app.js 中的 submitFeedbackApi
     if (typeof window.submitFeedbackApi === "function" && window.submitFeedbackApi !== submitFeedbackApi) {
       return window.submitFeedbackApi(root);
     }
@@ -90,7 +126,10 @@
   }
 
   window.__feedbackModal = {
-    applyFeedbackPreset, buildFeedbackResultHtml, submitFeedbackApi,
-    isMedicalReferralFeedback, FEEDBACK_QUICK_PRESETS,
+    applyFeedbackPreset,
+    buildFeedbackResultHtml,
+    submitFeedbackApi,
+    isMedicalReferralFeedback,
+    FEEDBACK_QUICK_PRESETS,
   };
 })();

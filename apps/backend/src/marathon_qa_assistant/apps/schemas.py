@@ -1,14 +1,15 @@
+from datetime import date
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class QueryRequest(BaseModel):
-    query: str
+    query: str = Field(min_length=1, max_length=5000)
     mode: str = "team"
     user_id: str = "default_user"
     stream: bool = False
-    llm_provider: str = "ollama"
+    llm_provider: str = "ds"
     llm_model: str = ""
     response_mode: str = "full"
     timeout_sec: int = Field(default=120, ge=5, le=600)
@@ -29,11 +30,14 @@ class QueryResponse(BaseModel):
     guided_questions: List[str]
     training_plan_id: Optional[str] = None
     generation_status: str = "complete"
-    llm_provider: str = "ollama"
+    llm_provider: str = "ds"
     llm_model: str = ""
     message: str = ""
     generation_timings: Dict[str, float] = Field(default_factory=dict)
     half_marathon_protocol_validation: Optional[Dict[str, Any]] = None
+    answer_card: Dict[str, Any] = Field(default_factory=dict)
+    full_report: Dict[str, Any] = Field(default_factory=dict)
+    ui_policy: Dict[str, Any] = Field(default_factory=dict)
     answer_source_mode: str = ""
     rag_health: Dict[str, Any] = Field(default_factory=dict)
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
@@ -114,6 +118,7 @@ class OpsMetricsResponse(BaseModel):
     request_route_counts: Dict[str, int] = Field(default_factory=dict)
     generation_status_counts: Dict[str, int]
     feedback_risk_reason_counts: Dict[str, int]
+    plan_persist_status_counts: Dict[str, int] = Field(default_factory=dict)
     llm_provider_error_counts: Dict[str, int] = Field(default_factory=dict)
     plan_generation_duration_buckets: Dict[str, int]
     medical_referral_total: int
@@ -123,6 +128,31 @@ class EventScheduleRequest(BaseModel):
     scheduled_date: str
     start_time: str
     duration_min: int = Field(default=60, ge=0, le=600)
+
+    @field_validator("scheduled_date")
+    @classmethod
+    def validate_scheduled_date(cls, value: str) -> str:
+        text = str(value or "").strip()
+        try:
+            date.fromisoformat(text)
+        except ValueError as exc:
+            raise ValueError("scheduled_date must be a valid ISO date (YYYY-MM-DD).") from exc
+        return text
+
+    @field_validator("start_time")
+    @classmethod
+    def validate_start_time(cls, value: str) -> str:
+        text = str(value or "").strip()
+        if len(text) != 5 or text[2] != ":":
+            raise ValueError("start_time must use HH:MM format.")
+        hour_text, minute_text = text.split(":", 1)
+        if not (hour_text.isdigit() and minute_text.isdigit()):
+            raise ValueError("start_time must use HH:MM format.")
+        hour = int(hour_text)
+        minute = int(minute_text)
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError("start_time must be a real 24-hour time.")
+        return text
 
 
 class TrainingCalendarResponse(BaseModel):
@@ -139,6 +169,32 @@ class TrainingCalendarResponse(BaseModel):
     training_load_summary: Dict[str, Any]
     training_plan_review: Dict[str, Any] = Field(default_factory=dict)
     evidence_chain: Dict[str, Any] = Field(default_factory=dict)
+
+
+class KnowledgeSourceSummary(BaseModel):
+    source_registry_id: str = ""
+    source_file: str = ""
+    source_label: str = ""
+    domain_pack: str = ""
+    source_status: str = "missing_text"
+    has_full_text: bool = False
+    evidence_policy: str = "not_answerable"
+    chunk_count: int = 0
+    body_chunk_count: int = 0
+    registry_chunk_count: int = 0
+    sections: Dict[str, int] = Field(default_factory=dict)
+    sample_text: str = ""
+
+
+class KnowledgeSourcesResponse(BaseModel):
+    total_sources: int = 0
+    total_chunks: int = 0
+    ready_sources: int = 0
+    registry_only_sources: int = 0
+    missing_text_sources: int = 0
+    status_counts: Dict[str, int] = Field(default_factory=dict)
+    domain_pack_counts: Dict[str, int] = Field(default_factory=dict)
+    sources: List[KnowledgeSourceSummary] = Field(default_factory=list)
 
 
 class ZoneReference(BaseModel):

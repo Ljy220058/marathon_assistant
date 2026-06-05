@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 import time
 from uuid import uuid4
 from datetime import datetime, timezone
@@ -10,6 +9,8 @@ from datetime import datetime, timezone
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
+from marathon_qa_assistant.core.settings import get_settings
 
 
 LOG_RECORD_ATTRS = {
@@ -37,7 +38,7 @@ class JSONFormatter(logging.Formatter):
 
 def _log_client_ip(client_ip: str) -> str:
     # 生产环境可关闭客户端 IP 记录，降低日志中的个人信息暴露。
-    if str(os.getenv("MARATHON_LOG_CLIENT_IP") or "1").strip() == "0":
+    if not get_settings().log_client_ip:
         return "redacted"
     return client_ip
 

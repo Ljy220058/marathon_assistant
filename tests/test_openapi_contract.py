@@ -72,6 +72,9 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
     assert "training_plan_review" in schemas["PlanDetailResponse"]["properties"]
     assert "training_plan_review" in schemas["TrainingCalendarResponse"]["properties"]
     assert "answer_source_mode" in schemas["QueryResponse"]["properties"]
+    assert "answer_card" in schemas["QueryResponse"]["properties"]
+    assert "full_report" in schemas["QueryResponse"]["properties"]
+    assert "ui_policy" in schemas["QueryResponse"]["properties"]
     assert "rag_health" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["PlanDetailResponse"]["properties"]
@@ -85,6 +88,7 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
         "medical_referral_total",
     }
     assert "request_route_counts" in schemas["OpsMetricsResponse"]["properties"]
+    assert "plan_persist_status_counts" in schemas["OpsMetricsResponse"]["properties"]
     assert "llm_provider_error_counts" in schemas["OpsMetricsResponse"]["properties"]
 
 

@@ -1,11 +1,52 @@
 /* profile-components.css — RunnerIdentityCard, ProfileEditor, profile state [product-profile][P0/P1] */
 
+:root {
+  --surface-base: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-lowered: #f4f6f9;
+  --border-default: var(--border);
+  --border-subtle: #eef2f7;
+  --accent-primary: var(--accent);
+  --accent-primary-alpha: rgba(37, 99, 235, 0.12);
+  --accent-primary-subtle: #eff6ff;
+  --success-alpha: rgba(5, 150, 105, 0.24);
+  --success-subtle: #ffffff;
+  --warning-alpha: rgba(183, 107, 0, 0.24);
+  --warning-subtle: #ffffff;
+  --danger-alpha: rgba(211, 63, 73, 0.24);
+  --danger-subtle: #ffffff;
+  --danger-light: #fff1f2;
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: var(--faint);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-xl: var(--shadow-soft);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: 12px;
+  --radius-full: 999px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+}
+
 /* --- RunnerIdentityCard --- */
 .runner-identity-card {
   padding: var(--space-4);
   border-radius: var(--radius-lg);
-  background: var(--surface-raised);
+  background: #ffffff;
   border: 1px solid var(--border-default);
+  box-shadow: none;
 }
 
 .identity-card-empty {
@@ -64,11 +105,11 @@
 
 /* --- ProfileEditor dialog --- */
 .profile-editor-dialog {
-  border: none;
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
   padding: 0;
-  background: var(--surface-base);
-  box-shadow: var(--shadow-xl);
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
   max-width: 640px;
   width: calc(100vw - 2 * var(--space-4));
   max-height: 85vh;
@@ -76,7 +117,7 @@
 }
 
 .profile-editor-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.28);
   backdrop-filter: blur(2px);
 }
 
@@ -133,7 +174,7 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  background: var(--surface-base);
+  background: #ffffff;
   color: var(--text-primary);
 }
 
@@ -165,8 +206,8 @@
 
 /* --- NLP confirmation notice --- */
 .profile-nlp-confirmation {
-  background: var(--surface-raised);
-  border: 1px solid var(--accent-primary);
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   margin-top: var(--space-3);
@@ -194,9 +235,12 @@
 }
 
 .profile-nlp-confirmation .nlp-changes-list li::before {
-  content: ">";
-  color: var(--accent-primary);
-  font-weight: 700;
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  flex: 0 0 auto;
 }
 
 .profile-nlp-actions {

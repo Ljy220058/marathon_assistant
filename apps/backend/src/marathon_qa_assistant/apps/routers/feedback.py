@@ -5,6 +5,8 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request
 
+from marathon_qa_assistant.apps.async_db import run_db
+from marathon_qa_assistant.apps.response_projection import _project_feedback_response_for_role
 from marathon_qa_assistant.apps.schemas import (
     FeedbackActionRequest,
     FeedbackActionResponse,
@@ -23,12 +25,9 @@ from marathon_qa_assistant.apps.routers._shared import (
     _normalize_frontend_feedback,
     _parse_schedule_constraints,
     _plan_diff_from_affected_events,
-    _project_feedback_response_for_role,
-    _require_default_user,
     _resolve_user_id,
-    _response_role,
-    DEFAULT_API_USER_ID,
 )
+from marathon_qa_assistant.apps.security.response_role import _response_role
 from marathon_qa_assistant.core.state_models import (
     build_adaptive_adjustment_contract,
     build_feedback_protocol_recheck,
@@ -76,9 +75,10 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
     if bool(request.plan_id) != bool(request.event_id):
         raise HTTPException(status_code=400, detail="保存训练反馈需要同时提供 plan_id 和 event_id。")
     if request.plan_id and request.event_id:
-        if not get_db().get_event(request.plan_id, request.event_id, uid):
+        if not await run_db(get_db().get_event, request.plan_id, request.event_id, uid):
             raise HTTPException(status_code=404, detail="训练日历事件不存在，反馈未保存。")
-        feedback_id = get_db().save_training_event_feedback(
+        feedback_id = await run_db(
+            get_db().save_training_event_feedback,
             plan_id=request.plan_id,
             event_id=request.event_id,
             user_id=uid,
@@ -90,7 +90,8 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
             raw_text=request.raw_text,
         )
         if feedback_id:
-            affected_events = get_db().apply_feedback_effect_to_future_events(
+            affected_events = await run_db(
+                get_db().apply_feedback_effect_to_future_events,
                 plan_id=request.plan_id,
                 event_id=request.event_id,
                 user_id=uid,
@@ -104,7 +105,7 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
                 plan_id=request.plan_id,
                 event_id=request.event_id,
                 feedback_id=feedback_id,
-                events=get_db().list_events(request.plan_id),
+                events=await run_db(get_db().list_events, request.plan_id),
                 workout_feedback=workout_feedback,
                 risk_gate=risk_gate,
                 protocol_recheck=protocol_recheck,
@@ -116,7 +117,8 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
                 ),
             )
             if feedback_replan.get("patches"):
-                get_db().save_feedback_replan(
+                await run_db(
+                    get_db().save_feedback_replan,
                     plan_id=request.plan_id,
                     feedback_id=feedback_id,
                     user_id=uid,
@@ -174,17 +176,18 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
 
 
 @router.post("/plans/{plan_id}/feedback/{feedback_id}/actions", response_model=FeedbackActionResponse)
-async def apply_feedback_action(plan_id: str, feedback_id: str, request: FeedbackActionRequest, user_id: str = DEFAULT_API_USER_ID):
+async def apply_feedback_action(plan_id: str, feedback_id: str, request: FeedbackActionRequest, http_request: Request):
     """处理跑者对局部重规划的确认、重排、恢复复核和暂不采用动作。"""
-    _require_default_user(user_id)
-    plan = get_db().get_plan(plan_id)
+    user_id = _resolve_user_id(http_request)
+    plan = await run_db(get_db().get_plan, plan_id)
     if not plan or plan.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="训练计划不存在。")
-    feedback = next((item for item in get_db().list_plan_feedback(plan_id) if str(item.get("id")) == str(feedback_id)), None)
+    feedback_items = await run_db(get_db().list_plan_feedback, plan_id)
+    feedback = next((item for item in feedback_items if str(item.get("id")) == str(feedback_id)), None)
     if not feedback:
         raise HTTPException(status_code=404, detail="训练反馈不存在。")
 
-    events = get_db().list_events(plan_id)
+    events = await run_db(get_db().list_events, plan_id)
     existing_applied_replan = _find_applied_feedback_replan(events, feedback_id)
     risk_gate = feedback.get("risk_gate") or {}
     protocol_recheck = feedback.get("protocol_recheck") or {}
@@ -224,7 +227,8 @@ async def apply_feedback_action(plan_id: str, feedback_id: str, request: Feedbac
         if replan.get("status") not in {"blocked_medical", "needs_manual_choice"}:
             replan["status"] = "applied"
             replan["user_action"] = "accept"
-            affected_events = get_db().save_feedback_replan(
+            affected_events = await run_db(
+                get_db().save_feedback_replan,
                 plan_id=plan_id,
                 feedback_id=feedback_id,
                 user_id=user_id,
@@ -234,7 +238,8 @@ async def apply_feedback_action(plan_id: str, feedback_id: str, request: Feedbac
             )
     elif action in {"replan", "update_availability"}:
         if replan.get("patches"):
-            affected_events = get_db().save_feedback_replan(
+            affected_events = await run_db(
+                get_db().save_feedback_replan,
                 plan_id=plan_id,
                 feedback_id=feedback_id,
                 user_id=user_id,

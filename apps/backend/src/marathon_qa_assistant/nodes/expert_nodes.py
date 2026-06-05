@@ -5,6 +5,7 @@ try:
 except ImportError:
     RunnableConfig = Any
 
+from marathon_qa_assistant.core.profile_context import build_prompt_profile_summary
 from marathon_qa_assistant.core.state_models import (
     IntegratedState,
     build_adaptive_adjustment_contract,
@@ -21,38 +22,25 @@ from marathon_qa_assistant.nodes.common import (
 )
 
 
-def _profile_summary(profile: Dict[str, Any]) -> str:
-    # P1-8: 扩展画像摘要，纳入体重、性别、饮食等字段
-    nutrition = profile.get("nutrition_profile") or {}
-    lines = [
-        f"经验水平: {profile.get('experience_level', '未知')}",
-        f"目标: {profile.get('goal', '未知')}",
-        f"周跑量: {profile.get('weekly_mileage', 0)} km",
-    ]
-    # P1-8: 体重
-    weight = profile.get('weight_kg') or nutrition.get('weight_kg')
-    if weight:
-        lines.append(f"体重: {weight} kg")
-    # P1-8: 性别
-    sex = profile.get('sex') or nutrition.get('sex')
-    if sex:
-        lines.append(f"性别: {sex}")
-    # P1-8: 饮食偏好
-    diet = profile.get('diet_type') or nutrition.get('diet_preference')
-    if diet:
-        lines.append(f"饮食类型: {diet}")
-    # P1-8: 出汗率
-    sweat = profile.get('sweat_rate') or nutrition.get('sweat_rate')
-    if sweat:
-        lines.append(f"出汗率: {sweat}")
-    # P1-8: 胃肠敏感度
-    gi = profile.get('gi_sensitivity') or nutrition.get('gi_sensitivity')
-    if gi:
-        lines.append(f"胃肠敏感度: {gi}")
+QA_REPORT_REQUIRED_SECTIONS = [
+    "结论",
+    "训练建议",
+    "专项不受影响的边界",
+    "知识库可见证据",
+    "证据不足或待核验之处",
+]
 
-    lines.append(f"LTHR: {profile.get('lthr', 0)}")
-    lines.append(f"T-Pace: {profile.get('t_pace', '') or '未设置'}")
-    return "\n".join(lines)
+QA_REPORT_CONTRACT_INSTRUCTION = (
+    "QA 报告必须按顺序固定包含以下二级标题："
+    + "、".join(f"## {section}" for section in QA_REPORT_REQUIRED_SECTIONS)
+    + "。其中“知识库可见证据”必须覆盖本轮实际提供的本地知识库可见证据编号、来源和摘要；"
+    "如果没有可见证据，必须明确写明本轮未检索到可展示的本地知识库证据，不能编造引用。"
+)
+
+
+def _profile_summary(profile: Dict[str, Any]) -> str:
+    # 只把明确确认过的画像字段放进 prompt，避免默认体重/目标/经验污染回答。
+    return build_prompt_profile_summary(profile)
 
 
 def _format_wiki_context(wiki_context: str) -> str:
@@ -84,8 +72,8 @@ async def _run_expert_llm(
 知识图谱上下文：
 {state.get("graph_context", "") or "暂无直接图谱路径"}
 
-本地知识库证据：
-{format_state_evidence_lines(state, limit=5)}
+本地知识库可见证据（必须全部处理，不能只给结论）：
+{format_state_evidence_lines(state, limit=None)}
 
 Wiki 概念补充上下文：
 {_format_wiki_context(state.get("wiki_context", ""))}
@@ -98,6 +86,7 @@ Wiki 概念补充上下文：
 5. 没有本地知识库证据时，可以基于模型通用知识给出一般说明，但必须明确这是“未绑定外部证据的一般说明”；模型通用知识不得标成 [n] 证据，也不得替代核心训练处方字段的 evidence 来源。
 
 请输出简洁、可执行、可审核的中文 Markdown，严格遵守引用规则，避免编造资料来源。
+{QA_REPORT_CONTRACT_INSTRUCTION if state.get("intent_type") == "qa" else ""}
 {get_security_prompt_suffix()}"""
 
     try:
@@ -107,7 +96,7 @@ Wiki 概念补充上下文：
             f"## {fallback_title}\n"
             f"- 问题：{state.get('query', '')}\n"
             f"- 画像摘要：{profile.get('goal', '未知目标')} / {profile.get('weekly_mileage', 0)} km\n"
-            f"- 证据摘要：\n{format_state_evidence_lines(state, limit=5)}"
+            f"- 证据摘要：\n{format_state_evidence_lines(state, limit=None)}"
         )
         return fallback, ensure_usage(state.get("token_usage"))
 

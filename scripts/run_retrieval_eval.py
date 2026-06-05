@@ -48,7 +48,8 @@ def compute_metrics(dataset: list[dict], chunks, vectorizer, matrix, bm25, top_k
     chunk_lookup = {c["chunk_id"]: c for c in flat_chunks if c.get("chunk_id")}
 
     # --- 正例评测 ---
-    exact_matches = 0
+    exact_matches = 0        # relevant_ids 宽松命中
+    strict_exact_matches = 0 # ref_id 严格命中
     same_page_matches = 0
     same_source_matches = 0
     reciprocal_ranks = []
@@ -72,9 +73,12 @@ def compute_metrics(dataset: list[dict], chunks, vectorizer, matrix, bm25, top_k
         ref_source = ref_chunk.get("source_file", "")
         ref_page = ref_chunk.get("page", 0)
 
-        # 精确片段召回
-        if ref_id and ref_id in hit_ids:
+        # 精确片段召回（relevant_ids：多 chunk 至少命中一个即算成功）
+        if any(rid in hit_ids for rid in relevant_ids if rid):
             exact_matches += 1
+        # 严格精确召回（只认 reference_chunk_id，保持向后兼容）
+        if ref_id and ref_id in hit_ids:
+            strict_exact_matches += 1
 
         # 同页召回
         for h in hits:
@@ -124,10 +128,10 @@ def compute_metrics(dataset: list[dict], chunks, vectorizer, matrix, bm25, top_k
             domain_mismatches += mismatched
             total_domain_hits += total_labeled
 
-        # 按领域统计
+        # 按领域统计（relevant_ids 宽松命中）
         if query_domain:
             per_domain_exact[query_domain]["total"] += 1
-            if ref_id and ref_id in hit_ids:
+            if any(rid in hit_ids for rid in relevant_ids if rid):
                 per_domain_exact[query_domain]["hits"] += 1
             per_domain_recall[query_domain]["total"] += 1
             # 宽松召回：同源文件命中
@@ -187,6 +191,7 @@ def compute_metrics(dataset: list[dict], chunks, vectorizer, matrix, bm25, top_k
         },
         "metrics": {
             "exact_chunk_recall": {"hits": exact_matches, "total": n_pos, "rate": round(exact_matches / max(1, n_pos), 4)},
+            "exact_chunk_recall_strict": {"hits": strict_exact_matches, "total": n_pos, "rate": round(strict_exact_matches / max(1, n_pos), 4), "note": "仅 ref_id 命中，旧指标（向后兼容）"},
             "same_page_recall": {"hits": same_page_matches, "total": n_pos, "rate": round(same_page_matches / max(1, n_pos), 4)},
             "same_source_recall": {"hits": same_source_matches, "total": n_pos, "rate": round(same_source_matches / max(1, n_pos), 4)},
             "mrr": round(statistics.mean(reciprocal_ranks) if reciprocal_ranks else 0.0, 4),
@@ -254,7 +259,11 @@ def print_report(metrics: dict) -> None:
 
     print(f"{'指标':<24} {'命中':>8}  {'得分':>10}")
     print("-" * 42)
-    print(f"{'精确片段召回@5':<24} {m['exact_chunk_recall']['hits']:>3}/{m['exact_chunk_recall']['total']:>3}  {m['exact_chunk_recall']['rate']:>9.1%}")
+    exact = m['exact_chunk_recall']
+    exact_strict = m.get('exact_chunk_recall_strict', {})
+    print(f"{'精确片段召回@5 (relevant)':<30} {exact['hits']:>3}/{exact['total']:>3}  {exact['rate']:>9.1%}")
+    if exact_strict:
+        print(f"{'  其中严格 (ref_id only)':<30} {exact_strict['hits']:>3}/{exact_strict['total']:>3}  {exact_strict['rate']:>9.1%}")
     print(f"{'同页召回@5':<24} {m['same_page_recall']['hits']:>3}/{m['same_page_recall']['total']:>3}  {m['same_page_recall']['rate']:>9.1%}")
     print(f"{'同文档召回@5':<24} {m['same_source_recall']['hits']:>3}/{m['same_source_recall']['total']:>3}  {m['same_source_recall']['rate']:>9.1%}")
     print(f"{'MRR':<24} {'':>8}  {m['mrr']:>10.4f}")
@@ -277,7 +286,7 @@ def print_report(metrics: dict) -> None:
     print(f"  反例: 均值={sd['negative']['mean']:.4f} 中位={sd['negative']['median']:.4f}")
 
     print()
-    print("按领域精确召回:")
+    print("按领域精确召回 (relevant_ids):")
     for domain, stats in metrics.get("per_domain_exact_recall", {}).items():
         print(f"  {domain}: {stats['hits']}/{stats['total']} = {stats['rate']:.1%}")
 

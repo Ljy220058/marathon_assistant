@@ -1,0 +1,102 @@
+<h2>重新设计：去卡片化智能文档美术方向</h2>
+<p class="subtitle">去掉“卡片堆叠感”，改成更像专业 AI 文档工作台：连续画布、分隔线、层级留白、轻量面板。下面是 3 个非卡片方向。</p>
+
+<style>
+  .canvas-grid{display:grid;gap:22px}.canvas-option{border:1px solid #d9e2ee;border-radius:28px;overflow:hidden;background:#fff;cursor:pointer}.canvas-option:hover{outline:2px solid #8bb8ff}.canvas-option.selected{outline:3px solid #2563eb}.canvas-preview{min-height:420px}.canvas-caption{padding:16px 20px;border-top:1px solid #e8eef6;background:#fff}.canvas-caption h3{margin:0 0 6px}.canvas-caption p{margin:0;color:#64748b;line-height:1.55}.line{height:1px;background:#e5edf5}.muted{color:#64748b}.tiny{font-size:12px}.status-dot{width:8px;height:8px;border-radius:99px;background:#10b981;display:inline-block;margin-right:6px}.input-line{border:0;border-bottom:1.5px solid #cbd5e1;padding:14px 0;color:#475569}.answer-text{line-height:1.75;color:#102033}.evidence-row{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-top:1px solid #e5edf5}.warning-strip{display:flex;gap:10px;align-items:flex-start;padding:12px 0;color:#92400e;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a}.rail-tab{padding:8px 0;color:#64748b}.rail-tab.active{color:#0f172a;font-weight:800}.hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 78% 10%,rgba(34,211,238,.18),transparent 34%),radial-gradient(circle at 8% 0%,rgba(14,165,233,.12),transparent 28%);pointer-events:none}.mono-label{letter-spacing:.08em;text-transform:uppercase;font-size:11px;color:#64748b}.glass-line{border-top:1px solid rgba(148,163,184,.25)}
+</style>
+
+<div class="canvas-grid">
+  <div class="canvas-option" data-choice="editorial" onclick="toggleSelect(this)">
+    <div class="canvas-preview" style="position:relative;background:#fbfdfd;color:#102033;padding:0;">
+      <div class="hero-glow"></div>
+      <div style="position:relative;display:grid;grid-template-columns:190px minmax(0,1fr);min-height:420px;">
+        <aside style="padding:34px 26px;border-right:1px solid #e5edf5;">
+          <div style="font-weight:900;font-size:18px;margin-bottom:34px;">Marathon AI</div>
+          <div class="rail-tab">今日</div>
+          <div class="rail-tab">计划</div>
+          <div class="rail-tab">我的情况</div>
+          <div class="rail-tab active">依据</div>
+        </aside>
+        <main style="padding:38px 46px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;">
+            <div>
+              <div class="mono-label">Knowledge Assistant</div>
+              <h3 style="font-size:30px;line-height:1.12;margin:6px 0 0;letter-spacing:-.03em;">问知识库，查训练依据</h3>
+            </div>
+            <div class="tiny muted"><span class="status-dot"></span>知识库已连接</div>
+          </div>
+          <div class="input-line">膝盖疼还能继续跑吗？</div>
+          <section style="margin-top:34px;max-width:760px;">
+            <div class="mono-label">AI Answer</div>
+            <div class="warning-strip" style="margin:12px 0 18px;"><strong>⚠</strong><span>证据覆盖不足：缺少疼痛等级、持续时间和是否影响步态。</span></div>
+            <p class="answer-text">如果只是轻微不适，可以优先降低强度并观察；如果疼痛持续、加重或影响步态，应停止跑步并寻求专业评估。当前建议基于知识库中的伤病风险和训练负荷原则生成。</p>
+          </section>
+          <section style="margin-top:28px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div class="mono-label">Evidence</div><button class="mock-button" style="background:transparent;color:#0f766e;border:0;padding:0;">全部展开</button></div>
+            <div class="evidence-row"><span>伤病风险依据 · 2 条</span><span>展开 ↓</span></div>
+            <div class="evidence-row"><span>训练强度调整 · 3 条</span><span>展开 ↓</span></div>
+            <div class="evidence-row"><span>官方/论文来源 · 4 条</span><span>展开 ↓</span></div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div class="canvas-caption"><h3>A. Editorial 文档画布</h3><p>像高端文档/研究产品，不靠卡片堆叠，而靠分隔线、留白和标题层级。适合长期阅读和专业可信感。</p></div>
+  </div>
+
+  <div class="canvas-option" data-choice="command" onclick="toggleSelect(this)">
+    <div class="canvas-preview" style="background:#08111f;color:#e6f4ff;padding:36px 46px;position:relative;">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(34,211,238,.12),transparent 38%),radial-gradient(circle at 85% 20%,rgba(16,185,129,.18),transparent 32%);"></div>
+      <div style="position:relative;display:grid;gap:26px;">
+        <header style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(148,163,184,.25);padding-bottom:18px;">
+          <div style="font-weight:900;font-size:18px;">马拉松助手 / 依据</div>
+          <div class="tiny" style="color:#67e8f9;">● KB ONLINE</div>
+        </header>
+        <div style="font-size:36px;line-height:1.08;font-weight:900;letter-spacing:-.04em;max-width:680px;">Ask the training knowledge base.</div>
+        <div style="display:flex;gap:12px;border-bottom:1px solid rgba(103,232,249,.42);padding-bottom:14px;color:#bae6fd;"><span style="color:#22d3ee;">⌕</span><span>膝盖疼还能继续跑吗？</span><span style="margin-left:auto;color:#67e8f9;">发送 ↵</span></div>
+        <section style="display:grid;grid-template-columns:1fr 260px;gap:34px;align-items:start;">
+          <div>
+            <div class="tiny" style="color:#93c5fd;margin-bottom:12px;">ANSWER</div>
+            <div style="border-left:3px solid #fb923c;padding:10px 0 10px 14px;color:#fed7aa;margin-bottom:18px;">证据不足：请补充疼痛等级与持续时间。</div>
+            <p style="line-height:1.75;color:#dbeafe;margin:0;">建议先降低强度，避免继续进行间歇、节奏跑或长距离。如果疼痛影响步态，停止训练并寻求专业帮助。</p>
+          </div>
+          <div style="border-left:1px solid rgba(148,163,184,.25);padding-left:22px;display:grid;gap:14px;">
+            <div class="tiny" style="color:#93c5fd;">EVIDENCE</div>
+            <div class="glass-line" style="padding-top:12px;display:flex;justify-content:space-between;">伤病风险 <span>↓</span></div>
+            <div class="glass-line" style="padding-top:12px;display:flex;justify-content:space-between;">训练强度 <span>↓</span></div>
+            <div class="glass-line" style="padding-top:12px;display:flex;justify-content:space-between;">论文来源 <span>↓</span></div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="canvas-caption"><h3>B. Command Center 深色工作台</h3><p>速度感和 AI 工具感强，适合品牌展示；但文档问答长时间阅读可能累，需谨慎。</p></div>
+  </div>
+
+  <div class="canvas-option" data-choice="splitline" onclick="toggleSelect(this)">
+    <div class="canvas-preview" style="background:#f7f8f5;color:#1c241f;padding:0;">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:420px;">
+        <main style="padding:42px 50px;">
+          <div style="display:flex;gap:14px;align-items:center;margin-bottom:42px;"><div style="width:38px;height:38px;border-radius:99px;background:#14251d;color:#d9f99d;display:grid;place-items:center;font-weight:900;">M</div><strong>马拉松助手</strong><span class="muted">/ 依据</span></div>
+          <div style="font-size:13px;color:#64748b;margin-bottom:10px;">智能文档</div>
+          <h3 style="font-size:34px;line-height:1.1;margin:0 0 30px;letter-spacing:-.035em;max-width:620px;">把训练知识库变成可以追问的依据层。</h3>
+          <div style="border:1px solid #cdd8cf;border-radius:999px;background:#fff;padding:13px 18px;display:flex;justify-content:space-between;margin-bottom:34px;"><span class="muted">膝盖疼还能继续跑吗？</span><strong>发送</strong></div>
+          <div style="border-top:1px solid #d9e2dc;padding-top:24px;">
+            <div style="font-size:13px;color:#64748b;margin-bottom:12px;">AI 回答</div>
+            <div style="background:#fff9e8;border-left:4px solid #d97706;padding:12px 14px;margin-bottom:16px;">证据覆盖不足：缺少疼痛等级和持续时间。</div>
+            <p style="line-height:1.75;margin:0;">可以先下调强度并观察，但不建议在疼痛不明时继续高强度训练。若疼痛加重或影响步态，应停止训练。</p>
+          </div>
+        </main>
+        <aside style="border-left:1px solid #d9e2dc;padding:42px 28px;background:#fbfcf8;">
+          <div style="display:flex;align-items:center;gap:8px;color:#047857;margin-bottom:34px;"><span class="status-dot"></span>知识库已连接</div>
+          <div style="font-size:13px;color:#64748b;margin-bottom:16px;">引用依据</div>
+          <div class="evidence-row">伤病风险依据 <span>↓</span></div>
+          <div class="evidence-row">训练强度调整 <span>↓</span></div>
+          <div class="evidence-row">恢复与营养建议 <span>↓</span></div>
+          <div class="evidence-row">官方/论文来源 <span>↓</span></div>
+        </aside>
+      </div>
+    </div>
+    <div class="canvas-caption"><h3>C. Split-Line 双栏分线风</h3><p>不是卡片，而是“主回答 + 右侧依据目录”的连续页面。桌面端很好看，移动端可自然上下堆叠。</p></div>
+  </div>
+</div>
+
+<div class="section"><h3>这次的设计方向</h3><p>我建议改用 <strong>A Editorial 文档画布</strong> 或 <strong>C Split-Line 双栏分线风</strong>：都去掉卡片感，靠排版、线条和留白建立高级感；比原来的卡片式更适合“智能文档”。</p></div>

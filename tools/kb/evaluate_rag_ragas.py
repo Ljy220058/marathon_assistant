@@ -1,7 +1,9 @@
 import asyncio
+import argparse
 import json
 import os
 import sys
+import types
 from pathlib import Path
 from typing import Dict, Iterable
 
@@ -46,9 +48,33 @@ OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", OLLAMA_MODEL)
 # 初始化 LLM
 llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL)
 embeddings = OllamaEmbeddings(model=OLLAMA_EMBED_MODEL, base_url=OLLAMA_BASE_URL)
+DEFAULT_VECTOR_DIR = base_dir / "data" / "vector_kb" / "v2"
+
+
+def _install_ragas_legacy_import_shims() -> None:
+    """Keep ragas 0.2.x importable with the current LangChain packages."""
+
+    module_name = "langchain_community.chat_models.vertexai"
+    if module_name in sys.modules:
+        return
+
+    try:
+        __import__(module_name)
+        return
+    except ModuleNotFoundError:
+        pass
+
+    module = types.ModuleType(module_name)
+
+    class ChatVertexAI:  # pragma: no cover - compatibility placeholder only
+        pass
+
+    module.ChatVertexAI = ChatVertexAI
+    sys.modules[module_name] = module
 
 
 def build_ragas_metrics():
+    _install_ragas_legacy_import_shims()
     try:
         from datasets import Dataset
         from ragas import evaluate
@@ -138,9 +164,15 @@ def _compute_retrieval_metrics(
         for key, label in metric_defs.items()
     }
 
-    for res in retrieval_results:
-        target = res["ref_id"]
-        retrieved = res["retrieved_ids"]
+    evaluated_results = [
+        res
+        for res in retrieval_results
+        if str(res.get("sample_type") or "positive") not in {"negative", "out_of_domain"}
+    ]
+
+    for res in evaluated_results:
+        target = res.get("ref_id") or ""
+        retrieved = list(res.get("retrieved_ids") or [])
 
         for mode, bucket in totals.items():
             rank = _find_match_rank(target, retrieved, chunk_lookup, mode)
@@ -150,7 +182,7 @@ def _compute_retrieval_metrics(
             bucket["mrr_sum"] += 1.0 / rank
             bucket["map_sum"] += 1.0 / rank
 
-    count = len(retrieval_results) or 1
+    count = len(evaluated_results) or 1
     return {
         mode: {
             "label": bucket["label"],
@@ -161,12 +193,82 @@ def _compute_retrieval_metrics(
         for mode, bucket in totals.items()
     }
 
-async def run_evaluation():
+
+def _compute_retrieval_quality_metrics(
+    retrieval_results: list[dict],
+    chunk_lookup: Dict[str, dict],
+    *,
+    k: int = 5,
+) -> Dict[str, float]:
+    positives = [res for res in retrieval_results if str(res.get("sample_type") or "positive") in {"positive", "near_miss"}]
+    negatives = [res for res in retrieval_results if str(res.get("sample_type") or "") in {"negative", "out_of_domain"}]
+    positive_count = len(positives) or 1
+    negative_count = len(negatives) or 1
+
+    recall_hits = 0
+    precision_sum = 0.0
+    mrr_sum = 0.0
+    domain_mismatch_hits = 0
+    unsafe_hits = 0
+
+    for res in positives:
+        target = str(res.get("ref_id") or "")
+        retrieved = list(res.get("retrieved_ids") or [])[:k]
+        expected_domain = str(res.get("expected_domain") or "").strip()
+        relevant_ids = set(str(item) for item in (res.get("relevant_ids") or []) if str(item).strip())
+        if target:
+            relevant_ids.add(target)
+
+        relevant_ranks = [rank for rank, item_id in enumerate(retrieved, start=1) if item_id in relevant_ids]
+        if relevant_ranks:
+            recall_hits += 1
+            mrr_sum += 1.0 / relevant_ranks[0]
+        precision_sum += len(relevant_ranks) / max(1, min(k, len(retrieved) or k))
+
+        if expected_domain:
+            for item_id in retrieved:
+                chunk = chunk_lookup.get(item_id) or {}
+                domains = {
+                    str(chunk.get(key) or "").strip()
+                    for key in ("domain_pack", "evidence_domain", "knowledge_layer")
+                    if str(chunk.get(key) or "").strip()
+                }
+                domains.update(str(item).strip() for item in (chunk.get("domain_terms") or []) if str(item).strip())
+                if domains and expected_domain not in domains:
+                    domain_mismatch_hits += 1
+                    break
+
+    for res in negatives:
+        retrieved = list(res.get("retrieved_ids") or [])[:k]
+        if retrieved:
+            unsafe_or_core = False
+            for item_id in retrieved:
+                chunk = chunk_lookup.get(item_id) or {}
+                permission = str(chunk.get("prescription_permission") or "")
+                allowed_use = str(chunk.get("allowed_use") or "")
+                domain = str(chunk.get("evidence_domain") or chunk.get("domain_pack") or "")
+                if permission == "can_write_core" or allowed_use == "core_prescription" or domain in {"medical_safety", "medical_risk"}:
+                    unsafe_or_core = True
+                    break
+            if unsafe_or_core:
+                unsafe_hits += 1
+
+    negative_hit_count = sum(1 for res in negatives if list(res.get("retrieved_ids") or [])[:k])
+    return {
+        f"recall@{k}": recall_hits / positive_count,
+        f"precision@{k}": precision_sum / positive_count,
+        "mrr": mrr_sum / positive_count,
+        "negative_hit_rate": negative_hit_count / negative_count if negatives else 0.0,
+        "domain_mismatch_rate": domain_mismatch_hits / positive_count,
+        "unsafe_retrieval_rate": unsafe_hits / negative_count if negatives else 0.0,
+    }
+
+async def run_evaluation(vector_dir: Path | None = None):
     Dataset, evaluate, metrics = build_ragas_metrics()
     metric_names = _metric_names(metrics)
 
     # 1. 加载向量库
-    vector_dir = base_dir / "data" / "vector_kb" / "default"
+    vector_dir = Path(vector_dir or DEFAULT_VECTOR_DIR)
     chunks, vectorizer, matrix, bm25 = load_vector_kb(vector_dir)
     chunk_lookup = _build_chunk_lookup(chunks)
     
@@ -216,7 +318,10 @@ async def run_evaluation():
         
         retrieval_results.append({
             "ref_id": ref_id,
-            "retrieved_ids": retrieved_ids
+            "retrieved_ids": retrieved_ids,
+            "relevant_ids": list(item.get("relevant_ids") or []),
+            "expected_domain": str(item.get("expected_domain") or ""),
+            "sample_type": str(item.get("sample_type") or "positive"),
         })
 
     # 4. 计算 Ragas 指标
@@ -245,6 +350,7 @@ async def run_evaluation():
     # 5. 计算传统检索指标 (Recall@K, MRR, MAP)
     print("正在计算传统检索指标...")
     retrieval_metrics = _compute_retrieval_metrics(retrieval_results, chunk_lookup)
+    retrieval_quality_metrics = _compute_retrieval_quality_metrics(retrieval_results, chunk_lookup, k=5)
     
     # 6. 生成报告
     print("\n" + "="*30)
@@ -259,6 +365,10 @@ async def run_evaluation():
         print(f"  MAP@5:    {bucket['map']:.4f}")
     print("-" * 20)
     print(f"Ragas 自动评估指标:")
+    print("Retrieval-only quality metrics:")
+    for metric_name, score in retrieval_quality_metrics.items():
+        print(f"- {metric_name}: {score:.4f}")
+    print("-" * 20)
     for metric_name, score in ragas_scores.items():
         print(f"- {metric_name}: {score:.4f}")
     print("="*30)
@@ -276,8 +386,10 @@ async def run_evaluation():
             f.write(f"| 传统检索 | {bucket['label']} Recall@5 | {bucket['recall']:.4f} |\n")
             f.write(f"| 传统检索 | {bucket['label']} MRR@5 | {bucket['mrr']:.4f} |\n")
             f.write(f"| 传统检索 | {bucket['label']} MAP@5 | {bucket['map']:.4f} |\n")
+        for metric_name, score in retrieval_quality_metrics.items():
+            f.write(f"| Retrieval-only | {metric_name} | {score:.4f} |\n")
         for metric_name, score in ragas_scores.items():
-            f.write(f"| Ragas | {metric_name} | {score:.4f} |\n")
+            f.write(f"| Generation/Ragas | {metric_name} | {score:.4f} |\n")
         f.write("\n传统检索指标口径说明：`精确块命中` 要求命中同一 `chunk_id`；`同页命中` 允许命中同一文档同一页的相邻块；`同文档命中` 只要求命中同一 `source_file`。\n")
         
         f.write("\n## 2. 详细数据样本 (Top 3)\n\n")
@@ -293,4 +405,7 @@ async def run_evaluation():
     print(f"详细报告已生成至: {report_path}")
 
 if __name__ == "__main__":
-    asyncio.run(run_evaluation())
+    parser = argparse.ArgumentParser(description="Run Marathon Assistant RAG evaluation.")
+    parser.add_argument("--vector-dir", default=str(DEFAULT_VECTOR_DIR))
+    args = parser.parse_args()
+    asyncio.run(run_evaluation(Path(args.vector_dir)))
