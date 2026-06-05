@@ -689,6 +689,7 @@ def extract_semantic_terms(text: str) -> dict:
             keywords_en.extend(hint.split()[:6])
             synonyms.append(hint)
     domain_terms = []
+    # 中文关键词 → 领域（保持不变）
     for term, domain in (
         # 训练方案
         ("减量", "training_protocol"),
@@ -740,9 +741,53 @@ def extract_semantic_terms(text: str) -> dict:
         ("高温", "medical_safety"),
         ("降温", "medical_safety"),
         ("热适应", "medical_safety"),
+        # 遗漏的中文关键词
+        ("力量", "training_protocol"),
+        ("耐力", "training_protocol"),
+        ("专项", "training_protocol"),
     ):
         if term in value and domain not in domain_terms:
             domain_terms.append(domain)
+
+    # 英文关键词 → 领域（纯英文 query 无法命中中文关键词时走这里）
+    value_lower = value.lower()
+    _ENGLISH_DOMAIN_MAP = {
+        "nutrition": (
+            "nutrition", "nutrient", "carbohydrate", "carb", "protein",
+            "hydration", "electrolyte", "fueling", "glycogen", "dehydration",
+            "diet", "supplement", "caffeine", "nitrate", "meal",
+            "calcium", "zma", "glycerol", "hyperhydration", "intake",
+            "omega-3", "omega 3", "dha", "epa", "fatty acid", "dosage",
+            "calorie", "banana",
+        ),
+        "injury_safety": (
+            "injury", "overtraining", "overreaching", "strain", "overuse",
+            "tendon", "fracture", "bone stress", "plantar", "knee",
+            "muscle damage", "fatigue", "risk factor", "addiction",
+            "biomechanic", "tibial", "bsi", "return to run", "return-to-run",
+        ),
+        "medical_safety": (
+            "renal", "heat stroke", "heat stress", "hyperthermia",
+            "cardiac", "chest pain", "dizziness", "contraindication",
+            "symptom", "ibuprofen", "headache", "cold", "illness",
+            "hematological", "biomarker", "red-s", "ioc", "female athlete triad",
+        ),
+        "training_protocol": (
+            "training", "endurance", "aerobic", "anaerobic", "vo2max",
+            "lactate", "threshold", "periodization", "pace", "stride",
+            "cadence", "biomechanics", "marathon", "half marathon",
+            "interval", "tempo", "easy run", "long run", "taper",
+            "workout", "repetition", "mental fatigue",
+            "intensity zone", "intensity model", "norwegian",
+            "acute", "chronic", "workload", "running economy",
+            "runner", "running",
+        ),
+    }
+    for domain, keywords in _ENGLISH_DOMAIN_MAP.items():
+        if any(kw in value_lower for kw in keywords):
+            if domain not in domain_terms:
+                domain_terms.append(domain)
+        # 英文可匹配多个领域（如 "renal complications after marathon" → medical_safety + training_protocol）
     return {
         "keywords_zh": list(dict.fromkeys(keywords_zh)),
         "keywords_en": list(dict.fromkeys(keywords_en)),
@@ -787,7 +832,8 @@ def _route_query_to_shards(query_text: str) -> list[str]:
     query_terms = extract_semantic_terms(query_text)
     query_domains = set(query_terms.get("domain_terms") or [])
     if not query_domains:
-        return list(MARATHON_DOMAIN_SHARDS)
+        # 无领域标签 → 可能 OOD，不搜任何分库
+        return []
     matching = query_domains & set(MARATHON_DOMAIN_SHARDS)
     if matching:
         return sorted(matching)
@@ -1707,8 +1753,10 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
     if not variants:
         return []
 
-    # 路由决定搜哪些分库
-    shards_to_search = _route_query_to_shards(query)
+    # 路由：优先用第一个增强 variant 提取领域（英文 query 依赖 QUERY_HINTS 的中英映射）
+    shards_to_search = _route_query_to_shards(variants[0])
+    if not shards_to_search:
+        return []  # 无领域匹配 → OOD，直接返回空
     if not shards_to_search:
         return []
 
@@ -1731,20 +1779,34 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
 
     def _search_variant_sharded_with_bm25(variant: str) -> list[dict]:
         """分库 FAISS + 分库 BM25 → RRF 融合。BM25 只搜匹配分库，不跨领域。"""
-        shard_hits = _search_variant_in_shards(variant)
+        try:
+            shard_hits = _search_variant_in_shards(variant)
+        except Exception as exc:
+            logger.error("分库 FAISS 检索失败: %s", exc)
+            shard_hits = []
         rrf_candidate_k = (top_k or 5) * 4
-        # BM25 按分库检索，每个分库独立搜
+        # BM25 按分库检索，每个分库独立搜，后置领域过滤
         bm25_hits: list[dict] = []
         for shard_name in shards_to_search:
             sb = shard_bm25.get(shard_name)
             sc = shard_chunks.get(shard_name, [])
             if sb and sc:
-                hits = fallback_search(variant, sc, bm25=sb, top_k=rrf_candidate_k)
+                try:
+                    hits = fallback_search(variant, sc, bm25=sb, top_k=rrf_candidate_k)
+                except Exception as exc:
+                    logger.error("分库 BM25 检索失败 [%s]: %s", shard_name, exc)
+                    continue
                 for h in hits:
                     h["retrieval_mode"] = f"bm25:{shard_name}"
                     h["query_variant"] = variant
+                if get_settings().domain_filter_enabled:
+                    hits = _filter_hits_by_domain(variant, hits)
                 bm25_hits.extend(hits)
-        return _rrf_fusion(shard_hits, bm25_hits, top_k=top_k or 5)
+        try:
+            return _rrf_fusion(shard_hits, bm25_hits, top_k=top_k or 5)
+        except Exception as exc:
+            logger.error("RRF 融合失败 (FAISS=%d, BM25=%d): %s", len(shard_hits), len(bm25_hits), exc)
+            return (shard_hits + bm25_hits)[:top_k or 5]
 
     if len(variants) == 1:
         try:
@@ -1755,7 +1817,8 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
                 return []
             all_chunks = [c for clist in shard_chunks.values() for c in clist]
             fallback_bm25 = build_bm25_fallback_index(all_chunks)
-            return fallback_search(question, all_chunks, bm25=fallback_bm25, top_k=top_k)
+            raw_hits = fallback_search(question, all_chunks, bm25=fallback_bm25, top_k=top_k)
+            return _filter_hits_by_domain(question, raw_hits) if get_settings().domain_filter_enabled else raw_hits
     else:
         hit_groups_by_variant: dict[str, list[dict]] = {}
         with ThreadPoolExecutor(max_workers=min(len(variants), 4)) as executor:
@@ -1773,7 +1836,8 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
                 return []
             all_chunks = [c for clist in shard_chunks.values() for c in clist]
             fallback_bm25 = build_bm25_fallback_index(all_chunks)
-            return fallback_search(question, all_chunks, bm25=fallback_bm25, top_k=top_k)
+            raw_hits = fallback_search(question, all_chunks, bm25=fallback_bm25, top_k=top_k)
+            return _filter_hits_by_domain(question, raw_hits) if get_settings().domain_filter_enabled else raw_hits
 
     return _merge_ranked_hits(hit_groups, top_k=top_k)
 
@@ -1816,7 +1880,7 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
             hits.append(hit)
         hits = sorted(hits, key=lambda x: x["score"], reverse=True)
         if get_settings().domain_filter_enabled:
-            hits = _filter_hits_by_domain(query, hits)
+            hits = _filter_hits_by_domain(variant, hits)
         return hits
 
     def _search_one_variant_with_bm25(variant: str) -> list[dict]:
@@ -1829,10 +1893,12 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
         # BM25 关键词检索（补充 FAISS 对专有名词/精确短语的盲区）
         rrf_candidate_k = (top_k or 5) * 4  # 候选池大小 = top_k × 4
         raw_bm25_hits = fallback_search(variant, chunks, bm25=bm25, top_k=rrf_candidate_k)
-        # BM25 hit 标记模式
+        # BM25 hit 标记模式，后置领域过滤
         for h in raw_bm25_hits:
             h["retrieval_mode"] = "bm25"
             h["query_variant"] = variant
+        if get_settings().domain_filter_enabled:
+            raw_bm25_hits = _filter_hits_by_domain(variant, raw_bm25_hits)
         # RRF 融合：语义相关性 + 关键词精确匹配
         return _rrf_fusion(faiss_hits, raw_bm25_hits, top_k=top_k or 5)
 
