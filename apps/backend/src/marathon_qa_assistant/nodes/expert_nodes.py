@@ -398,7 +398,7 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
     review_feedback: List[str] = []
     passed = True
 
-    risky_keywords = ["每日高强度", "无休息", "强忍疼痛", "all-out", "极限冲刺"]
+    risky_keywords = ["强忍疼痛"]
     for keyword in risky_keywords:
         if keyword in draft:
             passed = False
@@ -421,45 +421,41 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
     }
 
 
-# ── AgentDoG P0: 反馈 → 三元组诊断映射 ──
+# ── AgentDoG P0 (修订): 反馈 → 诊断映射，仅保留确定性检查项 ──
+# 主观判断项 (overtraining_rx, pacing_overly_aggressive, recovery_insufficient 等) 已移除。
+# 审计职责: 引用诚实 + 文献一致 + 硬合同 (用户要求) + 医疗红线。不审训练方案是否"最优"。
 
-# 反馈关键词 → (risk_source, failure_mode, real_world_harm)
 _FEEDBACK_TRIPLE_MAP: dict[str, tuple[str, str, str]] = {
-    "引用编号不存在": ("llm_generation", "hallucinated_claim", "performance_regression"),
-    "缺少 source_path": ("rag_retrieval", "evidence_misapplication", "performance_regression"),
-    "HMP 专项验证": ("llm_generation", "pacing_overly_aggressive", "stress_fracture"),
-    "文献约束": ("llm_generation", "overtraining_rx", "overtraining_syndrome"),
-    "高风险表述": ("llm_generation", "overtraining_rx", "overtraining_syndrome"),
-    "高强度": ("llm_generation", "overtraining_rx", "overtraining_syndrome"),
-    "无休息": ("llm_generation", "recovery_insufficient", "overtraining_syndrome"),
-    "强忍疼痛": ("user_input", "pain_misinterpretation", "stress_fracture"),
-    "计划型请求缺少": ("rag_retrieval", "evidence_misapplication", "performance_regression"),
-    "therapist": ("user_input", "contraindication_missed", "compensatory_injury"),
+    # ── 确定性: 审计可证实 ──
+    "引用编号不存在": ("llm_generation", "hallucinated_claim", "citation_break"),
+    "缺少 source_path": ("rag_retrieval", "citation_integrity", "untraceable_evidence"),
+    "强忍疼痛": ("user_input", "contraindication_missed", "injury_risk"),
+    "therapist": ("user_input", "contraindication_missed", "injury_risk"),
+    # 硬合同: plan 不符合用户显式要求
+    "合同": ("llm_generation", "contract_violation", "user_misalignment"),
+}
+
+# targeted_fix: 仅保留可执行、非主观的建议
+_FIX_MAP: dict[str, str] = {
+    "hallucinated_claim": "删除或替换为有本地证据支持的表述，检查引用编号对应关系",
+    "citation_integrity": "为每个处方级建议附加明确的 [n] 证据引用",
+    "contraindication_missed": "立即就医评估，暂停相关训练直至医生确认安全",
+    "contract_violation": "按照用户明确要求修正计划：周数、可用日、最长时长、训练类型",
+    "untraceable_evidence": "补充证据来源路径或降级为「基于通用知识」标注",
+    "user_misalignment": "对照用户画像和反馈逐项修正",
 }
 
 
 def _classify_feedback(feedback_text: str) -> tuple[str, str, str, str]:
-    """将审计反馈文本分类为三元组 + 定向修复建议。"""
+    """将审计反馈文本分类为诊断 + 定向修复建议。仅处理确定性检查项。"""
     risk_source = "llm_generation"
-    failure_mode = "evidence_misapplication"
-    real_world_harm = "performance_regression"
+    failure_mode = "citation_integrity"
+    real_world_harm = "untraceable_evidence"
     for keyword, triple in _FEEDBACK_TRIPLE_MAP.items():
         if keyword in feedback_text:
             risk_source, failure_mode, real_world_harm = triple
             break
-
-    # 生成定向修复建议
-    fix_map = {
-        "hallucinated_claim": "删除或替换为有本地证据支持的表述，检查引用编号对应关系",
-        "evidence_misapplication": "为每个处方级建议附加明确的 [n] 证据引用，确保引用链可追溯",
-        "pacing_overly_aggressive": "降低配速目标至用户当前能力的 80% 区间，增加渐进过渡周",
-        "overtraining_rx": "在连续高强度课之间插入恢复日或轻松跑，确保周跑量增幅 ≤10%",
-        "recovery_insufficient": "每周至少安排 2 天完全休息或主动恢复，长距离跑后安排恢复日",
-        "pain_misinterpretation": "任何疼痛信号应先建议就医评估，不得生成「坚持一下」类建议",
-        "contraindication_missed": "检查用户画像中的伤病标记，涉及受伤部位的训练应标注风险",
-    }
-    targeted_fix = fix_map.get(failure_mode, "重新审查该部分内容，确保安全约束生效")
-
+    targeted_fix = _FIX_MAP.get(failure_mode, "重新审查该部分内容，确保符合用户明确要求")
     return risk_source, failure_mode, real_world_harm, targeted_fix
 
 
@@ -551,7 +547,7 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
     except Exception:
         pass
 
-    risky_keywords = ["每日高强度", "无休息", "强忍疼痛", "all-out", "极限冲刺"]
+    risky_keywords = ["强忍疼痛"]
     for keyword in risky_keywords:
         if keyword in draft:
             feedback.append(f"检测到潜在高风险表述：{keyword}")
@@ -564,6 +560,44 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
     therapist_passed = state.get("therapist_passed", True)
     if therapist_passed is False and state.get("review_feedback"):
         feedback.append(str(state.get("review_feedback")))
+
+    # ── P1 修订: 硬合同检查 — 比对 plan 是否满足用户显式要求 ──
+    profile = state.get("user_profile") or {}
+    # 1. 可用训练日
+    available_days_str = str(profile.get("available_days") or "")
+    if available_days_str:
+        expected_days = [d.strip() for d in available_days_str.replace(",", "，").split("，") if d.strip()]
+        expected_count = len(expected_days)
+        if structured_plan and expected_count:
+            week_plans = structured_plan.get("week_plans", [])
+            if week_plans:
+                plan_day_count = max(len(wp.get("days", [])) for wp in week_plans) if week_plans else 0
+                if plan_day_count > 0 and plan_day_count > expected_count:
+                    feedback.append(f"[合同] 计划安排了 {plan_day_count} 天训练，但用户明确可用 {expected_count} 天 ({available_days_str})")
+    # 2. 最长训练时长
+    max_minutes = profile.get("max_session_minutes")
+    if max_minutes and draft:
+        import re as _re_check
+        max_m = int(max_minutes)
+        minutes_in_draft = _re_check.findall(r'(\d+)\s*(?:分钟|min)', draft)
+        for m_val in minutes_in_draft:
+            if int(m_val) > max_m:
+                feedback.append(f"[合同] 计划安排了 {m_val} 分钟训练，超出用户设定的最长 {max_m} 分钟")
+                break
+    # 3. 用户反馈未处理 (adaptive mode)
+    adaptive_feedback = state.get("adaptive_feedback")
+    if adaptive_feedback and isinstance(adaptive_feedback, str) and adaptive_feedback.strip():
+        if "累" in adaptive_feedback or "疲劳" in adaptive_feedback or "疼" in adaptive_feedback:
+            # 检查 plan 是否降低了强度 — 只 flag，不判断
+            if workflow_kind != "adaptive":
+                feedback.append(f"[合同] 用户反馈了疲劳/疼痛 ({adaptive_feedback[:30]})，但未触发自适应调整模式")
+    # 4. 训练类型覆盖
+    training_types_str = str(profile.get("training_types") or "")
+    if training_types_str and workflow_kind == "plan" and draft:
+        requested_types = [t.strip() for t in training_types_str.replace(",", "，").split("，") if t.strip()]
+        missing_types = [t for t in requested_types if t not in draft]
+        if len(missing_types) >= 2:
+            feedback.append(f"[合同] 用户要求训练类型 {requested_types}，计划未体现: {missing_types}")
 
     approved = not feedback
     consistency = 88 if approved else 60
