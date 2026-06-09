@@ -702,7 +702,7 @@ def _extract_relevance_terms(query: str, entities: List[str]) -> List[str]:
     terms: List[str] = []
     stop_terms = {
         "怎么", "如何", "什么", "选手", "运动员", "进去", "影响", "不影响", "可以", "需要", "这个", "一下",
-        "the", "and", "for", "with", "training", "running",
+        "the", "and", "for", "with", "in", "to", "of", "is", "that", "this", "are",
     }
     for value in list(entities or []) + re.findall(r"[一-鿿A-Za-z0-9_\-]{2,}", str(query or "")):
         term = str(value or "").strip().lower()

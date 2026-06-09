@@ -14,8 +14,8 @@ from marathon_qa_assistant.nodes.common import ensure_usage, input_guard
 
 # 严重红旗关键词：命中后立即拦截并建议就医
 _SEVERE_MEDICAL_RED_FLAGS: List[Tuple[str, List[str], str]] = [
-    ("chest_pain", ["胸痛", "胸痛", "胸口疼", "胸闷", "胸紧", "chest pain", "chest tightness"], "胸痛/胸闷"),
-    ("dyspnea", ["呼吸困难", "喘不上气", "气短", "呼吸急促", "defculty breathing", "short of breath"], "呼吸困难"),
+    ("chest_pain", ["胸痛", "胸口疼", "胸闷", "胸紧", "chest pain", "chest tightness"], "胸痛/胸闷"),
+    ("dyspnea", ["呼吸困难", "喘不上气", "气短", "呼吸急促", "difficulty breathing", "short of breath"], "呼吸困难"),
     ("syncope", ["晕厥", "晕倒", "眼前发黑", "突然晕", "faint", "blackout", "pass out"], "晕厥"),
     ("fracture", ["骨折", "骨裂", "stress fracture", "应力性骨折"], "骨折/骨裂"),
     ("ligament_tear", ["韧带断裂", "韧带撕裂", "ligament tear", "ligament rupture", "前交叉韧带", "ACL"], "韧带损伤"),

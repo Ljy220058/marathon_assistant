@@ -557,8 +557,10 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
     if workflow_kind == "plan" and not (has_rule_skeleton or has_evidence):
         feedback.append("计划型请求缺少规则骨架或证据包支撑")
 
-    therapist_passed = state.get("therapist_passed", True)
-    if therapist_passed is False and state.get("review_feedback"):
+    therapist_passed = state.get("therapist_passed")
+    if therapist_passed is None:
+        feedback.append("治疗师节点未执行 — 无法确认安全审查已完成")
+    elif therapist_passed is False and state.get("review_feedback"):
         feedback.append(str(state.get("review_feedback")))
 
     # ── P1 修订: 硬合同检查 — 比对 plan 是否满足用户显式要求 ──
@@ -642,7 +644,7 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
             },
         },
         "token_usage": ensure_usage(state.get("token_usage")),
-        "reasoning_log": [f"[critic_auditor] approved={approved}, consistency={consistency}, safety={safety}, roi={roi}"],
+        "reasoning_log": [f"[critic_auditor] verdict={audit_verdict}, approved={approved}, evidence_quality={evidence_quality}, issues={len(feedback)}"],
         "execution_trace": [_auditor_trace_step(state, approved, feedback, current_iteration)],
         "audit_diagnosis": _build_ternary_diagnosis(feedback, approved),
     }
