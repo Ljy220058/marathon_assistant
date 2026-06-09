@@ -316,9 +316,46 @@ async def adaptive_coach_node(state: IntegratedState, config: RunnableConfig) ->
 
 
 async def nutritionist_node(state: IntegratedState, config: RunnableConfig) -> dict:
+    # ── v2: 读教练输出，识别训练类型，只给相关营养建议 ──
+    draft = state.get("draft_plan", "") or state.get("final_report", "")
+    profile = state.get("user_profile") or {}
+
+    training_types_in_plan = []
+    type_keywords = {
+        "长距离跑/LSD": ["长距离", "LSD", "lsd", "long run", "35k", "30k", "25k", "20k"],
+        "间歇跑": ["间歇", "interval", "400m", "800m", "1000m", "1600m", "亚索"],
+        "节奏跑/Tempo": ["节奏", "tempo", "Tempo", "阈值跑", "乳酸阈"],
+        "轻松跑/恢复跑": ["轻松跑", "恢复跑", "easy", "recovery", "E跑"],
+        "力量训练": ["力量", "strength", "举铁", "核心", "负重"],
+        "重复跑": ["重复跑", "repetition", "冲刺"],
+        "法特莱克": ["法特莱克", "fartlek", "变速跑"],
+    }
+    for label, keywords in type_keywords.items():
+        if any(kw.lower() in draft.lower() for kw in keywords):
+            training_types_in_plan.append(label)
+
+    goal = profile.get("goal", "")
+    weekly_km = profile.get("weekly_mileage", "")
+    experience = profile.get("experience_level", "")
+
+    plan_context = ""
+    if training_types_in_plan:
+        plan_context = (
+            "⚠️ 教练输出的训练计划包含以下训练类型：" + "、".join(training_types_in_plan) + "。"
+            "只针对这些类型给出营养建议，不要输出计划中未出现的训练类型的营养策略。"
+        )
+    if goal:
+        plan_context += " 用户目标：" + goal + "。"
+    if weekly_km:
+        plan_context += " 当前周跑量：" + str(weekly_km) + "km。"
+    if experience:
+        plan_context += " 经验水平：" + experience + "。"
+    if plan_context:
+        plan_context += "\n如训练计划未包含长距离跑，不要输出赛中补给和碳水加载策略。\n\n"
+
     content, usage = await _run_expert_llm(
         role_name="Nutritionist",
-        task_instruction=(
+        task_instruction=(plan_context +
             "你是马拉松运动营养专家。你的任务是为运动员的日常训练和比赛提供营养、补水和恢复策略建议，"
             "必须严格基于时间线、训练类型和用户画像，给出可量化、可执行的方案。\n\n"
             "══════════════════════════\n"
