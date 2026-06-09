@@ -383,3 +383,82 @@ async def security_gate_node(state: IntegratedState, config: RunnableConfig) -> 
         }
 
     return {"reasoning_log": ["[security] 输入与近期历史通过检查"]}
+
+
+# ── 轨迹级安全扫描：在 formatter 输出前审计完整节点链路 ──
+
+def scan_execution_trace(state: IntegratedState) -> dict:
+    """扫描完整执行轨迹，检测跨节点的安全风险。
+
+    AgentDoG 风格：不只审最终文本，而是审查"每一步调用了什么、收到什么反馈、依据什么决策"。
+    在 formatter 生成 final_report 后、output_guard 检查前调用。
+
+    Returns:
+        {"safe": bool, "alerts": list[str], "risk_level": "none"|"low"|"medium"|"high"}
+    """
+    reasoning_log: list = state.get("reasoning_log") or []
+    log_text = "\n".join(str(item) for item in reasoning_log)
+    alerts: list[str] = []
+
+    # 1. 计划漂移：planner 生成被 safety_gate 拦截的内容
+    if "[security] 已拦截" in log_text and "[planner]" in log_text:
+        alerts.append("[plan_drift] 安全门拦截后 planner 仍生成了内容")
+
+    # 2. 证据覆盖：auditor 拒绝但最终仍通过
+    audit_rejections = sum(1 for line in reasoning_log
+                         if "[auditor]" in str(line) and ("未通过" in str(line) or "拒绝" in str(line) or "rejected" in str(line).lower()))
+    final_approved = any("[auditor]" in str(line) and ("通过" in str(line) or "approved" in str(line).lower())
+                        for line in reasoning_log)
+    if audit_rejections >= 2 and not final_approved:
+        alerts.append(f"[evidence_override] auditor 拒绝 {audit_rejections} 次但未收到最终通过信号")
+
+    # 3. 迭代异常：audit loop 超过 3 次
+    iteration_count = state.get("iteration_count", 0)
+    if iteration_count > 3:
+        alerts.append(f"[loop_anomaly] 审核迭代 {iteration_count} 次仍未收敛")
+
+    # 4. 跨域泄露：coach 节点使用了 nutrition/therapist 专属证据
+    category = str(state.get("category") or "")
+    if category == "coach":
+        evidence_items = (state.get("evidence_bundle") or {}).get("evidence_items") or []
+        leaked_domains = set()
+        for item in (evidence_items or []):
+            ed = item.get("expert_domain", "")
+            if ed in ("nutrition", "rehab_safety") and item.get("confidence_level") == "high":
+                leaked_domains.add(ed)
+        if leaked_domains:
+            alerts.append(f"[domain_leak] coach 节点使用了非教练域证据: {leaked_domains}")
+
+    # 5. 引用断裂：final_report 中的 [n] 引用是否能回溯到 ranked_evidence
+    final_report = str(state.get("final_report") or "")
+    ranked_evidence = state.get("ranked_evidence") or []
+    import re as _re
+    cited_nums = set(int(m) for m in _re.findall(r'\[(\d+)\]', final_report))
+    max_evidence = len(ranked_evidence)
+    if cited_nums and max(cited_nums, default=0) > max_evidence:
+        bad_cites = [n for n in cited_nums if n > max_evidence]
+        alerts.append(f"[citation_break] 引用了不存在的证据编号: {bad_cites} (最大 {max_evidence})")
+
+    # 6. 证据全低置信：所有证据都是 low
+    evidence_items = (state.get("evidence_bundle") or {}).get("evidence_items") or []
+    if evidence_items and all(
+        item.get("confidence_level") == "low"
+        for item in evidence_items if isinstance(item, dict)
+    ):
+        alerts.append("[low_confidence] 所有证据置信度为 low，回答应标注「证据不足」")
+
+    # 确定风险等级
+    if not alerts:
+        risk_level = "none"
+    elif any("plan_drift" in a or "evidence_override" in a for a in alerts):
+        risk_level = "high"
+    elif any("citation_break" in a or "domain_leak" in a for a in alerts):
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+
+    return {
+        "safe": risk_level in ("none", "low"),
+        "alerts": alerts,
+        "risk_level": risk_level,
+    }

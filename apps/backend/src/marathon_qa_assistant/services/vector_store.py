@@ -46,6 +46,7 @@ EVIDENCE_CHAIN_METADATA_KEYS = (
     "text_span_hash",
     "language",
     "evidence_domain",
+    "expert_domain",
     "knowledge_layer",
     "domain_pack",
     "allowed_use",
@@ -82,6 +83,7 @@ EVIDENCE_CHAIN_METADATA_KEYS = (
     "domain_terms",
     "parent_text",  # Parent-Child 检索：小块召回时附带的父级完整上下文
 )
+
 
 
 # 检索增强关键词映射
@@ -1857,14 +1859,15 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
 
 
 def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int | None, bm25=None,
-             *, rerank: bool = False, rerank_candidate_k: int = 20) -> list[dict]:
+             *, rerank: bool = False, rerank_candidate_k: int = 20, en_translation: str = "") -> list[dict]:
     """
     执行检索逻辑。这里的 matrix 实际上是 FAISS 实例，或分库模式下的 shard_stores dict。
 
     Args:
-        rerank: 是否启用 bge-reranker 二阶段精排。启用时 FAISS 粗排取 top rerank_candidate_k
-                条，再经 reranker 精排到 top_k 条。
+        rerank: 是否启用 bge-reranker 二阶段精排。启用时 RRF 候选池扩容到 candidate_k，
+                再经 reranker 精排到 top_k 条。
         rerank_candidate_k: 送 reranker 的候选数，默认 20。
+        en_translation: 英文翻译变体，非空时作为额外 query variant 参与检索融合。
     """
     # 分库检索路径：bm25 是 shard_bm25 dict（由 load_sharded_kb 返回）
     if get_settings().sharded_retrieval_enabled:
@@ -1883,9 +1886,16 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
 
     query = normalize_query_text(normalize_text(question))
     variants = _build_query_variants(query) if get_settings().retrieval_variants_enabled else [_enhance_query_with_hints(query)]
+    # 英文翻译变体追加到 variant 列表，利用现有多 variant + RRF 融合管道
+    if en_translation and en_translation.strip() and en_translation.strip() not in variants:
+        variants.append(en_translation.strip())
     if not variants:
         return []
-    per_variant_k = top_k if top_k is not None else max(10, len(chunks or []))
+
+    # Rerank 候选池扩容：rerank 时 RRF 融合保留更多候选，reranker 再精排到 top_k
+    candidate_k = rerank_candidate_k if rerank else (top_k or 5)
+    merge_k = max(candidate_k, (top_k or 5))
+    per_variant_k = max((top_k or 10), candidate_k)
     chunks_cache = getattr(faiss_store, "_chunk_text_cache", None) or _build_chunk_text_cache(chunks)
 
     def _search_one_variant(variant: str) -> list[dict]:
@@ -1906,28 +1916,26 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
             hits = _filter_hits_by_domain(variant, hits)
         return hits
 
-    def _search_one_variant_with_bm25(variant: str) -> list[dict]:
-        """FAISS + BM25 双路检索 → RRF 融合。top_k 条 FAISS + top_k*4 条 BM25 粗排，RRF 精排到 top_k。"""
-        # FAISS 语义检索（粗排扩大候选池）
+    def _search_one_variant_with_bm25(variant: str, rrf_top_k: int = 5) -> list[dict]:
+        """FAISS + BM25 双路检索 → RRF 融合。rerank 时 rrf_top_k 扩容以提供足够候选池。"""
         try:
             faiss_hits = _search_one_variant(variant)
         except Exception:
             faiss_hits = []
         # BM25 关键词检索（补充 FAISS 对专有名词/精确短语的盲区）
-        rrf_candidate_k = (top_k or 5) * 4  # 候选池大小 = top_k × 4
-        raw_bm25_hits = fallback_search(variant, chunks, bm25=bm25, top_k=rrf_candidate_k)
-        # BM25 hit 标记模式，后置领域过滤
+        bm25_pool_k = rrf_top_k * 4  # BM25 候选池 = RRF 目标 × 4
+        raw_bm25_hits = fallback_search(variant, chunks, bm25=bm25, top_k=bm25_pool_k)
         for h in raw_bm25_hits:
             h["retrieval_mode"] = "bm25"
             h["query_variant"] = variant
         if get_settings().domain_filter_enabled:
             raw_bm25_hits = _filter_hits_by_domain(variant, raw_bm25_hits)
-        # RRF 融合：语义相关性 + 关键词精确匹配
-        return _rrf_fusion(faiss_hits, raw_bm25_hits, top_k=top_k or 5)
+        # RRF 融合：语义相关性 + 关键词精确匹配，融合到 rrf_top_k
+        return _rrf_fusion(faiss_hits, raw_bm25_hits, top_k=rrf_top_k)
 
     if len(variants) == 1:
         try:
-            hit_groups = [_search_one_variant_with_bm25(variants[0])]
+            hit_groups = [_search_one_variant_with_bm25(variants[0], rrf_top_k=merge_k)]
         except Exception as exc:
             logger.error("混合检索失败: %s", exc)
             if not get_settings().bm25_fallback_enabled:
@@ -1937,7 +1945,7 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
     else:
         hit_groups_by_variant: dict[str, list[dict]] = {}
         with ThreadPoolExecutor(max_workers=min(len(variants), 4)) as executor:
-            futures = {executor.submit(_search_one_variant_with_bm25, variant): variant for variant in variants}
+            futures = {executor.submit(_search_one_variant_with_bm25, variant, merge_k): variant for variant in variants}
             for future in as_completed(futures):
                 variant = futures[future]
                 try:
@@ -1952,9 +1960,12 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
             raw_hits = fallback_search(variants[0], chunks, bm25=bm25, top_k=top_k)
             return _filter_hits_by_domain(variants[0], raw_hits) if get_settings().domain_filter_enabled else raw_hits
 
-    result = _merge_ranked_hits(hit_groups, top_k=top_k)
+    # 合并：rerank 时保留 merge_k 候选给 reranker 精排，非 rerank 时直接截断到 top_k
+    result = _merge_ranked_hits(hit_groups, top_k=merge_k)
     if rerank:
         result = _apply_rerank(question, result, top_k, rerank_candidate_k)
+    elif top_k is not None:
+        result = result[:top_k]
     return result
 
 

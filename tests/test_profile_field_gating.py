@@ -1,4 +1,4 @@
-import asyncio
+"""Profile field gating tests — minimum required fields for plan generation."""
 import sys
 from pathlib import Path
 
@@ -11,16 +11,7 @@ if str(BASE_DIR) not in sys.path:
 
 from marathon_qa_assistant.nodes import profile_and_retrieval as profile_module  # noqa: E402
 from marathon_qa_assistant.nodes.profile_and_retrieval import (  # noqa: E402
-    EXTRACT_PROFILE_SYSTEM,
-    FIELD_HINTS,
-    FIELD_LABELS,
-    PROFILE_FIELD_ORDER,
     _detect_missing_fields,
-    profile_selections_to_save,
-)
-from marathon_qa_assistant.nodes.profile_update import (  # noqa: E402
-    PROFILE_UPDATE_SYSTEM,
-    _FIELD_LABEL_MAP,
 )
 
 
@@ -45,131 +36,3 @@ def test_minimum_required_fields_only_block_goal_weekly_days():
     }
 
     assert _detect_missing_fields(state, profile) == []
-
-
-@pytest.mark.skip(reason="功能已重构移除：_detect_missing_enhancement_fields 不存在")
-def test_enhancement_fields_no_longer_hard_block_first_generation():
-    state = _build_plan_state()
-    profile = {
-        "goal": "marathon sub330",
-        "weekly_mileage": 60,
-        "available_days": "Mon,Wed,Sat,Sun",
-        "vo2max": "",
-        "lthr": "",
-        "t_pace": "",
-    }
-
-    assert _detect_missing_fields(state, profile) == []
-    # 以下 import 存在但已不再支持
-    enhancement_missing = []  # noqa: F841
-    assert isinstance(enhancement_missing, list)
-
-
-@pytest.mark.skip(reason="功能已重构移除：pace_preference 不在 PROFILE_FIELD_ORDER 中")
-def test_profile_field_order_includes_pace_preference():
-    assert "pace_preference" in PROFILE_FIELD_ORDER
-
-
-@pytest.mark.skip(reason="功能已重构移除：current_half_time 等跑者校准字段已从系统提示词和字段定义中移除")
-def test_profile_workflow_exposes_runner_calibration_contract_fields():
-    for field in [
-        "current_half_time",
-        "target_half_time",
-        "last_month_mileage",
-        "recent_four_week_mileage",
-        "target_pace",
-        "injury",
-        "recovery_state",
-        "injury_or_fatigue",
-    ]:
-        assert field in EXTRACT_PROFILE_SYSTEM
-        assert field in FIELD_LABELS
-        assert field in FIELD_HINTS
-        assert field in PROFILE_FIELD_ORDER
-
-
-@pytest.mark.skip(reason="功能已重构移除：跑者校准字段不再由 profile_selections_to_save 处理")
-def test_profile_selection_save_preserves_runner_calibration_fields():
-    saved = profile_selections_to_save(
-        {
-            "current_half_time": "1:25:00",
-            "target_half_time": "1:20:00",
-            "last_month_mileage": "260 km",
-            "recent_four_week_mileage": "59.8 km",
-            "target_pace": "3:48/km",
-            "injury": "none",
-            "recovery_state": "normal",
-            "injury_or_fatigue": "none",
-        }
-    )
-
-    assert saved["current_half_time"] == "1:25:00"
-    assert saved["target_half_time"] == "1:20:00"
-    assert saved["last_month_mileage"] == "260 km"
-    assert saved["recent_four_week_mileage"] == "59.8 km"
-    assert saved["target_pace"] == "3:48/km"
-    assert saved["injury"] == "none"
-    assert saved["recovery_state"] == "normal"
-    assert saved["injury_or_fatigue"] == "none"
-
-
-@pytest.mark.skip(reason="功能已重构移除：跑者校准字段不再包含于 PROFILE_UPDATE_SYSTEM 提示词中")
-def test_profile_update_prompt_accepts_runner_calibration_fields():
-    for field in [
-        "current_half_time",
-        "target_half_time",
-        "last_month_mileage",
-        "recent_four_week_mileage",
-        "target_pace",
-        "injury",
-        "recovery_state",
-        "injury_or_fatigue",
-    ]:
-        assert field in PROFILE_UPDATE_SYSTEM
-        assert field in _FIELD_LABEL_MAP
-
-
-@pytest.mark.skip(reason="功能已重构移除：_static_fallback 不再包含 llm_general_knowledge 行为")
-def test_no_evidence_static_fallback_uses_llm_general_knowledge_not_refusal():
-    content = profile_module._static_fallback([], [], "")
-
-    assert "llm_general_knowledge" in content
-    assert "模型通用知识" in content
-    for forbidden in ["## 信息不足", "## 证据不足", "请补充更具体的目标", "上传相关 PDF"]:
-        assert forbidden not in content
-
-
-@pytest.mark.skip(reason="功能已重构移除：missing_info_handler_node 不再使用 llm_general_knowledge 提示")
-def test_no_evidence_missing_info_handler_asks_llm_for_general_answer(monkeypatch):
-    async def fake_ai_invoke(prompt, config, current_usage):
-        assert "llm_general_knowledge" in prompt
-        assert "不要要求用户补充上下文" in prompt
-        assert "不要伪造引用" in prompt
-        return (
-            "Use an easy run, rest, and subjective fatigue as conservative defaults.",
-            {"prompt_tokens": 10, "completion_tokens": 8, "total_tokens": 18},
-        )
-
-    monkeypatch.setattr(profile_module, "ai_invoke", fake_ai_invoke)
-
-    result = asyncio.run(
-        profile_module.missing_info_handler_node(
-            {
-                "intent_type": "qa",
-                "query": "I feel tired after today's run. What should I do tomorrow?",
-                "missing_fields": [],
-                "rag_sources": [],
-                "entities": [],
-                "category": "coach",
-                "token_usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
-            },
-            {"configurable": {"llm_provider": "openai", "llm_model": "gpt-5.5"}},
-        )
-    )
-
-    assert result["final_report"].startswith("## 模型通用知识回答")
-    assert "llm_general_knowledge" in result["final_report"]
-    for forbidden in ["## 信息不足", "## 证据不足", "请补充更具体的目标"]:
-        assert forbidden not in result["final_report"]
-    assert result["missing_info_status"] == ""
-    assert result["token_usage"]["total_tokens"] == 18

@@ -62,15 +62,19 @@ def rerank_hits(
         logger.info("Reranker 不可用，降级为 FAISS 原始排序 top-%d", top_k)
         return hits[:top_k]
 
-    # 构建 (query, text) pairs，截断长文本避免超限
-    pairs = [[query, str(hit.get("text") or "")[:2000]] for hit in hits]
+    # 构建 (query, text) pairs，优先使用 parent_text（更完整上下文），截断长文本避免超限
+    # parent_text 包含 ±600 字符窗口，比 text（250 字符小块）更能帮助 CrossEncoder 判断相关性
+    pairs = []
+    for hit in hits:
+        doc_text = str(hit.get("parent_text") or hit.get("text") or "")[:2000]
+        pairs.append([query, doc_text])
 
     try:
         scores = reranker.predict(pairs)
         if hasattr(scores, 'tolist'):
             scores = scores.tolist()
     except Exception as exc:
-        logger.error("Reranker 打分失败: %s，降级为原始排序", exc)
+        logger.warning("Reranker 打分失败: %s，跳过重排序，保留 RRF 融合结果", exc)
         return hits[:top_k]
 
     # 确保 scores 是列表
@@ -78,13 +82,18 @@ def rerank_hits(
         scores = [float(scores)]
 
     # 融合 FAISS 原始分数和 reranker 分数
+    # Sigmoid 归一化：CrossEncoder.predict() 返回无界 logit（实测 -3.5~+4.2），
+    # 与 FAISS [0,1] 分值不在同一量纲。sigmoid 将 logit 映射到 [0,1] 后再融合。
+    import math
     for hit, rerank_score in zip(hits, scores):
         original_score = float(hit.get("score") or 0.0)
-        hit["reranker_score"] = round(float(rerank_score), 6)
-        hit["reranker_raw_score"] = round(float(rerank_score), 6)
-        # 加权融合: FAISS × fusion_weight + reranker × (1-fusion_weight)
+        raw_logit = float(rerank_score)
+        normalized = 1.0 / (1.0 + math.exp(-raw_logit))
+        hit["reranker_score"] = round(normalized, 6)
+        hit["reranker_raw_score"] = round(raw_logit, 6)  # 保留原始 logit 用于调试
+        # 加权融合: FAISS × fusion_weight + reranker_sigmoid × (1-fusion_weight)
         hit["score"] = round(
-            fusion_weight * original_score + (1 - fusion_weight) * float(rerank_score),
+            fusion_weight * original_score + (1 - fusion_weight) * normalized,
             6,
         )
         breakdown = hit.get("score_breakdown") if isinstance(hit.get("score_breakdown"), dict) else {}

@@ -67,6 +67,7 @@ class Settings:
     bm25_fallback_enabled: bool
     domain_filter_enabled: bool
     sharded_retrieval_enabled: bool
+    rerank_enabled: bool
     ragas_eval_enabled: bool
     log_client_ip: bool
     app_version: str
@@ -152,12 +153,13 @@ def build_settings(env: Optional[Mapping[str, Any]] = None) -> Settings:
         openai_model=_env_str(values, "OPENAI_MODEL", "gpt-5.5") or "gpt-5.5",
         openai_api_key=_env_str(values, "OPENAI_API_KEY"),
         graphrag_api_key=_env_str(values, "GRAPHRAG_API_KEY"),
-        embedding_model=_env_str(values, "MARATHON_EMBEDDING_MODEL", "nomic-embed-text:latest") or "nomic-embed-text:latest",
+        embedding_model=_env_str(values, "MARATHON_EMBEDDING_MODEL", "bge-m3:latest") or "bge-m3:latest",
         retrieval_variants_enabled=(_env_str(values, "MARATHON_RETRIEVAL_VARIANTS_ENABLED", "1") != "0"),
         semantic_chunking_enabled=_env_flag(values, "MARATHON_SEMANTIC_CHUNKING_ENABLED"),
         bm25_fallback_enabled=(_env_str(values, "MARATHON_BM25_FALLBACK_ENABLED", "1") != "0"),
         domain_filter_enabled=(_env_str(values, "MARATHON_DOMAIN_FILTER_ENABLED", "1") != "0"),
         sharded_retrieval_enabled=_env_flag(values, "MARATHON_SHARDED_RETRIEVAL_ENABLED"),
+        rerank_enabled=(_env_str(values, "MARATHON_RERANK_ENABLED", "1") != "0"),
         ragas_eval_enabled=_env_flag(values, "MARATHON_RAGAS_EVAL_ENABLED"),
         log_client_ip=(_env_str(values, "MARATHON_LOG_CLIENT_IP", "1") != "0"),
         app_version=_env_str(values, "APP_VERSION", "dev") or "dev",

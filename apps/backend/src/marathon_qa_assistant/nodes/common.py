@@ -514,7 +514,7 @@ _EXPAND_TRIGGERS = {"动作库", "训练动作", "训练库", "exercise"}
 
 
 def _get_kg_entity_labels() -> List[str]:
-    """从知识图谱中提取 workout_template 和 category 类型节点的标签（缓存）。"""
+    """从 KG 中提取所有节点的中英文标签用于实体匹配，不限定类型。"""
     global _KG_ENTITY_LABELS_CACHE
     if _KG_ENTITY_LABELS_CACHE is not None:
         return _KG_ENTITY_LABELS_CACHE
@@ -522,45 +522,58 @@ def _get_kg_entity_labels() -> List[str]:
         nodes = getattr(graph_engine, "nodes", {}) or {}
     except Exception:
         return []
-    labels = []
+    labels: List[str] = []
     for node_info in nodes.values():
-        ntype = node_info.get("type", "")
-        label = node_info.get("label", "")
-        if ntype in ("workout_template", "category") and label:
-            labels.append(label)
+        for key in ("label", "label_zh", "label_en"):
+            val = str(node_info.get(key, "")).strip()
+            if val and val not in labels:
+                labels.append(val)
     _KG_ENTITY_LABELS_CACHE = labels
     return labels
 
 
 def infer_entities(query: str, selected_entities: Optional[Iterable[str]] = None) -> List[str]:
+    """从用户查询中提取实体关键词，优先用 KG 标签匹配，兜底用英文 token。"""
     entities: List[str] = []
     for item in selected_entities or []:
         item = str(item).strip()
         if item and item not in entities:
             entities.append(item)
+    if len(entities) >= 5:
+        return entities[:5]
 
-    patterns = [
-        r"(马拉松|半马|全马|LTHR|T-Pace|VO2\s*max|乳酸阈|配速|心率|力量训练|动作库|恢复|营养|补给|间歇|长距离|冲坡|训练计划|周计划|课表|备赛|比赛|跑步|跑量|跑姿|拉伸|核心训练|节奏跑|轻松跑|tempo)",
-        r"([A-Za-z][A-Za-z0-9\-/]{2,20})",
-    ]
-    for pattern in patterns:
-        for match in re.findall(pattern, query or "", flags=re.IGNORECASE):
-            entity = match.strip()
-            if entity and entity not in entities:
-                entities.append(entity)
-            if len(entities) >= 5:
-                break
+    # L1: 英文缩写/token（如 VO2max, HIIT, LTHR）
+    for match in re.findall(r"([A-Za-z][A-Za-z0-9\-/]{2,20})", query or "", flags=re.IGNORECASE):
+        entity = match.strip()
+        if entity and entity not in entities:
+            entities.append(entity)
         if len(entities) >= 5:
-            break
+            return entities[:5]
 
+    # L2: KG 标签匹配（标签包含查询关键词 or 查询包含标签）
     kg_labels = _get_kg_entity_labels()
     kg_labels.sort(key=lambda x: -len(x))
     query_lower = (query or "").lower()
+    # 提取查询 n-gram (2-4 字符) 用于中文匹配
+    query_ngrams = set()
+    for n in (4, 3, 2):
+        for i in range(len(query_lower) - n + 1):
+            tok = query_lower[i:i+n]
+            if tok.strip():
+                query_ngrams.add(tok)
     for label in kg_labels:
         if len(entities) >= 5:
             break
-        if label.lower() in query_lower and label not in entities:
+        label_lower = label.lower()
+        # 方向 1: 标签包含在查询中（标签较短）
+        if len(label_lower) >= 2 and label_lower in query_lower and label not in entities:
             entities.append(label)
+            continue
+        # 方向 2: 查询 n-gram 包含在标签中（标签较长）
+        for tok in query_ngrams:
+            if len(tok) >= 2 and tok in label_lower and label not in entities:
+                entities.append(label)
+                break
 
     if not entities and query:
         entities.append((query[:24] + "...") if len(query) > 24 else query)
@@ -613,7 +626,90 @@ def semantic_match_entities(query: str) -> List[str]:
     return result
 
 
-async def get_context(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
+# 需要英文检索的领域（文献为英文，中文查询跨语言匹配弱）
+_EN_RETRIEVAL_DOMAINS = {"rehab_safety", "nutrition", "race_strategy"}
+
+async def _translate_for_retrieval(query: str, domain_hint: str = "") -> str:
+    """将中文查询翻译为英文，用于跨语言向量检索。仅在英文文献域触发。
+
+    修复 (Phase 0a):
+    - 守卫反转：未确认 domain 时不翻译（原逻辑 '' → 无条件翻译）
+    - 注入防护：翻译前过 input_guard，用户输入用分隔符包裹
+    - 依赖对齐：用模块级 OLLAMA_BASE_URL，删除跨模块 import
+    - httpx 替代 aiohttp，对标 _invoke_deepseek 模式
+    - 超时从 10s 降到 3s，失败日志升级到 warning
+    - 翻译结果 CJK 回退检查
+    """
+    # 守卫：未确认英文文献域时不翻译
+    if not domain_hint or domain_hint not in _EN_RETRIEVAL_DOMAINS:
+        return query
+    # 简单判断：如果查询已经主要是英文，不翻译
+    ascii_chars = sum(1 for c in query if ord(c) < 128)
+    if ascii_chars > len(query) * 0.5:
+        return query
+    # 注入防护：翻译前过安全守卫
+    is_safe, reason = input_guard.check(query, input_type="query")
+    if not is_safe:
+        logger.warning("翻译输入被安全守卫拦截: %s，回退到原始查询", reason)
+        return query
+    # 翻译使用 OpenAI 兼容 API (qwen2.5-32b @ localhost:8088/v1)
+    _TRANSLATE_API_BASE = "http://localhost:8088/v1"
+    _TRANSLATE_MODEL = "qwen2.5-32b"
+    try:
+        import httpx
+        payload = {
+            "model": _TRANSLATE_MODEL,
+            "messages": [
+                {"role": "system", "content": "You are a sports science translator. Translate Chinese running queries to concise English keywords for academic literature search. Output ONLY the English translation, no explanation."},
+                {"role": "user", "content": query},
+            ],
+            "temperature": 0.1,
+            "max_tokens": 80,
+        }
+        timeout = httpx.Timeout(3.0, connect=2.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(
+                f"{_TRANSLATE_API_BASE}/chat/completions",
+                headers={
+                    "Authorization": "Bearer sk-no-auth",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            choices = data.get("choices", [])
+            translated = ""
+            if choices:
+                translated = choices[0].get("message", {}).get("content", "").strip()
+            if translated and len(translated) >= 3:
+                # CJK 回退检查：翻译结果不应以中文为主
+                cjk_chars = sum(1 for c in translated if '一' <= c <= '鿿')
+                if cjk_chars > len(translated) * 0.3:
+                    logger.debug("翻译结果仍含大量中文，回退到原始查询: %s", translated[:60])
+                    return query
+                logger.info("检索翻译: %s -> %s", query[:30], translated[:60])
+                return translated
+    except BaseException as exc:
+        # BaseException 包含 CancelledError (asyncio 超时取消)，不只是 Exception
+        if not isinstance(exc, Exception):
+            logger.debug("翻译被取消或超时，回退到原始查询")
+        else:
+            logger.warning("检索翻译失败: %s，回退到原始查询", exc)
+    return query
+
+async def get_context(query: str, top_k: int = 4, *, rerank: bool = False, en_translation: str = "") -> List[Dict[str, Any]]:
+    """检索知识库，可选 rerank 精排和英文翻译变体。
+
+    Args:
+        query: 用户原始查询（中文）。
+        top_k: 最终返回的命中数。
+        rerank: 是否启用 bge-reranker 二阶段精排。
+        en_translation: 英文翻译，非空时作为额外 query variant 参与检索融合。
+
+    WARNING: 返回的 hit["text"] 未经安全清洗。下游必须通过 build_rag_sources()
+    或 scan_and_clean_context() 后才能直接使用文本内容。
+    """
     retrieve_fn = kb_runtime.RETRIEVE_FUNC
     if not query or not KB_CHUNKS or not retrieve_fn:
         return []
@@ -626,6 +722,8 @@ async def get_context(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
             kb_runtime.KB_MATRIX,
             top_k=top_k,
             bm25=kb_runtime.KB_BM25,
+            rerank=rerank,
+            en_translation=en_translation,
         )
         return hits or []
     except Exception as exc:

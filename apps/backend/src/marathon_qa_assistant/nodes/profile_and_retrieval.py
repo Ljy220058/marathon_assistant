@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import logging
 import re
@@ -11,6 +12,7 @@ except ImportError:
 from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
+from marathon_qa_assistant.core.settings import get_settings
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
@@ -23,6 +25,7 @@ from marathon_qa_assistant.nodes.common import (
     graph_engine,
     infer_entities,
     semantic_match_entities,
+    _translate_for_retrieval,
 )
 from marathon_qa_assistant.nodes.routing import evaluate_plan_evidence
 from marathon_qa_assistant.services.kb.conflict_governance import record_conflict_review_item
@@ -38,9 +41,17 @@ INTENT_DOMAIN_POLICIES = {
     },
     "injury_safety": {
         "categories": {"therapist"},
-        "query_terms": {"疼", "痛", "伤", "膝", "跟腱", "足底", "恢复", "康复", "无法承重"},
-        "domains": {"medical_risk", "injury_prevention", "injury", "rehabilitation", "recovery"},
+        "query_terms": {"疼", "痛", "伤", "膝", "跟腱", "足底", "恢复", "康复", "无法承重", "应力", "骨折", "肌肉拉伤"},
+        "domains": {"medical_safety", "rehab_strength_mobility", "medical_risk", "injury_prevention", "injury", "rehabilitation", "recovery"},
     },
+}
+
+EXPERT_DOMAIN_POLICIES = {
+    "coach": {"training_theory", "workout_prescription", "race_strategy"},
+    "therapist": {"rehab_safety", "capacity_management"},
+    "nutritionist": {"nutrition", "race_strategy"},
+    "planner": {"training_theory", "workout_prescription", "capacity_management"},
+    "auditor": {"training_theory", "workout_prescription", "rehab_safety", "nutrition", "race_strategy", "capacity_management"},
 }
 
 EVIDENCE_CONTRACT_KEYS = (
@@ -60,6 +71,7 @@ EVIDENCE_CONTRACT_KEYS = (
     "text_span",
     "language",
     "evidence_domain",
+    "expert_domain",
     "knowledge_layer",
     "domain_pack",
     "allowed_use",
@@ -98,6 +110,7 @@ EVIDENCE_CONTRACT_KEYS = (
 )
 
 
+
 def _safe_positive_int(value: Any) -> int | None:
     try:
         page = int(value)
@@ -115,12 +128,37 @@ def _intent_domain_policy(category: str = "", query: str = "") -> tuple[str, Dic
     return None, None
 
 
-def _hit_domain_values(hit: Dict[str, Any]) -> set[str]:
-    values = set()
-    for key in ("domain_pack", "evidence_domain", "knowledge_layer", "section"):
-        value = str(hit.get(key) or "").strip().lower()
-        if value:
-            values.add(value)
+def _expert_domain_policy(category: str = "") -> set[str]:
+    normalized_category = str(category or "").strip().lower()
+    return set(EXPERT_DOMAIN_POLICIES.get(normalized_category, EXPERT_DOMAIN_POLICIES.get("coach", set())))
+
+
+
+def _infer_expert_domain(value: Any) -> str:
+    raw = str(value or "").strip().lower()
+    if raw in {"training_theory", "workout_prescription", "rehab_safety", "nutrition", "race_strategy", "capacity_management"}:
+        return raw
+    if raw in {"nutrition_race_fueling", "race_fueling", "hydration"}:
+        return "nutrition"
+    if raw in {"medical_risk", "medical_safety", "injury", "rehabilitation", "recovery", "rehab_strength_mobility"}:
+        return "rehab_safety"
+    if raw in {"protocol", "training_protocols", "action_library", "workout", "training", "sports_science_reference"}:
+        return "training_theory"
+    if raw in {"environment_race_context"}:
+        return "race_strategy"
+    if raw in {"competitor_product_reference", "user_profile_case", "llm_general_knowledge"}:
+        return "training_theory"
+    return "training_theory"
+
+
+
+def _hit_domain_values(hit: Dict[str, Any]) -> set:
+    """从命中记录中提取领域相关值集合，用于意图域匹配。"""
+    values: set = set()
+    for key in ("evidence_domain", "domain_pack", "knowledge_layer", "group", "expert_domain"):
+        val = str(hit.get(key) or "").strip().lower()
+        if val:
+            values.add(val)
     return values
 
 
@@ -168,11 +206,6 @@ def _should_use_wiki_context(
     concept_keywords = ("是什么", "什么是", "机制", "概念", "原理", "定义")
     normalized_query = str(query or "")
     return any(keyword in normalized_query for keyword in concept_keywords)
-
-
-def _detect_missing_enhancement_fields(state: Dict[str, Any]) -> Dict[str, Any]:
-    del state
-    return {}
 
 
 EXTRACT_PROFILE_SYSTEM = (
@@ -706,12 +739,14 @@ def _compute_relevance_score(
     if term_overlap <= 0.0 and entity_overlap <= 0.0 and raw_vector_score > 0:
         term_mismatch_penalty = 0.35
     graph_anchor_penalty = 0.25 if (is_graph_only and not has_trace_anchor) else 0.0
+    # 权重归一化 (Phase 0b): 原 0.55+0.25+0.20+0.15=1.15, 归一化到同比例 1.00
+    # 惩罚项 (0.35/0.25) 不参与归一化 — 归一化后惩罚相对权重上升，增强边界区分度
     relevance = max(
         0.0,
-        raw_vector_score * 0.55
-        + entity_overlap * 0.25
-        + term_overlap * 0.20
-        + graph_confidence * 0.15
+        raw_vector_score * 0.48
+        + entity_overlap * 0.22
+        + term_overlap * 0.17
+        + graph_confidence * 0.13
         + fusion_bonus
         - term_mismatch_penalty
         - graph_anchor_penalty,
@@ -769,6 +804,7 @@ def build_ranked_evidence(
             stable_hash = hashlib.md5(f"{source}|{page}|{text[:120]}".encode("utf-8")).hexdigest()[:10]
             eid = f"vec_{stable_hash}"
 
+        expert_domain = str(hit.get("expert_domain") or _infer_expert_domain(hit.get("domain_pack") or hit.get("evidence_domain") or hit.get("knowledge_layer") or "")).strip()
         ev: Evidence = {
             "evidence_id": eid,
             "kind": "vector",
@@ -806,6 +842,7 @@ def build_ranked_evidence(
             "conflicting_sources": list(hit.get("conflicting_sources") or []),
             "can_write_core": hit.get("prescription_permission") in {"can_write_core", "core"},
             "explanation_only": hit.get("prescription_permission") == "explanation_only",
+            "expert_domain": expert_domain,
             "trace": {
                 "vector_hit": True,
                 "vector_score": score,
@@ -816,8 +853,10 @@ def build_ranked_evidence(
                 "query_variants": list(hit.get("query_variants") or []),
                 "consensus_count": int(hit.get("consensus_count") or 1),
                 "bilingual_match": bool(hit.get("bilingual_match")),
+                "expert_domain": expert_domain,
             },
         }
+
         # 从 hit 传播 v2 metadata（evidence_bundle 链需要这些字段）
         for meta_key in EVIDENCE_CONTRACT_KEYS:
             if meta_key in hit:
@@ -838,6 +877,7 @@ def build_ranked_evidence(
         key = chunk_id if chunk_id else f"{source}_{page}"
         strength = str(g_ev_raw.get("graph_relation_strength") or g_ev_raw.get("trace", {}).get("graph_relation_strength") or "weak_support")
         is_conflict = bool(g_ev_raw.get("conflict_detected")) or strength == "conflict"
+        expert_domain = str(g_ev_raw.get("expert_domain") or g_ev_raw.get("trace", {}).get("expert_domain") or _infer_expert_domain(g_ev_raw.get("domain_pack") or g_ev_raw.get("evidence_domain") or "")).strip()
 
         if strength == "hard_constraint":
             gate_id = str(g_ev_raw.get("evidence_id") or f"graph_{hashlib.md5(str(edge).encode('utf-8')).hexdigest()[:10]}")
@@ -856,11 +896,13 @@ def build_ranked_evidence(
             g_ev_raw["retrieval_mode"] = "decision_gate"
             g_ev_raw["graph_relation_strength"] = strength
             g_ev_raw["conflict_detected"] = is_conflict
+            g_ev_raw["expert_domain"] = expert_domain
             g_ev_raw["why_retrieved"] = "Knowledge graph hard constraint matched extracted entities and is handled as a decision gate."
             g_ev_raw.setdefault("trace", {})
             g_ev_raw["trace"]["decision_gate"] = True
             g_ev_raw["trace"]["evidence_source_type"] = "decision_gate"
             g_ev_raw["trace"]["graph_relation_strength"] = strength
+            g_ev_raw["trace"]["expert_domain"] = expert_domain
             if is_conflict:
                 g_ev_raw["conflict_reason"] = "Knowledge graph hard constraint is also marked as conflict."
                 g_ev_raw["conflicting_sources"] = [g_ev_raw.get("evidence_id", "")]
@@ -879,6 +921,8 @@ def build_ranked_evidence(
             existing["trace"]["graph_hit"] = True
             existing["trace"]["graph_relation"] = edge.get("relation", "")
             existing["trace"]["graph_relation_strength"] = strength
+            existing["trace"]["expert_domain"] = expert_domain or existing.get("trace", {}).get("expert_domain", "")
+            existing["expert_domain"] = expert_domain or existing.get("expert_domain", "")
             if is_conflict:
                 existing["conflict_detected"] = True
                 existing["conflict_reason"] = "Knowledge graph relation conflicts with vector evidence; conflict is surfaced instead of forced fusion."
@@ -910,6 +954,7 @@ def build_ranked_evidence(
             g_ev_raw["evidence_source_type"] = "explanatory_context"
             g_ev_raw["graph_relation_strength"] = strength
             g_ev_raw["conflict_detected"] = is_conflict
+            g_ev_raw["expert_domain"] = expert_domain
             if is_conflict:
                 g_ev_raw["display_mode"] = "needs_evidence"
                 g_ev_raw["prescription_permission"] = "blocked_needs_evidence"
@@ -920,6 +965,8 @@ def build_ranked_evidence(
                 g_ev_raw.setdefault("trace", {})
                 g_ev_raw["trace"]["governance_conflict_id"] = review_item["conflict_id"]
             g_ev_raw["why_retrieved"] = "Knowledge graph relation matched extracted entities."
+            g_ev_raw.setdefault("trace", {})
+            g_ev_raw["trace"]["expert_domain"] = expert_domain
             evidence_map[key] = g_ev_raw
             pre_sort_stats["graph"] += 1
 
@@ -977,6 +1024,9 @@ def build_ranked_evidence(
         elif ev.get("has_full_text"):
             relevance_score = min(1.0, relevance_score + 0.05)
             score_breakdown["source_status_bonus"] = 0.05
+        elif ev.get("kind") == "graph":
+            # 图谱证据不适用 registry_only 降级，保持 graph_hint 或 needs_evidence
+            pass
         elif ev.get("display_mode") == "needs_evidence":
             ev["can_write_core"] = False
             ev["explanation_only"] = True
@@ -1062,22 +1112,60 @@ async def profiler_node(state: IntegratedState, config: RunnableConfig) -> dict:
 
 async def entity_extraction_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
+    settings = get_settings()
     query = state.get("query", "")
+    category = str(state.get("category", "") or "")
     entities = infer_entities(query, state.get("selected_entities"))
     for entity in semantic_match_entities(query):
         if entity not in entities:
             entities.append(entity)
 
-    hits = await get_context(query, top_k=10)  # P0-2: 多取以便融合排序后有足够的去重后证据
+    # ── 跨语言检索：仅当 intent 策略明确命中英文文献域时才翻译 ──
+    # _EN_INTENT_MAP: intent_policy_name → (en_domain_hint)
+    _EN_INTENT_MAP = {"nutrition": "nutrition", "injury_safety": "rehab_safety"}
+    policy_name, _ = _intent_domain_policy(category=category, query=query)
+    needs_translation = policy_name in _EN_INTENT_MAP
+    en_query = ""
+    if needs_translation:
+        en_hint = _EN_INTENT_MAP[policy_name]
+        try:
+            en_query = await asyncio.wait_for(
+                _translate_for_retrieval(query, domain_hint=en_hint),
+                timeout=3.0,
+            )
+        except BaseException:
+            en_query = ""
+            logger.debug("翻译超时或失败，回退到中文检索")
+
+    hits = await get_context(
+        query, top_k=10,
+        rerank=settings.rerank_enabled,
+        en_translation=en_query,
+    )
     if not hits and entities:
-        hits = await get_context(" ".join(entities), top_k=10)
+        hits = await get_context(
+            " ".join(entities), top_k=10,
+            rerank=settings.rerank_enabled,
+            en_translation=en_query,
+        )
 
     hits = filter_hits_for_intent_domain(
         hits,
-        category=str(state.get("category", "") or ""),
+        category=category,
         query=query,
         top_k=10,
     )
+
+    expert_domains = _expert_domain_policy(category)
+    if expert_domains:
+        filtered_hits = []
+        for hit in hits:
+            hit_domain = _infer_expert_domain(hit.get("expert_domain") or hit.get("domain_pack") or hit.get("evidence_domain") or hit.get("knowledge_layer") or "")
+            if hit_domain in expert_domains:
+                hit["expert_domain"] = hit_domain
+                filtered_hits.append(hit)
+        if filtered_hits:
+            hits = filtered_hits
 
     rag_sources = build_rag_sources(hits)
 
@@ -1110,6 +1198,10 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     evidence_gate = evaluate_plan_evidence(hits, query, state.get("intent_type", "qa"))
 
     logs = [f"[entity_extraction] 识别实体: {', '.join(entities)}"]
+    if en_query:
+        logs.append(f"[entity_extraction] 英文翻译检索: {en_query[:50]}")
+    if settings.rerank_enabled:
+        logs.append("[entity_extraction] reranker 已启用")
     if not hits:
         logs.append("[Evidence Gate] 知识库检索为空")
     elif evidence_gate.get("required") and not evidence_gate.get("has_plan_evidence", True):

@@ -864,10 +864,32 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
 async def formatter_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
     raw_content = state.get("final_report") or state.get("draft_plan") or "当前没有可格式化的输出。"
+    logs: list[str] = []
+
+    # ── 轨迹级安全扫描：在 output_guard 之前审计完整节点链路 ──
+    try:
+        from marathon_qa_assistant.nodes.security import scan_execution_trace
+        trace_result = scan_execution_trace(state)
+        risk_level = trace_result.get("risk_level", "none")
+        alerts = trace_result.get("alerts", [])
+        if risk_level in ("medium", "high"):
+            logs.append(
+                f"[trace_security] risk={risk_level} alerts={'|'.join(alerts)}"
+            )
+        if risk_level == "high":
+            # 高风险告警写入 risk_alert，前端可展示
+            state["risk_alert"] = (
+                '<div class="github-flash-error">'
+                f'<strong>执行轨迹安全告警：</strong>{"；".join(alerts)}'
+                '</div>'
+            )
+    except Exception:
+        pass  # 轨迹扫描失败不阻塞输出
+
     is_safe, cleaned_output, reason = output_guard_obj.check(raw_content)
     structured_report = _build_structured_report(state, cleaned_output)
 
-    logs = ["[formatter] 已生成结构化报告"]
+    logs.append("[formatter] 已生成结构化报告")
     if not is_safe:
         logs.append(f"[formatter] 输出安全清洗: {reason}")
 

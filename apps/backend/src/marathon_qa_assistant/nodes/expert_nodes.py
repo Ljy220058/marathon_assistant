@@ -1,4 +1,8 @@
 from typing import Any, Dict, List, Optional, Tuple
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from langchain_core.runnables import RunnableConfig
@@ -58,10 +62,29 @@ async def _run_expert_llm(
     fallback_title: str,
 ) -> Tuple[str, Dict[str, int]]:
     profile = state.get("user_profile", {})
+
+    # 低置信标注：检查证据是否全部为 low，若是则在 prompt 中注入警告指令
+    evidence_items = (state.get("evidence_bundle") or {}).get("evidence_items") or []
+    all_low = bool(evidence_items) and all(
+        item.get("confidence_level") == "low"
+        for item in evidence_items if isinstance(item, dict)
+    )
+    low_confidence_warning = ""
+    if all_low:
+        low_confidence_warning = (
+            "\n\n⚠️ **重要指令**：当前所有知识库证据的置信度均为「低」。"
+            "你必须在回答最开头添加以下横幅（原样输出，不要修改）：\n\n"
+            "> ⚠️ **证据不足声明**：以下回答缺乏足够的知识库证据支持，仅供参考，不应作为训练处方依据。"
+            "建议用户上传相关领域资料或咨询专业教练。\n\n"
+            "然后正常回答。但任何涉及训练处方、伤病判断、营养剂量的建议，"
+            "必须在句末标注「（基于通用知识，非本地证据）」"
+        )
+
     prompt = f"""你是马拉松多智能体系统中的 {role_name}。
 
 任务要求：
 {task_instruction}
+{low_confidence_warning}
 
 用户问题：
 {state.get("query", "")}
@@ -388,6 +411,8 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
 
 async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
+    # C3: 审计性能计时
+    t0 = time.perf_counter()
     current_iteration = int(state.get("iteration_count", 0) or 0)
     draft = state.get("draft_plan", "") or state.get("final_report", "")
     evidence_bundle = state.get("evidence_bundle") if isinstance(state.get("evidence_bundle"), dict) else {}
@@ -420,6 +445,15 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
     if hmp_errors:
         feedback.append(f"HMP 专项验证仍有 {len(hmp_errors)} 条错误，不能放行")
 
+    # E1: LLM 生成课时是否在文献约束范围内
+    try:
+        from marathon_qa_assistant.core.half_marathon_validator import _validate_workout_duration_bounds
+        week_plans = structured_plan.get("week_plans", []) if structured_plan else []
+        for issue in _validate_workout_duration_bounds(week_plans):
+            feedback.append(f"[{issue.constraint_id}] {issue.message} -> {issue.recommendation}")
+    except Exception:
+        pass
+
     risky_keywords = ["每日高强度", "无休息", "强忍疼痛", "all-out", "极限冲刺"]
     for keyword in risky_keywords:
         if keyword in draft:
@@ -442,6 +476,11 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
         roi = max(roi, 70)
 
     summary = "通过独立审计，可进入格式化输出。" if approved else "独立审计未通过：" + "；".join(feedback[:4])
+
+    # C3: 审计性能计时
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    logger.info("critic_auditor: %.1fms, approved=%s, issues=%d, evidence=%d",
+                elapsed_ms, approved, len(feedback), len(evidence_items))
 
     return {
         "is_approved": approved,

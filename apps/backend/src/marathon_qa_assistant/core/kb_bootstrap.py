@@ -61,6 +61,7 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
             continue
 
         set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
+        # 预热 LabelMatcher
         try:
             from marathon_qa_assistant.services.knowledge_graph import graph_engine
             labels = []
@@ -69,6 +70,12 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
                 if node_info.get("type", "") in ("workout", "template", "category") and label:
                     labels.append(label)
             label_matcher.warm_up(labels)
+        except Exception:
+            pass
+        # 预热 reranker 模型，避免首次查询冷启动延迟 (~5s)
+        try:
+            from marathon_qa_assistant.services.reranker import _load_reranker
+            _load_reranker()
         except Exception:
             pass
         report = {

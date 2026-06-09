@@ -9,7 +9,6 @@ KB_VECTORIZER = None
 KB_MATRIX = None
 KB_BM25 = None
 RETRIEVE_FUNC = None
-RERANKER = None
 
 
 def set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
@@ -41,4 +40,11 @@ def clear_kb_data():
     KB_MATRIX = None
     KB_BM25 = None
     RETRIEVE_FUNC = None
+    # 无效化 KG 实体标签缓存，避免 KG 重建后使用过期标签
+    try:
+        from marathon_qa_assistant.nodes.common import _KG_ENTITY_LABELS_CACHE
+        import marathon_qa_assistant.nodes.common as common_module
+        common_module._KG_ENTITY_LABELS_CACHE = None
+    except Exception:
+        pass
     gc.collect()
