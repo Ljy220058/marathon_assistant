@@ -140,19 +140,40 @@ def after_critic_auditor_route(state: IntegratedState):
     if state.get("is_approved"):
         return "formatter"
 
-    # P6: 分叉重试上限——硬规则 1 次，RAG 审核 2 次
+    # ── 裁判角色: 重试上限后强制放行，不阻塞输出 ──
+    # 约定: auditor 最多审 3 次。之后无论结果，标注风险后直接输出。
+    iteration_count = state.get("iteration_count", 0)
+    if iteration_count >= 2:
+        diagnosis = state.get("audit_diagnosis") or {}
+        diag_summary = diagnosis.get("summary", "无诊断")
+        logger.warning(
+            f"[critic_auditor] 已审 {iteration_count} 轮，强制放行。诊断: {diag_summary}"
+        )
+        # 强制通过标记: 不绕 missing_info_handler，直接走 formatter
+        state["is_approved"] = True
+        state["review_feedback"] = (
+            str(state.get("review_feedback") or "")
+            + f"\n> 审计已执行 {iteration_count} 轮，剩余问题已标注，请自行判断。"
+        )
+        return "formatter"
+
+    # P6: 分叉重试上限
     hard_retries = state.get("hard_rule_retry_count", 0)
     rag_retries = state.get("rag_audit_retry_count", 0)
-    if hard_retries >= 1 or rag_retries >= 2 or state.get("iteration_count", 0) >= 2:
-        # AgentDoG P0: 记录三元组诊断到日志，即使强制通过也可追溯
+    if hard_retries >= 1 or rag_retries >= 2:
         diagnosis = state.get("audit_diagnosis") or {}
         diag_summary = diagnosis.get("summary", "无诊断")
         logger.warning(
             f"[critic_auditor] 已达审计上限 "
-            f"(hard={hard_retries}/1 rag={rag_retries}/2 iter={state.get('iteration_count',0)}/2)，"
-            f"强制输出。诊断: {diag_summary}"
+            f"(hard={hard_retries}/1 rag={rag_retries}/2)，"
+            f"强制放行。诊断: {diag_summary}"
         )
-        return "missing_info_handler"
+        state["is_approved"] = True
+        state["review_feedback"] = (
+            str(state.get("review_feedback") or "")
+            + f"\n> 审计已达上限，剩余问题已标注，请自行判断。"
+        )
+        return "formatter"
 
     # P0-5: QA 模式下无证据时，审计未通过也直接走 formatter，避免重试死循环
     workflow_kind = state.get("workflow_kind") or state.get("intent_type") or "qa"

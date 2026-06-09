@@ -574,37 +574,46 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
                 plan_day_count = max(len(wp.get("days", [])) for wp in week_plans) if week_plans else 0
                 if plan_day_count > 0 and plan_day_count > expected_count:
                     feedback.append(f"[合同] 计划安排了 {plan_day_count} 天训练，但用户明确可用 {expected_count} 天 ({available_days_str})")
-    # 2. 最长训练时长
+    # 2. 最长训练时长 — 匹配 分钟/min/小时/h 多种表述
     max_minutes = profile.get("max_session_minutes")
     if max_minutes and draft:
         import re as _re_check
         max_m = int(max_minutes)
-        minutes_in_draft = _re_check.findall(r'(\d+)\s*(?:分钟|min)', draft)
-        for m_val in minutes_in_draft:
-            if int(m_val) > max_m:
-                feedback.append(f"[合同] 计划安排了 {m_val} 分钟训练，超出用户设定的最长 {max_m} 分钟")
+        # 匹配 "90分钟", "90分", "90min", "1.5小时", "2h", "2 hours"
+        for m in _re_check.finditer(
+            r'(?:(\d+(?:\.\d+)?)\s*(?:分钟|分(?!钟)|min(?:utes?)?)|'
+            r'(\d+(?:\.\d+)?)\s*(?:小时|[hH](?:ours?)?))', draft
+        ):
+            if m.group(1):  # 分钟单位
+                val = int(float(m.group(1)))
+            else:  # 小时单位
+                val = int(float(m.group(2)) * 60)
+            if val > max_m:
+                feedback.append(f"[合同] 计划安排了 {val} 分钟训练，超出用户设定的最长 {max_m} 分钟")
                 break
-    # 3. 用户反馈未处理 (adaptive mode)
+    # 3. 用户反馈未处理 — 检查 plan 是否考虑了用户明确报告的负面信号
     adaptive_feedback = state.get("adaptive_feedback")
     if adaptive_feedback and isinstance(adaptive_feedback, str) and adaptive_feedback.strip():
-        if "累" in adaptive_feedback or "疲劳" in adaptive_feedback or "疼" in adaptive_feedback:
-            # 检查 plan 是否降低了强度 — 只 flag，不判断
-            if workflow_kind != "adaptive":
-                feedback.append(f"[合同] 用户反馈了疲劳/疼痛 ({adaptive_feedback[:30]})，但未触发自适应调整模式")
-    # 4. 训练类型覆盖
+        negative_signals = any(kw in adaptive_feedback for kw in ["累", "疲劳", "疼", "痛", "酸", "不适", "乏力"])
+        if negative_signals and workflow_kind != "adaptive":
+            feedback.append(f"[合同] 用户反馈了负面信号 ({adaptive_feedback[:30]})，但未触发自适应调整模式")
+    # 4. 训练类型覆盖 — 任一明确要求的类型缺失即 flag
     training_types_str = str(profile.get("training_types") or "")
     if training_types_str and workflow_kind == "plan" and draft:
         requested_types = [t.strip() for t in training_types_str.replace(",", "，").split("，") if t.strip()]
         missing_types = [t for t in requested_types if t not in draft]
-        if len(missing_types) >= 2:
+        if missing_types:
             feedback.append(f"[合同] 用户要求训练类型 {requested_types}，计划未体现: {missing_types}")
 
     approved = not feedback
-    consistency = 88 if approved else 60
-    safety = 92 if approved else 45
-    roi = min(100, 40 + len(evidence_items) * 10)
-    if has_rule_skeleton:
-        roi = max(roi, 70)
+
+    # ── 裁判角色: 判定而非审查 ──
+    # 不做分数预测 (consistency/safety/roi 虚假精度) — 只输出检查结果
+    # 通过: 无任何问题 → formatter
+    # 未通过: 1-2 次重试 → 定向修复后回 executor/coach
+    # 强制放行: ≥3 次重试 → 标注风险后直接输出 (route 的 missing_info_handler 已处理)
+    evidence_quality = "high" if len(evidence_items) >= 3 else ("medium" if evidence_items else "low")
+    audit_verdict = "pass" if approved else ("force_pass" if current_iteration >= 2 else "retry")
 
     summary = "通过独立审计，可进入格式化输出。" if approved else "独立审计未通过：" + "；".join(feedback[:4])
 
@@ -617,10 +626,13 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
         "is_approved": approved,
         "iteration_count": current_iteration + (0 if approved else 1),
         "review_feedback": summary,
+        "audit_verdict": audit_verdict,
+        "evidence_quality": evidence_quality,
         "audit_scores": {
-            "consistency": consistency,
-            "safety": safety,
-            "roi": roi,
+            "verdict": audit_verdict,
+            "evidence_quality": evidence_quality,
+            "issue_count": len(feedback),
+            "iterations": current_iteration,
             "summary": summary,
             "score_sources": {
                 "evidence_count": len(evidence_items),
