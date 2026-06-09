@@ -39,6 +39,7 @@ def build_working_state(
         "reasoning_log": [],
         "execution_trace": [],  # AgentDoG P0: 结构化节点执行轨迹
         "audit_diagnosis": {},  # AgentDoG P0: 三元组诊断
+        "safety_constraints": [],  # P1: KG 安全约束
         "gate_hits": [],
         "rag_sources": [],
         "ranked_evidence": [],

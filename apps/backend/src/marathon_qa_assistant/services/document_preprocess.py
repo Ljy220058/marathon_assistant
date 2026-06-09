@@ -22,6 +22,70 @@ def normalize_text(text: str) -> str:
     cleaned_lines = [line for line in lines if line]
     return "\n".join(cleaned_lines).strip()
 
+# ── P1: 非正文行过滤 ──
+
+# 论文元数据/致谢行模式
+_METADATA_PATTERNS = [
+    re.compile(r'^(Supervision|Writing\s*[–-]\s*(original|review)|Correspondence|Funding|Acknowledgments?|Conflicts?\s*of\s*interest|Ethics\s*approval|Data\s*availability)\s*[:;]', re.IGNORECASE),
+    re.compile(r'^(Received|Accepted|Published|Submitted)\s*[:;].*\d{4}', re.IGNORECASE),
+    re.compile(r'^https?://doi\.org/', re.IGNORECASE),
+]
+# PubMed/数据库搜索语法
+_PUBMED_PATTERNS = [
+    re.compile(r'\b(OR|AND|NOT)\s+[A-Z]{2,4}\s*\(', re.IGNORECASE),  # OR SU (lateral...)
+    re.compile(r'^\s*"[^"]+"\[(tiab|mesh|tw|ot)\]', re.IGNORECASE),
+]
+# 参考文献编号行
+_REF_PATTERNS = [
+    re.compile(r'^\s*\[\d+([,;–-]\d+)*\]\s'),  # [1], [1,2], [1-3]
+    re.compile(r'^\s*\d+\.\s{2,}[A-Z]'),  # "1.  Author Name..."
+]
+
+def _line_is_table_row(line: str) -> bool:
+    """检测表行：数字+符号占比过高"""
+    stripped = line.strip()
+    if len(stripped) < 5:
+        return True  # 极短行当作碎片
+    symbols_and_digits = sum(1 for c in stripped if not c.isalpha() and not c.isspace())
+    return symbols_and_digits / max(len(stripped), 1) > 0.40
+
+def _line_is_stat_fragment(line: str) -> bool:
+    """检测孤立统计值行"""
+    stripped = line.strip()
+    if not stripped:
+        return False
+    # 匹配: "p < 0.01", "F(1,37) = 9.3", "−2.4 ± 6.3%", "73.0 ± 1.6"
+    if re.match(r'^[pPFtχ][\s(<≤=]', stripped):
+        return True
+    if re.match(r'^[−\-–±\d][\d\s.,±\-–=<>()%]+$', stripped):
+        return True
+    return False
+
+def filter_non_prose_lines(text: str) -> str:
+    """过滤非正文行：表行、搜索语法、论文元数据、统计碎片、参考文献编号。
+    在 normalize_text() 之后调用。"""
+    if not text:
+        return ""
+    filtered: list[str] = []
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if len(stripped) < 20 and (len(stripped.split()) < 5):
+            continue  # 极短行丢弃
+        if _line_is_table_row(stripped):
+            continue
+        if _line_is_stat_fragment(stripped):
+            continue
+        if any(p.search(stripped) for p in _METADATA_PATTERNS):
+            continue
+        if any(p.search(stripped) for p in _PUBMED_PATTERNS):
+            continue
+        if any(p.search(stripped) for p in _REF_PATTERNS):
+            continue
+        filtered.append(stripped)
+    return "\n".join(filtered).strip()
+
 def extract_pdf_text(file_path: Path) -> str:
     """从 PDF 文件中提取纯文本"""
     try:

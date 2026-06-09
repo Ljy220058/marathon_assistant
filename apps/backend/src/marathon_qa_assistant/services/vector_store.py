@@ -17,7 +17,7 @@ logger = logging.getLogger("vector_kb")
 
 from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, DEFAULT_VECTOR_DIR, LEGACY_DEFAULT_VECTOR_DIR, LEGACY_USER_VECTOR_DIR, RUNTIME_USER_VECTOR_DIR, USER_VECTOR_DIR, V2_VECTOR_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
 from marathon_qa_assistant.core.settings import get_settings
-from marathon_qa_assistant.services.document_preprocess import normalize_text
+from marathon_qa_assistant.services.document_preprocess import normalize_text, filter_non_prose_lines
 from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
 from marathon_qa_assistant.services.kb.runtime_quarantine import filter_quarantined_chunks
 
@@ -996,7 +996,7 @@ def collect_chunks(input_dir: Path | List[Path], chunk_size: int, chunk_overlap:
                 continue
 
             for page_num, raw_page in pages:
-                cleaned_page = normalize_text(raw_page)
+                cleaned_page = filter_non_prose_lines(normalize_text(raw_page))
                 if get_settings().semantic_chunking_enabled:
                     page_chunks = split_text_semantic(cleaned_page, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
                 else:

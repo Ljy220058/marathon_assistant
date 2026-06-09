@@ -1186,6 +1186,21 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         graph_context = ""
         mermaid_graph = "flowchart TD\n  Empty[Graph fusion disabled]"
 
+    # P1: 从图搜索结果中提取安全约束 (constrains/risks 边)
+    safety_constraints: list[dict] = []
+    for edge in graph_edges:
+        rel = edge.get("relation", "")
+        if rel in ("constrains", "risks"):
+            src_node = graph_engine.nodes.get(edge["source"], {})
+            tgt_node = graph_engine.nodes.get(edge["target"], {})
+            safety_constraints.append({
+                "source": src_node.get("label_zh", edge["source"]),
+                "target": tgt_node.get("label_zh", edge["target"]),
+                "relation": rel,
+                "expert_domain": edge.get("expert_domain", ""),
+                "evidence_source": (edge.get("evidence") or {}).get("source", "")[:40] if isinstance(edge.get("evidence"), dict) else "",
+            })
+
     # 构建统一的 Ranked Evidence（P0-2: top_k=6 确保去重后仍有足够证据供教练引用）
     ranked_evidence = build_ranked_evidence(
         query=query,
@@ -1256,6 +1271,7 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         "evidence_bundle": evidence_bundle,
         "graph_context": graph_context,
         "mermaid_graph": mermaid_graph,
+        "safety_constraints": safety_constraints,
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": logs,
         "execution_trace": [trace_step],

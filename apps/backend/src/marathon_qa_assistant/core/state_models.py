@@ -1005,6 +1005,7 @@ class IntegratedState(TypedDict):
     reasoning_log: Annotated[List[str], operator.add]
     execution_trace: Annotated[List[TraceStep], operator.add]  # AgentDoG P0: 结构化节点执行轨迹
     audit_diagnosis: Optional[Dict[str, Any]]  # AgentDoG P0: 三元组诊断 {risk_source, failure_mode, real_world_harm, targeted_fix}
+    safety_constraints: List[Dict[str, Any]]  # P1: KG constrains/risks 边
     gate_hits: List[Dict[str, Any]]
     rag_sources: List[Dict[str, Any]]
     ranked_evidence: List[Evidence]

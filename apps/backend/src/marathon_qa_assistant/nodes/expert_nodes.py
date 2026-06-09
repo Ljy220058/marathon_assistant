@@ -80,11 +80,23 @@ async def _run_expert_llm(
             "必须在句末标注「（基于通用知识，非本地证据）」"
         )
 
+    # P1: 注入 KG 安全约束
+    safety_constraints = state.get("safety_constraints") or []
+    constraints_text = ""
+    if safety_constraints:
+        lines = ["\n相关安全约束（来自知识图谱文献，请结合用户画像逐条审查）："]
+        for c in safety_constraints[:10]:
+            rel_cn = "硬约束" if c["relation"] == "constrains" else "风险因素"
+            ev = c.get("evidence_source", "")[:30]
+            lines.append(f"- [{rel_cn}] {c['source']} → {c['target']}" + (f" (来源: {ev})" if ev else ""))
+        constraints_text = "\n".join(lines)
+
     prompt = f"""你是马拉松多智能体系统中的 {role_name}。
 
 任务要求：
 {task_instruction}
 {low_confidence_warning}
+{constraints_text}
 
 用户问题：
 {state.get("query", "")}
