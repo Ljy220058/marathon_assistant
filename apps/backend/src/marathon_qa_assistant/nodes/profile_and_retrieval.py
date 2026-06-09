@@ -772,6 +772,46 @@ def _compute_relevance_score(
         "vector_score": round(relevance, 3),
     }
 
+RETRIEVAL_CONFIDENCE_THRESHOLD = 0.60  # Phase 0a 诊断: F1 最优 cosine 切分点
+
+def _filter_irrelevant_hits(query: str, hits: list[dict]) -> list[dict]:
+    """用 BGE-M3 embedding cosine 相似度过滤明确无关的 hit。
+
+    仅当命中数足够多时才做过滤 (≤3 条时跳过, 避免空池)。
+    阈值 0.60 由 Phase 0a 诊断 (104 条 query-hit pair, F1=0.58) 确定。
+    """
+    if not hits or len(hits) <= 3:
+        return list(hits or [])
+    try:
+        from marathon_qa_assistant.services.vector_store import get_embeddings
+        import numpy as np
+        emb = get_embeddings()
+        query_vec = np.array(emb.embed_query(query), dtype=np.float32)
+        query_norm = np.linalg.norm(query_vec)
+        if query_norm == 0:
+            return list(hits)
+
+        scored = []
+        for h in hits:
+            text = h.get("parent_text") or h.get("text", "")
+            if not text.strip():
+                scored.append((h, 0.0))
+                continue
+            text_vec = np.array(emb.embed_query(text[:500]), dtype=np.float32)
+            text_norm = np.linalg.norm(text_vec)
+            cosine = float(np.dot(query_vec, text_vec) / (query_norm * text_norm)) if text_norm > 0 else 0.0
+            h["retrieval_confidence"] = round(cosine, 4)
+            scored.append((h, cosine))
+
+        filtered = [h for h, c in scored if c >= RETRIEVAL_CONFIDENCE_THRESHOLD]
+        if len(filtered) < 2 and len(scored) >= 2:
+            # 兜底: 至少保留 2 条最高分的
+            scored.sort(key=lambda x: -x[1])
+            filtered = [h for h, _ in scored[:2]]
+        return filtered
+    except Exception:
+        return list(hits or [])
+
 
 def build_ranked_evidence(
     query: str,
@@ -781,6 +821,9 @@ def build_ranked_evidence(
     top_k: Optional[int] = None
 ) -> List[Evidence]:
     """聚合向量与图谱证据，去重合并并打分排序"""
+    # ── 检索质量门槛: 用 BGE-M3 cosine 过滤无关 chunk ──
+    vector_hits = _filter_irrelevant_hits(query, vector_hits)
+
     evidence_map: Dict[str, Evidence] = {}
     pre_sort_stats = {"vector": 0, "graph": 0, "fusion": 0, "decision_gate": 0}
     relevance_terms = _extract_relevance_terms(query, entities)
