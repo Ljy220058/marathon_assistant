@@ -140,8 +140,18 @@ def after_critic_auditor_route(state: IntegratedState):
     if state.get("is_approved"):
         return "formatter"
 
-    if state.get("iteration_count", 0) >= 2:
-        logger.warning(f"[critic_auditor] 已达最大审计迭代次数 ({state['iteration_count']})，强制转入引导节点")
+    # P6: 分叉重试上限——硬规则 1 次，RAG 审核 2 次
+    hard_retries = state.get("hard_rule_retry_count", 0)
+    rag_retries = state.get("rag_audit_retry_count", 0)
+    if hard_retries >= 1 or rag_retries >= 2 or state.get("iteration_count", 0) >= 2:
+        # AgentDoG P0: 记录三元组诊断到日志，即使强制通过也可追溯
+        diagnosis = state.get("audit_diagnosis") or {}
+        diag_summary = diagnosis.get("summary", "无诊断")
+        logger.warning(
+            f"[critic_auditor] 已达审计上限 "
+            f"(hard={hard_retries}/1 rag={rag_retries}/2 iter={state.get('iteration_count',0)}/2)，"
+            f"强制输出。诊断: {diag_summary}"
+        )
         return "missing_info_handler"
 
     # P0-5: QA 模式下无证据时，审计未通过也直接走 formatter，避免重试死循环
@@ -152,6 +162,17 @@ def after_critic_auditor_route(state: IntegratedState):
         if not evidence_items:
             logger.warning("[critic_auditor] QA 模式无证据，跳过重试，直接格式化输出")
             return "formatter"
+
+    # AgentDoG P0: 从三元组诊断中提取定向修复建议，注入 state 供重试节点使用
+    diagnosis = state.get("audit_diagnosis") or {}
+    diagnoses = diagnosis.get("diagnoses") or []
+    if diagnoses:
+        targeted_fixes = [d.get("targeted_fix", "") for d in diagnoses if d.get("targeted_fix")]
+        if targeted_fixes:
+            fix_hint = "；".join(targeted_fixes[:3])
+            existing_feedback = str(state.get("review_feedback") or "")
+            if "定向修复" not in existing_feedback:
+                state["review_feedback"] = f"{existing_feedback}\n[定向修复建议] {fix_hint}"
 
     if workflow_kind == "plan":
         # 计划骨架已生成但审计未放行时，直接格式化带审计说明的结果，避免 fallback 执行器反复重入 executor。

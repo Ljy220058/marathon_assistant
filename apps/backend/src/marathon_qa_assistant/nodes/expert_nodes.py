@@ -409,6 +409,91 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
     }
 
 
+# ── AgentDoG P0: 反馈 → 三元组诊断映射 ──
+
+# 反馈关键词 → (risk_source, failure_mode, real_world_harm)
+_FEEDBACK_TRIPLE_MAP: dict[str, tuple[str, str, str]] = {
+    "引用编号不存在": ("llm_generation", "hallucinated_claim", "performance_regression"),
+    "缺少 source_path": ("rag_retrieval", "evidence_misapplication", "performance_regression"),
+    "HMP 专项验证": ("llm_generation", "pacing_overly_aggressive", "stress_fracture"),
+    "文献约束": ("llm_generation", "overtraining_rx", "overtraining_syndrome"),
+    "高风险表述": ("llm_generation", "overtraining_rx", "overtraining_syndrome"),
+    "高强度": ("llm_generation", "overtraining_rx", "overtraining_syndrome"),
+    "无休息": ("llm_generation", "recovery_insufficient", "overtraining_syndrome"),
+    "强忍疼痛": ("user_input", "pain_misinterpretation", "stress_fracture"),
+    "计划型请求缺少": ("rag_retrieval", "evidence_misapplication", "performance_regression"),
+    "therapist": ("user_input", "contraindication_missed", "compensatory_injury"),
+}
+
+
+def _classify_feedback(feedback_text: str) -> tuple[str, str, str, str]:
+    """将审计反馈文本分类为三元组 + 定向修复建议。"""
+    risk_source = "llm_generation"
+    failure_mode = "evidence_misapplication"
+    real_world_harm = "performance_regression"
+    for keyword, triple in _FEEDBACK_TRIPLE_MAP.items():
+        if keyword in feedback_text:
+            risk_source, failure_mode, real_world_harm = triple
+            break
+
+    # 生成定向修复建议
+    fix_map = {
+        "hallucinated_claim": "删除或替换为有本地证据支持的表述，检查引用编号对应关系",
+        "evidence_misapplication": "为每个处方级建议附加明确的 [n] 证据引用，确保引用链可追溯",
+        "pacing_overly_aggressive": "降低配速目标至用户当前能力的 80% 区间，增加渐进过渡周",
+        "overtraining_rx": "在连续高强度课之间插入恢复日或轻松跑，确保周跑量增幅 ≤10%",
+        "recovery_insufficient": "每周至少安排 2 天完全休息或主动恢复，长距离跑后安排恢复日",
+        "pain_misinterpretation": "任何疼痛信号应先建议就医评估，不得生成「坚持一下」类建议",
+        "contraindication_missed": "检查用户画像中的伤病标记，涉及受伤部位的训练应标注风险",
+    }
+    targeted_fix = fix_map.get(failure_mode, "重新审查该部分内容，确保安全约束生效")
+
+    return risk_source, failure_mode, real_world_harm, targeted_fix
+
+
+def _build_ternary_diagnosis(feedback: list[str], approved: bool) -> dict:
+    """构建 AgentDoG 三元组诊断。"""
+    if approved:
+        return {"diagnoses": [], "summary": "审计通过，无安全风险"}
+    diagnoses = []
+    for item in feedback:
+        risk_source, failure_mode, real_world_harm, targeted_fix = _classify_feedback(item)
+        diagnoses.append({
+            "feedback": item,
+            "risk_source": risk_source,
+            "failure_mode": failure_mode,
+            "real_world_harm": real_world_harm,
+            "targeted_fix": targeted_fix,
+        })
+    return {
+        "diagnoses": diagnoses,
+        "summary": f"审计未通过：{len(diagnoses)} 个问题",
+        "primary_risk_source": diagnoses[0]["risk_source"] if diagnoses else "unknown",
+        "primary_failure_mode": diagnoses[0]["failure_mode"] if diagnoses else "unknown",
+    }
+
+
+def _auditor_trace_step(state: dict, approved: bool, feedback: list[str], iteration: int) -> dict:
+    """记录 auditor 节点的执行轨迹。"""
+    from datetime import datetime, timezone
+    return {
+        "node": "critic_auditor",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "input_snapshot": {
+            "workflow_kind": state.get("workflow_kind") or state.get("intent_type"),
+            "iteration": iteration,
+            "has_evidence": bool(state.get("ranked_evidence")),
+            "has_draft": bool(state.get("draft_plan") or state.get("final_report")),
+        },
+        "output_snapshot": {
+            "approved": approved,
+            "issue_count": len(feedback),
+            "issues": feedback[:3],
+        },
+        "decision": "通过，进入 formatter" if approved else f"未通过 ({len(feedback)} 个问题)，打回重试",
+    }
+
+
 async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
     # C3: 审计性能计时
@@ -500,6 +585,8 @@ async def critic_auditor_node(state: IntegratedState, config: RunnableConfig) ->
         },
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": [f"[critic_auditor] approved={approved}, consistency={consistency}, safety={safety}, roi={roi}"],
+        "execution_trace": [_auditor_trace_step(state, approved, feedback, current_iteration)],
+        "audit_diagnosis": _build_ternary_diagnosis(feedback, approved),
     }
 
 

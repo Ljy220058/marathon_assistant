@@ -1227,6 +1227,26 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         rag_sources=rag_sources,
         health=state.get("evidence_bundle", {}).get("health"),
     )
+    # AgentDoG P0: 记录 entity_extraction 节点执行轨迹
+    from datetime import datetime, timezone
+    trace_step = {
+        "node": "entity_extraction",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "input_snapshot": {
+            "query": query[:80],
+            "category": category,
+            "needs_translation": bool(en_query),
+            "rerank_enabled": settings.rerank_enabled,
+        },
+        "output_snapshot": {
+            "entity_count": len(entities),
+            "vector_hits": len(hits),
+            "graph_edges": len(graph_edges),
+            "ranked_evidence": len(ranked_evidence),
+            "top_domains": list(set(ev.get("expert_domain", "?") for ev in ranked_evidence[:5])),
+        },
+        "decision": f"检索完成: {len(ranked_evidence)} 证据, 实体: {entities[:3]}",
+    }
     return {
         "entities": entities,
         "selected_entities": entities,
@@ -1238,6 +1258,7 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         "mermaid_graph": mermaid_graph,
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": logs,
+        "execution_trace": [trace_step],
     }
 
 

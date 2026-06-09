@@ -96,6 +96,15 @@ class ExecutionStatusSummary(TypedDict, total=False):
     phase_progress: List[Dict[str, Any]]
 
 
+class TraceStep(TypedDict, total=False):
+    """AgentDoG P0: 单个节点的执行轨迹记录。"""
+    node: str                          # 节点名 (entity_extraction, planner, executor, coach, auditor, ...)
+    timestamp: str                     # ISO 时间戳
+    input_snapshot: Dict[str, Any]     # 入口关键字段快照 (query, category, entity_count, ...)
+    output_snapshot: Dict[str, Any]    # 出口关键字段快照 (evidence_count, plan_weeks, is_approved, ...)
+    decision: str                      # 本节点关键决策摘要
+
+
 class WorkflowTrace(TypedDict, total=False):
     trace_version: str
     run_id: str
@@ -988,10 +997,14 @@ class IntegratedState(TypedDict):
     review_feedback: str
     is_approved: bool
     iteration_count: int
+    hard_rule_retry_count: int  # P6: 硬规则打回上限 1
+    rag_audit_retry_count: int  # P6: RAG 审核打回上限 2
     final_report: str
     structured_training_plan: Optional[Dict[str, Any]]
     structured_report: Optional[Dict[str, Any]]
     reasoning_log: Annotated[List[str], operator.add]
+    execution_trace: Annotated[List[TraceStep], operator.add]  # AgentDoG P0: 结构化节点执行轨迹
+    audit_diagnosis: Optional[Dict[str, Any]]  # AgentDoG P0: 三元组诊断 {risk_source, failure_mode, real_world_harm, targeted_fix}
     gate_hits: List[Dict[str, Any]]
     rag_sources: List[Dict[str, Any]]
     ranked_evidence: List[Evidence]

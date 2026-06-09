@@ -400,13 +400,20 @@ def scan_execution_trace(state: IntegratedState) -> dict:
     log_text = "\n".join(str(item) for item in reasoning_log)
     alerts: list[str] = []
 
+    # AgentDoG P0: 优先使用结构化 execution_trace，回退到 reasoning_log 字符串匹配
+    execution_trace: list = state.get("execution_trace") or []
+    trace_nodes = [step.get("node", "") for step in execution_trace if isinstance(step, dict)]
+
     # 1. 计划漂移：planner 生成被 safety_gate 拦截的内容
     if "[security] 已拦截" in log_text and "[planner]" in log_text:
         alerts.append("[plan_drift] 安全门拦截后 planner 仍生成了内容")
 
-    # 2. 证据覆盖：auditor 拒绝但最终仍通过
-    audit_rejections = sum(1 for line in reasoning_log
-                         if "[auditor]" in str(line) and ("未通过" in str(line) or "拒绝" in str(line) or "rejected" in str(line).lower()))
+    # 2. 证据覆盖：auditor 拒绝但最终仍通过（优先用结构化 trace）
+    audit_steps = [s for s in execution_trace if isinstance(s, dict) and s.get("node") == "critic_auditor"]
+    audit_rejections = sum(1 for s in audit_steps if not s.get("output_snapshot", {}).get("approved", True))
+    if not audit_steps:
+        audit_rejections = sum(1 for line in reasoning_log
+                             if "[auditor]" in str(line) and ("未通过" in str(line) or "拒绝" in str(line) or "rejected" in str(line).lower()))
     final_approved = any("[auditor]" in str(line) and ("通过" in str(line) or "approved" in str(line).lower())
                         for line in reasoning_log)
     if audit_rejections >= 2 and not final_approved:
@@ -447,6 +454,16 @@ def scan_execution_trace(state: IntegratedState) -> dict:
     ):
         alerts.append("[low_confidence] 所有证据置信度为 low，回答应标注「证据不足」")
 
+    # AgentDoG P0: 结构化执行轨迹摘要
+    trace_summary = " → ".join(trace_nodes) if trace_nodes else "(无结构化 trace)"
+    audit_diagnosis = state.get("audit_diagnosis") or {}
+    if audit_diagnosis.get("diagnoses"):
+        diag_items = audit_diagnosis["diagnoses"]
+        alerts.append(
+            f"[ternary_diagnosis] {len(diag_items)} 个问题: "
+            + "; ".join(f"{d['failure_mode']}→{d['real_world_harm']}" for d in diag_items[:3])
+        )
+
     # 确定风险等级
     if not alerts:
         risk_level = "none"
@@ -461,4 +478,6 @@ def scan_execution_trace(state: IntegratedState) -> dict:
         "safe": risk_level in ("none", "low"),
         "alerts": alerts,
         "risk_level": risk_level,
+        "trace_nodes": trace_nodes,
+        "trace_summary": trace_summary,
     }

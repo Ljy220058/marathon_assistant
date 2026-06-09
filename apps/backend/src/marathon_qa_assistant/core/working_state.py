@@ -37,6 +37,8 @@ def build_working_state(
         "structured_training_plan": None,
         "structured_report": None,
         "reasoning_log": [],
+        "execution_trace": [],  # AgentDoG P0: 结构化节点执行轨迹
+        "audit_diagnosis": {},  # AgentDoG P0: 三元组诊断
         "gate_hits": [],
         "rag_sources": [],
         "ranked_evidence": [],
