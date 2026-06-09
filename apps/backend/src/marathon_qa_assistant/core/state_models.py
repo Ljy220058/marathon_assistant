@@ -1036,6 +1036,7 @@ class IntegratedState(TypedDict):
     repair_attempts: int
     nutritionist_done: bool
     needs_nutrition_review: bool
+    psychologist_done: bool
 
 
 WorkingState = IntegratedState

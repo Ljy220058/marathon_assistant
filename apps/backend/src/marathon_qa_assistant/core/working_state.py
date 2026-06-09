@@ -77,6 +77,7 @@ def build_working_state(
         "repair_suggestions": [],
         "repair_attempts": 0,
         "nutritionist_done": False,
+        "psychologist_done": False,
         "needs_nutrition_review": False,
     }
 

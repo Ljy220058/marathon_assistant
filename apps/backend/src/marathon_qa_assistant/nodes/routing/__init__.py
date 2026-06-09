@@ -122,6 +122,13 @@ def after_therapist_route(state: IntegratedState):
     return "critic_auditor"
 
 
+def after_nutritionist_route(state: IntegratedState):
+    """营养师完成后 → 心理学家 → 审计。无明显需求时跳过心理学家。"""
+    if not state.get("psychologist_done"):
+        return "psychologist"
+    return "critic_auditor"
+
+
 def after_router_route(state: IntegratedState):
     """根据意图类型决定跳转到画像更新节点还是传统提取节点"""
     if state.get("intent_type") == "profile_update":

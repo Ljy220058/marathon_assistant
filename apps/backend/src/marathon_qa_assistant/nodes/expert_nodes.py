@@ -429,6 +429,65 @@ async def nutritionist_node(state: IntegratedState, config: RunnableConfig) -> d
     }
 
 
+# ── 心理学家节点: 追加心理准备参考建议 ──
+async def psychologist_node(state: IntegratedState, config: RunnableConfig) -> dict:
+    draft = state.get("draft_plan", "") or state.get("final_report", "")
+    profile = state.get("user_profile") or {}
+    goal = profile.get("goal", "")
+    experience = profile.get("experience_level", "")
+    has_race = bool(goal)
+    has_long_run = any(kw.lower() in draft.lower() for kw in ["长距离", "LSD", "lsd", "long run", "30k", "35k", "全马", "马拉松", "半马", "比赛"])
+    is_newbie = experience in ("新手", "初级")
+
+    # 无明显心理需求场景 — 跳过
+    if not has_race and not has_long_run and not is_newbie:
+        return {
+            "draft_plan": draft,
+            "psychologist_done": True,
+            "token_usage": ensure_usage(state.get("token_usage")),
+            "reasoning_log": ["[psychologist] 无明显心理需求，跳过"],
+        }
+
+    # 构建场景描述
+    scenarios = []
+    if has_race:
+        scenarios.append(f"比赛目标 ({goal})")
+    if has_long_run:
+        scenarios.append("长距离训练")
+    if is_newbie:
+        scenarios.append(f"新手跑者 ({experience})")
+
+    content, usage = await _run_expert_llm(
+        role_name="运动心理学家",
+        task_instruction=(
+            "你是运动心理学顾问。你的任务是为跑者提供基于文献的运动心理学参考建议。\n\n"
+            "核心原则:\n"
+            "1. 不判断用户心理状态（你不是心理医生）\n"
+            "2. 不修改训练计划内容\n"
+            "3. 只提供以下场景相关的通用心理技巧参考:\n"
+            "   - 有明确比赛目标 → 赛前心理准备（如配速策略心态、可视化训练、自我对话）\n"
+            "   - 训练包含长距离 → 长距离跑的心理调节（如分段策略、注意力管理）\n"
+            "   - 新手跑者 → 建立训练信心、应对训练中的挫折感\n"
+            "4. 每条建议引用知识库证据或标注「基于通用运动心理学知识」\n"
+            "5. 输出格式: 二级标题「## 心理准备参考」\n"
+            "6. 内容不超过 200 字，用要点列表\n"
+            "7. 禁止输出与训练内容修改相关的建议\n"
+            "8. 禁止诊断心理状态或给出治疗建议\n\n"
+            f"当前适用场景: {'、'.join(scenarios)}"
+        ),
+        state=state,
+        config=config,
+        fallback_title="心理准备参考",
+    )
+    merged = (draft + "\n\n" + content).strip()
+    return {
+        "draft_plan": merged,
+        "psychologist_done": True,
+        "token_usage": usage,
+        "reasoning_log": ["[psychologist] 已补充心理准备参考"],
+    }
+
+
 async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
     draft = state.get("draft_plan", "") or state.get("final_report", "")

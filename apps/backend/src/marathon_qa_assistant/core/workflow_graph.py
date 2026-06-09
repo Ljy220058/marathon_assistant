@@ -10,10 +10,16 @@ except ImportError:
     START = "__start__"
     StateGraph = None
 
+try:
+    from langgraph.types import RetryPolicy
+except ImportError:
+    RetryPolicy = None  # type: ignore[assignment]
+
 from marathon_qa_assistant.core.state_models import IntegratedState
 from marathon_qa_assistant.nodes.routing import (
     after_critic_auditor_route,
     after_executor_route,
+    after_nutritionist_route,
     after_planner_route,
     after_profile_update_route,
     after_router_route,
@@ -86,6 +92,8 @@ class FallbackIntegratedApp:
         if current == "therapist":
             return after_therapist_route(state)
         if current == "nutritionist":
+            return after_nutritionist_route(state)
+        if current == "psychologist":
             return "critic_auditor"
         if current == "research_analyst":
             return "therapist"
@@ -138,8 +146,24 @@ def build_integrated_app(node_handlers):
         return FallbackIntegratedApp(node_handlers)
 
     workflow = StateGraph(IntegratedState)
+
+    # LLM-calling nodes: 120s timeout + 2 retries with exponential backoff.
+    _llm_timeout = 120
+    _llm_retry = RetryPolicy(max_attempts=2, initial_interval=1.0, backoff_factor=2.0, jitter=True) if RetryPolicy is not None else None
+    # Lightweight nodes: no extra timeout/retry.
+    _light_nodes = {
+        "security_gate", "router", "entity_extraction", "wiki_search",
+        "profiler", "profile_update", "formatter", "guided_questions_generator",
+        "missing_info_handler",
+    }
+
     for name, handler in node_handlers.items():
-        workflow.add_node(name, handler)
+        if name in _light_nodes:
+            workflow.add_node(name, handler)
+        elif _llm_retry is not None:
+            workflow.add_node(name, handler, timeout=_llm_timeout, retry_policy=_llm_retry)
+        else:
+            workflow.add_node(name, handler, timeout=_llm_timeout)
 
     workflow.add_edge(START, "security_gate")
     workflow.add_conditional_edges(
@@ -206,7 +230,8 @@ def build_integrated_app(node_handlers):
             "critic_auditor": "critic_auditor",
         },
     )
-    workflow.add_edge("nutritionist", "critic_auditor")
+    workflow.add_edge("nutritionist", "psychologist")
+    workflow.add_edge("psychologist", "critic_auditor")
     workflow.add_conditional_edges(
         "critic_auditor",
         after_critic_auditor_route,

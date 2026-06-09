@@ -15,6 +15,7 @@ from marathon_qa_assistant.nodes.expert_nodes import (
     coach_node,
     critic_auditor_node,
     nutritionist_node,
+    psychologist_node,
     research_analyst_node,
     therapist_node,
 )
@@ -42,6 +43,7 @@ integrated_app = build_integrated_app(
         "executor": executor_node,
         "coach": coach_node,
         "nutritionist": nutritionist_node,
+        "psychologist": psychologist_node,
         "therapist": therapist_node,
         "critic_auditor": critic_auditor_node,
         "formatter": formatter_node,
