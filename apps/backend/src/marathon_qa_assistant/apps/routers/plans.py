@@ -11,6 +11,7 @@ from marathon_qa_assistant.apps.schemas import (
     EventScheduleRequest,
     PlanDetailResponse,
     QueryRequest,
+    RollbackPlanRequest,
     SavePlanRequest,
     TrainingCalendarResponse,
 )
@@ -70,6 +71,10 @@ async def save_plan(request: SavePlanRequest, http_request: Request):
         calendar_days=request.calendar_days,
         training_start_date=str(calendar_settings.get("training_start_date") or ""),
         default_start_time=str(calendar_settings.get("default_start_time") or "07:00"),
+        lineage_id=request.lineage_id,
+        parent_plan_id=request.parent_plan_id,
+        trigger=request.trigger,
+        trigger_detail=request.trigger_detail,
     )
     return {"plan_id": plan_id, "saved": True}
 
@@ -100,6 +105,7 @@ async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_A
         "structured_training_plan": structured_plan,
         "workflow_trace": {},
         "events": events,
+        "versions": await run_db(get_db().list_plan_versions, plan_id),
         "execution_status_summary": build_execution_status_summary(
             events,
             plan={**plan, **(structured_plan.get("plan_meta") or {})},
@@ -113,6 +119,32 @@ async def get_plan(plan_id: str, http_request: Request, user_id: str = DEFAULT_A
         ),
     }
     return _project_plan_detail_response_for_role(response_payload, _response_role(http_request))
+
+
+@router.post("/plans/{plan_id}/rollback")
+async def rollback_plan(
+    plan_id: str,
+    request: RollbackPlanRequest,
+    http_request: Request,
+    user_id: str = DEFAULT_API_USER_ID,
+):
+    """回退到同一版本链中的指定历史版本，并创建一条新的 rollback 计划记录。"""
+    uid = _resolve_user_id(http_request) if _auth_enabled() else (_resolve_user_id(http_request) if _request_api_token(http_request) else user_id)
+    _require_default_user(uid)
+    plan = await run_db(get_db().get_plan, plan_id)
+    if not plan or plan.get("user_id") != uid:
+        raise HTTPException(status_code=404, detail="训练计划不存在。")
+    try:
+        rollback_plan_id = await run_db(
+            get_db().rollback_training_plan,
+            plan_id,
+            request.to_version,
+            user_id=uid,
+            trigger_detail=request.trigger_detail,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"plan_id": rollback_plan_id, "rolled_back": True, "to_version": request.to_version}
 
 
 @router.delete("/plans/{plan_id}")

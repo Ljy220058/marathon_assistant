@@ -12,9 +12,6 @@ def test_preferred_vector_dir_is_always_v2_even_when_legacy_has_artifacts(monkey
         return path in {
             app_state.USER_VECTOR_DIR,
             app_state.RUNTIME_USER_VECTOR_DIR,
-            app_state.LEGACY_USER_VECTOR_DIR,
-            app_state.DEFAULT_VECTOR_DIR,
-            app_state.LEGACY_DEFAULT_VECTOR_DIR,
         }
 
     monkeypatch.setattr(app_state, "has_vector_kb_artifacts", fake_has_artifacts)

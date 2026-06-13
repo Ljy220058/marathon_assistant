@@ -220,12 +220,13 @@ def test_profile_api_to_draft_maps_injury_history_to_limitations():
 
 def test_qa_response_does_not_force_calendar_workspace():
     content = _read_stripped(APP_SCRIPT)
-    renderer = content[content.index("function renderQueryPayload"):content.index("async function enrichQuery")]
+    renderer = content[content.index("function renderQueryPayload"):content.index("async function runQuery")]
     calendar_renderer = content[content.index("function renderCalendar"):content.index("function renderMonthCalendarGrid")]
     assert "const hasStructuredPlan = summarizePlan(payload).hasStructuredPlan" in renderer
     assert "if (hasStructuredPlan)" in renderer
     assert 'updateWorkspaceFlow("answer"' in renderer
     assert 'setActiveDrawerSection("calendar")' in renderer
+    assert "async function enrichQuery" not in content
     assert "智能对话不会改动训练日历" in calendar_renderer
 
 
@@ -469,9 +470,12 @@ def test_query_timeout_allows_slow_deepseek_rag_response():
     assert "const FULL_QUERY_TIMEOUT_MS = 120000;" in api_client
     assert "const FULL_QUERY_TIMEOUT_SEC = 120;" in content
     assert "const FULL_QUERY_TIMEOUT_SEC = 120;" in api_client
-    assert 'const responseMode = planLike ? "skeleton" : "qa_fast";' in api_client
-    assert "const timeoutSec = planLike ? (retry ? 90 : 60) : 45;" in api_client
-    assert "const timeoutMs = planLike ? (retry ? 100000 : 70000) : 52000;" in api_client
+    assert "function resolveQueryTimeout(responseMode, retry = false) {" in api_client
+    assert "function resolveQueryTimeoutMs(responseMode, retry = false) {" in api_client
+    assert 'responseMode = "full"' in api_client
+    assert 'planLike ? "skeleton" : "qa_fast"' not in api_client
+    assert 'mode === "skeleton" || mode === "skeleton_first"' in api_client
+    assert 'mode === "qa_fast" || mode === "quick_qa"' in api_client
 
 
 def test_query_timeout_preserves_timeout_error_instead_of_masking_connection_failure():
@@ -550,15 +554,18 @@ def test_plan_generation_skeleton_first_is_not_blocked_by_deepseek_api_key_gate(
     assert 'const planLike = qaMode ? false : isPlanLikeQuery(query);' in run_query
     assert "!planLike" in run_query
     assert 'llmProviderInput.value === "ds"' in run_query
-    assert 'responseMode = planLike ? "skeleton" : "qa_fast"' in api_client
+    assert 'payload = await window.__apiClient.requestQueryPayload(query, { responseMode: "full", controller });' in run_query
+    assert "enrichQuery(query, runId, controller);" not in run_query
+    assert 'responseMode = "full"' in api_client
 
 
 def test_ai_coach_qa_fast_path_uses_shorter_timeout_than_full_query():
     api_client = _read_stripped(root / "apps" / "web" / "src" / "scripts" / "apiClient.js")
     assert 'const FULL_QUERY_TIMEOUT_MS = 120000;' in api_client
-    assert 'const responseMode = planLike ? "skeleton" : "qa_fast";' in api_client
-    assert 'const timeoutSec = planLike ? (retry ? 90 : 60) : 45;' in api_client
-    assert 'const timeoutMs = planLike ? (retry ? 100000 : 70000) : 52000;' in api_client
+    assert 'function resolveQueryTimeout(responseMode, retry = false) {' in api_client
+    assert 'function resolveQueryTimeoutMs(responseMode, retry = false) {' in api_client
+    assert 'mode === "qa_fast" || mode === "quick_qa"' in api_client
+    assert 'mode === "skeleton" || mode === "skeleton_first"' in api_client
 
 
 def test_app_js_delegates_api_client_to_window_namespace():

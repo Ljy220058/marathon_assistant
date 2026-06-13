@@ -133,6 +133,11 @@ _TRAINING_DISTANCE_FRACTIONS_FALLBACK: Dict[str, Tuple[float, float]] = {
     "轻松跑": (0.10, 0.18),
     "恢复跑": (0.06, 0.12),
 }
+_EASY_MAIN_KM_CAP = 14.0
+_RECOVERY_MAIN_KM_CAP = 10.0
+_EASY_MAIN_KM_MIN = 4.0
+_RECOVERY_MAIN_KM_MIN = 3.0
+_LONG_RUN_MAIN_KM_MIN = 11.5
 
 # 反向映射：中文训练类型显示名 → WORKOUT_TEMPLATE_REGISTRY 的 key，
 # 用于从动作库检索热身/冷身建议时做索引转换。
@@ -951,7 +956,7 @@ def _resolve_main_set_from_constraint(
             candidates = card.get("main_set_candidates", [])
             if candidates:
                 # 选取第一个候选项，附加配速/强度提示
-                main_set = candidates[0]
+                main_set = _clamp_main_set_minutes(str(candidates[0]), constraint.training_type_display)
                 if constraint.intensity_hint:
                     main_set = f"{main_set}（{constraint.intensity_hint}）"
                 sources = card.get("source", [])
@@ -1026,7 +1031,7 @@ def _session_constraint(
         workout_type=registry_key,
         training_type_display=training_type_display,
         zone_range=zone_range,
-        target_duration_min=target_duration_min,
+        target_duration_min=_cap_session_duration_min(training_type_display, target_duration_min),
         phase_context=phase_context,
         intensity_hint=intensity_hint,
         notes=notes,
@@ -1271,6 +1276,9 @@ def _build_long_run_main_set(
         elif race_type == "marathon":
             minutes = min(160, base_minutes + 15 + week_index * 4)
             structure_note = "后段保持稳定有氧并练习补给"
+            # C2: 短周期 (<8周) 强制包含 MP 段——Daniels M 跑短周期适配 (B 级外推)
+            if total_weeks < 8 and phase_family not in ("intro", "base_1", "taper"):
+                structure_note += "；中后段加入2-3km马拉松配速段 (短周期保守适配, Daniels B级外推)"
         elif any(kw in mesocycle.name for kw in ("巅峰", "Peak", "peak")):
             minutes = min(150, base_minutes + 15)
         else:
@@ -1344,6 +1352,51 @@ def _main_km_for_type(training_type: str, target_km: float, ratio: str) -> float
 
 def _easy_km_text(km: float, pace_range: str) -> str:
     return f"{km:.1f}km，配速{pace_range}/km"
+
+
+def _duration_bounds_for_training_type(training_type: str) -> Optional[Tuple[int, int]]:
+    try:
+        from marathon_qa_assistant.core.workout_constraints import WORKOUT_CONSTRAINTS
+    except Exception:
+        return None
+    constraint = WORKOUT_CONSTRAINTS.get(str(training_type or ""))
+    if not constraint:
+        return None
+    return int(constraint.min_minutes), int(constraint.max_minutes)
+
+
+def _cap_session_duration_min(training_type: str, minutes: int) -> int:
+    bounds = _duration_bounds_for_training_type(training_type)
+    if not bounds:
+        return int(minutes)
+    lower, upper = bounds
+    return max(lower, min(int(minutes), upper))
+
+
+def _clamp_main_set_minutes(main_set: str, training_type: str) -> str:
+    bounds = _duration_bounds_for_training_type(training_type)
+    if not bounds:
+        return main_set
+    match = re.search(r"(\d+)\s*(分钟|min)", str(main_set or ""), flags=re.IGNORECASE)
+    if not match:
+        return main_set
+    lower, upper = bounds
+    current = int(match.group(1))
+    clamped = max(lower, min(current, upper))
+    if clamped == current:
+        return main_set
+    return f"{main_set[:match.start(1)]}{clamped}{main_set[match.end(1):]}"
+
+
+def _cap_low_intensity_main_km(training_type: str, main_km: float) -> float:
+    value = float(main_km or 0.0)
+    if value <= 0:
+        return 0.0
+    if training_type == "恢复跑":
+        return round(min(max(value, _RECOVERY_MAIN_KM_MIN), _RECOVERY_MAIN_KM_CAP), 1)
+    if training_type in ("轻松跑", ""):
+        return round(min(max(value, _EASY_MAIN_KM_MIN), _EASY_MAIN_KM_CAP), 1)
+    return round(value, 1)
 
 
 def _strip_hmp_workout_prefix(main_set: Any) -> Tuple[str, str]:
@@ -1467,6 +1520,7 @@ def _allocate_weekly_volume(
     easy_pace_range: str,
     is_taper_block: bool = False,
     distance_based_long_run: bool = False,
+    max_long_run_km: Optional[float] = None,
 ) -> List[DayPlan]:
     available_set = set(available_days)
     if is_taper_block:
@@ -1553,6 +1607,18 @@ def _allocate_weekly_volume(
         easy_km_each = round(easy_budget / len(easy_candidates), 1)
         if easy_km_each < 3.0:
             easy_km_each = max(3.0, round(easy_budget / len(easy_candidates), 1))
+
+    if max_long_run_km is not None:
+        long_km = round(min(max(float(long_km or 0.0), _LONG_RUN_MAIN_KM_MIN), float(max_long_run_km)), 1)
+    elif long_km > 0:
+        long_km = round(max(float(long_km or 0.0), _LONG_RUN_MAIN_KM_MIN), 1)
+    primary_km = _cap_low_intensity_main_km(primary_type, primary_km)
+    secondary_km = _cap_low_intensity_main_km(secondary_type, secondary_km)
+    easy_km_each = _cap_low_intensity_main_km("轻松跑", easy_km_each)
+    easy_km_by_day = {
+        day: _cap_low_intensity_main_km("轻松跑", km)
+        for day, km in easy_km_by_day.items()
+    }
 
     days: List[DayPlan] = []
     for day in WEEKDAY_ORDER:
@@ -1704,6 +1770,7 @@ def _build_week_days(
     blocks: List[BlockParams],
     total_weeks: int = 0,
     hm_protocol_context: Optional[Dict[str, Any]] = None,
+    training_capacity_envelope: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[DayPlan], float, Dict[str, Any]]:
     race_type = _resolve_goal_race_type(profile.get("goal"))
     threshold_pace_seconds = _resolve_threshold_pace_seconds(profile, race_type)
@@ -1712,6 +1779,15 @@ def _build_week_days(
     primary_quality_day, secondary_quality_day, long_run_day = _resolve_training_slots(available_days)
     week_in_phase = week_index - mesocycle.start_week + 1
     weekly_volume_km = _build_weekly_volume(base_weekly_mileage, week_index, blocks)
+    load_ceiling = training_capacity_envelope.get("load_ceiling") if isinstance(training_capacity_envelope, dict) else {}
+    if isinstance(load_ceiling, dict) and load_ceiling.get("weekly_load_cap_km") is not None:
+        weekly_volume_km = min(float(weekly_volume_km), float(load_ceiling.get("weekly_load_cap_km")))
+    max_long_run_km = None
+    if isinstance(load_ceiling, dict) and load_ceiling.get("max_long_run_km") is not None:
+        try:
+            max_long_run_km = float(load_ceiling.get("max_long_run_km"))
+        except (TypeError, ValueError):
+            max_long_run_km = None
 
     primary_constraint = _build_quality_session(
         mesocycle, week_index, threshold_pace_seconds, race_type, total_weeks
@@ -1819,15 +1895,18 @@ def _build_week_days(
         week_in_block=week_in_block,
         easy_pace_range=_format_pace_range(threshold_pace_seconds + 45, threshold_pace_seconds + 65),
         is_taper_block=is_taper_block,
-        distance_based_long_run=distance_based_long_run,
+        distance_based_long_run=distance_based_long_run or max_long_run_km is not None,
+        max_long_run_km=max_long_run_km,
     )
-    return days, weekly_volume_km, hmp_week_decision
+    actual_weekly_volume_km = round(sum(day.total_km for day in days), 1)
+    return days, min(float(weekly_volume_km), actual_weekly_volume_km), hmp_week_decision
 
 
 def build_structured_training_plan_skeleton(
     query: str,
     profile: Dict[str, Any],
     requested_weeks: Optional[int] = None,
+    training_capacity_envelope: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     profile = merge_plan_profile_overrides(query, profile)
     plan_context = align_plan_duration_context(query, profile)
@@ -1882,6 +1961,7 @@ def build_structured_training_plan_skeleton(
             blocks,
             total_weeks,
             hm_protocol_context,
+            training_capacity_envelope,
         )
         if week_index == 1:
             days = _apply_weekly_structure_constraints(days, weekly_structure_constraints, available_days)
@@ -1946,6 +2026,9 @@ def build_structured_training_plan_skeleton(
         first_week_actions=_build_first_week_actions(week_plans[0]) if week_plans else [],
     )
     plan_dict = plan.to_dict()
+    if isinstance(training_capacity_envelope, dict) and training_capacity_envelope:
+        plan_dict["training_capacity_envelope"] = training_capacity_envelope
+        plan_dict["s_and_c_constraints"] = training_capacity_envelope
     if hm_protocol_context.get("active"):
         hm_protocol_context["weekly_decisions"] = hmp_week_decisions
         hm_protocol_context["capacity_budget"] = (

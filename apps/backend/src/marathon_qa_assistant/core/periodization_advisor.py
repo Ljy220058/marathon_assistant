@@ -15,6 +15,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("periodization_advisor")
 
+# B1: 精英来源过滤关键词 — 业余跑者 (新手/初级/中级) 检索时自动排除匹配项
+# 新增偏精英来源只需追加 tuple, 不改变过滤逻辑
+ELITE_SOURCE_FILTER_KEYWORDS: Tuple[str, ...] = (
+    "Norway", "The Norway", "elite", "professional",
+    "Olympic", "national team", "世界纪录",
+)
+
 # ── 结构化输出 ────────────────────────────────────────────────────────────
 
 
@@ -34,6 +41,20 @@ class PeriodizationAdvisory:
     evidence_sources: List[str] = field(default_factory=list)
     # 标记是否来自 LLM (False = 降级到确定性规则)
     llm_generated: bool = False
+
+
+# ── 精英来源过滤 ──────────────────────────────────────────────────────────
+
+def _is_elite_source(chunk: Dict[str, Any]) -> bool:
+    """检查检索结果是否来自精英运动员来源（业余跑者应过滤）。
+
+    B1: 将硬编码字符串匹配提取为可配置检查。
+    新增精英来源关键词只需追加 ELITE_SOURCE_FILTER_KEYWORDS。
+    """
+    source_file = str(chunk.get("source_file", ""))
+    text_prefix = str(chunk.get("text", ""))[:200]
+    combined = f"{source_file} {text_prefix}"
+    return any(kw in combined for kw in ELITE_SOURCE_FILTER_KEYWORDS)
 
 
 # ── RAG 检索 ──────────────────────────────────────────────────────────────
@@ -78,6 +99,10 @@ def _retrieve_periodization_evidence(profile: Dict[str, Any], total_weeks: int) 
         from marathon_qa_assistant.services.vector_store import retrieve  # noqa: E402
         hits = retrieve(query, top_k=6)
         if hits:
+            # B1: 业余跑者过滤精英来源 (FAISS 路径)
+            experience = str(profile.get("experience_level") or "").strip()
+            if experience in ("新手", "初级", "中级", "beginner", "intermediate"):
+                hits = [h for h in hits if not _is_elite_source(h)]
             chunks.extend(hits)
     except Exception as exc:
         logger.debug("periodization RAG: FAISS 检索失败 (%s)，使用 JSONL 后备", exc)
@@ -111,6 +136,11 @@ def _retrieve_periodization_evidence(profile: Dict[str, Any], total_weeks: int) 
                 logger.debug("periodization RAG: JSONL 后备检索到 %d 个 chunks", len(chunks))
         except Exception as exc:
             logger.warning("periodization RAG: JSONL 后备检索失败: %s", exc)
+
+    # B1: 业余跑者过滤精英来源 (JSONL 后备路径)
+    experience = str(profile.get("experience_level") or "").strip()
+    if experience in ("新手", "初级", "中级", "beginner", "intermediate"):
+        chunks = [c for c in chunks if not _is_elite_source(c)]
 
     # 总是追加 HMP 协议阶段规则作为基础证据
     hmp_chunk = _extract_hmp_phase_rules()
@@ -269,7 +299,7 @@ def _call_llm_sync(prompt: str, timeout_sec: float = 60.0) -> Optional[str]:
 
     api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
     if not api_key:
-        logger.debug("periodization advisor: DEEPSEEK_API_KEY 未设置")
+        logger.info("periodization advisor: DEEPSEEK_API_KEY 未设置——使用确定性规则生成训练计划")
         return None
 
     base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")

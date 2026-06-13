@@ -37,6 +37,7 @@ def is_zone_empty(zones: Dict[str, str], expected_count: int = 9) -> bool:
 def calculate_hr_zones(lthr: int, model: str = "Coros") -> Dict[str, str]:
     """基于 LTHR 自动计算 9 区心率范围。
 
+    M4: 当前仅支持 Coros 模型。model 参数保留用于未来多模型扩展 (Garmin/Polar 等)。
     出处：
     - 乳酸阈心率 (LTHR) 分区训练概念源自 Joe Friel (2009),
       Total Heart Rate Training, Ch.4; 以及 Joe Friel (2016),

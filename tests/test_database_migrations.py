@@ -144,6 +144,23 @@ def test_database_migrates_legacy_feedback_audit_fields(tmp_path):
     assert latest["protocol_recheck"] == {}
 
 
+def test_database_migrates_legacy_plan_version_fields(tmp_path):
+    db_path = tmp_path / "legacy_plan_versions.db"
+    _create_old_feedback_db(db_path)
+
+    db = _Database(db_path)
+    columns = {
+        row["name"]
+        for row in db._get_conn().execute("PRAGMA table_info(training_plans)").fetchall()
+    }
+    plan = db.get_plan("plan-1")
+
+    assert {"lineage_id", "version", "parent_plan_id", "parent_version", "trigger", "trigger_detail"} <= columns
+    assert plan["lineage_id"] == "plan-1"
+    assert plan["version"] == 1
+    assert plan["trigger"] == "initial"
+
+
 def test_database_migrates_legacy_schema_migrations_checksum_column(tmp_path, monkeypatch):
     migrations_dir = tmp_path / "migrations"
     migrations_dir.mkdir()

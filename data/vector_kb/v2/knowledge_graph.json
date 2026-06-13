@@ -447,14 +447,70 @@
       "source_chunks": [
         "decision_graph_registry_v1"
       ]
+    },
+    "8b840cd53f3f": {
+      "label": "sport psychology skills",
+      "type": "concept",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "eaea9b315e8b": {
+      "label": "marathon mental preparation",
+      "type": "concept",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "ab9144938fd6": {
+      "label": "self-talk and imagery",
+      "type": "concept",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "143eaadff4d9": {
+      "label": "race preparation prompts",
+      "type": "strategy",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "d2e91eeeb6a1": {
+      "label": "sport psychology role",
+      "type": "role",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "0d137d9c116e": {
+      "label": "training prescription modification",
+      "type": "constraint",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "990b6bff3a43": {
+      "label": "persistent clinical distress",
+      "type": "risk",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "82faa4ad65b1": {
+      "label": "professional mental-health support",
+      "type": "constraint",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
     }
   },
   "edges": [
     {
       "source": "9c41243c6647",
       "target": "9afde815a2d3",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -465,8 +521,8 @@
     {
       "source": "9c41243c6647",
       "target": "3b770ebe9b04",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -477,7 +533,7 @@
     {
       "source": "9c41243c6647",
       "target": "c107898b38de",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -489,7 +545,7 @@
     {
       "source": "9c41243c6647",
       "target": "c16a0f05a917",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -501,7 +557,7 @@
     {
       "source": "9c41243c6647",
       "target": "4609562a769d",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -513,8 +569,8 @@
     {
       "source": "1e46f49d866c",
       "target": "9afde815a2d3",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -525,8 +581,8 @@
     {
       "source": "1e46f49d866c",
       "target": "3b770ebe9b04",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -537,7 +593,7 @@
     {
       "source": "1e46f49d866c",
       "target": "c107898b38de",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -549,7 +605,7 @@
     {
       "source": "1e46f49d866c",
       "target": "c16a0f05a917",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -561,7 +617,7 @@
     {
       "source": "1e46f49d866c",
       "target": "4609562a769d",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -573,7 +629,7 @@
     {
       "source": "9afde815a2d3",
       "target": "1fea7b1e836b",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -585,8 +641,8 @@
     {
       "source": "e88515ef1ebd",
       "target": "11abcc540863",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -597,8 +653,8 @@
     {
       "source": "e88515ef1ebd",
       "target": "5cb7e380d019",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -609,7 +665,7 @@
     {
       "source": "e88515ef1ebd",
       "target": "8b58c7712c5f",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -621,7 +677,7 @@
     {
       "source": "e88515ef1ebd",
       "target": "c107898b38de",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -633,7 +689,7 @@
     {
       "source": "e88515ef1ebd",
       "target": "456948bd9aae",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -645,8 +701,8 @@
     {
       "source": "bee4a93050d9",
       "target": "11abcc540863",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -657,8 +713,8 @@
     {
       "source": "bee4a93050d9",
       "target": "5cb7e380d019",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -669,7 +725,7 @@
     {
       "source": "bee4a93050d9",
       "target": "8b58c7712c5f",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -681,7 +737,7 @@
     {
       "source": "bee4a93050d9",
       "target": "c107898b38de",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -693,7 +749,7 @@
     {
       "source": "bee4a93050d9",
       "target": "456948bd9aae",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -705,7 +761,7 @@
     {
       "source": "11abcc540863",
       "target": "3f920d191613",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -717,7 +773,7 @@
     {
       "source": "11abcc540863",
       "target": "349978cd99e7",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -729,8 +785,8 @@
     {
       "source": "6d18c7cfc4b8",
       "target": "c333911c7c20",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -741,8 +797,8 @@
     {
       "source": "6d18c7cfc4b8",
       "target": "a61d1457beb4",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -753,7 +809,7 @@
     {
       "source": "6d18c7cfc4b8",
       "target": "6d18c7cfc4b8",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -765,7 +821,7 @@
     {
       "source": "6d18c7cfc4b8",
       "target": "be23814a2875",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -777,7 +833,7 @@
     {
       "source": "c333911c7c20",
       "target": "b78c6990a839",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -789,8 +845,8 @@
     {
       "source": "4ed8e16481e9",
       "target": "cddc27121683",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -801,8 +857,8 @@
     {
       "source": "4ed8e16481e9",
       "target": "8ed54f04419f",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -813,7 +869,7 @@
     {
       "source": "4ed8e16481e9",
       "target": "c5e2c38af141",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -825,7 +881,7 @@
     {
       "source": "4ed8e16481e9",
       "target": "0c7f73061a61",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -837,8 +893,8 @@
     {
       "source": "bafcac0dd6d6",
       "target": "cddc27121683",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -849,8 +905,8 @@
     {
       "source": "bafcac0dd6d6",
       "target": "8ed54f04419f",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -861,7 +917,7 @@
     {
       "source": "bafcac0dd6d6",
       "target": "c5e2c38af141",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -873,7 +929,7 @@
     {
       "source": "bafcac0dd6d6",
       "target": "0c7f73061a61",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -885,7 +941,7 @@
     {
       "source": "cddc27121683",
       "target": "622c28f2e495",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -897,7 +953,7 @@
     {
       "source": "cddc27121683",
       "target": "b78c6990a839",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -909,8 +965,8 @@
     {
       "source": "3a5b9cd61b9b",
       "target": "48c975526bcb",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -921,8 +977,8 @@
     {
       "source": "3a5b9cd61b9b",
       "target": "4afbd36dfbe0",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -933,7 +989,7 @@
     {
       "source": "3a5b9cd61b9b",
       "target": "c5e2c38af141",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -945,7 +1001,7 @@
     {
       "source": "3a5b9cd61b9b",
       "target": "fe79aea8b868",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -957,7 +1013,7 @@
     {
       "source": "48c975526bcb",
       "target": "622c28f2e495",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -969,7 +1025,7 @@
     {
       "source": "48c975526bcb",
       "target": "b78c6990a839",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -981,8 +1037,8 @@
     {
       "source": "ba10f3a62475",
       "target": "c5f29fd38c73",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -993,8 +1049,8 @@
     {
       "source": "ba10f3a62475",
       "target": "298a60807e4f",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1005,7 +1061,7 @@
     {
       "source": "ba10f3a62475",
       "target": "5fb3e0d2372d",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1017,7 +1073,7 @@
     {
       "source": "ba10f3a62475",
       "target": "bf3ce3ba1d45",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1029,8 +1085,8 @@
     {
       "source": "07b02d9c5087",
       "target": "c5f29fd38c73",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1041,8 +1097,8 @@
     {
       "source": "07b02d9c5087",
       "target": "298a60807e4f",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1053,7 +1109,7 @@
     {
       "source": "07b02d9c5087",
       "target": "5fb3e0d2372d",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1065,7 +1121,7 @@
     {
       "source": "07b02d9c5087",
       "target": "bf3ce3ba1d45",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1077,7 +1133,7 @@
     {
       "source": "c5f29fd38c73",
       "target": "622c28f2e495",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1089,7 +1145,7 @@
     {
       "source": "c5f29fd38c73",
       "target": "b78c6990a839",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1101,8 +1157,8 @@
     {
       "source": "19ed4a54cb28",
       "target": "67af6064d1a9",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1113,8 +1169,8 @@
     {
       "source": "19ed4a54cb28",
       "target": "1fde6c364c9c",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1125,7 +1181,7 @@
     {
       "source": "19ed4a54cb28",
       "target": "4ee9e31ef0f5",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1137,7 +1193,7 @@
     {
       "source": "19ed4a54cb28",
       "target": "6b1810a7901b",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1149,8 +1205,8 @@
     {
       "source": "317219044935",
       "target": "67af6064d1a9",
-      "relation": "parameterized_by",
-      "canonical_relation": "parameterized_by",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1161,8 +1217,8 @@
     {
       "source": "317219044935",
       "target": "1fde6c364c9c",
-      "relation": "uses_zone",
-      "canonical_relation": "uses_zone",
+      "relation": "requires",
+      "canonical_relation": "requires",
       "evidence": {
         "source": "decision_graph_registry",
         "chunk_id": "decision_graph_registry_v1",
@@ -1173,7 +1229,7 @@
     {
       "source": "317219044935",
       "target": "4ee9e31ef0f5",
-      "relation": "targets",
+      "relation": "improves",
       "canonical_relation": "targets",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1185,7 +1241,7 @@
     {
       "source": "317219044935",
       "target": "6b1810a7901b",
-      "relation": "produces",
+      "relation": "supports",
       "canonical_relation": "produces",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1197,7 +1253,7 @@
     {
       "source": "67af6064d1a9",
       "target": "622c28f2e495",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1209,7 +1265,7 @@
     {
       "source": "67af6064d1a9",
       "target": "b78c6990a839",
-      "relation": "constrained_by",
+      "relation": "constrains",
       "canonical_relation": "constrained_by",
       "evidence": {
         "source": "decision_graph_registry",
@@ -1217,6 +1273,62 @@
         "text_span": "重复跑模板 8x400m -> 高质量课间隔至少 48 小时",
         "confidence": 0.98
       }
+    },
+    {
+      "source": "8b840cd53f3f",
+      "target": "eaea9b315e8b",
+      "relation": "supports",
+      "canonical_relation": "related_to",
+      "evidence": {
+        "source": "sport_psychology_curated_chunks",
+        "chunk_id": "sport_psychology_subgraph_v1",
+        "text_span": "Mental skills can support confidence, attention, coping, and race preparation.",
+        "confidence": 0.96
+      },
+      "expert_domain": "sport_psychology",
+      "graph_relation_strength": "weak_support"
+    },
+    {
+      "source": "ab9144938fd6",
+      "target": "143eaadff4d9",
+      "relation": "supports",
+      "canonical_relation": "related_to",
+      "evidence": {
+        "source": "sport_psychology_curated_chunks",
+        "chunk_id": "sport_psychology_subgraph_v1",
+        "text_span": "Self-talk and imagery are exposed as prompts or scripts, not training plan edits.",
+        "confidence": 0.96
+      },
+      "expert_domain": "sport_psychology",
+      "graph_relation_strength": "weak_support"
+    },
+    {
+      "source": "d2e91eeeb6a1",
+      "target": "0d137d9c116e",
+      "relation": "constrains",
+      "canonical_relation": "constrained_by",
+      "evidence": {
+        "source": "sport_psychology_curated_chunks",
+        "chunk_id": "sport_psychology_subgraph_v1",
+        "text_span": "The psychologist role must not modify mileage, intensity, workout type, nutrition, or injury decisions.",
+        "confidence": 0.96
+      },
+      "expert_domain": "sport_psychology",
+      "graph_relation_strength": "hard_constraint"
+    },
+    {
+      "source": "990b6bff3a43",
+      "target": "82faa4ad65b1",
+      "relation": "requires",
+      "canonical_relation": "requires",
+      "evidence": {
+        "source": "sport_psychology_curated_chunks",
+        "chunk_id": "sport_psychology_subgraph_v1",
+        "text_span": "Clinical or persistent distress is outside the assistant psychology role and should be referred out.",
+        "confidence": 0.96
+      },
+      "expert_domain": "sport_psychology",
+      "graph_relation_strength": "hard_constraint"
     }
   ],
   "processed_chunks": {}

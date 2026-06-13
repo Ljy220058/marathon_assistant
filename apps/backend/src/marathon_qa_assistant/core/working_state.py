@@ -23,6 +23,8 @@ def build_working_state(
     return {
         "query": str(query or ""),
         "mode": effective_mode,
+        "intent_labels": [],
+        "intent_priority": "",
         "workflow_kind": "",
         "intent_type": "qa",
         "selected_entities": [],
@@ -33,6 +35,7 @@ def build_working_state(
         "review_feedback": "",
         "is_approved": False,
         "iteration_count": 0,
+        "node_visit_count": {},
         "final_report": "",
         "structured_training_plan": None,
         "structured_report": None,
@@ -40,6 +43,10 @@ def build_working_state(
         "execution_trace": [],  # AgentDoG P0: 结构化节点执行轨迹
         "audit_diagnosis": {},  # AgentDoG P0: 三元组诊断
         "safety_constraints": [],  # P1: KG 安全约束
+        "training_capacity_envelope": {},
+        "s_and_c_constraints": {},
+        "s_and_c_done": False,
+        "needs_therapist_review": False,
         "gate_hits": [],
         "rag_sources": [],
         "ranked_evidence": [],
@@ -53,9 +60,11 @@ def build_working_state(
                 "faiss_ready": bool(health.get("faiss_ready")),
             },
         },
+        "expert_evidence_trace": {},
         "graph_context": "",
         "wiki_context": "",
         "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        "rule_check_result": {},
         "audit_scores": {"consistency": 0, "safety": 0, "roi": 0, "summary": "", "score_sources": {}},
         "roi_history": [],
         "risk_alert": "",
@@ -65,11 +74,16 @@ def build_working_state(
         "user_profile": user_profile or {},
         "adaptive_feedback": adaptive_feedback or {},
         "adaptive_adjustment": {},
+        "adaptation_type": "",
+        "adaptation_context": {},
         "workflow_trace": {},
+        "supervisor_decision": "",
         "requested_weeks": None,
         "missing_fields": [],
         "enhancement_missing_fields": [],
         "missing_info_status": "",
+        "workflow_pause": {},
+        "workflow_error": {},
         "history": list(history or []),
         "used_fallback": False,
         "fallback_reason": "",
@@ -77,8 +91,9 @@ def build_working_state(
         "repair_suggestions": [],
         "repair_attempts": 0,
         "nutritionist_done": False,
-        "psychologist_done": False,
         "needs_nutrition_review": False,
+        "psychologist_done": False,
+        "needs_psychology_review": False,
     }
 
 

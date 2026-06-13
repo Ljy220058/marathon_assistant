@@ -204,16 +204,16 @@
     "ground_truth": "RED-S is a syndrome affecting health and performance caused by inadequate energy intake relative to exercise energy expenditure.",
     "domain": "medical_safety",
     "sample_type": "positive",
-    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0407",
-    "source_file": "nutrition_issn_review_2018.pdf"
+    "reference_chunk_id": "src_173c5a6a63ed_a709fe4c0267_p0002_cd67e746cac36887_cd67e746cac36887",
+    "source_file": "nutrition_acsm_position_2016.pdf"
   },
   {
     "question": "What did a systematic review find about previous running experience as a risk factor for injuries?",
     "ground_truth": "No previous running experience is a risk factor for injuries among short-distance runners. Novice runners may build up training too quickly. The risk depends on distances run.",
     "domain": "injury_safety",
     "sample_type": "positive",
-    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0269",
-    "source_file": "nutrition_acsm_position_2016.pdf"
+    "reference_chunk_id": "src_9f8a5156cc54_c255751d518c_p0001_d9e2bed9b3e25bcd_d9e2bed9b3e25bcd",
+    "source_file": "src_pmc_running_overuse_risk_factors_2020.md"
   },
   {
     "question": "What do studies on subjective training load monitoring show?",
@@ -260,16 +260,16 @@
     "ground_truth": "Carbohydrate loading, developed in the 1970s. It involved 3-4 days of high-volume training with limited carbs, followed by a diet of over 70% carbs with sharply reduced training volume to supersaturate muscle glycogen and improve prolonged exercise performance.",
     "domain": "nutrition",
     "sample_type": "positive",
-    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0373",
-    "source_file": "nutrition_issn_review_2018.pdf"
+    "reference_chunk_id": "src_95090527d22c_a709fe4c0267_p0003_c9c16149aa21ec06_c9c16149aa21ec06",
+    "source_file": "nutrition_issn_nutrient_timing_2017.pdf"
   },
   {
     "question": "How does strength training improve running economy?",
     "ground_truth": "Through improved intra- and inter-muscular coordination, improved muscle-tendon stiffness, and increased recruitment and firing rate of motor units, plus morphological changes.",
     "domain": "training_protocol",
     "sample_type": "positive",
-    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0391",
-    "source_file": "nutrition_issn_review_2018.pdf"
+    "reference_chunk_id": "src_8bd64e83a795_26aca7941a99_p0001_539bcf0b9fd2ab6c_539bcf0b9fd2ab6c",
+    "source_file": "src_pmc_strength_training_running_economy_2024.md"
   },
   {
     "question": "What are the effects of a short-term running injury?",
@@ -292,8 +292,8 @@
     "ground_truth": "Myocardial damage or cardiac stress.",
     "domain": "medical_safety",
     "sample_type": "positive",
-    "reference_chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0013",
-    "source_file": "nutrition_distance_runners_2019.pdf"
+    "reference_chunk_id": "src_2ff90fb7fcc0_a709fe4c0267_p0004_2dd7cb5c6563d7fe_2dd7cb5c6563d7fe",
+    "source_file": "train_marathon_physiology_2025.pdf"
   },
   {
     "question": "What is the recommended dosage of omega-3 for athletes?",
@@ -316,8 +316,8 @@
     "ground_truth": "Family, friends, teammates, coaches, and the Internet, rather than sports dietitians. Supplement use prevalence is 37-89%, higher in elite and older athletes.",
     "domain": "nutrition",
     "sample_type": "positive",
-    "reference_chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0016",
-    "source_file": "train_world_class_middle_distance_2021.md"
+    "reference_chunk_id": "src_e9d0f60baa9c_38bfd15a5f5d_p0008_32270fddee72c515_32270fddee72c515",
+    "source_file": "Thomas_2016_ACSM_Nutrition.pdf"
   },
   {
     "question": "What percentage of marathon workouts occur on weekends?",

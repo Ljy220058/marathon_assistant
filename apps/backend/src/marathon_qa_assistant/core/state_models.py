@@ -54,6 +54,7 @@ class AdaptiveFeedback(TypedDict, total=False):
 
 class AdaptiveAdjustment(TypedDict, total=False):
     adjustment_required: bool
+    adaptation_type: str
     primary_reason_code: str
     reason_codes: List[str]
     reasons: List[AdaptiveReason]
@@ -800,9 +801,10 @@ def normalize_workout_feedback(payload: Optional[Dict[str, Any]] = None, raw_tex
 
 def derive_adaptive_reasons(feedback: Optional[Dict[str, Any]] = None, raw_text: str = "") -> List[AdaptiveReason]:
     normalized = normalize_workout_feedback(feedback, raw_text=raw_text)
+    combined_text = f"{raw_text} {normalized.get('notes', '')}".lower()
     reasons: List[AdaptiveReason] = []
 
-    if normalized.get("pain_status") == "risk":
+    if normalized.get("pain_status") == "risk" or _contains_any(combined_text, ["疼", "痛", "伤", "injury", "pain", "膝", "跟腱", "足底"]):
         reasons.append(
             {
                 "code": "pain_risk",
@@ -811,7 +813,7 @@ def derive_adaptive_reasons(feedback: Optional[Dict[str, Any]] = None, raw_text:
                 "why": "反馈中出现疼痛或明显不适，当前更需要先控风险而不是继续堆训练量。",
             }
         )
-    if normalized.get("subjective_fatigue") == "high":
+    if normalized.get("subjective_fatigue") == "high" or _contains_any(combined_text, ["明显疲劳", "很累", "好累", "乏力", "fatigue", "exhausted"]):
         reasons.append(
             {
                 "code": "high_fatigue",
@@ -835,7 +837,7 @@ def derive_adaptive_reasons(feedback: Optional[Dict[str, Any]] = None, raw_text:
                 "why": "反馈显示训练完成度或恢复质量开始下降，适合先做轻量微调而不是硬顶。",
             }
         )
-    if normalized.get("completion_status") == "missed":
+    if normalized.get("completion_status") == "missed" or _contains_any(combined_text, ["漏练", "漏训", "没练", "缺课", "未完成", "missed workout"]):
         reasons.append(
             {
                 "code": "missed_workout",
@@ -860,11 +862,14 @@ def build_adaptive_adjustment_contract(feedback: Optional[Dict[str, Any]] = None
     reasons = derive_adaptive_reasons(feedback, raw_text=raw_text)
     reason_codes = [reason["code"] for reason in reasons]
     if not reason_codes:
-        return _build_no_adjustment_contract()
+        contract = _build_no_adjustment_contract()
+        contract["adaptation_type"] = infer_adaptation_type(reason_codes=reason_codes, raw_text=raw_text)
+        return contract
 
     primary_reason_code = reason_codes[0] if reason_codes else ""
     return {
         "adjustment_required": bool(reason_codes),
+        "adaptation_type": infer_adaptation_type(reason_codes=reason_codes, raw_text=raw_text),
         "primary_reason_code": primary_reason_code,
         "reason_codes": reason_codes,
         "reasons": reasons,
@@ -874,6 +879,24 @@ def build_adaptive_adjustment_contract(feedback: Optional[Dict[str, Any]] = None
         "risk_alert": _compose_adaptive_field(reason_codes, "risk_alert"),
         "rationale": _build_adaptive_rationale(reason_codes, reasons),
     }
+
+
+def infer_adaptation_type(*, reason_codes: Optional[List[str]] = None, raw_text: str = "") -> str:
+    """Map adaptive feedback signals to the graph-level routing category."""
+
+    codes = set(reason_codes or [])
+    normalized = str(raw_text or "").lower()
+    if "pain_risk" in codes or _contains_any(normalized, ["疼", "痛", "伤", "injury", "pain", "膝", "跟腱", "足底"]):
+        return "INJURY"
+    if {"high_fatigue", "mild_fatigue"} & codes or _contains_any(normalized, ["疲劳", "累", "乏力", "睡眠差", "fatigue", "tired"]):
+        return "FATIGUE"
+    if "missed_workout" in codes or _contains_any(normalized, ["漏练", "漏训", "没练", "未完成", "缺课", "missed"]):
+        return "MISSED"
+    if _contains_any(normalized, ["出差", "没空", "日程", "时间", "改到", "调整训练日", "schedule", "travel"]):
+        return "SCHEDULE"
+    if _contains_any(normalized, ["成绩", "表现", "配速", "达不到", "退步", "进步", "performance", "pace"]):
+        return "PERFORMANCE"
+    return "UNKNOWN"
 
 
 class NutritionProfile(TypedDict):
@@ -957,6 +980,7 @@ class EvidenceBundleItem(TypedDict, total=False):
     evidence_id: str
     citation_label: str
     tier: str
+    display_mode: str
     source_file: str
     source_path: str
     page: Optional[int]
@@ -988,6 +1012,8 @@ class EntityList(BaseModel):
 class IntegratedState(TypedDict):
     query: str
     mode: str
+    intent_labels: List[str]
+    intent_priority: str
     intent_type: str
     workflow_kind: str
     selected_entities: List[str]
@@ -999,6 +1025,7 @@ class IntegratedState(TypedDict):
     iteration_count: int
     hard_rule_retry_count: int  # P6: 硬规则打回上限 1
     rag_audit_retry_count: int  # P6: RAG 审核打回上限 2
+    node_visit_count: Dict[str, int]
     final_report: str
     structured_training_plan: Optional[Dict[str, Any]]
     structured_report: Optional[Dict[str, Any]]
@@ -1006,14 +1033,20 @@ class IntegratedState(TypedDict):
     execution_trace: Annotated[List[TraceStep], operator.add]  # AgentDoG P0: 结构化节点执行轨迹
     audit_diagnosis: Optional[Dict[str, Any]]  # AgentDoG P0: 三元组诊断 {risk_source, failure_mode, real_world_harm, targeted_fix}
     safety_constraints: List[Dict[str, Any]]  # P1: KG constrains/risks 边
+    training_capacity_envelope: Dict[str, Any]
+    s_and_c_constraints: Dict[str, Any]
+    s_and_c_done: bool
+    needs_therapist_review: bool
     gate_hits: List[Dict[str, Any]]
     rag_sources: List[Dict[str, Any]]
     ranked_evidence: List[Evidence]
     evidence_bundle: EvidenceBundle
+    expert_evidence_trace: Dict[str, Any]
     graph_context: str
     wiki_context: str
     mermaid_graph: str
     token_usage: TokenUsage
+    rule_check_result: Dict[str, Any]
     audit_scores: AuditScores
     roi_history: List[float]
     risk_alert: str
@@ -1022,11 +1055,16 @@ class IntegratedState(TypedDict):
     user_profile: UserProfile
     adaptive_feedback: AdaptiveFeedback
     adaptive_adjustment: AdaptiveAdjustment
+    adaptation_type: str
+    adaptation_context: Dict[str, Any]
     workflow_trace: WorkflowTrace
+    supervisor_decision: str
     requested_weeks: Optional[int]
     missing_fields: List[str]
     enhancement_missing_fields: List[str]
     missing_info_status: str
+    workflow_pause: Dict[str, Any]
+    workflow_error: Dict[str, Any]
     history: List[Dict[str, str]]
     used_fallback: bool
     fallback_reason: str
@@ -1037,6 +1075,7 @@ class IntegratedState(TypedDict):
     nutritionist_done: bool
     needs_nutrition_review: bool
     psychologist_done: bool
+    needs_psychology_review: bool
 
 
 WorkingState = IntegratedState

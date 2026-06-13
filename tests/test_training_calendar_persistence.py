@@ -131,6 +131,44 @@ def test_list_training_plans_returns_saved_plans(tmp_path):
     plans = db.list_training_plans()
     assert len(plans) == 1
     assert plans[0]["goal"] == "半马训练"
+    assert plans[0]["version"] == 1
+    assert plans[0]["trigger"] == "initial"
+
+
+def test_save_training_plan_creates_version_chain_and_rollback_record(tmp_path):
+    db = _Database(tmp_path / "calendar.db")
+    v1_id = db.save_training_plan(_sample_plan(), source_query="生成1周计划")
+    v1 = db.get_plan(v1_id)
+
+    updated_plan = _sample_plan()
+    updated_plan["plan_meta"]["goal"] = "半马训练调整版"
+    v2_id = db.save_training_plan(
+        updated_plan,
+        source_query="调整计划",
+        lineage_id=v1["lineage_id"],
+        parent_plan_id=v1_id,
+        trigger="missed_adapt",
+        trigger_detail="漏训后调整",
+    )
+    rollback_id = db.rollback_training_plan(v2_id, 1, trigger_detail="用户手动回退到 v1")
+
+    v2 = db.get_plan(v2_id)
+    rollback = db.get_plan(rollback_id)
+    versions = db.list_plan_versions(v2_id)
+    loaded_v1 = db.get_plan_version(v1["lineage_id"], 1)
+
+    assert loaded_v1["id"] == v1_id
+    assert v2["version"] == 2
+    assert v2["parent_plan_id"] == v1_id
+    assert v2["parent_version"] == 1
+    assert v2["trigger"] == "missed_adapt"
+    assert rollback["version"] == 3
+    assert rollback["parent_plan_id"] == v1_id
+    assert rollback["parent_version"] == 1
+    assert rollback["trigger"] == "manual_rollback"
+    assert rollback["trigger_detail"] == "用户手动回退到 v1"
+    assert [item["version"] for item in versions] == [1, 2, 3]
+    assert len(db.list_events(rollback_id)) == len(db.list_events(v1_id))
 
 
 def test_build_calendar_props_from_db(tmp_path, monkeypatch):

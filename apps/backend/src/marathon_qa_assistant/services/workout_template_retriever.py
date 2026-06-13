@@ -8,12 +8,20 @@ from typing import Any, Dict, List, Optional
 import json
 import logging
 
+from marathon_qa_assistant.core import kb_runtime
 from marathon_qa_assistant.core.app_state import get_preferred_vector_dir, has_vector_kb_artifacts
 from marathon_qa_assistant.core.zone_constants import ZONE_LABELS, ZONE_LABELS_DETAIL
 from marathon_qa_assistant.services.kb.source_registry import build_source_registry_id
 # vector_store 懒加载，避免导入时触发 Ollama 连接
 
 logger = logging.getLogger("workout_template_retriever")
+
+
+def _runtime_retrieval_data():
+    if not kb_runtime.KB_CHUNKS or not kb_runtime.RETRIEVE_FUNC:
+        return None
+    chunks = kb_runtime.KB_SHARD_CHUNKS if kb_runtime.KB_SHARD_CHUNKS is not None else kb_runtime.KB_CHUNKS
+    return chunks, kb_runtime.KB_VECTORIZER, kb_runtime.KB_MATRIX, kb_runtime.KB_BM25, kb_runtime.RETRIEVE_FUNC
 
 
 @dataclass
@@ -492,6 +500,135 @@ WORKOUT_TEMPLATE_REGISTRY.update({
 
 _ACTION_LIBRARY_SOURCE = "动作库.pdf"
 
+_CORE_PRESCRIPTION_CATEGORY_TOKENS = {
+    "aerobic",
+    "anaerobic",
+    "endurance",
+    "steady-state",
+    "long-run",
+    "marathon",
+    "marathon-spec",
+    "threshold",
+    "tempo",
+    "interval",
+    "intervals",
+    "vo2max",
+    "fartlek",
+    "hills",
+    "strength-endurance",
+    "speed",
+    "lactate",
+    "active-rest",
+    "race",
+    "阈值",
+    "长距离",
+    "⻓距离",
+    "跑走",
+    "节奏",
+    "间歇",
+    "坡",
+    "法特莱克",
+    "配速",
+}
+
+_NON_CORE_ONLY_CATEGORY_TOKENS = {
+    "warm-up",
+    "pre-run",
+    "mobility",
+    "flexibility",
+    "self-massage",
+    "activation",
+    "technique",
+    "drills",
+    "热身",
+    "激活",
+    "灵活",
+    "拉伸",
+    "泡沫",
+    "放松",
+    "技术",
+    "马克操",
+}
+
+_WORKOUT_TYPE_REQUIRED_CATEGORY_TOKENS = {
+    "aerobic_threshold": {"steady-state", "阈值", "最大脂肪", "有氧阈值"},
+    "long_run": {"long-run", "marathon-spec", "长距离", "⻓距离"},
+    "easy_run": {"active-rest", "easy run", "recovery run", "跑走", "轻松跑", "恢复跑"},
+    "tempo_run": {"tempo", "threshold", "lactate-threshold", "节奏", "阈值"},
+    "interval_run": {"interval", "intervals", "vo2max", "speed", "间歇"},
+    "vo2max_interval": {"vo2max", "intervals", "hard", "摄氧", "间歇"},
+    "anaerobic_threshold": {"threshold", "lactate-threshold", "cruise", "无氧阈", "阈值"},
+    "marathon_pace": {"marathon-pace", "marathon", "配速"},
+    "progression_run": {"progression", "long-run", "tempo", "节奏", "渐进"},
+    "fartlek": {"fartlek", "法特莱克"},
+    "hill_repeats": {"hills", "strength-endurance", "坡"},
+    "strides": {"strides", "speed", "加速跑", "短冲"},
+}
+
+
+def _action_hit_category_blob(hit: Dict[str, Any]) -> str:
+    tags = hit.get("tags") if isinstance(hit.get("tags"), dict) else {}
+    values = [
+        tags.get("categories", ""),
+        tags.get("workout_name", ""),
+        " ".join(str(item or "") for item in (hit.get("domain_terms") or [])),
+        str(hit.get("text") or "")[:400],
+    ]
+    return " ".join(str(value or "") for value in values).lower()
+
+
+def _action_hit_label_blob(hit: Dict[str, Any]) -> str:
+    tags = hit.get("tags") if isinstance(hit.get("tags"), dict) else {}
+    values = [
+        tags.get("categories", ""),
+        tags.get("workout_name", ""),
+        " ".join(str(item or "") for item in (hit.get("domain_terms") or [])),
+    ]
+    return " ".join(str(value or "") for value in values).lower()
+
+
+def _action_hit_search_blob(hit: Dict[str, Any]) -> str:
+    tags = hit.get("tags") if isinstance(hit.get("tags"), dict) else {}
+    values = [
+        str(hit.get("text") or ""),
+        tags.get("categories", ""),
+        tags.get("workout_name", ""),
+        " ".join(str(item or "") for item in (hit.get("domain_terms") or [])),
+    ]
+    blob = " ".join(str(value or "") for value in values).lower()
+    normalized_blob = blob.replace("⻓", "长").replace("-", " ")
+    return f"{blob} {normalized_blob}"
+
+
+def _is_core_prescription_action_hit(hit: Dict[str, Any]) -> bool:
+    if hit.get("exclude_from_training_generation") is True:
+        return False
+
+    label_blob = _action_hit_label_blob(hit)
+    label_has_core_category = any(token in label_blob for token in _CORE_PRESCRIPTION_CATEGORY_TOKENS)
+    label_has_non_core_category = any(token in label_blob for token in _NON_CORE_ONLY_CATEGORY_TOKENS)
+    if label_has_non_core_category and not label_has_core_category:
+        return False
+
+    category_blob = _action_hit_category_blob(hit)
+    has_core_category = any(token in category_blob for token in _CORE_PRESCRIPTION_CATEGORY_TOKENS)
+    has_non_core_category = any(token in category_blob for token in _NON_CORE_ONLY_CATEGORY_TOKENS)
+
+    # Warm-up, mobility, drill, and activation chunks can supplement execution
+    # details, but they must not become the visible main-set prescription.
+    if has_non_core_category and not has_core_category:
+        return False
+
+    return True
+
+
+def _is_action_hit_aligned_with_workout_type(workout_type: str, hit: Dict[str, Any]) -> bool:
+    required_tokens = _WORKOUT_TYPE_REQUIRED_CATEGORY_TOKENS.get(str(workout_type or "").strip())
+    if not required_tokens:
+        return True
+    category_blob = _action_hit_category_blob(hit)
+    return any(token.lower() in category_blob for token in required_tokens)
+
 EVIDENCE_TIER_LABELS = {
     "action_library": "动作库课表",
     "protocol_rule": "HMP 基石协议",
@@ -570,6 +707,11 @@ def _load_action_library_fallback() -> Dict[str, List[Dict[str, Any]]]:
                     "warmup_suggestion": chunk.get("warmup_suggestion"),
                     "cooldown_suggestion": chunk.get("cooldown_suggestion"),
                     "source_authority": chunk.get("source_authority", ""),
+                    "tags": chunk.get("tags") or {},
+                    "allowed_use": chunk.get("allowed_use", ""),
+                    "prescription_permission": chunk.get("prescription_permission", ""),
+                    "exclude_from_training_generation": chunk.get("exclude_from_training_generation", False),
+                    "quality_tier": chunk.get("quality_tier", ""),
                 })
     except Exception as exc:
         logger.warning("加载动作库 JSONL 失败: %s", exc)
@@ -597,15 +739,24 @@ def get_action_library_foundation_hits(workout_type: str) -> List[Dict[str, Any]
     matched = []
     for source_file, chunks in fallback.items():
         for chunk in chunks:
-            text = str(chunk.get("text", ""))
-            if any(alias in text for alias in aliases[:7]):
+            search_blob = _action_hit_search_blob(chunk)
+            if any(str(alias or "").lower() in search_blob for alias in aliases[:7]):
                 matched.append(dict(chunk))
 
     if not matched:
         # JSONL 无匹配时尝试 FAISS（懒加载，避免阻塞常规路径）
         try:
-            selected_vector_dir = get_preferred_vector_dir()
-            if has_vector_kb_artifacts(selected_vector_dir):
+            selected_vector_dir = None
+            runtime_data = _runtime_retrieval_data()
+            if runtime_data is not None:
+                chunks, vectorizer, matrix, bm25, faiss_retrieve = runtime_data
+                hits = faiss_retrieve(search_query, chunks, vectorizer, matrix, top_k=10, bm25=bm25)
+                matched = [h for h in hits if "动作库" in str(h.get("source_file", ""))]
+            else:
+                candidate_dir = get_preferred_vector_dir()
+                if has_vector_kb_artifacts(candidate_dir):
+                    selected_vector_dir = candidate_dir
+            if not matched and selected_vector_dir:
                 from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve as faiss_retrieve  # noqa: E402
                 chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
                 hits = faiss_retrieve(search_query, chunks, vectorizer, matrix, top_k=10, bm25=bm25)
@@ -633,12 +784,18 @@ def retrieve_daily_workout_template_card(
     top_k: int = 20,
 ) -> Dict[str, Any]:
     from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve as faiss_retrieve
-    selected_vector_dir = vector_dir or get_preferred_vector_dir()
-    if not has_vector_kb_artifacts(selected_vector_dir):
-        return _empty_card(workout_type, day, "知识库产物不可用，未生成课表。")
 
-    chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
-    hits = faiss_retrieve(build_workout_template_query(workout_type), chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
+    runtime_data = _runtime_retrieval_data() if vector_dir is None else None
+    if runtime_data is not None:
+        chunks, vectorizer, matrix, bm25, retrieve_fn = runtime_data
+    else:
+        selected_vector_dir = vector_dir or get_preferred_vector_dir()
+        if not has_vector_kb_artifacts(selected_vector_dir):
+            return _empty_card(workout_type, day, "知识库产物不可用，未生成课表。")
+        chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
+        retrieve_fn = faiss_retrieve
+
+    hits = retrieve_fn(build_workout_template_query(workout_type), chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
     return build_daily_workout_template_card_from_hits(workout_type=workout_type, day=day, hits=hits)
 
 
@@ -797,10 +954,14 @@ def _select_relevant_action_library_hits(workout_type: str, hits: List[Dict[str,
     selected = []
     for hit in hits:
         source_file = str(hit.get("source_file") or hit.get("source") or "")
-        text = str(hit.get("text") or "")
         if source_file not in source_priority:
             continue
-        if any(alias in text for alias in aliases[:7]):
+        if not _is_core_prescription_action_hit(hit):
+            continue
+        if not _is_action_hit_aligned_with_workout_type(workout_type, hit):
+            continue
+        search_blob = _action_hit_search_blob(hit)
+        if any(str(alias or "").lower() in search_blob for alias in aliases[:7]):
             selected.append(hit)
     return selected
 
@@ -1000,6 +1161,33 @@ def _format_candidate(text: str) -> str:
     return value
 
 
+def derive_stimulus_type(zone_range: str) -> str:
+    """从 zone_range 推导 stimulus_type（intensity / volume_only / mixed）。
+
+    规则:
+    - Z5+ 且无 Z3-Z4 → intensity（纯高强度刺激，不可替代）
+    - Z1-Z2 only → volume_only（纯低强度累积，可删减）
+    - Z5+ 且有 Z3-Z4 → mixed（高低混合，保留高强度部分砍低强度部分）
+    - 其余（如 Z3-Z4 only）→ volume_only
+
+    >>> derive_stimulus_type("Z5-Z6")
+    'intensity'
+    >>> derive_stimulus_type("Z1-Z2")
+    'volume_only'
+    >>> derive_stimulus_type("Z2-Z5")
+    'mixed'
+    """
+    zones = zone_range.replace(" ", "").split(",")
+    has_high = any(f"Z{z}" in zone_range for z in ["5", "6", "7", "8", "9"])
+    has_mid = any(f"Z{z}" in zone_range for z in ["2", "3"])  # Z4+ = 阈值及以上, 不计入 mid
+
+    if has_high and has_mid:
+        return "mixed"
+    if has_high:
+        return "intensity"
+    return "volume_only"
+
+
 __all__ = [
     "DailyWorkoutTemplateCard",
     "WorkoutTemplateEvidence",
@@ -1007,6 +1195,7 @@ __all__ = [
     "WORKOUT_TYPE_KEYWORD_MAP",
     "build_daily_workout_template_card_from_hits",
     "build_workout_template_query",
+    "derive_stimulus_type",
     "get_action_library_foundation_hits",
     "normalize_workout_type_for_template",
     "retrieve_daily_workout_template_card",

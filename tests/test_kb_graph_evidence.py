@@ -285,7 +285,7 @@ def test_get_graph_context_skips_search_when_graph_source_mismatches_runtime(mon
     assert "Graph fusion disabled" in mermaid
 
 
-def test_entity_extraction_skips_graph_search_when_graph_source_mismatches_runtime(monkeypatch):
+def test_evidence_retriever_skips_graph_search_when_graph_source_mismatches_runtime(monkeypatch):
     monkeypatch.setattr(profile_module, "infer_entities", lambda *_args, **_kwargs: ["threshold"])
     monkeypatch.setattr(profile_module, "semantic_match_entities", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(profile_module, "expand_entities_for_kg", lambda entities: entities)
@@ -311,8 +311,8 @@ def test_entity_extraction_skips_graph_search_when_graph_source_mismatches_runti
     monkeypatch.setattr(profile_module, "graph_engine", TrapGraphEngine())
 
     result = asyncio.run(
-        profile_module.entity_extraction_node(
-            {"query": "threshold workout", "selected_entities": [], "intent_type": "qa", "category": "", "token_usage": {}},
+        profile_module.evidence_retriever_node(
+            {"query": "threshold workout", "entities": ["threshold"], "selected_entities": [], "intent_type": "qa", "category": "", "token_usage": {}},
             None,
         )
     )

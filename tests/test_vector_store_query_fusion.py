@@ -176,6 +176,33 @@ def test_retrieve_calls_faiss_for_each_query_variant_and_merges_results(monkeypa
     assert "vector_fusion" in hits[0]["retrieval_mode"]
 
 
+def test_retrieve_uses_single_store_when_sharding_enabled_but_inputs_are_not_sharded(monkeypatch):
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.vector_store.get_settings",
+        lambda: type("Settings", (), {"retrieval_variants_enabled": False, "bm25_fallback_enabled": True, "domain_filter_enabled": False, "sharded_retrieval_enabled": True})(),
+    )
+    monkeypatch.setattr(
+        "marathon_qa_assistant.services.vector_store._retrieve_sharded",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("single FAISS inputs must not enter sharded retrieval")),
+    )
+
+    class FakeFaiss:
+        def similarity_search_with_score(self, query, k):
+            return [
+                (
+                    Document(
+                        page_content="single store result",
+                        metadata={"chunk_id": "single-store", "source_file": "doc.md", "page": 1},
+                    ),
+                    0.2,
+                )
+            ]
+
+    hits = retrieve("long run", [], None, FakeFaiss(), top_k=5, bm25=None)
+
+    assert [hit["chunk_id"] for hit in hits] == ["single-store"]
+
+
 def test_parallel_retrieval_returns_same_results_as_sequential(monkeypatch):
     monkeypatch.setattr(
         "marathon_qa_assistant.services.vector_store.get_settings",

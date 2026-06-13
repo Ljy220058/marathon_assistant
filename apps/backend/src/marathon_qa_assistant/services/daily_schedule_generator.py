@@ -16,6 +16,7 @@ from marathon_qa_assistant.services.workout_template_retriever import (
     normalize_workout_type_for_template,
     _select_relevant_action_library_hits,
 )
+from marathon_qa_assistant.core import kb_runtime
 from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve
 from marathon_qa_assistant.core.app_state import get_preferred_vector_dir, has_vector_kb_artifacts
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
@@ -123,20 +124,26 @@ def _extract_kb_evidence_for_workout(
     workout_type: str,
     top_k: int = 20,
 ) -> Tuple[List[Dict[str, Any]], str]:
-    selected_vector_dir = get_preferred_vector_dir()
-    if not has_vector_kb_artifacts(selected_vector_dir):
-        return [], ""
-
-    try:
-        chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
-    except Exception:
-        return [], ""
-
     registry_entry = WORKOUT_TEMPLATE_REGISTRY.get(workout_type, {})
     aliases = registry_entry.get("aliases", [workout_type])
     search_query = " ".join(aliases[:5])
 
-    hits = retrieve(search_query, chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
+    retrieve_fn = kb_runtime.RETRIEVE_FUNC or retrieve
+    if kb_runtime.KB_CHUNKS and retrieve_fn:
+        chunks = kb_runtime.KB_SHARD_CHUNKS if kb_runtime.KB_SHARD_CHUNKS is not None else kb_runtime.KB_CHUNKS
+        vectorizer = kb_runtime.KB_VECTORIZER
+        matrix = kb_runtime.KB_MATRIX
+        bm25 = kb_runtime.KB_BM25
+    else:
+        selected_vector_dir = get_preferred_vector_dir()
+        if not has_vector_kb_artifacts(selected_vector_dir):
+            return [], ""
+        try:
+            chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
+        except Exception:
+            return [], ""
+
+    hits = retrieve_fn(search_query, chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
     return hits, search_query
 
 

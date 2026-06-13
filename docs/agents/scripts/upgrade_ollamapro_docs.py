@@ -214,7 +214,7 @@ def inferred_project_docs(target: TargetDoc) -> list[str]:
         docs,
         "README.md",
         "docs/architecture/backend_technical_overview.md",
-        "docs/architecture/TECH_REQUIREMENTS_V2.md",
+        "docs/architecture/marathon_agent_technical_requirements_v3.md",
         "docs/adr/2026-06-02-auth-and-expert-response-boundary.md",
         "docs/adr/2026-06-02-faiss-trusted-loader-boundary.md",
         "docs/adr/2026-06-02-production-persistence-boundary.md",

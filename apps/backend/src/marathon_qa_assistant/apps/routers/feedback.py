@@ -136,6 +136,45 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
                 plan_diff["affected_days"] = max(int(plan_diff.get("affected_days") or 0), 1)
                 plan_diff["cancelled"] = max(int(plan_diff.get("cancelled") or 0), 1)
                 plan_diff["status"] = "medical_referral"
+    # Fix #4: 当用户标记"未完成"时，生成调整建议（不自动应用）
+    adjustment_proposals = []
+    if workout_feedback.get("completion_status") == "missed":
+        try:
+            from marathon_qa_assistant.core.session_adjuster import propose_adjustments
+            missed_day = {
+                "training_type": str(workout_feedback.get("training_type") or ""),
+                "zone_range": str(workout_feedback.get("zone_range") or ""),
+                "day": str(workout_feedback.get("day") or ""),
+                "stimulus_type": str(workout_feedback.get("stimulus_type") or ""),
+            }
+            # C1: 从 DB 查询当前周完整训练上下文，用于智能重排建议
+            current_week_context = []
+            if request.plan_id:
+                try:
+                    all_events = await run_db(get_db().list_events, request.plan_id)
+                    # 找到被跳过训练的所在周
+                    missed_event = next(
+                        (e for e in all_events if str(e.get("id") or e.get("event_id")) == str(request.event_id)),
+                        None,
+                    )
+                    if missed_event:
+                        missed_week = missed_event.get("week_number") or missed_event.get("week")
+                        if missed_week is not None:
+                            current_week_context = [
+                                e for e in all_events
+                                if (e.get("week_number") or e.get("week")) == missed_week
+                            ]
+                except Exception:
+                    pass  # DB 查询降级: 保持空列表，调整器仍可给出基础建议
+            adjustment_proposals = [
+                {"action": p.action, "target_day": p.target_day, "new_type": p.new_type,
+                 "reason": p.reason, "source": p.source_citation,
+                 "requires_confirmation": p.requires_confirmation}
+                for p in propose_adjustments(missed_day, current_week_context, {})
+            ]
+        except Exception:
+            pass  # 调整器不可用时静默降级
+
     adaptive_feedback = {
         "workout_feedback": workout_feedback,
         "reason_codes": reason_codes,
@@ -170,6 +209,7 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
         "affected_events": affected_events,
         "feedback_id": feedback_id,
         "feedback_replan": feedback_replan,
+        "adjustment_proposals": adjustment_proposals,
         "workflow_trace": workflow_trace,
     }
     return _project_feedback_response_for_role(response_payload, _response_role(http_request))

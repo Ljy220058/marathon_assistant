@@ -47,15 +47,38 @@ def build_half_marathon_capacity_budget(
     if low_volume or constrained_days or recovery_risk or phase_id == "introductory":
         quality_sessions_max = min(quality_sessions_max, 1)
 
+    # A1: 容量安全乘数 — 来源分级标注
+    # - low_volume (0.82): Seiler 2010 极化训练对低跑量人群的保守适配 (B 级外推)
+    # - constrained_days (0.88): Gabbett 2016 ACWR 高负荷风险, 训练日少→单次负荷高→需保守 (B 级外推)
+    # - recovery_risk (0.78): Mujika & Padilla 2000 停训效应, 恢复期负荷敏感 (B 级外推)
+    # - speed_calibration (0.9): Pfitzinger/Daniels 配速校准原则, 缺当前成绩→保守估计 (A 级)
+    # 注意: 具体乘数值为教练实践级 (C 级) 外推，文献仅提供方向（应降/应保守），不提供精确百分比
     multiplier = 1.0
     if low_volume:
-        multiplier *= 0.82
+        multiplier *= 0.82  # 文献方向: 降；具体值: C 级外推
     if constrained_days:
-        multiplier *= 0.88
+        multiplier *= 0.88  # 文献方向: 降；具体值: C 级外推
     if recovery_risk:
-        multiplier *= 0.78
+        multiplier *= 0.78  # 文献方向: 降；具体值: C 级外推
     if not speed_calibration_available:
-        multiplier *= 0.9
+        multiplier *= 0.9   # 文献方向: 降；具体值: C 级外推 (A 级原则, C 级数值)
+
+    # M3: 训练频次驱动的单课容量调节 (Seiler 2010 频率-强度分布 + Gabbett 2016 单次负荷上限)
+    # - 高训练日数: 周总负荷分散于更多课次, 单课容量下调以控制每课负荷
+    # - 低训练日数: 周总负荷集中于少数课次, 单课容量需略高以承载足够训练刺激
+    # 方向 B 级 (Seiler 2010, Gabbett 2016); 具体乘数值 C 级外推
+    # 注意: 频次调节比 constrained_days (<4日) 粒度更细, 覆盖 3-7 练全范围
+    if total_sessions >= 7:
+        multiplier *= 0.92  # 7练/周: 单次容量保守 (B 级方向, C 级数值)
+        freq_note = "7练/周频次高, 单课容量下调"
+    elif total_sessions >= 6:
+        multiplier *= 0.95  # 6练/周: 单次容量略保守
+        freq_note = "6练/周频次较高, 单课容量轻微下调"
+    elif total_sessions <= 3:
+        multiplier *= 1.05  # 3练/周: 单次容量略高 (quality_sessions_max 已约束强度课数量)
+        freq_note = "3练/周频次低, 单课容量轻微上调以承载足够负荷"
+    else:
+        freq_note = ""
 
     if phase_id == "introductory":
         caps = {
@@ -106,6 +129,8 @@ def build_half_marathon_capacity_budget(
         notes.append("近期全马、疲劳或伤病风险存在，关键课容量下调。")
     if not speed_calibration_available:
         notes.append("缺少当前5K/10K成绩，105-110% HMP速度容量保守缩放。")
+    if freq_note:
+        notes.append(freq_note)
 
     return {
         "status": "ready",

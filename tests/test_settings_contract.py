@@ -21,11 +21,12 @@ def test_settings_defaults_are_local_and_safe():
     assert settings.allowed_cors_origins() == ["http://127.0.0.1:4321", "http://localhost:4321"]
     assert settings.llm_provider == "ds"
     assert settings.model_for_provider("ds") == "deepseek-v4-pro"
-    assert settings.embedding_model == "nomic-embed-text:latest"
+    assert settings.embedding_model == "bge-m3:latest"
     assert settings.retrieval_variants_enabled is True
     assert settings.semantic_chunking_enabled is False
     assert settings.bm25_fallback_enabled is True
     assert settings.domain_filter_enabled is True
+    assert settings.sharded_retrieval_enabled is True
     assert settings.ragas_eval_enabled is False
 
 
@@ -33,6 +34,12 @@ def test_semantic_chunking_is_explicit_opt_in():
     settings = build_settings({"MARATHON_SEMANTIC_CHUNKING_ENABLED": "1"})
 
     assert settings.semantic_chunking_enabled is True
+
+
+def test_sharded_retrieval_can_be_disabled():
+    settings = build_settings({"MARATHON_SHARDED_RETRIEVAL_ENABLED": "0"})
+
+    assert settings.sharded_retrieval_enabled is False
 
 
 def test_settings_production_requires_token_and_fernet_key():

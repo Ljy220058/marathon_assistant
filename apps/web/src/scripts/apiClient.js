@@ -115,22 +115,44 @@
     };
   }
 
+  function resolveQueryTimeout(responseMode, retry = false) {
+    const mode = String(responseMode || "full").trim().toLowerCase();
+    if (mode === "skeleton" || mode === "skeleton_first") {
+      return retry ? 90 : 60;
+    }
+    if (mode === "qa_fast" || mode === "quick_qa") {
+      return 45;
+    }
+    return FULL_QUERY_TIMEOUT_SEC;
+  }
+
+  function resolveQueryTimeoutMs(responseMode, retry = false) {
+    const mode = String(responseMode || "full").trim().toLowerCase();
+    if (mode === "skeleton" || mode === "skeleton_first") {
+      return retry ? 100000 : 70000;
+    }
+    if (mode === "qa_fast" || mode === "quick_qa") {
+      return 52000;
+    }
+    return FULL_QUERY_TIMEOUT_MS;
+  }
+
   function isQueryTimeoutError(error) {
     return String(error?.message || error || "").includes("请求超时");
   }
 
-  async function requestQueryPayloadFromBase(query, base, { planLike, controller, retry = false } = {}) {
-    const responseMode = planLike ? "skeleton" : "qa_fast";
-    const timeoutSec = planLike ? (retry ? 90 : 60) : 45;
-    const timeoutMs = planLike ? (retry ? 100000 : 70000) : 52000;
+  async function requestQueryPayloadFromBase(query, base, { responseMode = "full", controller, retry = false } = {}) {
+    const normalizedMode = String(responseMode || "full").trim().toLowerCase();
+    const timeoutSec = resolveQueryTimeout(normalizedMode, retry);
+    const timeoutMs = resolveQueryTimeoutMs(normalizedMode, retry);
     return apiFetch("/query", {
       base, method: "POST",
-      body: JSON.stringify(buildQueryPayload(query, responseMode, timeoutSec)),
+      body: JSON.stringify(buildQueryPayload(query, normalizedMode, timeoutSec)),
       signal: controller.signal, timeoutMs,
     });
   }
 
-  async function requestQueryPayload(query, { planLike, controller, retry = false } = {}) {
+  async function requestQueryPayload(query, { responseMode = "full", controller, retry = false } = {}) {
     const bases = Array.from(new Set([
       _getApiBase(),
       (typeof state !== "undefined" && state.lastQueryBase) || DEFAULT_API_BASE,
@@ -141,7 +163,7 @@
     for (const base of bases) {
       if (controller.signal.aborted) throw new Error("请求已取消。");
       try {
-        const payload = await requestQueryPayloadFromBase(query, base, { planLike, controller, retry });
+        const payload = await requestQueryPayloadFromBase(query, base, { responseMode, controller, retry });
         if (typeof state !== "undefined") state.lastQueryBase = base;
         if (input && input.value !== base) {
           input.value = base;

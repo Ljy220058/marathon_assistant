@@ -3,18 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-from marathon_qa_assistant.core import kb_runtime
-from marathon_qa_assistant.core.app_state import (
-    DEFAULT_VECTOR_DIR,
-    LEGACY_DEFAULT_VECTOR_DIR,
-    LEGACY_USER_VECTOR_DIR,
-    RUNTIME_USER_VECTOR_DIR,
-    USER_VECTOR_DIR,
-    V2_VECTOR_DIR,
-)
+from marathon_qa_assistant.core import app_state, kb_runtime
 from marathon_qa_assistant.core.kb_provider import set_kb_data
+from marathon_qa_assistant.core.settings import get_settings
 from marathon_qa_assistant.services.label_matcher import label_matcher
-from marathon_qa_assistant.services.vector_store import load_vector_kb, probe_vector_kb_health, retrieve
+from marathon_qa_assistant.services.vector_store import load_sharded_kb, load_vector_kb, probe_vector_kb_health, retrieve
 
 
 _LAST_BOOTSTRAP_REPORT: Dict[str, Any] = {}
@@ -22,7 +15,7 @@ _LAST_BOOTSTRAP_REPORT: Dict[str, Any] = {}
 
 def _runtime_candidate_dirs(candidate_dirs: Optional[Iterable[Path]] = None) -> List[Path]:
     """运行时只扫描 v2 目录；拒绝 user/default/legacy fallback。"""
-    candidates = list(candidate_dirs) if candidate_dirs is not None else [V2_VECTOR_DIR]
+    candidates = list(candidate_dirs) if candidate_dirs is not None else [app_state.V2_VECTOR_DIR]
     v2_candidates: List[Path] = []
     for candidate in candidates:
         vector_path = Path(candidate)
@@ -41,6 +34,7 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
     global _LAST_BOOTSTRAP_REPORT
 
     health_reports: List[Dict[str, Any]] = []
+    settings = get_settings()
     for vector_dir in _runtime_candidate_dirs(candidate_dirs):
         vector_path = Path(vector_dir)
         health = probe_vector_kb_health(vector_path)
@@ -49,7 +43,17 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
             continue
 
         try:
-            chunks, vectorizer, matrix, bm25 = load_vector_kb(vector_path)
+            sharded_base = vector_path.parent / "v2_sharded"
+            runtime_source = str(health.get("source") or "unknown")
+            if settings.sharded_retrieval_enabled and sharded_base.exists():
+                shard_stores, shard_chunks, chunks, bm25, _global_bm25 = load_sharded_kb(sharded_base)
+                vectorizer = "faiss_sharded_vectorizer"
+                matrix = shard_stores
+                runtime_source = "v2_sharded"
+                set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25, shard_chunks=shard_chunks)
+            else:
+                chunks, vectorizer, matrix, bm25 = load_vector_kb(vector_path)
+                set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
         except Exception as exc:
             health["ok"] = False
             health["reason"] = f"知识库加载失败: {exc}"
@@ -60,7 +64,6 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
             health["reason"] = "知识库加载后为空，且 FAISS/BM25 fallback 均不可用"
             continue
 
-        set_kb_data(chunks, vectorizer, matrix, retrieve, bm25=bm25)
         # 预热 LabelMatcher
         try:
             from marathon_qa_assistant.services.knowledge_graph import graph_engine
@@ -78,23 +81,25 @@ def bootstrap_knowledge_base(candidate_dirs: Optional[Iterable[Path]] = None) ->
             _load_reranker()
         except Exception:
             pass
+        faiss_ready = any(store is not None for store in matrix.values()) if isinstance(matrix, dict) else matrix is not None
+        bm25_ready = any(index is not None for index in bm25.values()) if isinstance(bm25, dict) else bm25 is not None
         report = {
             "ok": True,
             "ready": True,
-            "mode": "loaded" if matrix is not None else "degraded_fallback",
-            "vector_dir": str(vector_path),
-            "source": str(health.get("source") or "unknown"),
-            "reason": "" if matrix is not None else str(health.get("reason") or "FAISS unavailable; BM25 fallback active"),
+            "mode": "loaded_sharded" if runtime_source == "v2_sharded" else ("loaded" if faiss_ready else "degraded_fallback"),
+            "vector_dir": str(sharded_base if runtime_source == "v2_sharded" else vector_path),
+            "source": runtime_source,
+            "reason": "" if faiss_ready else str(health.get("reason") or "FAISS unavailable; BM25 fallback active"),
             "chunks_count": len(chunks),
-            "faiss_ready": matrix is not None,
-            "bm25_ready": bm25 is not None,
-            "fallback_active": matrix is None and bm25 is not None,
+            "faiss_ready": faiss_ready,
+            "bm25_ready": bm25_ready,
+            "fallback_active": not faiss_ready and bm25_ready,
             "embedding_model": str(health.get("embedding_model") or ""),
             "chunking_strategy": str(health.get("chunking_strategy") or "unknown"),
             "eval_report_path": str(health.get("eval_report_path") or ""),
             "index_schema_version": str(health.get("index_schema_version") or "unknown"),
             "metadata_completeness": float(health.get("metadata_completeness") or 0.0),
-            "runtime_core_prescription_enabled": bool(health.get("runtime_core_prescription_enabled")) and matrix is not None,
+            "runtime_core_prescription_enabled": bool(health.get("runtime_core_prescription_enabled")) and faiss_ready,
             "health_reports": health_reports,
         }
         _LAST_BOOTSTRAP_REPORT = report

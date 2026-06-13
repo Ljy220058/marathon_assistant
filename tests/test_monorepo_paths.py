@@ -36,7 +36,6 @@ def test_monorepo_path_contract_uses_data_dir(monkeypatch, tmp_path):
 
     assert app_state.BASE_DIR == project_root.absolute()
     assert app_state.DATA_DIR == data_root.absolute()
-    assert app_state.DEFAULT_VECTOR_DIR == data_root.absolute() / "vector_kb" / "default"
     assert app_state.USER_VECTOR_DIR == data_root.absolute() / "vector_kb" / "user"
     assert app_state.UPLOAD_DOCS_DIR == data_root.absolute() / "uploads" / "seed"
     assert app_state.STAI_RUNS_DIR == project_root.absolute() / "artifacts" / "research_runs" / "stai2026"
@@ -76,7 +75,7 @@ def test_data_dir_relative_default(monkeypatch, tmp_path):
 # Vector KB paths
 # ---------------------------------------------------------------------------
 
-def test_vector_dir_prefers_new_user_then_legacy_default(monkeypatch, tmp_path):
+def test_vector_dir_always_prefers_v2_runtime(monkeypatch, tmp_path):
     project_root = tmp_path / "repo"
     data_root = project_root / "data"
     project_root.mkdir()
@@ -88,14 +87,14 @@ def test_vector_dir_prefers_new_user_then_legacy_default(monkeypatch, tmp_path):
 
     app_state = _reload_app_state(monkeypatch, project_root, data_root)
 
-    assert app_state.get_preferred_vector_dir() == legacy_default
+    assert app_state.get_preferred_vector_dir() == data_root / "vector_kb" / "v2"
 
     new_user = data_root / "vector_kb" / "user"
     (new_user / "faiss_db").mkdir(parents=True)
     (new_user / "chunks.jsonl").write_text("{}", encoding="utf-8")
     (new_user / "faiss_db" / "index.faiss").write_text("index", encoding="utf-8")
 
-    assert app_state.get_preferred_vector_dir() == new_user
+    assert app_state.get_preferred_vector_dir() == data_root / "vector_kb" / "v2"
 
 
 def test_v2_vector_dir_path(monkeypatch, tmp_path):
@@ -151,20 +150,21 @@ def test_runtime_data_dir(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Legacy path fallbacks (migration compatibility)
+# Archived legacy paths
 # ---------------------------------------------------------------------------
 
-def test_legacy_fallbacks_present(monkeypatch, tmp_path):
-    """All legacy path constants should still be defined for migration."""
+def test_vector_kb_legacy_fallback_constants_removed(monkeypatch, tmp_path):
+    """Legacy vector KB paths should not remain as runtime constants."""
     project_root = tmp_path / "legacy_repo"
     project_root.mkdir()
     data_root = project_root / "data"
 
     app_state = _reload_app_state(monkeypatch, project_root, data_root)
 
-    assert app_state.LEGACY_DEFAULT_VECTOR_DIR == project_root / "vector_kb"
+    assert not hasattr(app_state, "DEFAULT_VECTOR_DIR")
+    assert not hasattr(app_state, "LEGACY_DEFAULT_VECTOR_DIR")
+    assert not hasattr(app_state, "LEGACY_USER_VECTOR_DIR")
     assert app_state.LEGACY_UPLOAD_DOCS_DIR == project_root / "uploaded_docs"
-    assert app_state.LEGACY_USER_VECTOR_DIR == project_root / "vector_kb_user"
     assert app_state.LEGACY_STAI_DIR == project_root / "docs" / "paper_project"
 
 
@@ -174,4 +174,4 @@ def test_user_profile_path(monkeypatch, tmp_path):
     project_root.mkdir()
 
     app_state = _reload_app_state(monkeypatch, project_root, data_root)
-    assert app_state.USER_PROFILE_PATH == data_root / "vector_kb" / "default" / "user_profile.json"
+    assert app_state.USER_PROFILE_PATH == app_state.RUNTIME_DATA_DIR / "profiles" / "default_user.json"

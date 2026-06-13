@@ -39,6 +39,56 @@ def test_save_outputs_rejects_chunks_without_non_empty_text(monkeypatch, tmp_pat
     assert calls == []
 
 
+def test_save_outputs_writes_index_meta_matching_chunks_and_faiss_docs(monkeypatch, tmp_path):
+    class FakeIndex:
+        ntotal = 2
+        d = 1024
+
+    class FakeFaissStore:
+        index = FakeIndex()
+
+        def save_local(self, path):
+            faiss_dir = Path(path)
+            faiss_dir.mkdir(parents=True, exist_ok=True)
+            (faiss_dir / "index.faiss").write_bytes(b"fake-index")
+            (faiss_dir / "index.pkl").write_bytes(b"fake-pkl")
+
+    chunks = [
+        {**_v2_chunk(), "chunk_id": "chunk-1", "text": "first"},
+        {**_v2_chunk(), "chunk_id": "chunk-2", "text": "second"},
+        {**_v2_chunk(), "chunk_id": "chunk-blank", "text": "   "},
+    ]
+
+    monkeypatch.setattr(vector_store, "get_embeddings", lambda: object())
+    monkeypatch.setattr(
+        vector_store,
+        "_validate_embedding_model_on_sample",
+        lambda embeddings, docs: {
+            "embedding_model": "fake-embedding",
+            "embedding_validation_sample_size": len(docs[:3]),
+            "embedding_validation_errors": [],
+        },
+    )
+    monkeypatch.setattr(vector_store, "_build_faiss", lambda docs, embeddings: FakeFaissStore())
+
+    outputs = vector_store.save_outputs(tmp_path, chunks, None, None, None)
+
+    meta_path = Path(outputs["index_meta_file"])
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    chunk_lines = [line for line in (tmp_path / "chunks.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+
+    assert len(chunk_lines) == 3
+    assert meta["chunks_count"] == 3
+    assert meta["total_chunks"] == 3
+    assert meta["runtime_chunk_count"] == 3
+    assert meta["faiss_document_count"] == 2
+    assert meta["faiss_vector_count"] == 2
+    assert meta["embedding_dim"] == 1024
+    assert meta["skipped_empty_text_chunk_count"] == 1
+    assert meta["skipped_empty_text_chunk_ids"] == ["chunk-blank"]
+    assert outputs["index_meta"]["total_chunks"] == 3
+
+
 def _write_vector_dir(path: Path, chunks: list[dict]) -> None:
     faiss_dir = path / "faiss_db"
     faiss_dir.mkdir(parents=True)

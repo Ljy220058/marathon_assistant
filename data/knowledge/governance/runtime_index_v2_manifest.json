@@ -3,8 +3,8 @@
   "can_replace_runtime": false,
   "chunk_preview_path": "data/knowledge/governance/chunk_schema_v2_preview.jsonl",
   "core_permission_violation_count": 0,
-  "current_runtime_vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
-  "metadata_completeness": 1.0,
+  "current_runtime_vector_dir": "data/vector_kb/v2",
+  "metadata_completeness": 0.0,
   "planned_runtime_vector_dir": "data/vector_kb/v2",
   "preview_chunk_count": 14306,
   "ready_records": 27,
@@ -12,18 +12,18 @@
     "all_domain_packs_still_have_gaps"
   ],
   "rollback_rule": "build v2 into a separate directory and switch only after health, evidence, and evaluation gates pass",
-  "runtime_index_schema_version": "chunk_schema_v2",
-  "schema_version": "chunk_schema_v2",
+  "runtime_index_schema_version": "legacy",
+  "schema_version": "legacy",
   "status": "runtime_preview_ready",
   "ok": true,
   "preview_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\knowledge\\governance\\chunk_schema_v2_preview.jsonl",
-  "runtime_vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
-  "runtime_chunk_count": 14306,
+  "runtime_vector_dir": "data/vector_kb/v2",
+  "runtime_chunk_count": 21983,
   "runtime_use_enabled": true,
   "outputs": {
-    "chunks_file": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\chunks.jsonl",
-    "faiss_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2\\faiss_db",
-    "embedding_model": "nomic-embed-text:latest",
+    "chunks_file": "data\\vector_kb\\v2\\chunks.jsonl",
+    "faiss_dir": "data/vector_kb/v2/faiss_db",
+    "embedding_model": "bge-m3:latest",
     "embedding_candidates": [
       "nomic-embed-text:latest",
       "bge-m3",
@@ -34,19 +34,20 @@
       "embedding_validation_sample_size": 3,
       "embedding_validation_errors": []
     },
-    "stripped_docstore_text_count": 14306,
-    "chunking_strategy": "semantic_v1",
+    "stripped_docstore_text_count": 21979,
+    "chunking_strategy": "semantic_v2_sentence_window",
     "chunk_quality": {
-      "chunking_strategy": "semantic_v1",
-      "chunk_count": 14306,
-      "average_chunk_length": 269.31,
-      "short_chunk_count": 1549,
-      "long_chunk_count": 881,
-      "metadata_completeness": 0.8571,
-      "locatable_source_ratio": 1.0,
-      "domain_labeled_count": 14306,
-      "domain_coverage_ratio": 1.0
-    }
+      "chunking_strategy": "semantic_v2_sentence_window",
+      "chunk_count": 21983,
+      "average_chunk_length": 243.81,
+      "short_chunk_count": 286,
+      "long_chunk_count": 1,
+      "metadata_completeness": 0.7139,
+      "locatable_source_ratio": 0.999,
+      "domain_labeled_count": 16179,
+      "domain_coverage_ratio": 0.736
+    },
+    "index_meta_file": "data\\vector_kb\\v2\\index_meta.json"
   },
   "skipped_empty_text_chunk_count": 0,
   "skipped_empty_text_chunk_ids": [],
@@ -155,5 +156,8 @@
       "target_rule_count": 40,
       "target_source_count": 12
     }
-  ]
+  ],
+  "runtime_core_prescription_enabled": false,
+  "index_meta_file": "data\\vector_kb\\v2\\index_meta.json",
+  "index_meta_reconciled_at": "2026-06-13T17:08:44.945119"
 }

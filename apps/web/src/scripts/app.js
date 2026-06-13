@@ -2713,6 +2713,7 @@ function buildFeedbackResultHtml(payload, affectedDays = []) {
       </div>
       ${buildFeedbackReplanHtml(payload?.feedback_replan || {}, payload?.feedback_id || "")}
       ${regenerateActionHtml}
+      <div data-adjustment-proposals style="display:none"></div>
     </div>
   `;
 }
@@ -2935,6 +2936,16 @@ async function submitFeedbackApi(root = dayModalContent) {
       resultTarget.className = "modal-feedback-result";
       resultTarget.innerHTML = buildFeedbackResultHtml(payload, affectedDays);
       bindFeedbackReplanActions(resultTarget);
+      // C4: 渲染调整建议 (当用户标记"未完成"时后端返回 adjustment_proposals)
+      if (Array.isArray(payload.adjustment_proposals) && payload.adjustment_proposals.length) {
+        const adjContainer = resultTarget.querySelector("[data-adjustment-proposals]");
+        if (adjContainer) {
+          adjContainer.innerHTML = window.__adjustmentRenderer?.renderAdjustmentProposals(
+            payload.adjustment_proposals,
+          ) || "";
+          adjContainer.style.display = "";
+        }
+      }
       resultTarget.querySelector('[data-modal-feedback-action="regenerate"]')?.addEventListener("click", async () => {
         if (isMedicalReferralFeedback(payload)) return;
         const regenerateButton = resultTarget.querySelector('[data-modal-feedback-action="regenerate"]');
@@ -5711,52 +5722,6 @@ function renderQueryPayload(payload) {
   }
 }
 
-async function enrichQuery(query, runId, controller) {
-  applyGenerationStatusView(buildGenerationStatusViewModel(state.lastResponse || {}, "enriching"));
-  if (state.lastResponse) {
-    syncPlanProgressFromPayload(state.lastResponse, "enriching");
-  }
-  try {
-    const payload = await window.__apiClient.apiFetch("/query", {
-      method: "POST",
-      body: JSON.stringify({
-        query,
-        mode: "team",
-        user_id: "default_user",
-        stream: false,
-        llm_provider: llmProviderInput.value,
-        llm_model: llmModelInput.value.trim(),
-        response_mode: "full",
-        timeout_sec: 45,
-      }),
-      signal: controller.signal,
-      timeoutMs: 52000,
-    });
-    if (runId !== state.queryRunId || controller.signal.aborted) {
-      return;
-    }
-    renderQueryPayload(payload);
-    applyGenerationStatusView(buildGenerationStatusViewModel(payload, "received"));
-  } catch (error) {
-    if (runId !== state.queryRunId || controller.signal.aborted) {
-      return;
-    }
-    applyGenerationStatusView(buildGenerationStatusViewModel(state.lastResponse || { generation_status: "llm_error_skeleton" }, "received"));
-    queryHint.textContent = `LLM 补充未完成：${error.message}`;
-    if (state.lastResponse) {
-      syncPlanProgressFromPayload(
-        { ...state.lastResponse, generation_status: "llm_error_skeleton" },
-        "received",
-      );
-    }
-  } finally {
-    if (runId === state.queryRunId) {
-      state.queryController = null;
-      cancelQueryButton.disabled = true;
-    }
-  }
-}
-
 async function runQuery(textValue) {
   let query = (textValue || queryInput.value || "").trim();
   const qaMode = currentQueryMode === "qa";
@@ -5864,7 +5829,7 @@ async function runQuery(textValue) {
   try {
     let payload;
     try {
-      payload = await window.__apiClient.requestQueryPayload(query, { planLike, controller });
+      payload = await window.__apiClient.requestQueryPayload(query, { responseMode: "full", controller });
     } catch (error) {
       if (!planLike || controller.signal.aborted) {
         throw error;
@@ -5878,18 +5843,14 @@ async function runQuery(textValue) {
         signal: "长计划第一次等待超时，正在用更长窗口重试结构化日历",
       });
       queryHint.textContent = "长计划第一次超时，正在自动重试一次。";
-      payload = await window.__apiClient.requestQueryPayload(query, { planLike, controller, retry: true });
+      payload = await window.__apiClient.requestQueryPayload(query, { responseMode: "full", controller, retry: true });
     }
     if (runId !== state.queryRunId || controller.signal.aborted) {
       return;
     }
     renderQueryPayload(payload);
-    if (planLike) {
-      enrichQuery(query, runId, controller);
-    } else {
-      state.queryController = null;
-      cancelQueryButton.disabled = true;
-    }
+    state.queryController = null;
+    cancelQueryButton.disabled = true;
   } catch (error) {
     if (runId !== state.queryRunId || controller.signal.aborted) {
       setEmpty(reportBox, "请求已取消。");

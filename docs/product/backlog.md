@@ -2,7 +2,7 @@
 
 > 范围：产品体验、产品能力和用户可感知功能。论文、实验运行、仓库治理和纯内部技术债不放在这里。
 >
-> 来源：`docs/ui_redesign/`、`docs/architecture/TECH_REQUIREMENTS_V2.md`、`docs/audits/half_marathon_source_audit.md`。
+> 来源：`docs/ui_redesign/`、`docs/architecture/marathon_agent_technical_requirements_v3.md`、`docs/audits/half_marathon_source_audit.md`。
 
 ## 日历设计与训练时间
 

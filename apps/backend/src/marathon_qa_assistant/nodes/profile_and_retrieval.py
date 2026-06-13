@@ -29,7 +29,6 @@ from marathon_qa_assistant.nodes.common import (
 )
 from marathon_qa_assistant.nodes.routing import evaluate_plan_evidence
 from marathon_qa_assistant.services.kb.conflict_governance import record_conflict_review_item
-from marathon_qa_assistant.services.wiki_agent import wiki_agent
 
 logger = logging.getLogger("workflow_engine")
 
@@ -49,9 +48,12 @@ INTENT_DOMAIN_POLICIES = {
 EXPERT_DOMAIN_POLICIES = {
     "coach": {"training_theory", "workout_prescription", "race_strategy"},
     "therapist": {"rehab_safety", "capacity_management"},
+    "s_and_c": {"strength_conditioning", "capacity_management", "workout_prescription"},
+    "conditioning_constraints": {"strength_conditioning", "capacity_management", "workout_prescription"},
     "nutritionist": {"nutrition", "race_strategy"},
+    "psychologist": {"sport_psychology"},
     "planner": {"training_theory", "workout_prescription", "capacity_management"},
-    "auditor": {"training_theory", "workout_prescription", "rehab_safety", "nutrition", "race_strategy", "capacity_management"},
+    "auditor": {"training_theory", "workout_prescription", "rehab_safety", "nutrition", "race_strategy", "capacity_management", "sport_psychology"},
 }
 
 EVIDENCE_CONTRACT_KEYS = (
@@ -136,8 +138,10 @@ def _expert_domain_policy(category: str = "") -> set[str]:
 
 def _infer_expert_domain(value: Any) -> str:
     raw = str(value or "").strip().lower()
-    if raw in {"training_theory", "workout_prescription", "rehab_safety", "nutrition", "race_strategy", "capacity_management"}:
+    if raw in {"training_theory", "workout_prescription", "rehab_safety", "nutrition", "race_strategy", "capacity_management", "sport_psychology"}:
         return raw
+    if raw in {"psychology", "sport_psychology", "psychological_skills", "mental_skills"}:
+        return "sport_psychology"
     if raw in {"nutrition_race_fueling", "race_fueling", "hydration"}:
         return "nutrition"
     if raw in {"medical_risk", "medical_safety", "injury", "rehabilitation", "recovery", "rehab_strength_mobility"}:
@@ -189,23 +193,6 @@ def filter_hits_for_intent_domain(
 
     ordered = matched + fallback
     return ordered[:top_k] if top_k is not None else ordered
-
-
-def _should_use_wiki_context(
-    query: str,
-    intent_type: str = "qa",
-    mode: str = "team",
-    entities: Optional[List[str]] = None,
-) -> bool:
-    del mode
-    entity_list = [item for item in (entities or []) if str(item).strip()]
-    if not entity_list:
-        return False
-    if str(intent_type or "").strip().lower() == "plan":
-        return False
-    concept_keywords = ("是什么", "什么是", "机制", "概念", "原理", "定义")
-    normalized_query = str(query or "")
-    return any(keyword in normalized_query for keyword in concept_keywords)
 
 
 EXTRACT_PROFILE_SYSTEM = (
@@ -1129,10 +1116,9 @@ def build_ranked_evidence(
 async def profiler_node(state: IntegratedState, config: RunnableConfig) -> dict:
     current_profile = _normalize_profile(state.get("user_profile", {}))
 
-    intent = state.get("intent_type", "")
     query = state.get("query", "")
     extracted = {}
-    if intent == "plan" and query:
+    if query:
         extracted = await _extract_profile_from_query(query, config, state.get("token_usage"))
         if extracted:
             current_profile.update(extracted)
@@ -1145,23 +1131,97 @@ async def profiler_node(state: IntegratedState, config: RunnableConfig) -> dict:
     if extracted:
         status += f" (从对话提取 {len(extracted)} 个字段)"
 
+    from datetime import datetime, timezone
+    trace_step = {
+        "node": "profiler",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "input_snapshot": {
+            "intent_type": state.get("intent_type", ""),
+            "query": query[:80],
+        },
+        "output_snapshot": {
+            "missing_fields": len(missing),
+            "extracted_fields": len(extracted),
+        },
+        "decision": f"画像同步完成: {status}",
+    }
+
     return {
         "user_profile": current_profile,
         "missing_fields": missing,
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": [f"[profiler] {status}"],
+        "execution_trace": [trace_step],
     }
 
 
-async def entity_extraction_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    del config
+def _merge_context_fanout_outputs(
+    state: IntegratedState,
+    profiler_output: Dict[str, Any],
+    entity_output: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Merge profiler and entity outputs produced by the context fan-out node."""
+
+    merged: Dict[str, Any] = {}
+    for output in (profiler_output, entity_output):
+        for key, value in (output or {}).items():
+            if key in {"reasoning_log", "execution_trace", "token_usage"}:
+                continue
+            merged[key] = value
+
+    profiler_logs = list((profiler_output or {}).get("reasoning_log") or [])
+    entity_logs = list((entity_output or {}).get("reasoning_log") or [])
+    merged["reasoning_log"] = (
+        profiler_logs
+        + entity_logs
+        + ["[context_fanout] profiler 与 entity_extraction 已并行完成并收敛到 evidence_retriever"]
+    )
+    merged["execution_trace"] = list((profiler_output or {}).get("execution_trace") or []) + list(
+        (entity_output or {}).get("execution_trace") or []
+    )
+    from datetime import datetime, timezone
+    merged["execution_trace"].append(
+        {
+            "node": "context_fanout",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "input_snapshot": {
+                "intent_type": state.get("intent_type", ""),
+                "query": str(state.get("query") or "")[:80],
+            },
+            "output_snapshot": {
+                "has_profile": bool((profiler_output or {}).get("user_profile")),
+                "has_entities": bool((entity_output or {}).get("entities")),
+            },
+            "decision": "context fan-out complete",
+        }
+    )
+    merged["token_usage"] = ensure_usage(
+        (profiler_output or {}).get("token_usage")
+        or (entity_output or {}).get("token_usage")
+        or state.get("token_usage")
+    )
+    merged["context_fanout_done"] = True
+    return merged
+
+
+async def context_fanout_node(state: IntegratedState, config: RunnableConfig) -> dict:
+    """Run profiler and entity extraction as one explicit parallel fan-out step."""
+
+    profiler_task = asyncio.create_task(profiler_node(state, config))
+    entity_task = asyncio.create_task(entity_extraction_node(state, config))
+    profiler_output, entity_output = await asyncio.gather(profiler_task, entity_task)
+    return _merge_context_fanout_outputs(state, profiler_output, entity_output)
+
+
+async def _collect_evidence_context(
+    state: IntegratedState,
+    *,
+    entities: Optional[List[str]] = None,
+) -> dict:
     settings = get_settings()
     query = state.get("query", "")
     category = str(state.get("category", "") or "")
-    entities = infer_entities(query, state.get("selected_entities"))
-    for entity in semantic_match_entities(query):
-        if entity not in entities:
-            entities.append(entity)
+    entity_list = list(entities if entities is not None else (state.get("entities") or state.get("selected_entities") or []))
 
     # ── 跨语言检索：仅当 intent 策略明确命中英文文献域时才翻译 ──
     # _EN_INTENT_MAP: intent_policy_name → (en_domain_hint)
@@ -1185,9 +1245,9 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         rerank=settings.rerank_enabled,
         en_translation=en_query,
     )
-    if not hits and entities:
+    if not hits and entity_list:
         hits = await get_context(
-            " ".join(entities), top_k=10,
+            " ".join(entity_list), top_k=10,
             rerank=settings.rerank_enabled,
             en_translation=en_query,
         )
@@ -1213,7 +1273,7 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     rag_sources = build_rag_sources(hits)
 
     # 获取图谱上下文（展开"动作库"等通用实体为具体标签）
-    kg_entities = expand_entities_for_kg(entities)
+    kg_entities = expand_entities_for_kg(entity_list)
     if graph_fusion_runtime_enabled():
         try:
             graph_res = graph_engine.search_graph(kg_entities, max_hops=2)
@@ -1249,23 +1309,23 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         query=query,
         vector_hits=hits,
         graph_edges=graph_edges,
-        entities=entities,
+        entities=entity_list,
         top_k=None
     )
 
     evidence_gate = evaluate_plan_evidence(hits, query, state.get("intent_type", "qa"))
 
-    logs = [f"[entity_extraction] 识别实体: {', '.join(entities)}"]
+    logs = []
     if en_query:
-        logs.append(f"[entity_extraction] 英文翻译检索: {en_query[:50]}")
+        logs.append(f"[evidence_retriever] 英文翻译检索: {en_query[:50]}")
     if settings.rerank_enabled:
-        logs.append("[entity_extraction] reranker 已启用")
+        logs.append("[evidence_retriever] reranker 已启用")
     if not hits:
-        logs.append("[Evidence Gate] 知识库检索为空")
+        logs.append("[evidence_retriever] 知识库检索为空")
     elif evidence_gate.get("required") and not evidence_gate.get("has_plan_evidence", True):
-        logs.append("[Evidence Gate] 命中内容不足以支撑计划型处方")
+        logs.append("[evidence_retriever] 命中内容不足以支撑计划型处方")
     else:
-        logs.append(f"[Evidence Gate] 命中 {len(hits)} 个原始片段 -> 融合排序后保留 {len(ranked_evidence)} 个证据")
+        logs.append(f"[evidence_retriever] 命中 {len(hits)} 个原始片段 -> 融合排序后保留 {len(ranked_evidence)} 个证据")
 
     if graph_context:
         logs.append(f"[graph_traversal] 已生成图谱关联路径 (命中 {len(graph_edges)} 条边)")
@@ -1285,29 +1345,28 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
         rag_sources=rag_sources,
         health=state.get("evidence_bundle", {}).get("health"),
     )
-    # AgentDoG P0: 记录 entity_extraction 节点执行轨迹
+
     from datetime import datetime, timezone
     trace_step = {
-        "node": "entity_extraction",
+        "node": "evidence_retriever",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "input_snapshot": {
             "query": query[:80],
             "category": category,
+            "intent_type": state.get("intent_type", ""),
             "needs_translation": bool(en_query),
             "rerank_enabled": settings.rerank_enabled,
         },
         "output_snapshot": {
-            "entity_count": len(entities),
+            "entity_count": len(entity_list),
             "vector_hits": len(hits),
             "graph_edges": len(graph_edges),
             "ranked_evidence": len(ranked_evidence),
             "top_domains": list(set(ev.get("expert_domain", "?") for ev in ranked_evidence[:5])),
         },
-        "decision": f"检索完成: {len(ranked_evidence)} 证据, 实体: {entities[:3]}",
+        "decision": f"按意图检索完成: {len(ranked_evidence)} 证据, 实体: {entity_list[:3]}",
     }
     return {
-        "entities": entities,
-        "selected_entities": entities,
         "gate_hits": hits,
         "rag_sources": rag_sources,
         "ranked_evidence": ranked_evidence,
@@ -1321,9 +1380,46 @@ async def entity_extraction_node(state: IntegratedState, config: RunnableConfig)
     }
 
 
-async def wiki_search_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    del state, config
-    return {"wiki_context": "", "reasoning_log": ["[wiki_search] 当前保持 KB-only，本轮未启用外部知识"]}
+async def evidence_retriever_node(state: IntegratedState, config: RunnableConfig) -> dict:
+    del config
+    entities = state.get("entities") or state.get("selected_entities") or []
+    output = await _collect_evidence_context(state, entities=entities)
+    logs = ["[evidence_retriever] 当前保持 KB/RAG 优先（KB-only 兼容模式），本轮未启用外部知识"]
+    logs.extend(output.get("reasoning_log") or [])
+    output["wiki_context"] = ""
+    output["reasoning_log"] = logs
+    return output
+
+
+async def entity_extraction_node(state: IntegratedState, config: RunnableConfig) -> dict:
+    del config
+    query = state.get("query", "")
+    entities = infer_entities(query, state.get("selected_entities"))
+    for entity in semantic_match_entities(query):
+        if entity not in entities:
+            entities.append(entity)
+
+    from datetime import datetime, timezone
+    trace_step = {
+        "node": "entity_extraction",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "input_snapshot": {
+            "query": query[:80],
+            "category": state.get("category", ""),
+            "intent_type": state.get("intent_type", ""),
+        },
+        "output_snapshot": {
+            "entity_count": len(entities),
+        },
+        "decision": f"实体抽取完成: {entities[:3]}",
+    }
+    return {
+        "entities": entities,
+        "selected_entities": entities,
+        "token_usage": ensure_usage(state.get("token_usage")),
+        "reasoning_log": [f"[entity_extraction] 识别实体: {', '.join(entities)}"],
+        "execution_trace": [trace_step],
+    }
 
 
 TRAINING_PROFILE_FORM = """📋 **训练画像表单** — 请直接编辑并发送（替换 `_____` 为你的数据）
@@ -1393,10 +1489,22 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
     if intent == "plan":
         missing = state.get("missing_fields", [])
         labels = [FIELD_LABELS.get(k, k) for k in missing]
+        pause = {
+            "status": "awaiting_user_input",
+            "reason": "required_profile_missing",
+            "resume_target": "router",
+            "pending_query": state.get("query", ""),
+            "missing_fields": missing,
+            "field_labels": labels,
+        }
         return {
             "final_report": "__FILL_FIELDS__",
             "missing_fields": missing,
-            "reasoning_log": [f"[missing_info] 缺少画像字段: {', '.join(labels)}，已发送逐字段填写入口"],
+            "missing_info_status": "awaiting_profile",
+            "workflow_pause": pause,
+            "reasoning_log": [
+                f"[missing_info] 缺少画像字段: {', '.join(labels)}；暂停并等待用户补齐，resume_target=router"
+            ],
             "token_usage": ensure_usage(state.get("token_usage")),
         }
 

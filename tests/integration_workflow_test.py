@@ -126,7 +126,7 @@ def test_integration_workflow_returns_consistent_final_state():
 
 
 async def run_integration_test():
-    print("[Start] 启动 16 节点工作流集成测试...")
+    print("[Start] 启动当前工作流集成测试...")
     state = _build_state()
     print(f"\n[Question] 测试问题: {state['query']}")
     print("-" * 50)
@@ -138,7 +138,7 @@ async def run_integration_test():
             name = event.get("name", "")
             
             if kind == "on_chain_start":
-                if name in ["security_gate", "router", "profiler", "entity_extraction", "coach", "critic_auditor", "formatter"]:
+                if name in ["security_gate", "router", "context_fanout", "coach", "critic_auditor", "formatter"]:
                     print(f"[Node] 进入节点: {name}")
             
             elif kind == "on_chain_end":

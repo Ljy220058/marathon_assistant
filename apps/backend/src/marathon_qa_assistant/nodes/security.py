@@ -7,7 +7,7 @@ except ImportError:
     RunnableConfig = Any
 
 from marathon_qa_assistant.core.state_models import IntegratedState
-from marathon_qa_assistant.nodes.common import ensure_usage, input_guard
+from marathon_qa_assistant.nodes.common import ensure_usage, input_guard, output_guard_obj
 
 
 # ── P1-4 / P1-6: 医疗风险关键词库 ──
@@ -383,6 +383,48 @@ async def security_gate_node(state: IntegratedState, config: RunnableConfig) -> 
         }
 
     return {"reasoning_log": ["[security] 输入与近期历史通过检查"]}
+
+
+async def safety_out_node(state: IntegratedState, config: RunnableConfig) -> dict:
+    """显式输出安全层：在审计通过后、formatter 前检查待输出内容。"""
+    del config
+    raw_content = str(state.get("final_report") or state.get("draft_plan") or "")
+    logs: List[str] = []
+
+    try:
+        trace_result = scan_execution_trace(state)
+        risk_level = trace_result.get("risk_level", "none")
+        alerts = trace_result.get("alerts", [])
+        if risk_level in ("medium", "high"):
+            logs.append(f"[safety_out][trace] risk={risk_level} alerts={'|'.join(alerts)}")
+        if risk_level == "high":
+            state["risk_alert"] = (
+                '<div class="github-flash-error">'
+                f'<strong>执行轨迹安全告警：</strong>{"；".join(alerts)}'
+                '</div>'
+            )
+    except Exception as exc:
+        logs.append(f"[safety_out] 轨迹安全扫描失败，保留 formatter 二道检查: {type(exc).__name__}")
+
+    is_safe, cleaned_output, reason = output_guard_obj.check(raw_content)
+    output: Dict[str, Any] = {
+        "token_usage": ensure_usage(state.get("token_usage")),
+        "reasoning_log": logs + ["[safety_out] 输出安全通过" if is_safe else f"[safety_out] 输出安全清洗: {reason}"],
+    }
+
+    if raw_content:
+        if state.get("final_report"):
+            output["final_report"] = cleaned_output
+        else:
+            output["draft_plan"] = cleaned_output
+
+    if not is_safe:
+        output["risk_alert"] = (
+            '<div class="github-flash-warn">'
+            f'<strong>输出安全：</strong>{reason}'
+            '</div>'
+        )
+    return output
 
 
 # ── 轨迹级安全扫描：在 formatter 输出前审计完整节点链路 ──

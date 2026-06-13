@@ -1,12 +1,45 @@
 {
-  "embedding_model": "nomic-embed-text:latest",
+  "embedding_model": "bge-m3:latest",
+  "embedding_dim": 1024,
   "shards": {
-    "training_protocol": 5548,
-    "nutrition": 3863,
-    "injury_safety": 732,
-    "medical_safety": 390,
-    "external_reference": 3773
+    "training_protocol": 5935,
+    "nutrition": 4760,
+    "injury_safety": 3700,
+    "medical_safety": 690,
+    "sport_psychology": 95
   },
-  "total_chunks": 14306,
-  "total_build_time_s": 2207.6
+  "total_chunks": 15180,
+  "retired_shards": {
+    "external_reference": {
+      "chunks": 3773,
+      "embedding_dim": 768,
+      "retired_at": "2026-06-13",
+      "reason": "内容为AI/RAG/HCI文献，与马拉松领域无关；且768维与核心分片1024维不兼容",
+      "archived_to": "data/vector_kb/_archived_shards/external_reference/"
+    }
+  },
+  "last_faiss_rebuild_at": "2026-06-13",
+  "last_rebuilt_shards": [
+    "nutrition",
+    "medical_safety",
+    "sport_psychology"
+  ],
+  "permission_classification_method": "auto_classified_by_quality_tier",
+  "permission_classified_at": "2026-06-13",
+  "prescription_permission_coverage": "100%",
+  "permission_breakdown": {
+    "can_write_core": 4166,
+    "explanation_only": 10975,
+    "referral_and_flag_only": 39,
+    "approved_curated": 222
+  },
+  "curated_chunks_by_shard": {
+    "nutrition": 59,
+    "injury_safety": 39,
+    "medical_safety": 30,
+    "sport_psychology": 95,
+    "training_protocol": 0
+  },
+  "last_curated_chunk_update": "2026-06-13",
+  "_note": "20260613-A: nutrition去重(-1215), medical_safety+30, sport_psychology 4->96, external_reference下线。20260613-B: nutrition+59域专属策划chunks, injury_safety+39域专属策划chunks。20260613-C: 全库prescription_permission自动分类完成(quality_tier映射), 覆盖率100%, none=0。nutrition/injury_safety需重建FAISS。training_protocol FAISS已auto_classified但未重建。"
 }

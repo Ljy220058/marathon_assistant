@@ -19,7 +19,7 @@ V2_HIT = {
     "source_url": "https://example.com/approved-protocol",
     "page": 7,
     "section": "week-structure",
-    "text": "Approved protocol text for week structure.",
+    "text": "Approved protocol text for half marathon week structure and training week structure.",
     "score": 0.92,
     "language": "en",
     "evidence_domain": "protocol",
@@ -173,7 +173,7 @@ def test_legacy_chunk_id_page_hint_survives_bundle_to_canonical_chain():
     legacy_hit = {
         "chunk_id": "2016+-+Nutrition+for+Marathon+Running_p0003_c0002",
         "source_file": "Nutrition for Marathon Running.pdf",
-        "source_path": "data/vector_kb/default/nutrition.pdf",
+        "source_path": "back/legacy_kb_archive_20260613/data/vector_kb/default/nutrition.pdf",
         "page": None,
         "text": "Fueling guidance.",
         "score": 0.8,
@@ -199,7 +199,7 @@ def test_merge_ranked_hits_keeps_more_complete_metadata_for_same_chunk():
     first_hit = {
         "chunk_id": "same-chunk",
         "source_file": "legacy.pdf",
-        "source_path": "data/vector_kb/default/legacy.pdf",
+        "source_path": "back/legacy_kb_archive_20260613/data/vector_kb/default/legacy.pdf",
         "page": 1,
         "text": "Legacy sparse text.",
         "score": 0.95,

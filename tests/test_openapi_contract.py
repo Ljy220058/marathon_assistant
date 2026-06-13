@@ -69,6 +69,7 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
         "adjustment_history",
     }
     assert "training_plan_review" in schemas["QueryResponse"]["properties"]
+    assert "resume_from_workflow_pause" in schemas["QueryRequest"]["properties"]
     assert "training_plan_review" in schemas["PlanDetailResponse"]["properties"]
     assert "training_plan_review" in schemas["TrainingCalendarResponse"]["properties"]
     assert "answer_source_mode" in schemas["QueryResponse"]["properties"]
@@ -76,6 +77,7 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
     assert "full_report" in schemas["QueryResponse"]["properties"]
     assert "ui_policy" in schemas["QueryResponse"]["properties"]
     assert "rag_health" in schemas["QueryResponse"]["properties"]
+    assert "workflow_pause" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["PlanDetailResponse"]["properties"]
     assert "evidence_chain" in schemas["TrainingCalendarResponse"]["properties"]

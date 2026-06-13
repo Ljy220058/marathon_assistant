@@ -223,6 +223,33 @@
     drawer.setAttribute("aria-hidden", "false");
   }
 
+  // H3: 调整建议渲染器
+  function renderAdjustmentProposals(proposals, containerId) {
+    if (!Array.isArray(proposals) || !proposals.length) return "";
+    const ACTION_LABELS = {
+      reschedule: "建议补课", delete: "建议跳过", trim: "建议缩短",
+      info: "提示", dismiss: "已忽略",
+    };
+    const ACTION_ICONS = {
+      reschedule: "📅", delete: "✓", trim: "✂️", info: "ℹ️", dismiss: "✕",
+    };
+    return proposals.map((p, i) => {
+      const label = ACTION_LABELS[p.action] || p.action;
+      const icon = ACTION_ICONS[p.action] || "";
+      const target = p.target_day ? ` → ${p.target_day}` : "";
+      const confirmBtn = p.requires_confirmation
+        ? `<button class="adj-confirm-btn" data-index="${i}" onclick="window.__adjustmentConfirm(${i})">确认调整</button>`
+        : "";
+      return `<div class="adjustment-proposal-card">
+        <strong>${icon} ${label}${target}</strong>
+        <p>${escapeHtml(p.reason || "")}</p>
+        ${p.source ? `<small class="adj-source">来源: ${escapeHtml(p.source)}</small>` : ""}
+        ${confirmBtn}
+      </div>`;
+    }).join("");
+  }
+  window.__adjustmentRenderer = { renderAdjustmentProposals };
+
   function closeEvidenceDrawer() {
     if (typeof window.closeEvidenceDrawer === "function" && window.closeEvidenceDrawer !== closeEvidenceDrawer) {
       return window.closeEvidenceDrawer();

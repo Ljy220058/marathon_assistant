@@ -627,7 +627,7 @@ def semantic_match_entities(query: str) -> List[str]:
 
 
 # 需要英文检索的领域（文献为英文，中文查询跨语言匹配弱）
-_EN_RETRIEVAL_DOMAINS = {"rehab_safety", "nutrition", "race_strategy"}
+_EN_RETRIEVAL_DOMAINS = {"rehab_safety", "nutrition", "race_strategy", "sport_psychology"}
 
 async def _translate_for_retrieval(query: str, domain_hint: str = "") -> str:
     """将中文查询翻译为英文，用于跨语言向量检索。仅在英文文献域触发。
@@ -715,9 +715,10 @@ async def get_context(query: str, top_k: int = 4, *, rerank: bool = False, en_tr
         return []
 
     try:
+        chunks_arg = kb_runtime.KB_SHARD_CHUNKS if kb_runtime.KB_SHARD_CHUNKS is not None else KB_CHUNKS
         hits = retrieve_fn(
             query,
-            KB_CHUNKS,
+            chunks_arg,
             kb_runtime.KB_VECTORIZER,
             kb_runtime.KB_MATRIX,
             top_k=top_k,
@@ -750,6 +751,10 @@ def build_rag_sources(hits: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         "review_status",
         "exclude_from_training_generation",
         "needs_review",
+        "retrieval_mode",
+        "retrieval_status",
+        "why_retrieved",
+        "score_breakdown",
     )
     sources: List[Dict[str, Any]] = []
     for hit in hits or []:
@@ -821,11 +826,14 @@ def format_evidence_lines(rag_sources: List[Dict[str, Any]], limit: int = 3) -> 
     if not rag_sources:
         return "暂无本地知识库证据。"
 
+    from marathon_qa_assistant.core.evidence_bundle import _neutralize_embedded_citation_numbers
+
     lines = []
     for idx, src in enumerate(rag_sources[:limit], start=1):
+        snippet = _neutralize_embedded_citation_numbers(str(src.get("snippet", "")))
         lines.append(
             f"[{idx}] {src.get('source', 'unknown')} P.{src.get('page', 1)} "
-            f"- {src.get('snippet', '')[:120]}"
+            f"- {snippet[:120]}"
         )
     return "\n".join(lines)
 

@@ -301,7 +301,7 @@ class TodoAutomationScannerTests(unittest.TestCase):
             root = Path(tmp)
             (root / "TODO.md").write_text(
                 "## API 模块\n\n"
-                "- [ ] 修改 API 数据模型并补测试。来源：TECH_REQUIREMENTS_V2.md\n"
+                "- [ ] 修改 API 数据模型并补测试。来源：marathon_agent_technical_requirements_v3.md\n"
                 "- [ ] 更新 README 文档说明\n",
                 encoding="utf-8",
             )
@@ -312,7 +312,7 @@ class TodoAutomationScannerTests(unittest.TestCase):
             self.assertEqual(records[0].risk_level, "high")
             self.assertEqual(records[1].risk_level, "low")
             self.assertEqual(records[0].status, "discovered")
-            self.assertIn("TECH_REQUIREMENTS_V2.md", records[0].source_refs)
+            self.assertIn("marathon_agent_technical_requirements_v3.md", records[0].source_refs)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**

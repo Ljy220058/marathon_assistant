@@ -158,7 +158,7 @@ def build_settings(env: Optional[Mapping[str, Any]] = None) -> Settings:
         semantic_chunking_enabled=_env_flag(values, "MARATHON_SEMANTIC_CHUNKING_ENABLED"),
         bm25_fallback_enabled=(_env_str(values, "MARATHON_BM25_FALLBACK_ENABLED", "1") != "0"),
         domain_filter_enabled=(_env_str(values, "MARATHON_DOMAIN_FILTER_ENABLED", "1") != "0"),
-        sharded_retrieval_enabled=_env_flag(values, "MARATHON_SHARDED_RETRIEVAL_ENABLED"),
+        sharded_retrieval_enabled=(_env_str(values, "MARATHON_SHARDED_RETRIEVAL_ENABLED", "1") != "0"),
         rerank_enabled=(_env_str(values, "MARATHON_RERANK_ENABLED", "1") != "0"),
         ragas_eval_enabled=_env_flag(values, "MARATHON_RAGAS_EVAL_ENABLED"),
         log_client_ip=(_env_str(values, "MARATHON_LOG_CLIENT_IP", "1") != "0"),

@@ -82,3 +82,46 @@ def test_query_response_marks_missing_visible_kb_evidence_for_qa_report():
 
     _assert_required_sections_in_order(response.report)
     assert "本轮未检索到可展示的本地知识库证据" in response.report
+
+
+def test_query_response_neutralizes_source_local_citation_numbers_in_visible_evidence():
+    response = _query_response_from_state(
+        {
+            "final_report": "## 结论\n已生成。\n",
+            "intent_type": "qa",
+            "workflow_kind": "team",
+            "token_usage": {},
+            "audit_scores": {},
+            "guided_questions": [],
+            "evidence_bundle": {
+                "query": "qa",
+                "evidence_items": [
+                    {
+                        "evidence_id": "chunk-1",
+                        "citation_label": "[1]",
+                        "source_file": "paper.pdf",
+                        "source_path": "docs/paper.pdf",
+                        "page": 7,
+                        "chunk_id": "p7",
+                        "text": "This evidence cites prior work [221] and [224].",
+                        "score": 0.8,
+                        "tier": "kb_fallback",
+                        "prescription_permission": "can_write_core",
+                        "display_mode": "verified_source",
+                    }
+                ],
+                "health": {
+                    "index_schema_version": "chunk_schema_v2",
+                    "runtime_core_prescription_enabled": True,
+                },
+            },
+        },
+        QueryRequest(query="qa"),
+        generation_status="complete",
+    )
+
+    assert "[1] paper.pdf p.7" in response.report
+    assert "[221]" not in response.report
+    assert "[224]" not in response.report
+    assert "(221)" in response.report
+    assert "(224)" in response.report

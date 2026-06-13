@@ -47,15 +47,11 @@ STAI_RUNS_DIR = ARTIFACTS_DIR / "research_runs" / "stai2026"
 
 MEXRXBENCH_DIR = RESEARCH_DIR / "mexrxbench"
 
-DEFAULT_VECTOR_DIR = DATA_DIR / "vector_kb" / "default"
 V2_VECTOR_DIR = DATA_DIR / "vector_kb" / "v2"
-USER_PROFILE_PATH = DEFAULT_VECTOR_DIR / "user_profile.json"
 USER_VECTOR_DIR = DATA_DIR / "vector_kb" / "user"
 UPLOAD_DOCS_DIR = DATA_DIR / "uploads" / "seed"
 
-LEGACY_DEFAULT_VECTOR_DIR = BASE_DIR / "vector_kb"
 LEGACY_UPLOAD_DOCS_DIR = BASE_DIR / "uploaded_docs"
-LEGACY_USER_VECTOR_DIR = BASE_DIR / "vector_kb_user"
 LEGACY_STAI_DIR = BASE_DIR / "docs" / "paper_project"
 
 RUNTIME_DATA_DIR = Path(
@@ -63,6 +59,7 @@ RUNTIME_DATA_DIR = Path(
 ).absolute()
 RUNTIME_UPLOAD_DOCS_DIR = RUNTIME_DATA_DIR / "uploaded_docs"
 RUNTIME_USER_VECTOR_DIR = RUNTIME_DATA_DIR / "vector_kb_user"
+USER_PROFILE_PATH = RUNTIME_DATA_DIR / "profiles" / "default_user.json"
 GOOGLE_CREDENTIALS_PATH = RUNTIME_DATA_DIR / "google_credentials.json"
 
 def has_vector_kb_artifacts(vector_dir: Path) -> bool:

@@ -1,25 +1,23 @@
 from pathlib import Path
 
-from marathon_qa_assistant.core import kb_bootstrap
-from marathon_qa_assistant.core import app_state
+from marathon_qa_assistant.core import app_state, kb_bootstrap
 
 
 def test_default_kb_candidate_dirs_only_contains_v2_runtime():
     assert kb_bootstrap.default_kb_candidate_dirs() == [app_state.V2_VECTOR_DIR]
 
 
-def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
-    v2_dir = Path("C:/fake/vector_kb/v2")
-    default_dir = Path("C:/fake/vector_kb/default")
+def test_bootstrap_knowledge_base_loads_sharded_v2_by_default(monkeypatch, tmp_path):
+    vector_root = tmp_path / "vector_kb"
+    v2_dir = vector_root / "v2"
+    sharded_dir = vector_root / "v2_sharded"
+    v2_dir.mkdir(parents=True)
+    sharded_dir.mkdir()
     loaded = []
+    sharded_loaded = []
     set_calls = []
 
-    monkeypatch.setattr(kb_bootstrap, "USER_VECTOR_DIR", Path("C:/missing/user"))
-    monkeypatch.setattr(kb_bootstrap, "RUNTIME_USER_VECTOR_DIR", Path("C:/missing/runtime-user"))
-    monkeypatch.setattr(kb_bootstrap, "LEGACY_USER_VECTOR_DIR", Path("C:/missing/legacy-user"))
-    monkeypatch.setattr(kb_bootstrap, "V2_VECTOR_DIR", v2_dir)
-    monkeypatch.setattr(kb_bootstrap, "DEFAULT_VECTOR_DIR", default_dir)
-    monkeypatch.setattr(kb_bootstrap, "LEGACY_DEFAULT_VECTOR_DIR", Path("C:/missing/legacy-default"))
+    monkeypatch.setattr(kb_bootstrap.app_state, "V2_VECTOR_DIR", v2_dir)
 
     def fake_probe(path):
         if path == v2_dir:
@@ -33,18 +31,6 @@ def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
                 "index_schema_version": "chunk_schema_v2",
                 "metadata_completeness": 1.0,
                 "runtime_core_prescription_enabled": True,
-            }
-        if path == default_dir:
-            return {
-                "ok": True,
-                "source": "default",
-                "vector_dir": str(path),
-                "reason": "",
-                "chunks_count": 1160,
-                "faiss_ready": True,
-                "index_schema_version": "legacy",
-                "metadata_completeness": 0.0,
-                "runtime_core_prescription_enabled": False,
             }
         return {"ok": False, "source": "missing", "vector_dir": str(path), "reason": "missing"}
 
@@ -52,41 +38,113 @@ def test_bootstrap_knowledge_base_loads_v2_before_default(monkeypatch):
         loaded.append(path)
         return ([{"chunk_id": "v2"}], "vec", object(), "bm25")
 
-    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
-        set_calls.append({"chunks": list(chunks), "vectorizer": vectorizer, "matrix": matrix, "bm25": bm25})
+    def fake_load_sharded(path):
+        sharded_loaded.append(path)
+        return (
+            {"training_protocol": object(), "nutrition": object()},
+            {"training_protocol": [{"chunk_id": "tp-1"}], "nutrition": [{"chunk_id": "n-1"}]},
+            [{"chunk_id": "tp-1"}, {"chunk_id": "n-1"}],
+            {"training_protocol": "bm25-training", "nutrition": "bm25-nutrition"},
+            "bm25-global",
+        )
 
-    monkeypatch.setenv("GRAPHRAG_API_KEY", "ci_test_token")
-    warm_calls = []
+    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None, shard_chunks=None):
+        set_calls.append(
+            {
+                "chunks": list(chunks),
+                "vectorizer": vectorizer,
+                "matrix": matrix,
+                "bm25": bm25,
+                "shard_chunks": shard_chunks,
+            }
+        )
 
+    monkeypatch.delenv("MARATHON_SHARDED_RETRIEVAL_ENABLED", raising=False)
     monkeypatch.setattr(kb_bootstrap, "probe_vector_kb_health", fake_probe)
     monkeypatch.setattr(kb_bootstrap, "load_vector_kb", fake_load)
+    monkeypatch.setattr(kb_bootstrap, "load_sharded_kb", fake_load_sharded)
     monkeypatch.setattr(kb_bootstrap, "set_kb_data", fake_set)
-    monkeypatch.setattr(kb_bootstrap.label_matcher, "warm_up", lambda labels: warm_calls.append(list(labels)))
+    monkeypatch.setattr(kb_bootstrap.label_matcher, "warm_up", lambda labels: None)
+
+    report = kb_bootstrap.bootstrap_knowledge_base()
+
+    assert loaded == []
+    assert sharded_loaded == [sharded_dir]
+    assert report["source"] == "v2_sharded"
+    assert report["mode"] == "loaded_sharded"
+    assert report["vector_dir"] == str(sharded_dir)
+    assert report["index_schema_version"] == "chunk_schema_v2"
+    assert report["chunks_count"] == 2
+    assert report["faiss_ready"] is True
+    assert report["bm25_ready"] is True
+    assert set_calls[0]["chunks"] == [{"chunk_id": "tp-1"}, {"chunk_id": "n-1"}]
+    assert set_calls[0]["vectorizer"] == "faiss_sharded_vectorizer"
+    assert set_calls[0]["shard_chunks"] == {
+        "training_protocol": [{"chunk_id": "tp-1"}],
+        "nutrition": [{"chunk_id": "n-1"}],
+    }
+
+
+def test_bootstrap_knowledge_base_can_disable_sharded_retrieval(monkeypatch, tmp_path):
+    vector_root = tmp_path / "vector_kb"
+    v2_dir = vector_root / "v2"
+    sharded_dir = vector_root / "v2_sharded"
+    v2_dir.mkdir(parents=True)
+    sharded_dir.mkdir()
+    loaded = []
+    sharded_loaded = []
+    set_calls = []
+
+    monkeypatch.setattr(kb_bootstrap.app_state, "V2_VECTOR_DIR", v2_dir)
+
+    def fake_probe(path):
+        return {
+            "ok": path == v2_dir,
+            "source": "v2",
+            "vector_dir": str(path),
+            "reason": "",
+            "chunks_count": 750,
+            "faiss_ready": True,
+            "index_schema_version": "chunk_schema_v2",
+            "metadata_completeness": 1.0,
+            "runtime_core_prescription_enabled": True,
+        }
+
+    def fake_load(path):
+        loaded.append(path)
+        return ([{"chunk_id": "v2"}], "vec", object(), "bm25")
+
+    def fake_load_sharded(path):
+        sharded_loaded.append(path)
+        return ({}, {}, [], {}, None)
+
+    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None, shard_chunks=None):
+        set_calls.append({"chunks": list(chunks), "vectorizer": vectorizer, "shard_chunks": shard_chunks})
+
+    monkeypatch.setenv("MARATHON_SHARDED_RETRIEVAL_ENABLED", "0")
+    monkeypatch.setattr(kb_bootstrap, "probe_vector_kb_health", fake_probe)
+    monkeypatch.setattr(kb_bootstrap, "load_vector_kb", fake_load)
+    monkeypatch.setattr(kb_bootstrap, "load_sharded_kb", fake_load_sharded)
+    monkeypatch.setattr(kb_bootstrap, "set_kb_data", fake_set)
+    monkeypatch.setattr(kb_bootstrap.label_matcher, "warm_up", lambda labels: None)
 
     report = kb_bootstrap.bootstrap_knowledge_base()
 
     assert loaded == [v2_dir]
+    assert sharded_loaded == []
     assert report["source"] == "v2"
+    assert report["mode"] == "loaded"
     assert report["vector_dir"] == str(v2_dir)
-    assert report["index_schema_version"] == "chunk_schema_v2"
-    assert report["chunks_count"] == 1
     assert set_calls[0]["chunks"] == [{"chunk_id": "v2"}]
-    assert warm_calls
-    assert "轻松跑" in warm_calls[0]
-    assert "高强度间歇" in warm_calls[0]
+    assert set_calls[0]["shard_chunks"] is None
 
 
 def test_bootstrap_knowledge_base_ignores_runtime_user_and_legacy_candidates(monkeypatch):
     v2_dir = Path("C:/fake/vector_kb/v2")
-    runtime_user_dir = Path("C:/fake/runtime/vector_kb_user")
     loaded = []
 
-    monkeypatch.setattr(kb_bootstrap, "USER_VECTOR_DIR", Path("C:/missing/user"))
-    monkeypatch.setattr(kb_bootstrap, "V2_VECTOR_DIR", v2_dir)
-    monkeypatch.setattr(kb_bootstrap, "RUNTIME_USER_VECTOR_DIR", runtime_user_dir)
-    monkeypatch.setattr(kb_bootstrap, "LEGACY_USER_VECTOR_DIR", Path("C:/missing/legacy-user"))
-    monkeypatch.setattr(kb_bootstrap, "DEFAULT_VECTOR_DIR", Path("C:/missing/default"))
-    monkeypatch.setattr(kb_bootstrap, "LEGACY_DEFAULT_VECTOR_DIR", Path("C:/missing/legacy-default"))
+    monkeypatch.setenv("MARATHON_SHARDED_RETRIEVAL_ENABLED", "0")
+    monkeypatch.setattr(kb_bootstrap.app_state, "V2_VECTOR_DIR", v2_dir)
 
     def fake_probe(path):
         if path == v2_dir:
@@ -99,17 +157,6 @@ def test_bootstrap_knowledge_base_ignores_runtime_user_and_legacy_candidates(mon
                 "index_schema_version": "chunk_schema_v2",
                 "metadata_completeness": 1.0,
                 "runtime_core_prescription_enabled": True,
-            }
-        if path == runtime_user_dir:
-            return {
-                "ok": True,
-                "source": "runtime_user",
-                "vector_dir": str(path),
-                "chunks_count": 744,
-                "faiss_ready": True,
-                "index_schema_version": "legacy",
-                "metadata_completeness": 0.0,
-                "runtime_core_prescription_enabled": False,
             }
         return {"ok": False, "source": "missing", "vector_dir": str(path), "reason": "missing"}
 
@@ -132,7 +179,7 @@ def test_bootstrap_knowledge_base_rejects_non_v2_candidates_and_enters_empty_mod
     def fake_probe(path):
         raise AssertionError(f"non-v2 path should not be probed: {path}")
 
-    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
+    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None, shard_chunks=None):
         set_calls.append({"chunks": list(chunks), "vectorizer": vectorizer, "matrix": matrix, "bm25": bm25})
 
     monkeypatch.setattr(kb_bootstrap, "probe_vector_kb_health", fake_probe)
@@ -163,12 +210,12 @@ def test_bootstrap_knowledge_base_enters_empty_mode_when_v2_candidate_fails(monk
             "ok": False,
             "source": "v2",
             "vector_dir": str(path),
-            "reason": "缺少产物",
+            "reason": "missing artifacts",
             "chunks_count": 0,
             "faiss_ready": False,
         }
 
-    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
+    def fake_set(chunks, vectorizer, matrix, retrieve_fn, bm25=None, shard_chunks=None):
         set_calls.append({"chunks": list(chunks), "vectorizer": vectorizer, "matrix": matrix, "bm25": bm25})
 
     monkeypatch.setattr(kb_bootstrap, "probe_vector_kb_health", fake_probe)
@@ -180,6 +227,6 @@ def test_bootstrap_knowledge_base_enters_empty_mode_when_v2_candidate_fails(monk
     assert report["ok"] is False
     assert report["mode"] == "empty"
     assert report["source"] == "empty"
-    assert report["reason"] == "v2:缺少产物"
+    assert report["reason"] == "v2:missing artifacts"
     assert set_calls[0]["chunks"] == []
     assert set_calls[0]["matrix"] is None

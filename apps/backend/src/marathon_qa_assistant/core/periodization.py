@@ -491,8 +491,8 @@ class Macrocycle:
     @staticmethod
     def _marathon_phases_long(total_weeks: int) -> List[Mesocycle]:
         """长周期全马 (>=13 周)：Base + Build + Peak + Taper 标准四阶段。"""
-        taper_w = max(2, int(total_weeks * 0.17))
-        peak_w = max(3, int(total_weeks * 0.22))
+        taper_w = max(2, int(total_weeks * 0.15))  # F5: 减量比例从 17%→15%
+        peak_w = max(4, int(total_weeks * 0.25))    # F5: 巅峰期从 22%→25% (全马需更长专项期)
         build_w = max(4, int(total_weeks * 0.35))
         base_w = total_weeks - taper_w - peak_w - build_w
         if base_w < 3:

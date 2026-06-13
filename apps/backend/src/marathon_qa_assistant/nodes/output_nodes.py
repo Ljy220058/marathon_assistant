@@ -520,6 +520,46 @@ def _build_daily_workout_cards(
     return cards
 
 
+def _sync_daily_workout_cards_with_schedule_evidence(
+    daily_workout_cards: List[Dict[str, Any]],
+    daily_schedule_cards: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Copy verified prescription provenance from executable day cards into legacy explanation cards."""
+
+    if not daily_workout_cards or not daily_schedule_cards:
+        return daily_workout_cards
+
+    schedule_by_key: Dict[Tuple[int, str], Dict[str, Any]] = {}
+    for schedule_card in daily_schedule_cards:
+        if not isinstance(schedule_card, dict):
+            continue
+        key = (
+            int(schedule_card.get("week_index") or 0),
+            _safe_text(schedule_card.get("day_label") or schedule_card.get("day"), ""),
+        )
+        if key[0] and key[1]:
+            schedule_by_key[key] = schedule_card
+
+    for card in daily_workout_cards:
+        if not isinstance(card, dict):
+            continue
+        key = (int(card.get("week_index") or 0), _safe_text(card.get("day"), ""))
+        schedule_card = schedule_by_key.get(key)
+        if not schedule_card:
+            continue
+        schedule_tier = _safe_text(schedule_card.get("evidence_tier"), "")
+        if schedule_tier and schedule_tier != "plan_only":
+            card["evidence_tier"] = schedule_tier
+            card["evidence_tier_label"] = _safe_text(schedule_card.get("evidence_tier_label"), "")
+            card["schedule_card_status"] = _safe_text(schedule_card.get("card_status"), "")
+            card["schedule_source_authority"] = _safe_text(schedule_card.get("source_authority"), "")
+            if isinstance(schedule_card.get("field_sources"), dict):
+                card["schedule_field_sources"] = schedule_card.get("field_sources")
+            if isinstance(schedule_card.get("action_match"), dict):
+                card["action_match"] = schedule_card.get("action_match")
+    return daily_workout_cards
+
+
 def _build_half_marathon_protocol_panel(structured_training_plan: Any) -> Dict[str, Any]:
     if not isinstance(structured_training_plan, dict):
         return {}
@@ -727,6 +767,10 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
         item.to_dict() if hasattr(item, "to_dict") else item
         for item in (monthly_training_calendar.days if monthly_training_calendar else [])
     ]
+    daily_workout_cards = _sync_daily_workout_cards_with_schedule_evidence(
+        daily_workout_cards,
+        daily_schedule_cards,
+    )
     summary = final_report if final_report and final_report.strip() else "（本轮未产生实质性回复内容）"
     audit_scores = state.get("audit_scores", {})
     workflow_trace = state.get("workflow_trace") if isinstance(state.get("workflow_trace"), dict) else {}
@@ -856,6 +900,7 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             "review_feedback": state.get("review_feedback", ""),
             "risk_alert": risk_alert,
         },
+        "expert_evidence_trace": state.get("expert_evidence_trace", {}),
         "evidence_bundle": evidence_bundle,
         "evidence_base": evidence_base,
     }

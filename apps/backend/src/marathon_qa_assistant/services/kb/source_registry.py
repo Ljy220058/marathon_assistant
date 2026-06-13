@@ -16,6 +16,18 @@ from marathon_qa_assistant.services.kb.models import (
 )
 
 
+DOMAIN_PACK_TO_EVIDENCE_DOMAIN = {
+    "training_protocols": EvidenceDomain.PROTOCOL,
+    "action_library": EvidenceDomain.ACTION_LIBRARY,
+    "environment_race_context": EvidenceDomain.ENVIRONMENT_RACE_CONTEXT,
+    "medical_risk": EvidenceDomain.MEDICAL_SAFETY,
+    "nutrition_race_fueling": EvidenceDomain.NUTRITION_RACE_FUELING,
+    "rehab_return_to_run": EvidenceDomain.REHAB_STRENGTH_MOBILITY,
+    "competitor_product_reference": EvidenceDomain.COMPETITOR_PRODUCT_REFERENCE,
+    "user_profile_case": EvidenceDomain.USER_PROFILE_CASE,
+}
+
+
 def build_source_registry_id(source: str) -> str:
     normalized = " ".join(str(source or "").replace("\\", "/").split()).strip().lower()
     if not normalized:
@@ -53,6 +65,28 @@ def _contains_mojibake(value: Any) -> bool:
     return "????" in text or "\ufffd" in text
 
 
+def _infer_evidence_domain(payload: Dict[str, Any]) -> EvidenceDomain:
+    raw_domain = str(payload.get("evidence_domain") or "").strip()
+    if raw_domain:
+        try:
+            return EvidenceDomain(raw_domain)
+        except ValueError:
+            pass
+    domain_pack = str(payload.get("domain_pack") or payload.get("group") or "").strip()
+    if domain_pack in DOMAIN_PACK_TO_EVIDENCE_DOMAIN:
+        return DOMAIN_PACK_TO_EVIDENCE_DOMAIN[domain_pack]
+    source_file = str(payload.get("source_file") or payload.get("source_path") or "").lower()
+    if any(term in source_file for term in ("protocol", "plan", "guide")):
+        return EvidenceDomain.PROTOCOL
+    if any(term in source_file for term in ("nutrition", "fuel", "hydration", "electrolyte")):
+        return EvidenceDomain.NUTRITION_RACE_FUELING
+    if any(term in source_file for term in ("injury", "rehab", "return_to_run", "pain")):
+        return EvidenceDomain.REHAB_STRENGTH_MOBILITY
+    if any(term in source_file for term in ("heat", "weather", "altitude", "environment")):
+        return EvidenceDomain.ENVIRONMENT_RACE_CONTEXT
+    return EvidenceDomain.SPORTS_SCIENCE_REFERENCE
+
+
 def _review_status_from_payload(payload: Dict[str, Any], *, needs_review: bool) -> SourceReviewStatus:
     raw = str(payload.get("review_status") or "").strip()
     source_type = str(payload.get("source_type") or "").strip()
@@ -75,11 +109,7 @@ def normalize_source_record(payload: Dict[str, Any]) -> SourceRecord:
     if not source_key:
         raise ValueError("source_file or source_path is required")
 
-    evidence_domain = _enum_value(
-        EvidenceDomain,
-        payload.get("evidence_domain"),
-        EvidenceDomain.SPORTS_SCIENCE_REFERENCE,
-    )
+    evidence_domain = _infer_evidence_domain(payload)
     knowledge_layer = _enum_value(
         KnowledgeLayer,
         payload.get("knowledge_layer"),

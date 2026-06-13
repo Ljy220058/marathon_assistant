@@ -5,6 +5,7 @@ from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TYPE_KEYWORD_MAP,
     build_daily_workout_template_card_from_hits,
     build_workout_template_query,
+    get_action_library_foundation_hits,
     normalize_workout_type_for_template,
 )
 from marathon_qa_assistant.ui.legacy_ui import UIHelper
@@ -72,6 +73,73 @@ def test_build_daily_workout_template_card_from_action_library_hits():
     assert "15分钟慢跑" in card["warmup_suggestion"]
     assert card["evidence_status"]["main_set_candidates"] == "direct"
     assert card["evidence_status"]["cooldown"] == "missing"
+
+
+def test_action_library_card_rejects_warmup_drill_hit_as_core_main_set():
+    hits = [
+        {
+            "source_file": "动作库.pdf",
+            "page": 2,
+            "chunk_id": "warmup_drill",
+            "score": 0.95,
+            "text": """
+            Long Run support drill
+            categories: Technique, Drills, Warm-up
+            content:
+            a. A Skip running drill
+            b. High knees running drill
+            """,
+            "tags": {"categories": "Technique, Drills, Warm-up"},
+            "source_authority": "C",
+        },
+        {
+            "source_file": "动作库.pdf",
+            "page": 12,
+            "chunk_id": "long_run_prescription",
+            "score": 0.9,
+            "text": """
+            Long Run
+            categories: Long-Run, Endurance, Marathon-Spec
+            content:
+            a. 21-25km
+            b. 21-25km last 3-4km at marathon pace
+            objective: aerobic endurance and marathon-specific fatigue resistance
+            """,
+            "tags": {"categories": "Long-Run, Endurance, Marathon-Spec"},
+            "source_authority": "A",
+        },
+        {
+            "source_file": "动作库.pdf",
+            "page": 10,
+            "chunk_id": "aerobic_threshold_not_long_run",
+            "score": 0.88,
+            "text": """
+            Long Run adjacent aerobic threshold
+            categories: Aerobic, Steady-State, Endurance
+            content:
+            a. 3-4*3000/2min
+            """,
+            "tags": {"categories": "Aerobic, Steady-State, Endurance"},
+            "source_authority": "B",
+        },
+    ]
+
+    card = build_daily_workout_template_card_from_hits("long_run", day="Sun", hits=hits)
+
+    assert card["evidence_tier"] == "action_library"
+    assert card["evidence"][0]["chunk_id"] == "long_run_prescription"
+    assert any("21-25km" in item for item in card["main_set_candidates"])
+    assert not any("Skip" in item for item in card["main_set_candidates"])
+
+
+def test_long_run_jsonl_foundation_prefers_long_run_prescription_chunk():
+    hits = get_action_library_foundation_hits("long_run")
+
+    card = build_daily_workout_template_card_from_hits("long_run", day="Sun", hits=hits)
+
+    assert card["evidence_tier"] == "action_library"
+    assert card["evidence"][0]["chunk_id"] == "动作库_p0012_c0001"
+    assert card["main_set_candidates"][0].startswith("21")
 
 
 def test_workout_template_card_exposes_layered_kb_metadata():
@@ -190,6 +258,7 @@ def test_structured_report_exposes_and_renders_daily_workout_cards():
     assert len(cards) == 1
     assert cards[0]["title"] == "周二｜有氧阈值训练课"
     assert cards[0]["week_index"] == 1
+    assert cards[0]["evidence_tier"] == "action_library"
     assert cards[0]["evidence_status"]["main_set_candidates"] == "direct"
 
     rendered = UIHelper.render_structured_report(report, "已生成训练计划。")

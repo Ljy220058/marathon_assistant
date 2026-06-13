@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from typing import Any, Dict, List
+import asyncio
 import re
 
 try:
@@ -27,6 +28,26 @@ def _safe_llm_fallback_summary(exc: Exception) -> str:
     if provider and error_code:
         return f"{provider}/{error_code}"
     return exc.__class__.__name__
+
+
+def _executor_llm_timeout_sec(config: RunnableConfig) -> float:
+    """Keep executor under the LangGraph node timeout so structured plans survive LLM stalls."""
+    configured = 90.0
+    try:
+        cfg = config.get("configurable", {}) if isinstance(config, dict) else {}
+        configured = float(cfg.get("executor_llm_timeout_sec") or cfg.get("llm_timeout_sec") or configured)
+    except Exception:
+        configured = 90.0
+    return max(10.0, min(configured, 90.0))
+
+
+async def _invoke_executor_llm(prompt: str, config: RunnableConfig, token_usage: dict):
+    task = asyncio.create_task(ai_invoke(prompt, config, token_usage))
+    done, pending = await asyncio.wait({task}, timeout=_executor_llm_timeout_sec(config))
+    if task in done:
+        return await task
+    task.cancel()
+    return None
 
 
 def _parse_pace_seconds(pace_str: str) -> float:
@@ -177,6 +198,13 @@ def _resolve_weeks_source_label(source: str) -> str:
 def _build_plan_prompt(state: IntegratedState) -> str:
     plan_context = align_plan_duration_context(state.get("query", ""), state.get("user_profile", {}))
     profile = plan_context["aligned_profile"]
+
+    # Step 2: 构建文献约束表上下文 (替代硬编码分钟值)
+    try:
+        from marathon_qa_assistant.core.workout_constraints import build_constraints_context
+        constraint_table = build_constraints_context("auto")
+    except Exception:
+        constraint_table = "(约束表暂不可用，请使用典型训练时长 30-60min 范围)"
     evidence_lines = format_state_evidence_lines(state, limit=5)
     graph_context = state.get("graph_context", "")
     requested_weeks = state.get("requested_weeks")
@@ -296,6 +324,9 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 2. 用户指定的训练日必须严格安排，不可擅自改动
 3. 用户指定的训练类型必须逐一覆盖，不可遗漏
 
+★ 每节课的时长必须遵守以下文献约束范围。不可超出 min-max，典型值作为默认参考：
+{constraint_table}
+
 ★ 主课格式强制要求（这是本次审核的核心）：
   A. 间歇/重复类：必须写成「N×距离，配速X:XX/km，组间慢跑Ym/站立Zm」
      示例：8×400m，配速2:52/km，组间慢跑200m
@@ -320,6 +351,17 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 5. 配速标注必须统一使用「分:秒/km」格式（如 3:07/km），不使用「分 秒」中间加汉字的格式
 
 {get_security_prompt_suffix()}"""
+    # P5: 注入上一轮审核反馈，让 executor 做定向修正而非盲重试
+    review_feedback = state.get("review_feedback", "")
+    rag_feedback = state.get("rag_audit_feedback", "")
+    if review_feedback or rag_feedback:
+        correction = "\n\n## 上一轮审核未通过，请修正以下问题后重新生成\n"
+        if rag_feedback:
+            correction += f"\n[RAG 文献审核反馈]\n{rag_feedback}\n"
+        if review_feedback:
+            correction += f"\n[规则审核反馈]\n{review_feedback}\n"
+        correction += "\n请针对性修正上述问题，保留其余正确的部分不变。"
+        prompt += correction
     return prompt
 
 
@@ -359,11 +401,75 @@ async def planner_node(state: IntegratedState, config: RunnableConfig) -> dict:
         }
 
     subtasks = _build_plan_subtasks(state)
+    trace = _planning_role_trace(state, role_key="planner", note=f"Planner decomposed the request into {len(subtasks)} executable subtasks.")
     return {
         "subtasks": subtasks,
+        "expert_evidence_trace": _merge_plan_role_trace(state, "planner", trace),
         "token_usage": ensure_usage(state.get("token_usage")),
         "reasoning_log": [f"[planner] 已拆解 {len(subtasks)} 个子任务"],
     }
+
+
+def _trace_refs_from_bundle(bundle: Any, limit: int = 5) -> list[dict]:
+    if not isinstance(bundle, dict):
+        return []
+    refs = []
+    for item in bundle.get("evidence_items") or []:
+        if not isinstance(item, dict):
+            continue
+        retrieval_mode = str(item.get("retrieval_mode") or "")
+        refs.append(
+            {
+                "citation_label": item.get("citation_label") or "",
+                "source_file": item.get("source_file") or item.get("source") or "",
+                "source_path": item.get("source_path") or item.get("path") or "",
+                "page": item.get("page"),
+                "chunk_id": item.get("chunk_id") or "",
+                "evidence_domain": item.get("evidence_domain") or item.get("domain_pack") or _domain_from_retrieval_mode(retrieval_mode),
+                "retrieval_mode": retrieval_mode,
+            }
+        )
+        if len(refs) >= limit:
+            break
+    return refs
+
+
+def _domain_from_retrieval_mode(retrieval_mode: str) -> str:
+    text = str(retrieval_mode or "")
+    for prefix in ("sharded:", "bm25:", "role_shard_jsonl:"):
+        if prefix not in text:
+            continue
+        tail = text.split(prefix, 1)[1]
+        domain = re.split(r"[+:]", tail, maxsplit=1)[0].strip()
+        if domain:
+            return domain
+    return ""
+
+
+def _planning_role_trace(state: IntegratedState, *, role_key: str, note: str) -> dict:
+    refs = _trace_refs_from_bundle(state.get("evidence_bundle"), limit=5)
+    if not refs and isinstance(state.get("s_and_c_constraints"), dict):
+        refs = [
+            {
+                "citation_label": ref,
+                "source_file": "training_capacity_envelope",
+                "evidence_domain": "strength_conditioning",
+            }
+            for ref in (state.get("s_and_c_constraints") or {}).get("evidence_refs", [])[:5]
+        ]
+    return {
+        "role": role_key,
+        "status": "verified" if refs else "needs_evidence",
+        "evidence_refs": refs,
+        "note": note if refs else f"{note} No KB evidence was visible to this role.",
+    }
+
+
+def _merge_plan_role_trace(state: IntegratedState, role_key: str, trace: dict) -> dict:
+    existing = state.get("expert_evidence_trace") if isinstance(state.get("expert_evidence_trace"), dict) else {}
+    merged = dict(existing)
+    merged[role_key] = trace
+    return merged
 
 
 def _static_executor_fallback(state: IntegratedState, profile: dict, evidence_lines: str) -> str:
@@ -388,6 +494,16 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         return {
             "draft_plan": "",
             "structured_training_plan": None,
+            "expert_evidence_trace": _merge_plan_role_trace(
+                state,
+                "executor",
+                {
+                    "role": "executor",
+                    "status": "needs_evidence",
+                    "evidence_refs": [],
+                    "note": "Executor had no subtasks to execute.",
+                },
+            ),
             "reasoning_log": ["[executor] 没有可执行的子任务"],
             "token_usage": ensure_usage(state.get("token_usage")),
         }
@@ -398,6 +514,7 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         query=state.get("query", ""),
         profile=state.get("user_profile", {}),
         requested_weeks=state.get("requested_weeks"),
+        training_capacity_envelope=state.get("training_capacity_envelope") or state.get("s_and_c_constraints") or None,
     )
     validation_result = structured_training_plan.get("half_marathon_protocol_validation", {}) if isinstance(structured_training_plan, dict) else {}
     evidence_bundle = build_evidence_bundle(
@@ -409,9 +526,12 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     )
 
     try:
-        content, usage = await ai_invoke(prompt, config, state.get("token_usage"))
+        llm_result = await _invoke_executor_llm(prompt, config, state.get("token_usage"))
+        if llm_result is None:
+            raise TimeoutError("executor_llm_timeout")
+        content, usage = llm_result
         fallback_reason = ""
-    except Exception as exc:
+    except (Exception, asyncio.CancelledError) as exc:
         fallback_reason = f"[executor] LLM 调用失败，已使用静态模板兜底: {_safe_llm_fallback_summary(exc)}"
         profile = state.get("user_profile", {})
         evidence_lines = format_evidence_lines(rag_sources, limit=3)
@@ -420,14 +540,19 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
 
     logs = [
         f"[executor] 已生成 {structured_training_plan.get('plan_meta', {}).get('actual_weeks', 0)} 周结构化训练骨架",
-        "[executor] 已通过 LLM 生成完整周训练计划",
     ]
     if fallback_reason:
         logs.append(fallback_reason)
+    else:
+        logs.append("[executor] 已通过 LLM 生成完整周训练计划")
 
-    # 检测长距离训练日，自动触发营养师节点
+    # 多周计划需要营养标注；单周计划则在出现长时间训练日时触发营养师节点。
     needs_nutrition = False
     if isinstance(structured_training_plan, dict):
+        plan_meta = structured_training_plan.get("plan_meta") if isinstance(structured_training_plan.get("plan_meta"), dict) else {}
+        actual_weeks = int(plan_meta.get("actual_weeks") or 0)
+        if actual_weeks > 1:
+            needs_nutrition = True
         for week in (structured_training_plan.get("week_plans") or []):
             for day in (week.get("days") or []):
                 duration = int(day.get("duration_min") or 0)
@@ -441,6 +566,17 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         "draft_plan": content,
         "draft_ready": True,
         "structured_training_plan": structured_training_plan,
+        "nutritionist_done": False,
+        "psychologist_done": False,
+        "expert_evidence_trace": _merge_plan_role_trace(
+            state,
+            "executor",
+            _planning_role_trace(
+                {**state, "evidence_bundle": evidence_bundle},
+                role_key="executor",
+                note=f"Executor generated a {structured_training_plan.get('plan_meta', {}).get('actual_weeks', 0)}-week structured training plan.",
+            ),
+        ),
         "validation_result": validation_result,
         "repair_suggestions": validation_result.get("repair_suggestions", []) if isinstance(validation_result, dict) else [],
         "fallback_reason": fallback_reason,
@@ -448,6 +584,6 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
         "evidence_bundle": evidence_bundle,
         "rag_sources": rag_sources,
         "token_usage": usage,
-        "reasoning_log": logs + (['[executor] 检测到长距离训练日 (>=90min)，标记需要营养师复核'] if needs_nutrition else []),
+        "reasoning_log": logs + (['[executor] 多周计划或长距离训练触发营养师复核'] if needs_nutrition else []),
         "needs_nutrition_review": needs_nutrition,
     }

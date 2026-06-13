@@ -9,13 +9,14 @@ import time
 import shutil
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
 # 配置日志
 logger = logging.getLogger("vector_kb")
 
-from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, DEFAULT_VECTOR_DIR, LEGACY_DEFAULT_VECTOR_DIR, LEGACY_USER_VECTOR_DIR, RUNTIME_USER_VECTOR_DIR, USER_VECTOR_DIR, V2_VECTOR_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
+from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, RUNTIME_USER_VECTOR_DIR, USER_VECTOR_DIR, V2_VECTOR_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
 from marathon_qa_assistant.core.settings import get_settings
 from marathon_qa_assistant.services.document_preprocess import normalize_text, filter_non_prose_lines
 from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
@@ -26,7 +27,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_ollama import OllamaEmbeddings
 from langchain_core.documents import Document
 
-SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
+SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"}
 LEGACY_RUNTIME_QUARANTINE_REPORT = DATA_DIR / "knowledge" / "governance" / "legacy_runtime_quarantine_report.json"
 EVIDENCE_CHAIN_METADATA_KEYS = (
@@ -217,6 +218,12 @@ _ENGLISH_DOMAIN_MAP: dict[str, tuple[str, ...]] = {
         "acute", "chronic", "workload", "running economy",
         "runner", "running",
     ),
+    "sport_psychology": (
+        "sport psychology", "psychological skills", "mental skills",
+        "self-talk", "self talk", "imagery", "visualization", "visualisation",
+        "goal setting", "confidence", "anxiety", "arousal", "motivation",
+        "attention", "mental preparation", "coping", "resilience",
+    ),
 }
 
 
@@ -237,9 +244,14 @@ SENTENCE_WINDOW_CHUNK_SIZE = 250   # 索引用小块，提高 embedding 区分�
 SENTENCE_WINDOW_OVERLAP = 30       # 小块之间的小量重叠
 SENTENCE_WINDOW_CONTEXT_CHARS = 600  # parent_text 前后扩展的字符数，约 3-5 句
 
-# 分库检索：马拉松相关领域列表（external_reference 不参与默认检索）
-MARATHON_DOMAIN_SHARDS = ("training_protocol", "nutrition", "injury_safety", "medical_safety")
-ALL_DOMAIN_SHARDS = (*MARATHON_DOMAIN_SHARDS, "external_reference")
+# 分库检索：马拉松相关领域列表
+MARATHON_DOMAIN_SHARDS = ("training_protocol", "nutrition", "injury_safety", "medical_safety", "sport_psychology")
+# external_reference 分片已于 2026-06-13 下线：内容为 AI/RAG/HCI 文献，与马拉松领域无关，
+# 且其 embedding 为 768 维，与 5 个核心分片的 1024 维（bge-m3）不兼容，无法进同一检索空间。
+# 原始数据已归档至 data/vector_kb/_archived_shards/external_reference/。
+# 若未来需用对齐维度的模型重新编码再启用，把它加回 ALL_DOMAIN_SHARDS 即可。
+RETIRED_DOMAIN_SHARDS = ("external_reference",)
+ALL_DOMAIN_SHARDS = MARATHON_DOMAIN_SHARDS
 
 DOMAIN_PACK_TO_DOMAIN = {
     "endurance_training_protocols": "training_protocol",
@@ -254,6 +266,10 @@ DOMAIN_PACK_TO_DOMAIN = {
     "load_injury_safety": "injury_safety",
     "rehab_return_to_run": "injury_safety",
     "medical_risk": "medical_safety",
+    "sport_psychology": "sport_psychology",
+    "psychological_skills": "sport_psychology",
+    # 以下 domain_pack 原映射到已下线的 external_reference，保留映射仅供历史审计；
+    # 由于 external_reference 不在 ALL_DOMAIN_SHARDS，这些 pack 不会被加载或检索。
     "ai_rag_evidence_explanation": "external_reference",
     "hci_health_recommender_systems": "external_reference",
     "competitor_product_tasks": "external_reference",
@@ -1093,6 +1109,52 @@ def build_hybrid_indices(chunks: list[dict]):
     """
     return "faiss_vectorizer", "faiss_matrix", "faiss_bm25"
 
+
+def _faiss_index_stats(faiss_store: Any) -> dict:
+    index = getattr(faiss_store, "index", None)
+    ntotal = getattr(index, "ntotal", None)
+    dimension = getattr(index, "d", None)
+    stats = {}
+    if ntotal is not None:
+        try:
+            stats["faiss_vector_count"] = int(ntotal)
+        except Exception:
+            pass
+    if dimension is not None:
+        try:
+            stats["embedding_dim"] = int(dimension)
+        except Exception:
+            pass
+    return stats
+
+
+def _runtime_index_meta(
+    *,
+    chunks: list[dict],
+    docs_count: int,
+    skipped_empty_text_chunk_ids: list[str],
+    faiss_store: Any,
+) -> dict:
+    schema = summarize_runtime_index_schema(chunks)
+    meta = {
+        "index_schema_version": schema["index_schema_version"],
+        "embedding_model": _embedding_model_name(),
+        "chunks_count": len(chunks),
+        "total_chunks": len(chunks),
+        "runtime_chunk_count": len(chunks),
+        "faiss_document_count": int(docs_count),
+        "skipped_empty_text_chunk_count": len(skipped_empty_text_chunk_ids),
+        "skipped_empty_text_chunk_ids": list(skipped_empty_text_chunk_ids),
+        "metadata_complete_count": int(schema["metadata_complete_count"]),
+        "metadata_completeness": float(schema["metadata_completeness"]),
+        "runtime_core_prescription_enabled": bool(schema["runtime_core_prescription_enabled"]),
+        "chunking_strategy": SEMANTIC_CHUNKING_STRATEGY,
+        "rebuilt_at": datetime.now().isoformat(),
+    }
+    meta.update(_faiss_index_stats(faiss_store))
+    return meta
+
+
 def save_outputs(output_dir: Path, chunks: list[dict], vectorizer, matrix, bm25) -> dict:
     """保存构建好的向量库和分片数据"""
     # 确保 output_dir 及其所有父目录都存在
@@ -1174,15 +1236,26 @@ def save_outputs(output_dir: Path, chunks: list[dict], vectorizer, matrix, bm25)
     with chunks_path.open("w", encoding="utf-8") as f:
         for row in chunks:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    index_meta = _runtime_index_meta(
+        chunks=chunks,
+        docs_count=len(docs),
+        skipped_empty_text_chunk_ids=skipped_empty_text_chunk_ids,
+        faiss_store=faiss_store,
+    )
+    index_meta_path = output_dir / "index_meta.json"
+    index_meta_path.write_text(json.dumps(index_meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             
     logger.info("FAISS indexing complete!")
     
     return {
         "chunks_file": str(chunks_path),
         "faiss_dir": str(faiss_dir),
+        "index_meta_file": str(index_meta_path),
         "embedding_model": _embedding_model_name(),
         "embedding_candidates": list(EMBEDDING_CANDIDATE_MODELS),
         "embedding_validation": embedding_validation,
+        "index_meta": index_meta,
         "stripped_docstore_text_count": stripped_docstore_text_count,
         "chunking_strategy": SEMANTIC_CHUNKING_STRATEGY,
         "chunk_quality": chunk_quality_report(chunks),
@@ -1205,9 +1278,6 @@ def _trusted_vector_dirs() -> list[Path]:
         USER_VECTOR_DIR,
         V2_VECTOR_DIR,
         RUNTIME_USER_VECTOR_DIR,
-        LEGACY_USER_VECTOR_DIR,
-        DEFAULT_VECTOR_DIR,
-        LEGACY_DEFAULT_VECTOR_DIR,
     ]
 
 
@@ -1223,13 +1293,12 @@ def _is_trusted_faiss_dir(faiss_dir: Path) -> bool:
     if any(_same_path(vector_dir, trusted_dir) for trusted_dir in _trusted_vector_dirs()):
         return True
     # 分库索引目录：data/vector_kb/v2_sharded*/{domain}/faiss_db
-    for shard_rel in ("v2_sharded", "v2_sharded_clean"):
-        sharded_base = (V2_VECTOR_DIR.parent / shard_rel).resolve()
-        try:
-            vector_dir.relative_to(sharded_base)
-            return True
-        except ValueError:
-            pass
+    sharded_base = (V2_VECTOR_DIR.parent / "v2_sharded").resolve()
+    try:
+        vector_dir.relative_to(sharded_base)
+        return True
+    except ValueError:
+        pass
     return False
 
 
@@ -1239,9 +1308,6 @@ def _kb_source_label(vector_dir: Path) -> str:
         (USER_VECTOR_DIR, "user"),
         (V2_VECTOR_DIR, "v2"),
         (RUNTIME_USER_VECTOR_DIR, "runtime_user"),
-        (LEGACY_USER_VECTOR_DIR, "legacy_user"),
-        (DEFAULT_VECTOR_DIR, "default"),
-        (LEGACY_DEFAULT_VECTOR_DIR, "legacy_default"),
     ]
     for candidate, label in labels:
         if _same_path(path, candidate):
@@ -1254,6 +1320,10 @@ def _load_faiss_store(faiss_dir: Path, embeddings):
     if not _is_trusted_faiss_dir(faiss_dir):
         logger.warning(f"拒绝加载未受信任的 FAISS 目录: {faiss_dir}")
         return None
+    faiss_dir = Path(faiss_dir)
+    has_non_ascii_path = any(ord(ch) > 127 for ch in str(faiss_dir))
+    if has_non_ascii_path and (faiss_dir / "index.faiss").exists() and (faiss_dir / "index.pkl").exists():
+        return _load_faiss_store_from_files(faiss_dir, embeddings)
     try:
         return FAISS.load_local(str(faiss_dir), embeddings, allow_dangerous_deserialization=True)
     except Exception as exc:
@@ -1277,7 +1347,7 @@ def _load_faiss_store_from_files(faiss_dir: Path, embeddings):
         docstore, index_to_docstore_id = pickle.load(handle)
     index = faiss.deserialize_index(np.frombuffer(index_bytes, dtype=np.uint8))
     return FAISS(
-        embedding_function=embeddings.embed_query,
+        embedding_function=embeddings,
         index=index,
         docstore=docstore,
         index_to_docstore_id=index_to_docstore_id,
@@ -1419,8 +1489,24 @@ def load_sharded_kb(shard_base: Path):
     shard_chunks: dict[str, list] = {}
     all_chunks: list = []
     embeddings = get_embeddings()
+    expected_counts: dict[str, int] = {}
+    expected_dim: int | None = None  # 跨分片 embedding 维度一致性校验基准
+    meta_file = shard_base / "shard_meta.json"
+    if meta_file.exists():
+        try:
+            meta = json.loads(meta_file.read_text(encoding="utf-8"))
+            expected_counts = {
+                str(name): int(count or 0)
+                for name, count in (meta.get("shards") or {}).items()
+            }
+        except Exception as exc:
+            logger.warning("读取分库 meta 失败，按目录内容加载: %s", exc)
 
     for shard_name in ALL_DOMAIN_SHARDS:
+        if shard_name in expected_counts and expected_counts[shard_name] <= 0:
+            shard_stores[shard_name] = None
+            shard_chunks[shard_name] = []
+            continue
         shard_dir = shard_base / shard_name
         chunks_file = shard_dir / "chunks.jsonl"
         faiss_dir = shard_dir / "faiss_db"
@@ -1440,6 +1526,19 @@ def load_sharded_kb(shard_base: Path):
             try:
                 store = _load_faiss_store(faiss_dir, embeddings)
                 if store is not None:
+                    # 维度一致性断言：所有核心分片必须共用同一 embedding 维度，
+                    # 否则跨分片 FAISS 检索会返回无意义结果或直接崩溃。
+                    # external_reference（768 维）已下线就是为了避免这个冲突。
+                    shard_dim = getattr(getattr(store, "index", None), "d", None)
+                    if shard_dim is not None:
+                        if expected_dim is None:
+                            expected_dim = shard_dim
+                        elif shard_dim != expected_dim:
+                            raise ValueError(
+                                f"分片 {shard_name} 的 embedding 维度 {shard_dim} 与其他分片 "
+                                f"{expected_dim} 不一致。所有核心分片必须用同一 embedding 模型重建。"
+                                f"（这是 fail-loud 保护，防止维度不匹配的分片混入检索空间）"
+                            )
                     _attach_chunk_text_cache(store, chunks)
                 shard_stores[shard_name] = store
             except Exception as e:
@@ -1869,8 +1968,9 @@ def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int |
         rerank_candidate_k: 送 reranker 的候选数，默认 20。
         en_translation: 英文翻译变体，非空时作为额外 query variant 参与检索融合。
     """
-    # 分库检索路径：bm25 是 shard_bm25 dict（由 load_sharded_kb 返回）
-    if get_settings().sharded_retrieval_enabled:
+    # 分库检索路径只在调用方传入的对象确实是 shard 形态时启用。
+    # 这样默认开启分库检索后，仍允许旧调用点用单库 FAISS/BM25 做局部检索。
+    if get_settings().sharded_retrieval_enabled and isinstance(chunks, dict) and isinstance(matrix, dict):
         result = _retrieve_sharded(question, chunks, matrix, bm25, top_k) if isinstance(bm25, dict) else _retrieve_sharded(question, chunks, matrix, {}, top_k)
         if rerank:
             result = _apply_rerank(question, result, top_k, rerank_candidate_k)

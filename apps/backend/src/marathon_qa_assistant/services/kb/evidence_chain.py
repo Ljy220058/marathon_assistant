@@ -210,6 +210,7 @@ def evidence_chain_item_from_bundle_item(item: Dict[str, Any]) -> Dict[str, Any]
         "can_write_core": bool(item.get("can_write_core", can_write_core)) and display_mode != EvidenceDisplayMode.NEEDS_EVIDENCE.value,
         "explanation_only": bool(item.get("explanation_only", explanation_only)),
         "evidence_domain": domain,
+        "expert_domain": str(item.get("expert_domain") or trace.get("expert_domain") or ""),
         "knowledge_layer": str(item.get("knowledge_layer") or trace.get("knowledge_layer") or ""),
         "allowed_use": str(item.get("allowed_use") or trace.get("allowed_use") or ""),
         "prescription_permission": permission,

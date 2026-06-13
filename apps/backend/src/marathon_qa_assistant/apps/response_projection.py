@@ -19,6 +19,13 @@ _RUNNER_EXPERT_ONLY_NESTED_KEYS = {
     "chunk_id",
     "rag_eval",
     "source_quality",
+    "expert_domain",
+    "knowledge_layer",
+    "domain_pack",
+    "quality_tier",
+    "review_status",
+    "allowed_use",
+    "prescription_permission",
 }
 
 

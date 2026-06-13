@@ -11,6 +11,12 @@ from marathon_qa_assistant.services.security_guards import InputGuard
 
 
 _INPUT_GUARD = InputGuard()
+_EMBEDDED_CITATION_RE = re.compile(r"\[(\d+)\]")
+
+
+def _neutralize_embedded_citation_numbers(text: str) -> str:
+    """Prevent source-local reference numbers from looking like system citations."""
+    return _EMBEDDED_CITATION_RE.sub(lambda match: f"({match.group(1)})", str(text or ""))
 
 
 class EvidenceTier(str, Enum):
@@ -169,6 +175,7 @@ def format_evidence_bundle_lines(bundle: Optional[Dict[str, Any]], limit: Option
         page = item.get("page")
         page_text = f" p.{page}" if page not in (None, "", 0) and not locator else ""
         snippet = str(item.get("text_span") or item.get("snippet") or item.get("text") or "").replace("\n", " ").strip()
+        snippet = _neutralize_embedded_citation_numbers(snippet)
         locator_text = f" {locator}" if locator else page_text
         lines.append(f"{label} [{boundary}] {source}{locator_text}: {snippet[:220]}")
     visible_count = len(items)
@@ -245,6 +252,7 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
         "evidence_id": str(source.get("evidence_id") or source.get("chunk_id") or ""),
         "citation_label": str(source.get("citation_label") or ""),
         "tier": tier,
+        "display_mode": str(source.get("display_mode") or ""),
         "evidence_tier": evidence_tier,
         "source_file": str(source.get("source_file") or "unknown"),
         "source_path": source_path,
@@ -274,6 +282,7 @@ def _item_from_rag_source(source: Dict[str, Any]) -> EvidenceBundleItem:
         "evidence_id": f"kb_{chunk_id}" if chunk_id else _stable_evidence_id("kb", source_file, text),
         "citation_label": "",
         "tier": "kb_fallback",
+        "display_mode": str(source.get("display_mode") or ""),
         "evidence_tier": evidence_tier,
         "source_file": source_file,
         "source_path": str(source.get("source_path") or ""),
@@ -309,6 +318,7 @@ def _protocol_rule_items(structured_training_plan: Dict[str, Any]) -> List[Evide
         "evidence_id": "protocol_half_marathon_hmp",
         "citation_label": "",
         "tier": "protocol_rule",
+        "display_mode": "verified_source",
         "evidence_tier": EvidenceTier.PROTOCOL_RULE.value,
         "source_file": PROTOCOL_SOURCE_DOCS[1],
         "source_path": PROTOCOL_SOURCE_DOCS[1],
@@ -332,6 +342,7 @@ def _plan_only_item(structured_training_plan: Dict[str, Any]) -> EvidenceBundleI
         "evidence_id": "plan_only_structured_skeleton",
         "citation_label": "",
         "tier": "plan_only",
+        "display_mode": "needs_evidence",
         "evidence_tier": EvidenceTier.PROTOCOL_RULE.value,
         "source_file": "structured_training_plan",
         "source_path": "",
