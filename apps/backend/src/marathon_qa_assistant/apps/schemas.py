@@ -13,10 +13,12 @@ class QueryRequest(BaseModel):
     llm_model: str = ""
     response_mode: str = "full"
     timeout_sec: int = Field(default=120, ge=5, le=600)
+    resume_from_workflow_pause: Dict[str, Any] = Field(default_factory=dict)
 
 
 class QueryResponse(BaseModel):
     report: str
+    medical_disclaimer: str = ""
     structured_training_plan: Optional[Dict[str, Any]] = None
     structured_report: Optional[Dict[str, Any]] = None
     training_explanation_panel: Optional[Dict[str, Any]] = None
@@ -41,6 +43,7 @@ class QueryResponse(BaseModel):
     answer_source_mode: str = ""
     rag_health: Dict[str, Any] = Field(default_factory=dict)
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
+    workflow_pause: Dict[str, Any] = Field(default_factory=dict)
     evidence_chain: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -63,6 +66,15 @@ class SavePlanRequest(BaseModel):
     structured_training_plan: Dict[str, Any]
     calendar_settings: Dict[str, Any] = Field(default_factory=dict)
     calendar_days: List[Dict[str, Any]] = Field(default_factory=list)
+    lineage_id: str = ""
+    parent_plan_id: str = ""
+    trigger: str = "initial"
+    trigger_detail: str = ""
+
+
+class RollbackPlanRequest(BaseModel):
+    to_version: int = Field(ge=1)
+    trigger_detail: str = ""
 
 
 class FeedbackRequest(BaseModel):
@@ -106,6 +118,7 @@ class PlanDetailResponse(BaseModel):
     structured_training_plan: Dict[str, Any]
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
     events: List[Dict[str, Any]]
+    versions: List[Dict[str, Any]] = Field(default_factory=list)
     execution_status_summary: Dict[str, Any]
     adjustment_history: List[Dict[str, Any]]
     training_plan_review: Dict[str, Any] = Field(default_factory=dict)
@@ -205,3 +218,25 @@ class ZoneReference(BaseModel):
 class DayDetailResponse(BaseModel):
     day: Dict[str, Any]
     evidence_tier_labels: Dict[str, str]
+
+
+class AdminCreateUserRequest(BaseModel):
+    display_name: str = "新用户"
+    birth_year: Optional[int] = None
+    age_confirmed: bool = False
+
+
+class UserConsentRequest(BaseModel):
+    privacy_consent: bool = False
+    health_data_consent: bool = False
+    terms_accepted: bool = False
+
+
+class UserComplianceResponse(BaseModel):
+    user_id: str
+    age_gate_passed: bool
+    privacy_consented: bool
+    health_data_consented: bool
+    terms_accepted: bool
+    compliance_complete: bool
+    missing: List[str] = Field(default_factory=list)

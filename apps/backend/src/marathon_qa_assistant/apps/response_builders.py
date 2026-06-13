@@ -18,6 +18,7 @@ from marathon_qa_assistant.core.state_models import build_feedback_risk_gate
 from marathon_qa_assistant.core.workflow import IntegratedState
 from marathon_qa_assistant.core.working_state import build_working_state
 from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
+from marathon_qa_assistant.core.evidence_bundle import _neutralize_embedded_citation_numbers
 from marathon_qa_assistant.core.state_models import build_workflow_trace
 from marathon_qa_assistant.core.observability import (
     record_generation_status,
@@ -38,6 +39,13 @@ from marathon_qa_assistant.nodes.expert_nodes import QA_REPORT_REQUIRED_SECTIONS
 # -------- shared utility helpers ---------------------------------------------
 
 DEFAULT_API_USER_ID = "default_user"
+
+MEDICAL_DISCLAIMER = (
+    "【重要提示】本内容由 AI 系统根据运动科学文献生成，仅供参考，不构成医疗、临床或专业运动医学建议。"
+    "运动训练存在个体差异和健康风险，建议在专业医师或持证跑步教练的指导下制定和执行训练计划。"
+    "如有心脏病、高血压、糖尿病等慢性疾病史，或训练中出现胸痛、头晕、呼吸困难等异常症状，"
+    "请立即停止运动并及时就医。"
+)
 
 
 def _normalize_provider(provider: str) -> str:
@@ -118,9 +126,8 @@ async def _build_fast_qa_response(
     from marathon_qa_assistant.nodes.expert_nodes import (
         coach_node,
         nutritionist_node,
-        research_analyst_node,
     )
-    from marathon_qa_assistant.nodes.profile_and_retrieval import entity_extraction_node
+    from marathon_qa_assistant.nodes.profile_and_retrieval import entity_extraction_node, evidence_retriever_node
     from marathon_qa_assistant.nodes.router import router_node
 
     state.update(await router_node(state, config))
@@ -130,10 +137,9 @@ async def _build_fast_qa_response(
         return None
 
     state.update(await entity_extraction_node(state, config))
+    state.update(await evidence_retriever_node(state, config))
     if category == "nutritionist":
         expert_output = await nutritionist_node(state, config)
-    elif category == "research":
-        expert_output = await research_analyst_node(state, config)
     else:
         expert_output = await coach_node(state, config)
     state.update(expert_output)
@@ -198,6 +204,7 @@ def _visible_evidence_lines_from_chain(evidence_chain: Any) -> List[str]:
         if not locator and page not in (None, "", 0):
             locator = f"p.{page}"
         snippet = str(item.get("text_span") or item.get("user_facing_summary") or "").replace("\n", " ").strip()
+        snippet = _neutralize_embedded_citation_numbers(snippet)
         boundary = str(item.get("display_mode") or "visible_context").strip()
         locator_text = f" {locator}" if locator else ""
         snippet_text = f"：{snippet[:220]}" if snippet else ""
@@ -307,7 +314,7 @@ def _calendar_contract_from_plan(
     structured_plan: Dict[str, Any],
     rag_health: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    calendar = generate_daily_schedule(structured_plan, enable_kb_fallback=True)
+    calendar = generate_daily_schedule(structured_plan, enable_kb_fallback=False)
     calendar_payload = calendar.to_dict() if calendar else None
     daily_schedule_cards = list((calendar_payload or {}).get("days") or [])
     training_load_summary = dict((calendar_payload or {}).get("training_load_summary") or {})
@@ -435,6 +442,13 @@ def _has_medical_referral_signal(request: QueryRequest, result: Dict[str, Any], 
 def _infer_answer_card_intent(result: Dict[str, Any], request: QueryRequest, structured_plan: Any, generation_status: str) -> str:
     category = str(result.get("category") or "").strip().lower()
     query = str(request.query or "").lower()
+    workflow_pause = result.get("workflow_pause") if isinstance(result.get("workflow_pause"), dict) else {}
+    if generation_status == "security_intercepted":
+        return "security_intercepted"
+    if generation_status == "workflow_error" or isinstance(result.get("workflow_error"), dict):
+        return "workflow_error"
+    if workflow_pause.get("status") == "awaiting_user_input" or result.get("missing_info_status") == "awaiting_profile":
+        return "missing_profile"
     if isinstance(structured_plan, dict) and structured_plan.get("week_plans"):
         return "training_plan"
     if generation_status == "medical_referral" or category == "therapist" or any(term in query for term in ("疼", "痛", "伤", "膝", "胸痛", "头晕", "无法承重")):
@@ -460,6 +474,38 @@ def _build_answer_card(
         title = "训练日历已生成" if isinstance(structured_plan, dict) and structured_plan.get("week_plans") else "训练计划建议"
         must_show = [{"type": "decision", "label": "计划状态", "text": "已生成可查看的训练日历，请优先按周重点和单日卡片执行。"}]
         render_mode = "plan_calendar"
+        severity = "info"
+    elif intent == "security_intercepted":
+        title = "请求已被安全拦截"
+        must_show = [
+            {"type": "decision", "label": "处理结果", "text": "当前请求包含越权、注入或敏感探测内容，已直接终止。"},
+        ]
+        render_mode = "safety_card"
+        severity = "blocked"
+    elif intent == "workflow_error":
+        title = "工作流已终止"
+        must_show = [
+            {"type": "decision", "label": "处理结果", "text": "当前请求触发了硬规则失败或审计耗尽，已终止执行。"},
+        ]
+        render_mode = "qa_card"
+        severity = "error"
+    elif intent == "missing_profile":
+        workflow_pause = result.get("workflow_pause") if isinstance(result.get("workflow_pause"), dict) else {}
+        missing_labels = workflow_pause.get("field_labels") or result.get("missing_fields") or []
+        title = "需要补齐基础画像"
+        must_show = [
+            {
+                "type": "required_profile",
+                "label": "缺少字段",
+                "items": [str(item) for item in missing_labels],
+            },
+            {
+                "type": "resume",
+                "label": "恢复入口",
+                "text": f"补齐后从 {workflow_pause.get('resume_target') or 'router'} 重新处理原始请求。",
+            },
+        ]
+        render_mode = "required_profile_prompt"
         severity = "info"
     elif intent == "injury_safety":
         medical_referral = _has_medical_referral_signal(request, result, generation_status)
@@ -517,7 +563,7 @@ def _build_skeleton_state(request: QueryRequest, profile: Dict[str, Any]) -> Int
             "intent_type": "plan",
             "category": "coach",
             "skip_calendar_kb_fallback": True,
-            "reasoning_log": ["[api] 已启用 Astro skeleton-first 快速计划路径"],
+            "reasoning_log": ["[api] 已启用结构化规则骨架路径"],
         }
     )
     structured_plan = build_structured_training_plan_skeleton(
@@ -630,6 +676,7 @@ async def _build_skeleton_plan_response(
     total_elapsed = time.perf_counter() - started
     response = QueryResponse(
         report=report,
+        medical_disclaimer=MEDICAL_DISCLAIMER,
         structured_training_plan=structured_plan,
         structured_report=None,
         training_explanation_panel=None,
@@ -661,6 +708,7 @@ async def _build_skeleton_plan_response(
         answer_source_mode=str(evidence_chain.get("answer_source_mode") or answer_source_mode),
         rag_health=rag_health,
         workflow_trace=workflow_trace,
+        workflow_pause={},
         evidence_chain=evidence_chain,
     )
     record_generation_status(generation_status, duration_sec=total_elapsed)
@@ -765,7 +813,7 @@ def _query_response_from_state(
         evidence_chain["answer_source_mode"] = answer_source_mode
     answer_source_mode = str(evidence_chain.get("answer_source_mode") or answer_source_mode)
     report = str(result.get("final_report") or result.get("report") or "")
-    if str(result.get("intent_type") or "").strip() == "qa":
+    if str(result.get("intent_type") or "").strip() == "qa" and generation_status not in {"security_intercepted", "workflow_pause", "workflow_error"}:
         report = ensure_kb_visible_evidence_report_sections(report, evidence_chain)
     _attach_citation_gate_to_trace_and_review(
         workflow_trace=workflow_trace,
@@ -805,6 +853,7 @@ def _query_response_from_state(
 
     response = QueryResponse(
         report=report,
+        medical_disclaimer=MEDICAL_DISCLAIMER,
         structured_training_plan=structured_plan,
         structured_report=structured_report,
         training_explanation_panel=training_explanation_panel,
@@ -830,6 +879,7 @@ def _query_response_from_state(
         answer_source_mode=answer_source_mode,
         rag_health=rag_health,
         workflow_trace=workflow_trace,
+        workflow_pause=result.get("workflow_pause") if isinstance(result.get("workflow_pause"), dict) else {},
         evidence_chain=evidence_chain,
     )
     record_generation_status(generation_status)

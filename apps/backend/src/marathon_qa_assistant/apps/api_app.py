@@ -68,6 +68,9 @@ from marathon_qa_assistant.apps.schemas import (
     SavePlanRequest,
     TrainingCalendarResponse,
     ZoneReference,
+    AdminCreateUserRequest,
+    UserConsentRequest,
+    UserComplianceResponse,
 )
 from marathon_qa_assistant.apps.response_builders import (
     _attach_citation_gate_to_trace_and_review,
@@ -244,6 +247,46 @@ def _requires_api_token(request: Request) -> bool:
     path = request.url.path or "/"
     return not any(path == prefix or path.startswith(f"{prefix}/") for prefix in _PUBLIC_API_PREFIXES)
 
+
+_COMPLIANCE_EXEMPT_PATHS = (
+    "/user/consent",
+    "/user/compliance",
+    "/health",
+    "/admin",
+    "/zone-reference",
+    "/evidence-tier-reference",
+    "/llm-options",
+    "/docs",
+    "/openapi.json",
+)
+_COMPLIANCE_REQUIRED_PATHS = ("/query", "/feedback", "/training-calendar", "/plans/")
+
+
+def _compliance_required(request: Request) -> bool:
+    """生产模式下，核心 AI 服务路由要求用户完成合规流程。"""
+    if not _is_production_mode():
+        return False
+    path = request.url.path or "/"
+    if any(path == p or path.startswith(p) for p in _COMPLIANCE_EXEMPT_PATHS):
+        return False
+    return any(path == p or path.startswith(p) for p in _COMPLIANCE_REQUIRED_PATHS)
+
+
+def _check_user_compliance(user_id: str) -> Optional[str]:
+    """返回 None 表示合规；否则返回缺失项描述。"""
+    if not user_id or user_id == DEFAULT_API_USER_ID:
+        return None
+    try:
+        compliance = get_db().get_user_compliance(user_id)
+    except Exception:
+        return None
+    if not compliance:
+        return None
+    if not compliance.get("compliance_complete"):
+        missing = compliance.get("missing") or []
+        return f"合规流程未完成，缺少：{', '.join(missing)}。请先访问 POST /user/consent 完成授权。"
+    return None
+
 def _allowed_cors_origins() -> List[str]:
     return get_settings().allowed_cors_origins()
 
@@ -304,6 +347,15 @@ async def _api_token_middleware(request: Request, call_next):
             headers={"WWW-Authenticate": "Bearer"},
         )
     request.state.user_id = user_id
+
+    if _compliance_required(request):
+        compliance_error = _check_user_compliance(user_id)
+        if compliance_error:
+            return JSONResponse(
+                {"detail": compliance_error, "error_code": "COMPLIANCE_REQUIRED"},
+                status_code=403,
+            )
+
     return await call_next(request)
 
 
@@ -512,15 +564,25 @@ async def admin_list_users(request: Request):
 
 
 @app.post("/admin/users")
-async def admin_create_user(request: Request):
+async def admin_create_user(body: AdminCreateUserRequest, request: Request):
     """创建新用户并返回 API token。需要 expert token。"""
     _require_expert_token(request)
     try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    display_name = str(body.get("display_name") or "新用户").strip()
-    result = get_db().create_user(display_name)
+        result = get_db().create_user(body.display_name, birth_year=body.birth_year)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if body.age_confirmed and body.birth_year is None:
+        # admin 通过 age_confirmed=true 显式确认年龄时，补记 age_gate
+        try:
+            get_db().record_user_consent(result["user_id"], privacy_consent=False, health_data_consent=False, terms_accepted=False)
+            conn_patch = get_db()._get_conn()
+            conn_patch.execute(
+                "UPDATE users SET age_gate_passed_at = datetime('now') WHERE id = ?",
+                (result["user_id"],),
+            )
+            conn_patch.commit()
+        except Exception:
+            pass
     return {"created": True, **result}
 
 
@@ -532,6 +594,45 @@ async def admin_deactivate_user(user_id: str, request: Request):
     if not ok:
         raise HTTPException(status_code=404, detail="用户不存在。")
     return {"deactivated": True, "user_id": user_id}
+
+
+@app.post("/user/consent", response_model=UserComplianceResponse)
+async def record_user_consent(body: UserConsentRequest, request: Request):
+    """记录用户对隐私政策、健康数据处理和服务协议的同意。需要有效 token。"""
+    if not _auth_enabled():
+        raise HTTPException(status_code=403, detail="认证未启用，无法记录同意。")
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="需要有效的用户 token。")
+    if not (body.privacy_consent or body.health_data_consent or body.terms_accepted):
+        raise HTTPException(status_code=422, detail="至少需要同意一项。")
+    try:
+        get_db().record_user_consent(
+            user_id,
+            privacy_consent=body.privacy_consent,
+            health_data_consent=body.health_data_consent,
+            terms_accepted=body.terms_accepted,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"记录同意失败：{exc}")
+    compliance = get_db().get_user_compliance(user_id)
+    if not compliance:
+        raise HTTPException(status_code=404, detail="用户不存在。")
+    return UserComplianceResponse(**compliance)
+
+
+@app.get("/user/compliance", response_model=UserComplianceResponse)
+async def get_user_compliance_status(request: Request):
+    """查询当前用户的合规状态（年龄验证、同意记录）。需要有效 token。"""
+    if not _auth_enabled():
+        raise HTTPException(status_code=403, detail="认证未启用。")
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="需要有效的用户 token。")
+    compliance = get_db().get_user_compliance(user_id)
+    if not compliance:
+        raise HTTPException(status_code=404, detail="用户不存在。")
+    return UserComplianceResponse(**compliance)
 
 
 @app.get("/ops/metrics", response_model=OpsMetricsResponse)

@@ -83,6 +83,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sync_state_uk
 
 CREATE TABLE IF NOT EXISTS training_plans (
     id              TEXT PRIMARY KEY,
+    lineage_id      TEXT,
+    version         INTEGER NOT NULL DEFAULT 1,
+    parent_plan_id  TEXT,
+    parent_version  INTEGER,
+    trigger         TEXT NOT NULL DEFAULT 'initial',
+    trigger_detail  TEXT,
     user_id         TEXT NOT NULL DEFAULT 'default_user',
     goal            TEXT NOT NULL,
     experience_level TEXT,
@@ -232,17 +238,40 @@ class _Database:
                 "protocol_recheck_json": "TEXT",
             },
         )
+        self._ensure_columns(
+            conn,
+            "training_plans",
+            {
+                "lineage_id": "TEXT",
+                "version": "INTEGER NOT NULL DEFAULT 1",
+                "parent_plan_id": "TEXT",
+                "parent_version": "INTEGER",
+                "trigger": "TEXT NOT NULL DEFAULT 'initial'",
+                "trigger_detail": "TEXT",
+            },
+        )
+        conn.execute(
+            "UPDATE training_plans SET lineage_id = id WHERE lineage_id IS NULL OR lineage_id = ''"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_training_plans_lineage_version ON training_plans(lineage_id, version)"
+        )
         # 多用户支持：users 表独立迁移，避免 executescript 冲突
         if not self._table_exists(conn, "users"):
             conn.execute(
                 """
                 CREATE TABLE users (
-                    id              TEXT PRIMARY KEY,
-                    display_name    TEXT NOT NULL,
-                    api_token_hash  TEXT NOT NULL UNIQUE,
-                    is_active       INTEGER NOT NULL DEFAULT 1,
-                    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-                    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+                    id                    TEXT PRIMARY KEY,
+                    display_name          TEXT NOT NULL,
+                    api_token_hash        TEXT NOT NULL UNIQUE,
+                    is_active             INTEGER NOT NULL DEFAULT 1,
+                    created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at            TEXT NOT NULL DEFAULT (datetime('now')),
+                    birth_year            INTEGER,
+                    age_gate_passed_at    TEXT,
+                    privacy_consent_at    TEXT,
+                    health_data_consent_at TEXT,
+                    terms_accepted_at     TEXT
                 )
                 """
             )
@@ -257,6 +286,11 @@ class _Database:
                     "is_active": "INTEGER NOT NULL DEFAULT 1",
                     "created_at": "TEXT",
                     "updated_at": "TEXT",
+                    "birth_year": "INTEGER",
+                    "age_gate_passed_at": "TEXT",
+                    "privacy_consent_at": "TEXT",
+                    "health_data_consent_at": "TEXT",
+                    "terms_accepted_at": "TEXT",
                 },
             )
             # Ensure unique constraint on api_token_hash via index
@@ -373,13 +407,30 @@ class _Database:
     def generate_api_token() -> str:
         return f"mara-{uuid.uuid4().hex}"
 
-    def create_user(self, display_name: str) -> Dict[str, Any]:
+    def create_user(self, display_name: str, *, birth_year: Optional[int] = None) -> Dict[str, Any]:
         user_id = f"user-{uuid.uuid4().hex[:12]}"
         token = self.generate_api_token()
         conn = self._get_conn()
+
+        age_gate_passed_at = None
+        if birth_year is not None:
+            from datetime import date as _date
+            age = _date.today().year - int(birth_year)
+            if age < 14:
+                raise ValueError(f"用户年龄不满 14 岁（出生年份 {birth_year}），不符合注册条件。")
+            if age < 18:
+                pass  # 14-17 岁：允许注册，需监护人同意（由前端流程保障）
+            age_gate_passed_at = f"datetime('now')"
+
         conn.execute(
-            "INSERT INTO users (id, display_name, api_token_hash) VALUES (?, ?, ?)",
-            (user_id, display_name, self._hash_api_token(token)),
+            "INSERT INTO users (id, display_name, api_token_hash, birth_year, age_gate_passed_at) VALUES (?, ?, ?, ?, ?)",
+            (
+                user_id,
+                display_name,
+                self._hash_api_token(token),
+                birth_year,
+                None if age_gate_passed_at is None else "now",
+            ),
         )
         conn.commit()
         return {"user_id": user_id, "display_name": display_name, "api_token": token}
@@ -398,6 +449,65 @@ class _Database:
             "SELECT id, display_name, is_active, created_at FROM users ORDER BY created_at DESC"
         ).fetchall()
         return [dict(r) for r in rows]
+
+    def record_user_consent(
+        self,
+        user_id: str,
+        *,
+        privacy_consent: bool = False,
+        health_data_consent: bool = False,
+        terms_accepted: bool = False,
+    ) -> bool:
+        parts = ["updated_at = datetime('now')"]
+        if privacy_consent:
+            parts.append("privacy_consent_at = datetime('now')")
+        if health_data_consent:
+            parts.append("health_data_consent_at = datetime('now')")
+        if terms_accepted:
+            parts.append("terms_accepted_at = datetime('now')")
+        if len(parts) == 1:
+            return False
+        conn = self._get_conn()
+        conn.execute(
+            f"UPDATE users SET {', '.join(parts)} WHERE id = ? AND is_active = 1",
+            (user_id,),
+        )
+        conn.commit()
+        return conn.total_changes > 0
+
+    def get_user_compliance(self, user_id: str) -> Optional[Dict[str, Any]]:
+        row = self._get_conn().execute(
+            """SELECT id, birth_year, age_gate_passed_at,
+                      privacy_consent_at, health_data_consent_at, terms_accepted_at
+               FROM users WHERE id = ? AND is_active = 1""",
+            (user_id,),
+        ).fetchone()
+        if not row:
+            return None
+        data = dict(row)
+        age_gate_passed = bool(data.get("age_gate_passed_at"))
+        privacy_consented = bool(data.get("privacy_consent_at"))
+        health_data_consented = bool(data.get("health_data_consent_at"))
+        terms_ok = bool(data.get("terms_accepted_at"))
+        missing = []
+        if not age_gate_passed:
+            missing.append("age_gate")
+        if not privacy_consented:
+            missing.append("privacy_consent")
+        if not health_data_consented:
+            missing.append("health_data_consent")
+        if not terms_ok:
+            missing.append("terms_accepted")
+        return {
+            "user_id": user_id,
+            "birth_year": data.get("birth_year"),
+            "age_gate_passed": age_gate_passed,
+            "privacy_consented": privacy_consented,
+            "health_data_consented": health_data_consented,
+            "terms_accepted": terms_ok,
+            "compliance_complete": not missing,
+            "missing": missing,
+        }
 
     def deactivate_user(self, user_id: str) -> bool:
         conn = self._get_conn()
@@ -592,6 +702,10 @@ class _Database:
         calendar_days: Optional[List[Dict[str, Any]]] = None,
         training_start_date: str = "",
         default_start_time: str = "07:00",
+        lineage_id: str = "",
+        parent_plan_id: str = "",
+        trigger: str = "initial",
+        trigger_detail: str = "",
     ) -> str:
         meta = plan.get("plan_meta") or {}
         plan_id = str(uuid.uuid4())
@@ -599,14 +713,34 @@ class _Database:
         default_time = self._normalize_start_time(default_start_time or str(meta.get("default_start_time") or ""))
         conn = self._get_conn()
         try:
+            parent_plan = self.get_plan(parent_plan_id) if parent_plan_id else None
+            if parent_plan:
+                lineage_id = str(lineage_id or parent_plan.get("lineage_id") or parent_plan.get("id") or "")
+                parent_version = int(parent_plan.get("version") or 1)
+            else:
+                parent_version = None
+            lineage_id = str(lineage_id or plan_id)
+            row = conn.execute(
+                "SELECT COALESCE(MAX(version), 0) AS max_version FROM training_plans WHERE lineage_id = ?",
+                (lineage_id,),
+            ).fetchone()
+            plan_version = int(row["max_version"] or 0) + 1
+            trigger_value = str(trigger or ("initial" if plan_version == 1 else "manual"))
             conn.execute(
                 """INSERT INTO training_plans
-                    (id, user_id, goal, experience_level, requested_weeks, actual_weeks,
+                    (id, lineage_id, version, parent_plan_id, parent_version, trigger, trigger_detail,
+                     user_id, goal, experience_level, requested_weeks, actual_weeks,
                      plan_type, start_date, target_race_date, status, source_query,
                      structured_plan_json, render_version)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
                 (
                     plan_id,
+                    lineage_id,
+                    plan_version,
+                    str(parent_plan_id or ""),
+                    parent_version,
+                    trigger_value,
+                    str(trigger_detail or ""),
                     user_id,
                     str(meta.get("goal") or "????"),
                     str(meta.get("experience_level") or ""),
@@ -709,9 +843,71 @@ class _Database:
         ).fetchone()
         return dict(row) if row else None
 
+    def get_plan_version(self, lineage_id: str, version: int) -> Optional[Dict[str, Any]]:
+        row = self._get_conn().execute(
+            "SELECT * FROM training_plans WHERE lineage_id = ? AND version = ?",
+            (lineage_id, int(version)),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_plan_versions(self, plan_id: str) -> List[Dict[str, Any]]:
+        plan = self.get_plan(plan_id)
+        if not plan:
+            return []
+        lineage_id = str(plan.get("lineage_id") or plan.get("id") or "")
+        rows = self._get_conn().execute(
+            """SELECT id, lineage_id, version, parent_plan_id, parent_version, trigger,
+                      trigger_detail, goal, status, source_query, created_at
+               FROM training_plans
+               WHERE lineage_id = ?
+               ORDER BY version ASC""",
+            (lineage_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def rollback_training_plan(
+        self,
+        plan_id: str,
+        to_version: int,
+        *,
+        user_id: str = "default_user",
+        trigger_detail: str = "",
+    ) -> str:
+        current = self.get_plan(plan_id)
+        if not current or current.get("user_id") != user_id:
+            raise ValueError("training plan not found")
+        lineage_id = str(current.get("lineage_id") or current.get("id") or "")
+        target = self.get_plan_version(lineage_id, int(to_version))
+        if not target or target.get("user_id") != user_id:
+            raise ValueError("target plan version not found")
+        try:
+            structured_plan = json.loads(target.get("structured_plan_json") or "{}")
+        except Exception as exc:
+            raise ValueError("target plan version has invalid structured_plan_json") from exc
+        if not isinstance(structured_plan, dict):
+            raise ValueError("target plan version has invalid structured_plan_json")
+
+        detail = trigger_detail or f"rollback to version {int(to_version)}"
+        return self.save_training_plan(
+            structured_plan,
+            source_query=str(target.get("source_query") or ""),
+            user_id=user_id,
+            training_start_date=str(target.get("start_date") or ""),
+            lineage_id=lineage_id,
+            parent_plan_id=str(target.get("id") or ""),
+            trigger="manual_rollback",
+            trigger_detail=detail,
+        )
+
     def list_training_plans(self, user_id: str = "default_user") -> list:
         rows = self._get_conn().execute(
-            "SELECT id, goal, experience_level, requested_weeks, actual_weeks, plan_type, start_date, target_race_date, status, source_query, created_at FROM training_plans WHERE user_id = ? ORDER BY created_at DESC LIMIT 20",
+            """SELECT id, lineage_id, version, parent_plan_id, parent_version, trigger,
+                      trigger_detail, goal, experience_level, requested_weeks, actual_weeks,
+                      plan_type, start_date, target_race_date, status, source_query, created_at
+               FROM training_plans
+               WHERE user_id = ?
+               ORDER BY created_at DESC
+               LIMIT 20""",
             (user_id,),
         ).fetchall()
         return [dict(r) for r in rows]
