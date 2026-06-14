@@ -4657,6 +4657,36 @@ function trustedMainSetText(day, fallback = "等待详细安排") {
   return "动作库证据不足，暂不展示具体主课。";
 }
 
+// 训练类型 → 小红书封面视觉映射（配色复用 WeekTrainingCard.jsx TRAINING_BADGES 色系）
+// label=封面大字 display；code=强度代号(E/M/T/I/R)；accent=封面渐变主色(CSS变量名)；icon=emoji(可换inline SVG)
+const TRAINING_TYPE_VISUALS = {
+  "间歇跑": { label: "摄氧量训练", code: "I · Z5", accent: "danger", icon: "⚡" },
+  "节奏跑": { label: "阈值训练",   code: "T · Z4", accent: "warning", icon: "🔥" },
+  "轻松跑": { label: "轻松跑",     code: "E · Z2", accent: "success", icon: "🍃" },
+  "长距离": { label: "长距离",     code: "E · Z2", accent: "accent",  icon: "🛣️" },
+  "恢复跑": { label: "恢复跑",     code: "E · Z1", accent: "success", icon: "💙" },
+  "力量":   { label: "力量训练",   code: "",      accent: "purple",  icon: "🏋️" },
+  "法特莱克":{ label: "法特莱克",   code: "M",     accent: "warning", icon: "💨" },
+  "渐速跑": { label: "渐速跑",     code: "E→T",   accent: "teal",    icon: "📈" },
+  "比赛模拟":{ label: "比赛模拟",   code: "M/R",   accent: "pink",    icon: "🏁" },
+  "休息":   { label: "休息日",     code: "",      accent: "rest",    icon: "🌙" },
+};
+
+// 模糊匹配后端 training_type（可能含中英变体）到封面视觉；默认按轻松跑
+function trainingTypeVisual(day) {
+  const raw = String(day?.training_type || "").trim();
+  if (/间歇|interv/i.test(raw)) return TRAINING_TYPE_VISUALS["间歇跑"];
+  if (/节奏|阈值|tempo|threshold/i.test(raw)) return TRAINING_TYPE_VISUALS["节奏跑"];
+  if (/长距|long/i.test(raw)) return TRAINING_TYPE_VISUALS["长距离"];
+  if (/恢复|recovery/i.test(raw)) return TRAINING_TYPE_VISUALS["恢复跑"];
+  if (/力量|strength/i.test(raw)) return TRAINING_TYPE_VISUALS["力量"];
+  if (/法特|fartlek/i.test(raw)) return TRAINING_TYPE_VISUALS["法特莱克"];
+  if (/渐速|progress/i.test(raw)) return TRAINING_TYPE_VISUALS["渐速跑"];
+  if (/比赛|race/i.test(raw)) return TRAINING_TYPE_VISUALS["比赛模拟"];
+  if (isRestDay(day) || /休息|rest/i.test(raw)) return TRAINING_TYPE_VISUALS["休息"];
+  return TRAINING_TYPE_VISUALS["轻松跑"];
+}
+
 function renderDayCard(day, index, loadPoint = null) {
   const isRest = isRestDay(day);
   const needsRecheck = requiresProtocolRecheck(day);
