@@ -4992,7 +4992,7 @@ function renderCalendarGroup(group, loadPointMap, view) {
       </button>
       <div id="${escapeHtml(panelId)}" class="week-card-body" ${expanded ? "" : "hidden"}>
         ${renderWeekExplanationSummary(group, view)}
-        <div class="calendar-grid">
+        <div class="calendar-grid ${expanded ? "xhs-enter-play" : ""}">
           ${group.days.map(({ day, index }) => renderDayCard(day, index, loadPointMap.get(index))).join("")}
         </div>
       </div>
@@ -5012,6 +5012,15 @@ function toggleWeekGroup(stateKey, { syncNavigator = true } = {}) {
   group.classList.toggle("is-expanded", expanded);
   if (body) {
     body.hidden = !expanded;
+    if (expanded) {
+      // 重播卡片 stagger 入场(每次展开都播, 因 toggle hidden 不重建 DOM)
+      const grid = body.querySelector(".calendar-grid");
+      if (grid) {
+        grid.classList.remove("xhs-enter-play");
+        void grid.offsetWidth;  // force reflow 重启动画
+        grid.classList.add("xhs-enter-play");
+      }
+    }
   }
   if (syncNavigator) {
     syncWeekNavigatorActiveState(stateKey);
