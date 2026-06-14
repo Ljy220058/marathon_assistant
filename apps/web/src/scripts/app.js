@@ -5039,6 +5039,23 @@ function jumpToWeekGroup(stateKey) {
   group.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// 阶段进度条从0增长动画 + 周导航按钮 stagger 入场(渲染后调用一次)
+function animatePhaseProgress() {
+  const bar = document.querySelector("[data-phase-overview-bar] .phase-progress-track > i");
+  if (bar) {
+    const target = parseFloat(bar.style.width) || 0;
+    bar.style.width = "0%";
+    requestAnimationFrame(() => {
+      bar.style.transition = "width .8s cubic-bezier(.2,.8,.2,1)";
+      bar.style.width = `${target}%`;
+    });
+  }
+  document.querySelectorAll("[data-week-nav-target]").forEach((button, i) => {
+    button.style.animation = "xhs-enter .3s ease both";
+    button.style.animationDelay = `${i * .05}s`;
+  });
+}
+
 function renderCalendar(response) {
   const days = normalizeCalendarDays(response);
   const hasStructuredPlan = summarizePlan(response).hasStructuredPlan;
@@ -5153,6 +5170,7 @@ function renderCalendar(response) {
   });
   updateWorkspaceSceneStatus();
   renderGlossaryTermsPanel(response);
+  animatePhaseProgress();
 }
 
 function modalMetric(label, value) {

@@ -209,3 +209,14 @@ body.ui-calendar-converged .calendar-grid {
   50%      { opacity: 1; transform: scale(1.08); }
 }
 
+/* ===== 阶段进度点亮(当前阶段高亮, JS animatePhaseProgress 驱动进度条增长) ===== */
+.phase-step {
+  opacity: .55;
+  transition: opacity .3s ease, transform .3s ease;
+}
+.phase-step.current,
+.phase-step.lit {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
