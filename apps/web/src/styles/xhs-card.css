@@ -1,0 +1,128 @@
+/* ===== 小红书训练封面卡 (DayTrainingCard 视觉层) =====
+   渲染来自 app.js::renderDayCard；配色复用 base.css 的 --success/--warning/--danger/--accent。
+   动画只用 transform+opacity 走 GPU 合成层；全局 prefers-reduced-motion 已在 global.css 降级。 */
+
+.xhs-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  aspect-ratio: 3 / 4;            /* 3:4 竖图，小红书标准比例 */
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface-base, #fff);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft, 0 1px 2px rgba(15, 23, 42, .04));
+  cursor: pointer;
+  outline: none;
+  will-change: transform;          /* TODO(Task11): 改为 hover-only 以降 GPU 内存 */
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.xhs-card:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-primary-alpha, rgba(37, 99, 235, .14));
+}
+
+/* 封面渐变色块（按训练类型 accent） */
+.xhs-cover {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(150deg, var(--cover-from, #e2e8f0), var(--cover-to, #cbd5e1));
+}
+.xhs-card.accent-danger  .xhs-cover { --cover-from: #fecaca; --cover-to: #ef4444; }
+.xhs-card.accent-warning .xhs-cover { --cover-from: #fed7aa; --cover-to: #f59e0b; }
+.xhs-card.accent-success .xhs-cover { --cover-from: #bbf7d0; --cover-to: #10b981; }
+.xhs-card.accent-accent  .xhs-cover { --cover-from: #bfdbfe; --cover-to: #2563eb; }
+.xhs-card.accent-purple  .xhs-cover { --cover-from: #ddd6fe; --cover-to: #8b5cf6; }
+.xhs-card.accent-teal    .xhs-cover { --cover-from: #99f6e4; --cover-to: #14b8a6; }
+.xhs-card.accent-pink    .xhs-cover { --cover-from: #fbcfe8; --cover-to: #ec4899; }
+.xhs-card.accent-rest    .xhs-cover { --cover-from: #f1f5f9; --cover-to: #94a3b8; }
+
+.xhs-cover-icon {
+  font-size: clamp(2.5rem, 8vw, 3.5rem);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .15));
+}
+.xhs-cover-day {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: var(--text-xs, 12px);
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+}
+.xhs-cover-corners {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+}
+.cover-corner {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-full, 999px);
+  background: rgba(255, 255, 255, .85);
+  color: var(--text);
+  font-weight: 600;
+}
+.cover-corner.key     { background: var(--warning-subtle, #fffbeb); color: var(--warning, #b45309); }
+.cover-corner.recheck { background: var(--danger-subtle, #fef2f2); color: var(--danger, #dc2626); }
+/* 证据等级角标在封面位复用（覆盖 calendar.css 里 day-card-top 的尺寸） */
+.xhs-cover-corners .day-evidence-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-full, 999px);
+  background: rgba(255, 255, 255, .85);
+  color: var(--text);
+  font-weight: 600;
+  border: none;
+}
+.xhs-cover-corners .day-evidence-badge.grade-a { background: var(--success-subtle, #ecfdf5); color: var(--success, #059669); }
+.xhs-cover-corners .day-evidence-badge.grade-b { background: var(--accent-primary-subtle, #eff6ff); color: var(--accent, #2563eb); }
+.xhs-cover-corners .day-evidence-badge.grade-c { color: var(--muted, #64748b); }
+
+.xhs-cover-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform .6s ease;
+  pointer-events: none;
+}
+.xhs-card:hover .xhs-cover-shine { transform: translateX(120%); }
+
+/* 卡片正文区 */
+.xhs-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-base, #fff);
+}
+.xhs-title {
+  font-size: var(--text-sm, 13px);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.3;
+}
+.xhs-code {
+  font-size: var(--text-xs, 12px);
+  font-weight: 600;
+  color: var(--accent-primary, var(--accent));
+}
+.xhs-sub {
+  font-size: var(--text-xs, 12px);
+  color: var(--text-muted, var(--muted));
+}
+.xhs-chev {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  color: var(--faint, #94a3b8);
+  font-size: var(--text-lg, 18px);
+}
+.xhs-card.is-rest .xhs-title { color: var(--muted, #64748b); }
