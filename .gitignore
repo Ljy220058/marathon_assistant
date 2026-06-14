@@ -200,3 +200,6 @@ research/**/manuscript/**/build*/
 *.faiss
 data/knowledge/external_candidates/*.pdf
 data/vector_kb/v2/chunks.jsonl
+
+# Claude Code worktrees（独立工作树，不应入库）
+.claude/worktrees/
