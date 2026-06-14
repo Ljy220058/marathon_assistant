@@ -1,7 +1,10 @@
-"""Reranker（二阶段精排）：FAISS 粗排 → bge-reranker-base 精选。
+"""Reranker（二阶段精排）：FAISS 粗排 → bge-reranker-v2-m3 精选。
 
-使用 sentence_transformers.CrossEncoder 加载 bge-reranker-base 对 top-N 候选逐条打分，
+使用 sentence_transformers.CrossEncoder 加载 bge-reranker-v2-m3 对 top-N 候选逐条打分，
 将 FAISS 语义相似度与 reranker 交叉编码器分数融合，输出精排结果。
+
+bge-reranker-v2-m3 是 bge-m3 同系列的 Cross-encoder，中英双语，约 568MB。
+标准 RAG 流程：bge-m3 粗筛 Top-50 → reranker 精排 → Top-5 → LLM。
 """
 
 from __future__ import annotations
@@ -16,7 +19,7 @@ _RERANKER_AVAILABLE: bool | None = None
 
 
 def _load_reranker() -> Any:
-    """延迟加载 bge-reranker-base，全局单例避免重复加载（约 278MB）。"""
+    """延迟加载 bge-reranker-v2-m3，全局单例避免重复加载（约 568MB）。"""
     global _RERANKER_INSTANCE, _RERANKER_AVAILABLE
     if _RERANKER_AVAILABLE is not None:
         return _RERANKER_INSTANCE
@@ -24,14 +27,14 @@ def _load_reranker() -> Any:
         from sentence_transformers import CrossEncoder
 
         _RERANKER_INSTANCE = CrossEncoder(
-            "BAAI/bge-reranker-base",
+            "BAAI/bge-reranker-v2-m3",
         )
         _RERANKER_AVAILABLE = True
-        logger.info("bge-reranker-base (CrossEncoder) 加载成功")
+        logger.info("bge-reranker-v2-m3 (CrossEncoder) 加载成功")
     except Exception as exc:
         _RERANKER_INSTANCE = None
         _RERANKER_AVAILABLE = False
-        logger.warning("bge-reranker-base 不可用: %s，跳过重排序", exc)
+        logger.warning("bge-reranker-v2-m3 不可用: %s，跳过重排序", exc)
     return _RERANKER_INSTANCE
 
 

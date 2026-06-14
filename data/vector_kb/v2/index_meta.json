@@ -1,0 +1,54 @@
+{
+  "index_schema_version": "chunk_schema_v2",
+  "embedding_model": "bge-m3:latest",
+  "chunks_count": 21983,
+  "chunk_size_target": 900,
+  "overlap_target": 110,
+  "md_duplicates_removed": 5,
+  "build_timestamp": "2026-06-09T03:25:16",
+  "embedding_dim": 1024,
+  "total_chunks": 21983,
+  "rebuilt_at": "2026-06-13T17:06:52.200245",
+  "last_verified_at": "2026-06-14T00:00:00",
+  "runtime_chunk_count": 21983,
+  "faiss_document_count": 21983,
+  "skipped_empty_text_chunk_count": 0,
+  "skipped_empty_text_chunk_ids": [],
+  "metadata_complete_count": 21983,
+  "metadata_completeness": 1.0,
+  "runtime_core_prescription_enabled": false,
+  "chunking_strategy": "semantic_v2_sentence_window",
+  "faiss_vector_count": 21979,
+  "faiss_gap_count": 4,
+  "faiss_gap_reason": "embedding_nan_inf_validation_failure_during_build",
+  "faiss_gap_note": "4 chunks were sent to the FAISS builder but returned NaN/Inf vectors from Ollama bge-m3:latest. They exist in the LangChain InMemoryDocstore (pkl) but are absent from the FAISS index (ntotal=21979). Retrievable via BM25 fallback only. Exact chunk_ids require a full rebuild to recover (langchain_community needed to parse pkl). Fix: bash tools/kb/rebuild_faiss.sh (v2 directory).",
+  "prescription_permission_backfill_at": "2026-06-14",
+  "prescription_permission_backfill_note": "21979 legacy chunks backfilled: prescription_permission=explanation_only, review_status=auto_classified. 4 approved chunks (sport_psychology_psych_interventions_meta_2024_0001..0004) retain original values.",
+  "legacy_note": "v2 is the FALLBACK library. Production runtime uses v2_sharded (sharded_retrieval_enabled=True). v2 chunks lack v2-schema required fields (source_url, local_path, language, evidence_domain, knowledge_layer, domain_pack, allowed_use) — hence metadata_completeness=0.0 and runtime_core_prescription_enabled=false. See Task#19 for full metadata backfill.",
+  "pending_actions": [
+    "FAISS rebuild to fix 4-vector gap: bash tools/kb/rebuild_faiss.sh (v2 dir)"
+  ],
+  "schema_upgrade_at": "2026-06-13T16:40:16.298724",
+  "schema_upgrade_note": "Task#19 completed: all 21,983 chunks backfilled to chunk_schema_v2. Fields added: language (en/zh auto-detected), evidence_domain (inferred from source_file+domain_terms), knowledge_layer (document_index), domain_pack (mapped from evidence_domain), allowed_use (mapped from prescription_permission), local_path (relative from source_path), source_url (local:// prefix for local PDFs), quality_tier (inferred from source_file naming conventions). page=0 corrected to page=1 for 21 chunks.",
+  "evidence_domain_distribution": {
+    "training_protocol": 7656,
+    "nutrition": 7039,
+    "injury_safety": 5622,
+    "medical_safety": 800,
+    "sport_psychology": 866
+  },
+  "quality_tier_distribution": {
+    "peer_reviewed_study": 11196,
+    "consensus_or_position_statement": 5262,
+    "clinical_practice_guideline": 3897,
+    "systematic_review_meta_analysis": 944,
+    "expert_review_narrative": 682,
+    "consensus_statement": 1,
+    "expert_review": 1
+  },
+  "language_distribution": {
+    "en": 21943,
+    "zh": 40
+  },
+  "runtime_core_prescription_note": "All v2 chunks have prescription_permission=explanation_only (safe default for legacy library). Production runtime uses v2_sharded where can_write_core is properly curated."
+}

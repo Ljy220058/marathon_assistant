@@ -93,10 +93,16 @@ _project_training_calendar_response_for_role = _shared_project_training_calendar
 # -------- profile helpers ----------------------------------------------------
 
 def _save_profile_patch(patch: Dict[str, Any], user_id: str = DEFAULT_API_USER_ID) -> Dict[str, Any]:
-    profile = load_user_profile(user_id)
+    old_profile = load_user_profile(user_id)
+    profile = dict(old_profile)
     profile.update(patch or {})
     sync_user_zones(profile)
     save_user_profile(profile, user_id)
+    try:
+        from marathon_qa_assistant.services.memory_pipeline import write_profile_change_memories
+        write_profile_change_memories(user_id, old_profile, profile)
+    except Exception:
+        pass
     return profile
 
 

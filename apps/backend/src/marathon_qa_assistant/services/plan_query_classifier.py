@@ -17,10 +17,18 @@ NUTRITION_EXCLUSION_KEYWORDS = (
     "hydration", "fuel", "nutrition", "diet",
 )
 
+# 伤病/康复查询优先走 QA 路径（team mode），不走计划生成路径
+INJURY_EXCLUSION_KEYWORDS = (
+    "痛", "疼", "伤", "膝盖", "跟腱", "足底", "受伤", "拉伤", "应力",
+    "骨折", "髂胫束", "筋膜", "肿", "康复", "rehabilitation", "injury", "pain",
+)
+
 
 def is_plan_query(query: str) -> bool:
     text = str(query or "").lower()
     if any(keyword.lower() in text for keyword in NUTRITION_EXCLUSION_KEYWORDS):
+        return False
+    if any(keyword.lower() in text for keyword in INJURY_EXCLUSION_KEYWORDS):
         return False
     return any(keyword.lower() in text for keyword in PLAN_QUERY_KEYWORDS)
 

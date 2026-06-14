@@ -319,6 +319,35 @@ def classify_weekly_load_change(delta_percent: float) -> str:
     return "stable"
 
 
+def classify_tsb(tsb: float) -> str:
+    """TSB (Training Stress Balance = CTL − ATL) 分级，即 Banister Form 指标。
+
+    来源（TrainingPeaks 官方 + Joe Friel）：
+    - TrainingPeaks Help Center, "Form (TSB)",
+      https://help.trainingpeaks.com/hc/en-us/articles/204071764
+    - TrainingPeaks Coach Blog, "A Coach's Guide to ATL, CTL & TSB"
+    - Joe Friel, "Training Stress Balance—So What?", joefrieltraining.com
+
+    区间语义（对齐 TrainingPeaks 官方）：
+      TSB ≥ 25         : very_fresh（比赛就绪/peaked）
+      10 ≤ TSB < 25    : fresh（减量期）
+      -10 ≤ TSB < 10   : neutral（维持期）
+      -30 ≤ TSB < -10  : productive_training（高效 fitness building 区，非疲劳）
+      TSB < -30        : overreaching_risk（极端负荷，过度训练风险）
+
+    注意：-10~-30 是 TrainingPeaks 定义的"最佳训练区"，是健康加量区间，不是疲劳。
+    """
+    if tsb >= 25:
+        return "very_fresh"
+    if tsb >= 10:
+        return "fresh"
+    if tsb >= -10:
+        return "neutral"
+    if tsb >= -30:
+        return "productive_training"
+    return "overreaching_risk"
+
+
 def build_training_load_summary(days: Iterable[Any]) -> Dict[str, Any]:
     day_dicts = [d.to_dict() if hasattr(d, "to_dict") else dict(d) for d in days]
     loads = [int(round(_safe_float(day.get("training_load")) or 0)) for day in day_dicts]
@@ -369,6 +398,11 @@ def build_training_load_summary(days: Iterable[Any]) -> Dict[str, Any]:
         "total_planned_load": sum(loads),
         "load_impact_7d": load_impact,
         "base_fitness_42d_weekly_equivalent": base_fitness,
+        # L2 Fitness-Fatigue 标准化指标：CTL(慢性42d) / ATL(急性7d) / TSB(Form=CTL−ATL)
+        "ctl_42d_weekly_equivalent": base_fitness,
+        "atl_7d": load_impact,
+        "tsb": base_fitness - load_impact,
+        "tsb_label": classify_tsb(base_fitness - load_impact),
         "intensity_trend": intensity_trend,
         "intensity_trend_zone": classify_intensity_trend(intensity_trend),
         "weekly_loads": weekly_loads,

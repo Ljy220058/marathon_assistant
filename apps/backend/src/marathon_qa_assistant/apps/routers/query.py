@@ -1,11 +1,12 @@
 """Query router — `/query` endpoint for training plan generation."""
 
 import asyncio
+import json
 import time
 from typing import Any, Dict, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from marathon_qa_assistant.apps.schemas import QueryRequest, QueryResponse
 from marathon_qa_assistant.apps.response_builders import (
@@ -187,3 +188,104 @@ async def execute_query(request: QueryRequest, http_request: Request):
                 "message": _safe_workflow_error_summary(e),
             },
         )
+
+
+# 工作流节点 → 前端进度步骤的映射（前端按 stepId 高亮对应阶段卡片）
+_NODE_TO_STEP_ID = {
+    "security_gate": "connect", "router": "connect", "context_fanout": "connect",
+    "evidence_retriever": "profile", "crag_corrector": "profile",
+    "conditioning_constraints": "skeleton", "supervisor": "skeleton",
+    "planner": "skeleton", "executor": "skeleton", "coach": "skeleton", "adaptive_coach": "skeleton",
+    "therapist": "validate", "nutritionist": "validate", "psychologist": "validate",
+    "rule_checker": "validate", "critic_auditor": "validate",
+    "missing_info_handler": "profile",
+    "safety_out": "calendar", "formatter": "evidence", "guided_questions_generator": "enrich",
+}
+
+
+def _sse_pack(data: Dict[str, Any]) -> str:
+    """打包为 SSE 事件帧：`data: <json>\\n\\n`。"""
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.post("/query/stream")
+async def stream_query(request: QueryRequest, http_request: Request):
+    """流式查询（SSE）：边推节点进度边跑工作流，最后推送完整响应。
+
+    事件类型：node（节点进度，含 stepId）/ complete / workflow_error / timeout / error。
+    兼容 FallbackIntegratedApp（in-place state）与 LangGraph compiled（stream_mode="updates"）。
+    """
+    user_id = _resolve_user_id(http_request)
+    effective_query = _resolve_effective_query(request)
+    effective_request = request.model_copy(update={"query": effective_query})
+    profile = load_user_profile(user_id)
+    profile = merge_plan_profile_overrides(effective_query, profile)
+    initial_state: IntegratedState = build_working_state(
+        query=effective_query, mode=request.mode, user_profile=profile,
+    )
+    config = _build_llm_config(request)
+    # 区分两种 app：fallback 的 astream 不接受 stream_mode 参数，且 state in-place 累积
+    is_fallback = type(integrated_app).__name__ == "FallbackIntegratedApp"
+    timeout_sec = float(request.timeout_sec) if getattr(request, "timeout_sec", None) else 120.0
+
+    async def event_stream():
+        state: Dict[str, Any] = dict(initial_state)
+        step = 0
+        deadline = time.monotonic() + timeout_sec
+        try:
+            if is_fallback:
+                async for chunk in integrated_app.astream(state, config=config):
+                    for node_name in (chunk.keys() if isinstance(chunk, dict) else []):
+                        if node_name in _NODE_TO_STEP_ID:
+                            step += 1
+                            yield _sse_pack({"type": "node", "node": node_name, "step": step, "stepId": _NODE_TO_STEP_ID[node_name]})
+                    if time.monotonic() > deadline:
+                        yield _sse_pack({"type": "timeout", "message": f"工作流超过 {timeout_sec}s"})
+                        return
+            else:
+                async for chunk in integrated_app.astream(state, config=config, stream_mode="updates"):
+                    if isinstance(chunk, dict):
+                        for node_name, delta in chunk.items():
+                            if node_name in _NODE_TO_STEP_ID:
+                                step += 1
+                                yield _sse_pack({"type": "node", "node": node_name, "step": step, "stepId": _NODE_TO_STEP_ID[node_name]})
+                            if isinstance(delta, dict):
+                                state.update(delta)
+                    if time.monotonic() > deadline:
+                        yield _sse_pack({"type": "timeout", "message": f"工作流超过 {timeout_sec}s"})
+                        return
+            # 状态判断（同 execute_query）
+            workflow_error = state.get("workflow_error") if isinstance(state.get("workflow_error"), dict) else {}
+            if workflow_error:
+                yield _sse_pack({"type": "workflow_error", "workflow_error": workflow_error})
+                return
+            workflow_pause = state.get("workflow_pause") if isinstance(state.get("workflow_pause"), dict) else {}
+            mode = str(state.get("mode") or "").strip().lower()
+            generation_status = "workflow_pause" if workflow_pause.get("status") == "awaiting_user_input" else (
+                "security_intercepted" if mode == "intercepted" else "complete"
+            )
+            message = "需要补齐信息，工作流已暂停。" if generation_status == "workflow_pause" else (
+                "请求已被安全护栏拦截，工作流已终止。" if generation_status == "security_intercepted" else "完整工作流已返回。"
+            )
+            response = _project_query_response_for_role(
+                _query_response_from_state(state, effective_request, generation_status=generation_status, message=message, user_id=user_id),
+                _response_role(http_request),
+            )
+            # 兼容 Pydantic model / JSONResponse / dict 三种返回类型
+            if hasattr(response, "model_dump"):
+                payload = response.model_dump(mode="json")
+            elif hasattr(response, "body"):
+                payload = json.loads(response.body)
+            else:
+                payload = response
+            yield _sse_pack({"type": "complete", "generation_status": generation_status, "response": payload})
+        except asyncio.TimeoutError:
+            yield _sse_pack({"type": "timeout", "message": f"工作流超过 {timeout_sec}s"})
+        except Exception as exc:
+            yield _sse_pack({"type": "error", "message": _safe_workflow_error_summary(exc)})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )

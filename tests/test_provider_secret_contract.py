@@ -1,4 +1,5 @@
 from marathon_qa_assistant.apps import api_app
+from marathon_qa_assistant.apps.response_builders import _build_llm_config
 from marathon_qa_assistant.apps.schemas import QueryRequest
 
 
@@ -17,7 +18,7 @@ def test_query_config_ignores_legacy_request_body_provider_key():
         timeout_sec=12,
     )
 
-    config = api_app._build_llm_config(request)
+    config = _build_llm_config(request)
 
     assert not hasattr(request, "ds_api_key")
     assert config == {
@@ -35,12 +36,12 @@ def test_query_config_defaults_to_deepseek_without_request_body_secret(monkeypat
     monkeypatch.delenv("DS_MODEL", raising=False)
     request = QueryRequest(query="easy run guidance", timeout_sec=12)
 
-    config = api_app._build_llm_config(request)
+    config = _build_llm_config(request)
 
     assert config == {
         "configurable": {
             "llm_provider": "ds",
-            "llm_model": "deepseek-v4-pro",
+            "llm_model": "deepseek-v4-flash",
             "llm_timeout_sec": 12,
         }
     }

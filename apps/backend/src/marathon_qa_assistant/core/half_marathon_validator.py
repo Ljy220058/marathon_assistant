@@ -861,6 +861,75 @@ def _validate_workout_duration_bounds(week_plans):
     return issues
 
 
+def repair_workout_durations(week_plans):
+    """自动修复 LLM 生成的训练时长违反文献约束的情况。
+
+    在 main_set 文本中替换不合规的时长为约束范围内的值。
+    支持 min/分钟 格式和 km 格式（按配速换算）。
+    返回修复数量。
+    """
+    import re as _re
+    try:
+        from marathon_qa_assistant.core.workout_constraints import WORKOUT_CONSTRAINTS
+    except ImportError:
+        return 0
+
+    repaired = 0
+    for week in week_plans:
+        if not isinstance(week, dict):
+            continue
+        for day in week.get("days", []) or []:
+            tt = str(day.get("training_type", "") or "")
+            constraint = WORKOUT_CONSTRAINTS.get(tt)
+            if not constraint:
+                continue
+
+            ms = str(day.get("main_set", "") or "")
+            min_match = _re.search(r"(\d+)\s*(min|分钟)", ms)
+            km_match = _re.search(r"(\d+\.?\d*)\s*km", ms)
+
+            actual = None
+            source_format = None
+            if min_match:
+                actual = int(min_match.group(1))
+                source_format = "min"
+            elif km_match:
+                km = float(km_match.group(1))
+                pace = 6.0
+                pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
+                if pace_match:
+                    pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
+                actual = int(km * pace)
+                source_format = "km"
+
+            if actual is None:
+                continue
+
+            if actual < constraint.min_minutes or actual > constraint.max_minutes:
+                target = constraint.max_minutes if actual > constraint.max_minutes else constraint.min_minutes
+
+                if source_format == "min":
+                    old_text = min_match.group(0)
+                    new_text = f"{target}{min_match.group(2)}"
+                    day["main_set"] = ms.replace(old_text, new_text, 1)
+                else:
+                    pace = 6.0
+                    pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
+                    if pace_match:
+                        pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
+                    new_km = round(target / pace, 1)
+                    old_text = km_match.group(0)
+                    new_text = f"{new_km}km"
+                    day["main_set"] = ms.replace(old_text, new_text, 1)
+
+                logger.info(
+                    "repair_workout_durations: %s %dmin->%dmin (constraint %d-%dmin)",
+                    tt, actual, target, constraint.min_minutes, constraint.max_minutes,
+                )
+                repaired += 1
+    return repaired
+
+
 __all__ = [
     "HMPlanValidationIssue",
     "validate_half_marathon_protocol_plan",

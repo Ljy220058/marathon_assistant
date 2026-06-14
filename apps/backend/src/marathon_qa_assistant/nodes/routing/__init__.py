@@ -219,9 +219,6 @@ def after_context_fanout_route(state: IntegratedState) -> str:
 def after_rule_checker_route(state: IntegratedState) -> str:
     if isinstance(state.get("workflow_error"), dict) and state.get("workflow_error"):
         return "workflow_error"
-    rule_check = state.get("rule_check_result") if isinstance(state.get("rule_check_result"), dict) else {}
-    if rule_check and not bool(rule_check.get("passed")):
-        return "workflow_error"
     return "critic_auditor"
 
 

@@ -445,7 +445,12 @@ def _infer_answer_card_intent(result: Dict[str, Any], request: QueryRequest, str
     workflow_pause = result.get("workflow_pause") if isinstance(result.get("workflow_pause"), dict) else {}
     if generation_status == "security_intercepted":
         return "security_intercepted"
-    if generation_status == "workflow_error" or isinstance(result.get("workflow_error"), dict):
+    # 注意：build_working_state 将 workflow_error 初始化为空 dict {}，正常完成的工作流不会改它；
+    # query.py 也仅在 workflow_error 非空时返回 4xx/5xx。因此这里必须判断 dict 非空，
+    # 否则 isinstance({}, dict) 恒为 True，会把所有正常回答的 intent 错标为 "workflow_error"
+    # （title 变成"工作流已终止"），与 generation_status="complete" 矛盾。
+    workflow_error_payload = result.get("workflow_error")
+    if generation_status == "workflow_error" or (isinstance(workflow_error_payload, dict) and workflow_error_payload):
         return "workflow_error"
     if workflow_pause.get("status") == "awaiting_user_input" or result.get("missing_info_status") == "awaiting_profile":
         return "missing_profile"

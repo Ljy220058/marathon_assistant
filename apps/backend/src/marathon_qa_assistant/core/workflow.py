@@ -27,6 +27,7 @@ from marathon_qa_assistant.nodes.profile_and_retrieval import (
     evidence_retriever_node,
     missing_info_handler_node,
 )
+from marathon_qa_assistant.nodes.crag_corrector import crag_corrector_node
 from marathon_qa_assistant.nodes.router import router_node
 from marathon_qa_assistant.nodes.routing import supervisor_node
 from marathon_qa_assistant.nodes.security import safety_out_node, security_gate_node
@@ -38,6 +39,7 @@ integrated_app = build_integrated_app(
         "supervisor": supervisor_node,
         "context_fanout": context_fanout_node,
         "evidence_retriever": evidence_retriever_node,
+        "crag_corrector": crag_corrector_node,
         "conditioning_constraints": conditioning_constraints_node,
         "planner": planner_node,
         "executor": executor_node,

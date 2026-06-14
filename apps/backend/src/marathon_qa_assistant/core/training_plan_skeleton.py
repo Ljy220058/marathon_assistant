@@ -470,7 +470,59 @@ def _parse_weekly_structure_constraints(query: str) -> Dict[str, Any]:
     return constraints
 
 
-def _build_personalized_day(requirement: Dict[str, Any], fallback_day: str) -> DayPlan:
+# 经验水平对训练时长的调整系数。
+# 等级：[coaching_heuristic]——基于训练实践共识（新手训练年龄<1y，恢复/适应能力低→降量；
+# 精英训练年龄>3y，耐受与恢复强→可加量）。无单一同行评审文献给出精确系数，待实证校准
+# （建议积累用户训练响应数据后用个体响应模型替换）。
+_EXPERIENCE_DURATION_FACTOR = {
+    "新手": 0.85, "初级": 0.85,   # 训练年龄 <1 年
+    "进阶": 1.00, "中级": 1.00,   # 训练年龄 1-3 年，标准负荷
+    "精英": 1.10, "高级": 1.10,   # 训练年龄 >3 年
+}
+
+
+def _personalized_target_duration(
+    training_type_display: str,
+    profile: Optional[Dict[str, Any]] = None,
+) -> int:
+    """按训练类型典型值 × 个体系数(经验/跑量)估算主课时长，替代硬编码 40。
+
+    L1 个性化。来源标注：
+    - typical_minutes / clamp 边界 [min,max]：WORKOUT_CONSTRAINTS
+      （Daniels' Running Formula / Pfitzinger / Billat 2001，A 级教材，
+      见 core/workout_constraints.py 每条 source/source_grade 字段）。
+    - experience_factor：[coaching_heuristic]，见 _EXPERIENCE_DURATION_FACTOR 注释。
+    - mileage_factor：[coaching_heuristic]——周跑量<30km 单课耐受低→×0.90，
+      >60km 耐受高→×1.10；依据 ACSM 渐进原则与 Daniels 周跑量-单课占比（间接），
+      精确阈值待实证校准。
+
+    profile 缺失时退化为训练类型 typical（仅 A 级文献常量，无启发式系数）。
+    """
+    try:
+        from marathon_qa_assistant.core.workout_constraints import WORKOUT_CONSTRAINTS
+    except Exception:
+        WORKOUT_CONSTRAINTS = {}
+    constraint = WORKOUT_CONSTRAINTS.get(str(training_type_display or ""))
+    typical = int(getattr(constraint, "typical_minutes", 0)) or 40
+    factor = 1.0
+    if isinstance(profile, dict):
+        factor *= _EXPERIENCE_DURATION_FACTOR.get(
+            str(profile.get("experience_level") or "").strip(), 1.0
+        )
+        try:
+            mileage = float(profile.get("weekly_mileage") or 0)
+        except (TypeError, ValueError):
+            mileage = 0.0
+        if mileage > 0:
+            factor *= 0.90 if mileage < 30 else (1.10 if mileage > 60 else 1.0)
+    return _cap_session_duration_min(str(training_type_display or ""), int(round(typical * factor)))
+
+
+def _build_personalized_day(
+    requirement: Dict[str, Any],
+    fallback_day: str,
+    profile: Optional[Dict[str, Any]] = None,
+) -> DayPlan:
     workout_type = str(requirement.get("workout_type") or "").strip()
     entry = WORKOUT_TEMPLATE_REGISTRY.get(workout_type, {})
     day = str(requirement.get("day") or fallback_day).strip() or fallback_day
@@ -479,10 +531,10 @@ def _build_personalized_day(requirement: Dict[str, Any], fallback_day: str) -> D
     if workout_type == "easy_run":
         venue = "公园/绿道"
 
-    # SessionConstraint → 动作库检索，替代已移除的硬编码字典
+    # SessionConstraint → 动作库检索；主课时长按训练类型典型值 × 个体系数（L1 个性化，替代硬编码 40）
     constraint = _session_constraint(
         training_type_display=training_type,
-        target_duration_min=40,
+        target_duration_min=_personalized_target_duration(training_type, profile),
         phase_context="user_defined",
         notes=f"来自用户个性化周结构要求，安排{training_type}。",
     )
@@ -507,7 +559,7 @@ def _build_personalized_day(requirement: Dict[str, Any], fallback_day: str) -> D
     )
 
 
-def _apply_weekly_structure_constraints(days: List[DayPlan], constraints: Dict[str, Any], available_days: List[str]) -> List[DayPlan]:
+def _apply_weekly_structure_constraints(days: List[DayPlan], constraints: Dict[str, Any], available_days: List[str], profile: Optional[Dict[str, Any]] = None) -> List[DayPlan]:
     requirements = [item for item in constraints.get("required_workouts", []) if isinstance(item, dict)]
     if not requirements and not constraints.get("required_rest_days"):
         return days
@@ -538,7 +590,7 @@ def _apply_weekly_structure_constraints(days: List[DayPlan], constraints: Dict[s
             used_days.add(str(target_day))
             personalized = dict(requirement)
             personalized["day"] = target_day
-            updated[str(target_day)] = _build_personalized_day(personalized, str(target_day))
+            updated[str(target_day)] = _build_personalized_day(personalized, str(target_day), profile)
 
     for rest_day in constraints.get("required_rest_days") or []:
         if rest_day not in WEEKDAY_ORDER:
@@ -1902,12 +1954,37 @@ def _build_week_days(
     return days, min(float(weekly_volume_km), actual_weekly_volume_km), hmp_week_decision
 
 
+def _attach_evidence_grades_to_plan(plan_dict: Dict[str, Any]) -> None:
+    """为计划中每天附证据来源/等级（A/B/C），供前端诚实展示每节训练课的依据强度。
+
+    A=同行评审教材（Daniels/Pfitzinger/Billat 等）、B=论文、C=教练实践（无同行评审）。
+    数据来自 WORKOUT_CONSTRAINTS 的 source/source_grade 字段。
+    """
+    try:
+        from marathon_qa_assistant.core.workout_constraints import WORKOUT_CONSTRAINTS
+    except Exception:
+        return
+    for week in plan_dict.get("week_plans") or []:
+        if not isinstance(week, dict):
+            continue
+        for day in week.get("days") or []:
+            if not isinstance(day, dict):
+                continue
+            constraint = WORKOUT_CONSTRAINTS.get(str(day.get("training_type") or ""))
+            if constraint:
+                day["evidence_source"] = constraint.source
+                day["evidence_grade"] = constraint.source_grade
+
+
 def build_structured_training_plan_skeleton(
     query: str,
     profile: Dict[str, Any],
     requested_weeks: Optional[int] = None,
     training_capacity_envelope: Optional[Dict[str, Any]] = None,
+    framework: Optional[str] = None,
 ) -> Dict[str, Any]:
+    # framework 预留：教练/训练框架（如 "Daniels"/"Hansen"/"80_20"），当前未实现分支，
+    # 留作未来"多框架对比"功能的扩展点（需先在 KB 标注 framework + 补对应文献）。None = 现有默认逻辑。
     profile = merge_plan_profile_overrides(query, profile)
     plan_context = align_plan_duration_context(query, profile)
     aligned_profile = dict(plan_context["aligned_profile"])
@@ -1964,7 +2041,7 @@ def build_structured_training_plan_skeleton(
             training_capacity_envelope,
         )
         if week_index == 1:
-            days = _apply_weekly_structure_constraints(days, weekly_structure_constraints, available_days)
+            days = _apply_weekly_structure_constraints(days, weekly_structure_constraints, available_days, aligned_profile)
         phase_weeks = mesocycle.weeks
         key_workouts = _build_key_workouts(days)
         action_suggestions = _build_week_action_suggestions(week_index, mesocycle, available_days, days)
@@ -2026,6 +2103,7 @@ def build_structured_training_plan_skeleton(
         first_week_actions=_build_first_week_actions(week_plans[0]) if week_plans else [],
     )
     plan_dict = plan.to_dict()
+    _attach_evidence_grades_to_plan(plan_dict)
     if isinstance(training_capacity_envelope, dict) and training_capacity_envelope:
         plan_dict["training_capacity_envelope"] = training_capacity_envelope
         plan_dict["s_and_c_constraints"] = training_capacity_envelope

@@ -1,0 +1,17 @@
+{
+  "index_schema_version": "legacy",
+  "embedding_model": "bge-m3:latest",
+  "chunks_count": 3698,
+  "total_chunks": 3698,
+  "runtime_chunk_count": 3698,
+  "faiss_document_count": 3698,
+  "skipped_empty_text_chunk_count": 0,
+  "skipped_empty_text_chunk_ids": [],
+  "metadata_complete_count": 0,
+  "metadata_completeness": 0.0,
+  "runtime_core_prescription_enabled": false,
+  "chunking_strategy": "semantic_v2_sentence_window",
+  "rebuilt_at": "2026-06-14T01:50:45.887917",
+  "faiss_vector_count": 3698,
+  "embedding_dim": 1024
+}

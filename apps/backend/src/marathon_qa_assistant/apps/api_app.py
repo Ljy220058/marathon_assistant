@@ -712,12 +712,14 @@ from marathon_qa_assistant.apps.routers.feedback import router as feedback_route
 from marathon_qa_assistant.apps.routers.plans import router as plans_router
 from marathon_qa_assistant.apps.routers.profile import router as profile_router
 from marathon_qa_assistant.apps.routers.reference import router as reference_router, get_evidence_tier_reference
+from marathon_qa_assistant.apps.routers.data_rights import router as data_rights_router
 
 app.include_router(query_router)
 app.include_router(feedback_router)
 app.include_router(plans_router)
 app.include_router(profile_router)
 app.include_router(reference_router)
+app.include_router(data_rights_router)
 
 if __name__ == "__main__":
     import uvicorn
@@ -727,4 +729,13 @@ if __name__ == "__main__":
     config_errors = _runtime_config_errors(host)
     if config_errors:
         raise RuntimeError("; ".join(config_errors))
-    uvicorn.run(app, host=host, port=port)
+    workers = get_settings().web_workers
+    if workers > 1:
+        # 多 worker 必须传 import string（uvicorn 要求 workers>1 时 app 为字符串而非对象）；
+        # 每个 worker 是独立进程，各自加载 KB + 持有 per-worker Semaphore（上限 = 总额度 / workers）。
+        uvicorn.run(
+            "marathon_qa_assistant.apps.api_app:app",
+            host=host, port=port, workers=workers,
+        )
+    else:
+        uvicorn.run(app, host=host, port=port)

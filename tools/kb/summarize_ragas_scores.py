@@ -89,7 +89,7 @@ def update_report(report_path: Path, retrieval_path: Path, ragas_summary: dict[s
         "",
         "- 样本数：60",
         "- 样本类型：49 positive，4 near_miss，4 negative，3 out_of_domain",
-        "- 领域覆盖：training_protocol 20，nutrition 10，injury_safety 11，medical_safety 12，external_reference 4，none 3",
+        "- 领域覆盖：training_protocol 20，nutrition 10，injury_safety 11，medical_safety 12，none 3（external_reference 已下线）",
         "- 引用完整性：`reference_chunk_id`、`relevant_ids`、`negative_candidate_ids` 均已验证指向真实 v2 chunk",
         "",
         "## 2. 检索指标基线",

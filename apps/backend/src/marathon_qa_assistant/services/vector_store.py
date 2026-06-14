@@ -49,6 +49,8 @@ EVIDENCE_CHAIN_METADATA_KEYS = (
     "evidence_domain",
     "expert_domain",
     "knowledge_layer",
+    "framework",
+    "source_grade",
     "domain_pack",
     "allowed_use",
     "prescription_permission",
@@ -150,6 +152,15 @@ QUERY_HINTS = {
     "柔韧性": "flexibility stretching range of motion static dynamic proprioceptive neuromuscular",
     "疲劳恢复": "fatigue recovery muscle damage glycogen replenishment sleep regeneration post-exercise",
     "疲劳": "fatigue recovery muscle damage glycogen depletion sleep regeneration overtraining",
+    # ── 跨语言检索补充：中文医学/运动/心理术语 → 英文同义词 ──
+    "髂胫束": "iliotibial band IT band ITBS lateral knee pain friction syndrome runner knee",
+    "蛋白质": "protein amino acid muscle recovery synthesis leucine whey casein post-exercise",
+    "比赛心理": "race psychology competition anxiety performance arousal pre-race mental skills",
+    "心理焦虑": "anxiety performance psychology mental sport competition stress precompetition",
+    "间歇训练": "interval training VO2max high intensity aerobic power track workout intervals",
+    "训练后恢复": "post-exercise recovery muscle glycogen sleep protein nutrition regeneration",
+    "vo2max": "VO2max maximal oxygen uptake aerobic capacity interval high intensity",
+    "最大摄氧量": "VO2max maximal oxygen uptake aerobic capacity interval high intensity",
 }
 
 QUERY_VARIANT_HINTS = {
@@ -1496,8 +1507,10 @@ def load_sharded_kb(shard_base: Path):
         try:
             meta = json.loads(meta_file.read_text(encoding="utf-8"))
             expected_counts = {
-                str(name): int(count or 0)
-                for name, count in (meta.get("shards") or {}).items()
+                str(name): int(
+                    (val.get("chunks", 0) if isinstance(val, dict) else val) or 0
+                )
+                for name, val in (meta.get("shards") or {}).items()
             }
         except Exception as exc:
             logger.warning("读取分库 meta 失败，按目录内容加载: %s", exc)
@@ -1958,20 +1971,23 @@ def _retrieve_sharded(question: str, shard_chunks: dict, shard_stores: dict,
 
 
 def retrieve(question: str, chunks: list[dict], vectorizer, matrix, top_k: int | None, bm25=None,
-             *, rerank: bool = False, rerank_candidate_k: int = 20, en_translation: str = "") -> list[dict]:
+             *, rerank: bool = False, rerank_candidate_k: int = 50, en_translation: str = "") -> list[dict]:
     """
     执行检索逻辑。这里的 matrix 实际上是 FAISS 实例，或分库模式下的 shard_stores dict。
 
     Args:
-        rerank: 是否启用 bge-reranker 二阶段精排。启用时 RRF 候选池扩容到 candidate_k，
+        rerank: 是否启用 bge-reranker-v2-m3 二阶段精排。启用时粗筛池扩容到 candidate_k，
                 再经 reranker 精排到 top_k 条。
-        rerank_candidate_k: 送 reranker 的候选数，默认 20。
+        rerank_candidate_k: 送 reranker 的候选数，默认 50。
         en_translation: 英文翻译变体，非空时作为额外 query variant 参与检索融合。
     """
     # 分库检索路径只在调用方传入的对象确实是 shard 形态时启用。
     # 这样默认开启分库检索后，仍允许旧调用点用单库 FAISS/BM25 做局部检索。
     if get_settings().sharded_retrieval_enabled and isinstance(chunks, dict) and isinstance(matrix, dict):
-        result = _retrieve_sharded(question, chunks, matrix, bm25, top_k) if isinstance(bm25, dict) else _retrieve_sharded(question, chunks, matrix, {}, top_k)
+        # rerank 时分库粗筛扩容到 rerank_candidate_k，再由 reranker 精排到 top_k
+        fetch_k = rerank_candidate_k if rerank else top_k
+        bm25_arg = bm25 if isinstance(bm25, dict) else {}
+        result = _retrieve_sharded(question, chunks, matrix, bm25_arg, fetch_k)
         if rerank:
             result = _apply_rerank(question, result, top_k, rerank_candidate_k)
         return result

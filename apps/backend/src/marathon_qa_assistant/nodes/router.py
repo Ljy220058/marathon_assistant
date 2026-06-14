@@ -94,6 +94,12 @@ def _unique_labels(labels: list[str]) -> list[str]:
     return list(dict.fromkeys(label for label in labels if label))
 
 
+TEMPORAL_PLAN_CONTEXT_KEYWORDS = [
+    "本周", "下周", "这周", "上周", "本次", "下次",
+    "明天", "后天", "接下来", "周期", "训练计划", "周计划",
+]
+
+
 def _derive_intent_labels(query: str, lower_query: str) -> tuple[list[str], str]:
     labels: list[str] = []
     is_plan = _looks_like_plan_request(query) or "计划" in query or "训练安排" in query
@@ -101,9 +107,12 @@ def _derive_intent_labels(query: str, lower_query: str) -> tuple[list[str], str]
     risk_query = _strip_negated_status_phrases(lower_query)
     has_adaptive_signal = any(keyword in risk_query for keyword in [k.lower() for k in ADAPTIVE_SIGNAL_KEYWORDS])
     has_adaptive_command = any(keyword in lower_query for keyword in [k.lower() for k in ADAPTIVE_ADJUSTMENT_KEYWORDS])
+    # Adaptive mode requires explicit plan-adjustment context (temporal ref or plan keyword).
+    # Pure injury advisory queries ("膝盖痛怎么调整训练量") route to QA/team mode instead.
+    has_temporal_plan_context = is_plan or any(kw in lower_query for kw in TEMPORAL_PLAN_CONTEXT_KEYWORDS)
     has_adaptive = (
         any(keyword in lower_query for keyword in [k.lower() for k in ADAPTIVE_KEYWORDS])
-        or (has_adaptive_signal and (is_plan or has_adaptive_command))
+        or (has_adaptive_signal and has_adaptive_command and has_temporal_plan_context)
     )
     has_nutrition = any(keyword in lower_query for keyword in [k.lower() for k in NUTRITION_KEYWORDS])
     has_profile_signal = any(keyword in lower_query for keyword in [k.lower() for k in PROFILE_SIGNAL_KEYWORDS])

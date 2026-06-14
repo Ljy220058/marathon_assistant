@@ -90,6 +90,14 @@ async def submit_feedback(request: FeedbackRequest, http_request: Request):
             raw_text=request.raw_text,
         )
         if feedback_id:
+            try:
+                from marathon_qa_assistant.services.memory_pipeline import write_feedback_memories
+                await run_db(
+                    write_feedback_memories, uid, workout_feedback,
+                    raw_text=request.raw_text or "", reason_codes=reason_codes,
+                )
+            except Exception:
+                pass
             affected_events = await run_db(
                 get_db().apply_feedback_effect_to_future_events,
                 plan_id=request.plan_id,

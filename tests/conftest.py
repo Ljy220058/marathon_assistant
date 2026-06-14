@@ -95,3 +95,36 @@ def client():
     from marathon_qa_assistant.apps.api_app import app
 
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _disable_real_llm_calls(monkeypatch):
+    """测试环境禁用真实 LLM：archetype_advisor 返回确定性有效原型。
+
+    真实 LLM 在测试环境常返回无效判断；其关键词 fallback 又因"信息不足"选通用原型，
+    导致生成的训练课（如 Pfitzinger Progression Run）超过 80min 容量上限、
+    half_marathon_protocol validation 失败。LLM 判断质量属评测管道（eval）范畴，
+    不应阻塞单元/集成测试。这里给确定性半马原型（marathon_background=True），
+    保证 plan 生成测试可重复。需要真实 LLM 的测试可局部 monkeypatch 重载。
+    """
+    try:
+        from marathon_qa_assistant.core import archetype_advisor
+        from marathon_qa_assistant.core.half_marathon_protocol import RunnerArchetypeInput
+
+        def _fake_advisory(profile, total_weeks, enable_llm=True):
+            return RunnerArchetypeInput(
+                recent_marathon=False,
+                build_weeks=total_weeks,
+                endurance_background=False,
+                marathon_background=True,
+                long_training_gap=False,
+                middle_distance_background=False,
+                speed_strength=False,
+                half_marathon_experience_low=False,
+                weekly_mileage_km=float((profile or {}).get("weekly_mileage") or 35),
+                injury_or_fatigue=False,
+            ), {"marathon_background": "test fixture (LLM disabled)"}
+
+        monkeypatch.setattr(archetype_advisor, "get_archetype_advisory", _fake_advisory)
+    except ImportError:
+        pass

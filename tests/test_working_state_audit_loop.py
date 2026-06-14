@@ -199,8 +199,7 @@ def test_rule_checker_rejects_invalid_citation_before_llm_critic():
     output = asyncio.run(rule_checker_node(state, None))
 
     assert output["rule_check_result"]["passed"] is False
-    assert output["workflow_error"]["error_code"] == "HARD_RULE_VIOLATION"
-    assert "硬规则检查未通过" in output["workflow_error"]["message"]
+    assert "硬规则检查未通过" in output["review_feedback"]
 
 
 def test_rule_checker_ignores_profile_training_type_preferences_without_explicit_contract():

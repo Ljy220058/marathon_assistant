@@ -1,0 +1,126 @@
+C:\Users\26318\Documents\trae_projects\ollama_pro\����������\scripts\rag_demo.py:8: DeprecationWarning: `langchain-community` is being sunset and is no longer actively maintained. See https://github.com/langchain-ai/langchain-community/issues/674 for details and migration guidance toward standalone integration packages.
+  from langchain_community.vectorstores import FAISS
+GRAPHRAG_API_KEY δ���û���Ϊ����Ĭ��ֵ��֪ʶͼ�׽���ʼ��Ϊ��ͼ��
+Loading FAISS...
+Loaded: 8420 chunks
+Loaded KG: 473n 423e
+
+Q: 我膝盖外侧疼，还能继续跑步吗
+   Category: therapist
+   Intent policy: injury_safety → evidence_domains={'rehabilitation', 'injury_prevention', 'recovery', 'medical_risk', 'injury', 'rehab_strength_mobility', 'medical_safety'}
+   Filtered hits (4): {'training_theory': 4}
+   Entities: ['跑步', 'training_theory']
+   Graph edges: 20 (4 domains)
+    [capacity_management] (6 edges)
+      重复跑模板 8x400m 跑步 训练 慢跑 ->[约束]-> 每周质量课最多 2 次  decision graph regis
+      重复跑模板 8x400m 跑步 训练 慢跑 ->[约束]-> 高质量课间隔至少 48 小时  decision graph regis
+      每周质量课最多 2 次 ->[桥接]-> 极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 [bridge:dependency]  bridge detection
+    [nutrition] (2 edges)
+      训练 ->[促进]-> 运动员s' dependence在碳水化合物s C  nutrition issn revie
+      训练 ->[促进]-> replenish lost 肌肉和liver 糖  nutrition issn revie
+    [training_theory] (8 edges)
+      重复跑 跑步 训练 慢跑 ->[改善]-> 跑步经济性 长跑 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[改善]-> 跑步经济性 长跑 训练 慢跑  decision graph regis
+      跑步经济性 长跑 训练 慢跑 ->[桥接]-> Z9 [bridge:dependency]  bridge detection
+    [workout_prescription] (4 edges)
+      重复跑 跑步 训练 慢跑 ->[需要]-> 重复跑模板 8x400m 跑步 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[需要]-> 重复跑模板 8x400m 跑步 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[需要]-> Z9  decision graph regis
+
+Q: 全马想破3小时，赛前两周怎么减量
+   Category: coach
+   Intent policy: (default coach) → expert_domains={'workout_prescription', 'training_theory', 'race_strategy'}
+   Filtered hits (8): {'training_theory': 8}
+   Entities: ['全马', '减量', 'training_theory']
+   Graph edges: 3 (2 domains)
+    [nutrition] (2 edges)
+      训练 ->[促进]-> 运动员s' dependence在碳水化合物s C  nutrition issn revie
+      训练 ->[促进]-> replenish lost 肌肉和liver 糖  nutrition issn revie
+    [training_theory] (1 edges)
+      低跑量、可训练日少、近期全马、疲劳/伤病或缺少 5 ->[减少]-> HMP 关键课容量  half marathon hmp pr
+
+Q: 跑步补剂肌酸有用吗
+   Category: nutritionist
+   Intent policy: nutrition → evidence_domains={'nutrition', 'hydration', 'race_fueling', 'nutrition_race_fueling'}
+   Filtered hits (4): {'training_theory': 4}
+   Entities: ['跑步', 'training_theory']
+   Graph edges: 20 (4 domains)
+    [capacity_management] (6 edges)
+      重复跑模板 8x400m 跑步 训练 慢跑 ->[约束]-> 每周质量课最多 2 次  decision graph regis
+      重复跑模板 8x400m 跑步 训练 慢跑 ->[约束]-> 高质量课间隔至少 48 小时  decision graph regis
+      每周质量课最多 2 次 ->[桥接]-> 极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 [bridge:dependency]  bridge detection
+    [nutrition] (2 edges)
+      训练 ->[促进]-> 运动员s' dependence在碳水化合物s C  nutrition issn revie
+      训练 ->[促进]-> replenish lost 肌肉和liver 糖  nutrition issn revie
+    [training_theory] (8 edges)
+      重复跑 跑步 训练 慢跑 ->[改善]-> 跑步经济性 长跑 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[改善]-> 跑步经济性 长跑 训练 慢跑  decision graph regis
+      跑步经济性 长跑 训练 慢跑 ->[桥接]-> Z9 [bridge:dependency]  bridge detection
+    [workout_prescription] (4 edges)
+      重复跑 跑步 训练 慢跑 ->[需要]-> 重复跑模板 8x400m 跑步 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[需要]-> 重复跑模板 8x400m 跑步 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[需要]-> Z9  decision graph regis
+
+Q: 间歇跑一周安排几次比较好
+   Category: planner
+   Intent policy: (default coach) → expert_domains={'workout_prescription', 'training_theory', 'race_strategy'}
+   Filtered hits (8): {'training_theory': 8}
+   Entities: ['间歇', 'training_theory']
+   Graph edges: 50 (4 domains)
+    [capacity_management] (24 edges)
+      每周质量课最多 2 次 ->[桥接]-> 极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 [bridge:dependency]  bridge detection
+      高质量课间隔至少 48 小时 ->[桥接]-> 极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 [bridge:dependency]  bridge detection
+      每周质量课最多 2 次 ->[桥接]-> 高强度间歇 短间歇 间歇训练 间歇跑 跑道间歇 长 [bridge:constraint]  bridge detection
+    [nutrition] (2 edges)
+      训练 ->[促进]-> 运动员s' dependence在碳水化合物s C  nutrition issn revie
+      训练 ->[促进]-> replenish lost 肌肉和liver 糖  nutrition issn revie
+    [training_theory] (16 edges)
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[改善]-> 跑步经济性 长跑 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[促进]-> 神经肌肉刺激  decision graph regis
+      高强度间歇 短间歇 间歇训练 间歇跑 跑道间歇 长 ->[改善]-> 最大摄氧量  decision graph regis
+    [workout_prescription] (8 edges)
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[需要]-> 重复跑模板 8x400m 跑步 训练 慢跑  decision graph regis
+      极限间歇 短间歇 间歇训练 间歇跑 跑道间歇 长间 ->[需要]-> Z9  decision graph regis
+      高强度间歇 短间歇 间歇训练 间歇跑 跑道间歇 长 ->[需要]-> 摄氧量模板 6x1km  decision graph regis
+
+Q: 乳酸阈值跑应该用什么配速
+   Category: coach
+   Intent policy: (default coach) → expert_domains={'workout_prescription', 'training_theory', 'race_strategy'}
+   Filtered hits (8): {'training_theory': 8}
+   Entities: ['乳酸阈', '配速', 'training_theory']
+   Graph edges: 34 (4 domains)
+    [capacity_management] (10 edges)
+      无氧阈模板 4x1600m ->[约束]-> 每周质量课最多 2 次  decision graph regis
+      无氧阈模板 4x1600m ->[约束]-> 高质量课间隔至少 48 小时  decision graph regis
+      每周质量课最多 2 次 ->[桥接]-> 节奏跑 跑步 训练 慢跑 [bridge:dependency]  bridge detection
+    [nutrition] (2 edges)
+      训练 ->[促进]-> 运动员s' dependence在碳水化合物s C  nutrition issn revie
+      训练 ->[促进]-> replenish lost 肌肉和liver 糖  nutrition issn revie
+    [training_theory] (16 edges)
+      节奏跑 跑步 训练 慢跑 ->[改善]-> 乳酸阈  decision graph regis
+      阈值节奏跑 跑步 训练 慢跑 ->[改善]-> 乳酸阈  decision graph regis
+      无氧阈 ->[改善]-> 乳酸阈  decision graph regis
+    [workout_prescription] (6 edges)
+      无氧阈 ->[需要]-> 无氧阈模板 4x1600m  decision graph regis
+      节奏跑 跑步 训练 慢跑 ->[需要]-> 节奏跑模板 20-40min 跑步 训练 慢跑  decision graph regis
+      节奏跑 跑步 训练 慢跑 ->[需要]-> Z4  decision graph regis
+
+Q: 最近跑量增加后小腿前侧疼，是应力骨折吗
+   Category: therapist
+   Intent policy: injury_safety → evidence_domains={'rehabilitation', 'injury_prevention', 'recovery', 'medical_risk', 'injury', 'rehab_strength_mobility', 'medical_safety'}
+   Filtered hits (4): {'training_theory': 4}
+   Entities: ['跑量', 'training_theory']
+   Graph edges: 11 (4 domains)
+    [capacity_management] (1 edges)
+      高质量课后优先恢复或轻松跑 休息 恢复日 跑步 训 ->[桥接]-> 轻松跑 跑步 训练 慢跑 [bridge:handoff]  bridge detection
+    [nutrition] (2 edges)
+      训练 ->[促进]-> 运动员s' dependence在碳水化合物s C  nutrition issn revie
+      训练 ->[促进]-> replenish lost 肌肉和liver 糖  nutrition issn revie
+    [training_theory] (6 edges)
+      周跑量、训练频率和恢复状态 休息 一周几次 加量  ->[调节]-> 95/100/105% HMP 的累计量必须按周跑  half marathon hmp pr
+      低跑量、可训练日少、近期全马、疲劳/伤病或缺少 5 ->[减少]-> HMP 关键课容量  half marathon hmp pr
+      轻松跑 跑步 训练 慢跑 ->[改善]-> 总跑量 加量 里程 训练量 跑步 训练 慢跑 跑量  half marathon hmp pr
+    [workout_prescription] (2 edges)
+      轻松跑 跑步 训练 慢跑 ->[需要]-> 轻松跑模板 30-60min 跑步 训练 慢跑  decision graph regis
+      轻松跑 跑步 训练 慢跑 ->[需要]-> Z1  decision graph regis
+

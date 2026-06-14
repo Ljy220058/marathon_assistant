@@ -1,0 +1,631 @@
+/*
+ * Design Polish Layer
+ * Final visual enhancement: typography, key-session cards, entry animations,
+ * phase timeline, and micro-interactions.
+ * Loads AFTER commercial-light.css — overrides are intentional.
+ */
+
+/* ── Typography: DM Sans (display/data) + Noto Sans SC (Chinese body) ── */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap");
+
+:root {
+  --font-display: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+  --font-body: "Noto Sans SC", "DM Sans", system-ui, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  --font-mono: "DM Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* Enhanced shadow scale */
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.03);
+  --shadow-card-hover: 0 4px 16px rgba(15, 23, 42, 0.08),
+    0 12px 32px rgba(15, 23, 42, 0.04);
+  --shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.1),
+    0 24px 48px rgba(15, 23, 42, 0.06);
+
+  /* Accent gradient for key elements */
+  --accent-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+  --accent-glow: rgba(37, 99, 235, 0.15);
+
+  font-family: var(--font-body);
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display headings use DM Sans for sports-tech character */
+.composer-panel h2,
+.report-panel-summary h2,
+.drawer-stage-label,
+.day-modal-card h2,
+.modal-day-hero h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Data metrics use DM Sans for numeric clarity */
+.modal-metric-grid strong,
+.modal-primary-summary strong,
+.week-card-load strong,
+.load-summary-card strong,
+.identity-summary-rows strong,
+.day-card h3 {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.day-card-summary,
+.timeline-step p,
+.coach-insights-body,
+.modal-explain-grid p {
+  font-family: var(--font-body);
+  line-height: 1.7;
+}
+
+/* ── Key Session Cards ── */
+.day-card.key-session {
+  position: relative;
+  border-color: rgba(37, 99, 235, 0.22);
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(239, 246, 255, 0.5) 100%
+  );
+  box-shadow: var(--shadow-card);
+}
+
+.day-card.key-session::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent-gradient);
+}
+
+.day-card.key-session::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  animation: keyPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes keyPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.06);
+    opacity: 0.8;
+  }
+}
+
+.day-card.key-session:hover,
+.day-card.key-session:focus-visible {
+  border-color: rgba(37, 99, 235, 0.36);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.day-card.key-session .day-card-top span {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Regular day cards: subtle but present shadows */
+.day-card {
+  box-shadow: var(--shadow-card);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.day-card:hover,
+.day-card:focus-visible {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Rest days: subtle hatching pattern for texture */
+.day-card.rest {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #f4f6f9 6px,
+    #f4f6f9 7px
+  );
+  box-shadow: none;
+}
+
+/* ── Entry Animations ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes progressFillIn {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Day cards stagger on calendar render */
+.day-card {
+  animation: fadeInUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.week-card .day-card:nth-child(1) { animation-delay: 0ms; }
+.week-card .day-card:nth-child(2) { animation-delay: 40ms; }
+.week-card .day-card:nth-child(3) { animation-delay: 80ms; }
+.week-card .day-card:nth-child(4) { animation-delay: 120ms; }
+.week-card .day-card:nth-child(5) { animation-delay: 160ms; }
+.week-card .day-card:nth-child(6) { animation-delay: 200ms; }
+.week-card .day-card:nth-child(7) { animation-delay: 240ms; }
+
+/* Week cards stagger */
+.week-card {
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.week-card:nth-child(1) { animation-delay: 0ms; }
+.week-card:nth-child(2) { animation-delay: 60ms; }
+.week-card:nth-child(3) { animation-delay: 120ms; }
+.week-card:nth-child(4) { animation-delay: 180ms; }
+.week-card:nth-child(5) { animation-delay: 240ms; }
+.week-card:nth-child(6) { animation-delay: 300ms; }
+.week-card:nth-child(7) { animation-delay: 360ms; }
+.week-card:nth-child(8) { animation-delay: 420ms; }
+.week-card:nth-child(n + 9) { animation-delay: 480ms; }
+
+/* Modal tabs fade in */
+.day-modal-tab-content {
+  animation: fadeIn 0.25s ease both;
+}
+
+/* Timeline steps slide in */
+.timeline-step {
+  animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.timeline-step:nth-child(1) { animation-delay: 80ms; }
+.timeline-step:nth-child(2) { animation-delay: 160ms; }
+.timeline-step:nth-child(3) { animation-delay: 240ms; }
+
+/* Progress bar fill animation */
+.progress-track-fill {
+  transform-origin: left;
+  animation: progressFillIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation-delay: 200ms;
+}
+
+/* ── Phase Timeline Enhancement ── */
+.phase-timeline {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel-muted);
+  border: 1px solid var(--border);
+}
+
+.phase-timeline .phase-segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--faint);
+  background: var(--panel-muted);
+  transition: background 0.3s ease, color 0.3s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phase-timeline .phase-segment.completed {
+  background: rgba(5, 150, 105, 0.08);
+  color: var(--success);
+}
+
+.phase-timeline .phase-segment.current {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.phase-timeline .phase-segment.current::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-gradient);
+  border-radius: 3px 3px 0 0;
+}
+
+.phase-timeline .phase-segment .phase-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.phase-timeline .phase-segment.completed .phase-icon {
+  background: rgba(5, 150, 105, 0.12);
+  color: var(--success);
+}
+
+.phase-timeline .phase-segment.current .phase-icon {
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--accent);
+  animation: keyPulse 2.4s ease-in-out infinite;
+}
+
+.phase-timeline .phase-segment.upcoming .phase-icon {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--faint);
+}
+
+/* ── Cycle Progress Bar Enhancement ── */
+.cycle-progress {
+  position: relative;
+}
+
+.progress-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--panel-muted);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.progress-track-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-track-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  border-radius: 0 999px 999px 0;
+}
+
+/* Progress runner marker */
+.progress-runner {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  z-index: 1;
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Workout Timeline Enhancement ── */
+.workout-timeline::before {
+  border-left: 2px solid var(--border);
+  border-left-style: solid;
+}
+
+.timeline-step {
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.timeline-step:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.timeline-step.primary-session {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    rgba(239, 246, 255, 0.4) 100%
+  );
+}
+
+.timeline-step.primary-session::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 14px 0 0 14px;
+}
+
+/* ── Modal Enhancement ── */
+.day-modal-card {
+  box-shadow: var(--shadow-elevated);
+}
+
+.day-modal-tab-nav {
+  gap: 4px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-modal-tab-nav button {
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.day-modal-tab-nav button.active {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+  font-weight: 800;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.modal-day-hero {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    rgba(248, 250, 252, 0.5) 0%,
+    #ffffff 100%
+  );
+}
+
+.modal-day-hero h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* ── Calendar Toolbar ── */
+.calendar-toolbar {
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Coach Insights Enhancement ── */
+.coach-insights {
+  transition: border-color 0.2s ease;
+}
+
+.coach-insights[open] {
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.coach-insights summary {
+  transition: background 0.2s ease;
+}
+
+.coach-insights summary:hover {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+/* ── Info Chips / Metric Cards ── */
+.info-chip,
+.metric-card {
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+}
+
+.info-chip strong,
+.metric-card strong {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Feedback Form Polish ── */
+.modal-feedback-panel {
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    #f8fafc 0%,
+    #ffffff 100%
+  );
+}
+
+/* Quick preset buttons */
+.feedback-preset-button {
+  transition: all 0.2s ease;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.feedback-preset-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ── Adjustment Card ── */
+.adaptive-adjustment-notice {
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  animation: adjustmentSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes adjustmentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Sidebar Profile Card ── */
+.sidebar-profile-card {
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.identity-card-head h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.training-day-badge {
+  font-family: var(--font-display);
+  transition: all 0.15s ease;
+}
+
+.training-day-badge.is-active {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+/* ── Brand Mark ── */
+.brand {
+  font-family: var(--font-display);
+}
+
+.brand-mark {
+  border-radius: 10px;
+  background: var(--accent-gradient);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+/* ── Evidence Cards ── */
+.evidence-card,
+.evidence-status-card {
+  border-radius: 10px;
+  transition: border-color 0.2s ease;
+}
+
+.evidence-card:hover {
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+/* ── Report Panel ── */
+.report-panel {
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.report-panel-summary h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* ── Week Card Enhancement ── */
+.week-card-main strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.week-card.is-expanded {
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Scrollbar Styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ── Focus Ring Enhancement ── */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+/* ── Selection Color ── */
+::selection {
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--text);
+}

@@ -78,6 +78,8 @@ EVIDENCE_METADATA_KEYS = (
     "language",
     "evidence_domain",
     "knowledge_layer",
+    "framework",
+    "source_grade",
     "domain_pack",
     "allowed_use",
     "prescription_permission",
@@ -143,6 +145,19 @@ def build_evidence_bundle(
             _append_item(items, seen, item)
         if structured_training_plan and not items:
             _append_item(items, seen, _plan_only_item(structured_training_plan))
+
+    # 根因修复：过滤无有效来源的幽灵 evidence（跨所有来源：ranked/rag/protocol）。
+    # 检索或上游可能返回元数据全空的 chunk（source_path/source_file/source_label/source_url/
+    # source_registry_id 均缺失或为 'unknown'），这类 evidence 会触发 rule_checker
+    # "证据 [N] 缺少 source_path" 违规（auditor fail → 500/504），且对用户无定位价值。
+    # 在聚合层统一过滤，不依赖下游 rule_checker 兜底。
+    items = [
+        it for it in items
+        if isinstance(it, dict) and any(
+            str(it.get(k) or "").strip().lower() not in {"", "unknown"}
+            for k in ("source_path", "source_file", "source_label", "source_url", "source_registry_id")
+        )
+    ]
 
     _renumber(items)
     return {
@@ -238,7 +253,9 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
     tier = "graph" if kind == "graph" else "kb_fallback"
     if kind == "fusion":
         tier = "kb_fallback"
-    text = _scan_and_clean_context(str(source.get("text") or source.get("snippet") or ""))
+    # CRAG：优先用 crag_corrector 精炼后的 refined_text（去噪关键片段），
+    # 缺失时回退原 text/snippet。原 text 仍保留在 ranked_evidence 供引用回溯。
+    text = _scan_and_clean_context(str(source.get("refined_text") or source.get("text") or source.get("snippet") or ""))
     # P0-2: 若 source_path 为空，尝试从 source_file 推断
     source_path = str(source.get("source_path") or "")
     if not source_path:

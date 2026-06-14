@@ -370,6 +370,8 @@ def build_chunks(papers):
                 "domain_pack": "sports_science",
                 "evidence_domain": "sports_science",
                 "knowledge_layer": "literature",
+                "framework": p.get("framework"),
+                "source_grade": p.get("source_grade", "B"),
                 "allowed_use": "core_prescription",
                 "prescription_permission": "can_write_core",
                 "quality_tier": "reviewed",

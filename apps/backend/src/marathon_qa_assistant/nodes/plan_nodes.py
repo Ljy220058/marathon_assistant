@@ -13,6 +13,11 @@ from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.state_models import IntegratedState
 from marathon_qa_assistant.core.training_plan_context import align_plan_duration_context
 from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
+from marathon_qa_assistant.core.prompt_kit import (
+    CITATION_RULES_PLAN,
+    PLAN_COACH_IDENTITY,
+    PLAN_GLOSSARY,
+)
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     ensure_usage,
@@ -146,6 +151,18 @@ def _compute_pace_zones(profile: dict) -> dict:
             else:
                 t_pace_str = seconds_to_pace(race_pace_sec - 20)
 
+    # L3 Critical Speed 兜底：无 T-Pace 且无法从目标成绩反推时，从 PB 拟合 CS 作为阈值配速代理。
+    _cs_derived = False
+    if not t_pace_str:
+        try:
+            from marathon_qa_assistant.core.physiology import collect_pb_distance_time, calculate_critical_speed
+            cs_result = calculate_critical_speed(collect_pb_distance_time(profile))
+            if cs_result:
+                t_pace_str = cs_result["cs_pace_str"]
+                _cs_derived = True
+        except Exception:
+            pass
+
     if t_pace_str:
         calculated = calculate_pace_zones(t_pace_str)
         for i in range(1, 10):
@@ -154,7 +171,10 @@ def _compute_pace_zones(profile: dict) -> dict:
             if val:
                 label = ZONE_LABELS.get(key, key)
                 zones[key] = (0, 0, f"{val}/km ({label})")
-        zones['_derived_from'] = f'T-Pace 推导 (9-Zones, {t_pace_str})'
+        zones['_derived_from'] = (
+            f'Critical Speed 拟合 (9-Zones, {t_pace_str}/km, R²={cs_result["r_squared"] if _cs_derived else 0})'
+            if _cs_derived else f'T-Pace 推导 (9-Zones, {t_pace_str})'
+        )
     else:
         zones['_derived_from'] = 'unknown'
 
@@ -230,7 +250,8 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 
     pace_table = "\n".join(pace_table_lines) if pace_table_lines else "（无可用配速数据，请根据用户描述推导）"
 
-    prompt = f"""你是马拉松训练计划教练。你必须先按给定训练周期理解当前阶段，再生成严谨、结构完整的训练计划输出。
+    prompt = f"""你是马拉松训练计划教练。{PLAN_COACH_IDENTITY}
+你必须先按给定训练周期理解当前阶段，再生成严谨、结构完整的训练计划输出。
 
 ══════════════════════════
 【用户需求】
@@ -289,15 +310,7 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 
 如果用户显式指定了某个类型的配速（如'强度课2:50-3:00/km'），则以用户指定的配速优先。
 
-══════════════════════════
-【训练术语精确释义】
-- 重复跑 (Repetition)：200m-600m 极短距离极高强度冲刺，组间完全恢复（慢走或站立 2-3 分钟）
-- 摄氧量 (VO₂max)：400m-1200m 间歇跑，接近 3K-5K 比赛配速，组间慢跑恢复
-- 无氧阈 (Anaerobic Threshold)：800m-2000m 间歇跑，稍慢于 VO₂max 配速，组间慢跑或原地恢复
-- 节奏跑 (Tempo Run / Lactate Threshold)：20-40 分钟持续跑，稳定在乳酸阈配速附近
-- 有氧阈 (Aerobic Threshold)：30-60 分钟中等强度持续跑，比节奏跑慢 15-25 秒/公里
-- 长距离 (Long Run)：60-120 分钟耐力跑，以轻松配速完成
-- 轻松跑 (Easy Run)：30-60 分钟恢复性慢跑，非常舒适的配速
+{PLAN_GLOSSARY}
 
 ══════════════════════════
 【补给与营养约束】（必须嵌入到对应训练日备注中）
@@ -310,8 +323,7 @@ def _build_plan_prompt(state: IntegratedState) -> str:
     【知识库证据】
 {evidence_lines}
 
-【引用规则】
-凡使用上述证据中的事实信息，必须在对应句末或表格单元格内标注 [1]、[2] 等来源编号（例如：...由于过度训练 [1]）。
+{CITATION_RULES_PLAN}
 
 ══════════════════════════
 【图谱上下文】
@@ -510,11 +522,15 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
 
     rag_sources = state.get("rag_sources", [])
     prompt = _build_plan_prompt(state)
-    structured_training_plan = build_structured_training_plan_skeleton(
+    # build_structured_training_plan_skeleton 是同步函数（内部 _call_llm_sync 用 requests），
+    # 在 async executor 节点里直接调会阻塞 event loop，用 to_thread 放到线程池执行。
+    structured_training_plan = await asyncio.to_thread(
+        build_structured_training_plan_skeleton,
         query=state.get("query", ""),
         profile=state.get("user_profile", {}),
         requested_weeks=state.get("requested_weeks"),
         training_capacity_envelope=state.get("training_capacity_envelope") or state.get("s_and_c_constraints") or None,
+        framework=state.get("framework"),
     )
     validation_result = structured_training_plan.get("half_marathon_protocol_validation", {}) if isinstance(structured_training_plan, dict) else {}
     evidence_bundle = build_evidence_bundle(

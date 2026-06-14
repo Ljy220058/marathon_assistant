@@ -1,0 +1,23 @@
+{
+  "description": "training_protocol 分片来源人群标签。用于审核查询构建时追加 population: 过滤词。",
+  "tags": {
+    "The Norway Method": "elite",
+    "Norway Method": "elite",
+    "Seiler_2010_TID_Best_Practice": "elite_subelite",
+    "Stoggl_2014_Polarized_vs_Threshold": "elite_subelite",
+    "Gabbett_2016_ACWR_Paradox": "mixed",
+    "Munoz_2014_Polarized_Recreational_Runners": "recreational",
+    "Esteve-Lanao_2007_Intensity_Distribution": "subelite_recreational",
+    "Billat_2001_Interval_Training": "subelite",
+    "Buchheit_Laursen_2013_HIT": "elite_subelite",
+    "Bosquet_2007_Tapering_MetaAnalysis": "mixed",
+    "Daniels_Running_Formula_4e": "recreational_competitive",
+    "Pfitzinger_Douglas_Advanced_Marathoning_3e": "recreational_competitive",
+    "half_marathon_hmp_protocol": "recreational_competitive",
+    "Sub-70": "elite_subelite",
+    "train_tapering_meta_2023": "mixed",
+    "beginner_guide": "recreational",
+    "EWM-Training-Guides": "recreational"
+  },
+  "audit_query_filter": "对于业余跑者的审核查询，追加 'recreational OR recreational_competitive' 过滤，排除 elite 来源。"
+}

@@ -20,7 +20,7 @@ def test_settings_defaults_are_local_and_safe():
     assert settings.runtime_config_errors("127.0.0.1") == []
     assert settings.allowed_cors_origins() == ["http://127.0.0.1:4321", "http://localhost:4321"]
     assert settings.llm_provider == "ds"
-    assert settings.model_for_provider("ds") == "deepseek-v4-pro"
+    assert settings.model_for_provider("ds") == "deepseek-v4-flash"
     assert settings.embedding_model == "bge-m3:latest"
     assert settings.retrieval_variants_enabled is True
     assert settings.semantic_chunking_enabled is False

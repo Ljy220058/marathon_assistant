@@ -52,6 +52,10 @@ class Settings:
     allowed_origins_raw: str
     llm_provider: str
     llm_timeout_sec: float
+    # 跨所有 worker 进程的 LLM 并发总额度，须 ≤ 上游（DeepSeek）账号并发额度；per-worker 实际值由下方 property 按 web_workers 均分
+    llm_max_concurrency: int
+    # uvicorn worker 进程数（1=单进程默认；生产建议 2-4 按 CPU 核）。多进程下每个 worker 各自加载 KB，内存随 workers 线性增长
+    web_workers: int
     ollama_base_url: str
     ollama_model: str
     deepseek_base_url: str
@@ -72,6 +76,15 @@ class Settings:
     log_client_ip: bool
     app_version: str
     sync_key: str
+
+    @property
+    def llm_max_concurrency_per_worker(self) -> int:
+        """每个 worker 进程的实际 LLM 并发上限（总额度按 worker 数均分，至少 1）。
+
+        多 worker 下每个进程独立持有 Semaphore，故 per-worker 必须 = 总额度 / workers，
+        否则 N workers × 总额度 会突破上游账号并发额度，反而触发 429 雪崩。
+        """
+        return max(1, self.llm_max_concurrency // max(1, self.web_workers))
 
     @property
     def is_production(self) -> bool:
@@ -144,10 +157,12 @@ def build_settings(env: Optional[Mapping[str, Any]] = None) -> Settings:
         allowed_origins_raw=_env_str(values, "MARATHON_ALLOWED_ORIGINS"),
         llm_provider=_env_str(values, "LLM_PROVIDER", "ds").lower() or "ds",
         llm_timeout_sec=_env_float(values, "LLM_TIMEOUT_SEC", 60.0),
+        llm_max_concurrency=_env_int(values, "MARATHON_LLM_MAX_CONCURRENCY", 20, minimum=1),
+        web_workers=_env_int(values, "MARATHON_WEB_WORKERS", 1, minimum=1),
         ollama_base_url=_env_str(values, "OLLAMA_BASE_URL", "http://localhost:11434") or "http://localhost:11434",
         ollama_model=_env_str(values, "OLLAMA_MODEL", "qwen2.5:latest") or "qwen2.5:latest",
         deepseek_base_url=_env_str(values, "DEEPSEEK_BASE_URL", "https://api.deepseek.com") or "https://api.deepseek.com",
-        deepseek_model=_env_str(values, "DEEPSEEK_MODEL", _env_str(values, "DS_MODEL", "deepseek-v4-pro")) or "deepseek-v4-pro",
+        deepseek_model=_env_str(values, "DEEPSEEK_MODEL", _env_str(values, "DS_MODEL", "deepseek-v4-flash")) or "deepseek-v4-flash",
         deepseek_api_key=_env_str(values, "DEEPSEEK_API_KEY") or _env_str(values, "DS_API_KEY"),
         openai_base_url=_env_str(values, "OPENAI_BASE_URL", "https://api.aisz.mom/v1") or "https://api.aisz.mom/v1",
         openai_model=_env_str(values, "OPENAI_MODEL", "gpt-5.5") or "gpt-5.5",

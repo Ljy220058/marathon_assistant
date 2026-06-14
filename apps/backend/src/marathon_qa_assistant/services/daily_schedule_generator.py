@@ -78,6 +78,7 @@ class DailyScheduleItem:
     source: List[str] = field(default_factory=list)
     evidence_ids: List[int] = field(default_factory=list)
     is_rest: bool = False
+    is_key_session: bool = False
     notes: str = ""
     duration_min: int = 0
     training_load: int = 0
@@ -330,11 +331,19 @@ def _merge_objective_text(*values: str) -> str:
     return "；".join(parts)
 
 
-def _build_no_evidence_training_card(training_type: str, notes: str = "") -> Dict[str, str]:
+def _build_no_evidence_training_card(
+    training_type: str,
+    notes: str = "",
+    *,
+    skeleton_warmup: str = "",
+    skeleton_cooldown: str = "",
+) -> Dict[str, str]:
+    warmup = skeleton_warmup or "慢跑10分钟 + 动态拉伸"
+    cooldown = skeleton_cooldown or "慢跑10分钟 + 静态拉伸"
     return {
         "main_set": "动作库证据不足，暂不展示具体主课。",
-        "warmup": "动作库证据不足，暂不展示热身建议。",
-        "cooldown": "动作库证据不足，暂不展示冷身建议。",
+        "warmup": warmup,
+        "cooldown": cooldown,
         "alternative_workout": "",
         "training_objective": "当前训练类型缺少可直接绑定的动作库证据，待补全后再显示执行细节。",
         "evidence_tier": "needs_evidence",
@@ -1363,6 +1372,8 @@ def generate_daily_schedule(
                 no_evidence = _build_no_evidence_training_card(
                     training_type_raw,
                     str(day.get("notes") or "").strip(),
+                    skeleton_warmup=sanitize_all_pace(str(day.get("warmup") or "").strip()),
+                    skeleton_cooldown=sanitize_all_pace(str(day.get("cooldown") or "").strip()),
                 )
                 kb_trace = _build_kb_fallback_trace(None)
                 if main_set_display:
@@ -1543,19 +1554,33 @@ def generate_daily_schedule(
             if evidence_tier in {"action_library", "kb_fallback", "protocol_rule"}:
                 warmup_text = sanitize_all_pace(str(card.get("warmup_suggestion") or "").strip())
                 cooldown_text = sanitize_all_pace(str(card.get("cooldown_suggestion") or "").strip())
+                if warmup_text and warmup_text.startswith("alternative_workout"):
+                    warmup_text = ""
+                if cooldown_text and cooldown_text.startswith("alternative_workout"):
+                    cooldown_text = ""
                 if not warmup_text and evidence_tier == "protocol_rule":
                     warmup_text = sanitize_all_pace(str(day.get("warmup") or "").strip())
                 if not cooldown_text and evidence_tier == "protocol_rule":
                     cooldown_text = sanitize_all_pace(str(day.get("cooldown") or "").strip())
                 if evidence_tier != "protocol_rule":
-                    missing = _build_no_evidence_training_card(training_type_raw, str(day.get("notes") or "").strip())
+                    skeleton_wu = sanitize_all_pace(str(day.get("warmup") or "").strip())
+                    skeleton_cd = sanitize_all_pace(str(day.get("cooldown") or "").strip())
+                    missing = _build_no_evidence_training_card(
+                        training_type_raw, str(day.get("notes") or "").strip(),
+                        skeleton_warmup=skeleton_wu,
+                        skeleton_cooldown=skeleton_cd,
+                    )
                     warmup_text = warmup_text or missing["warmup"]
                     cooldown_text = cooldown_text or missing["cooldown"]
             else:
                 warmup_text = sanitize_all_pace(str(day.get("warmup") or card.get("warmup_suggestion") or "").strip())
                 cooldown_text = sanitize_all_pace(str(day.get("cooldown") or card.get("cooldown_suggestion") or "").strip())
             if evidence_tier == "plan_only" and workout_type not in HMP_WORKOUT_TYPES:
-                no_evidence = _build_no_evidence_training_card(training_type_raw, str(day.get("notes") or "").strip())
+                no_evidence = _build_no_evidence_training_card(
+                    training_type_raw, str(day.get("notes") or "").strip(),
+                    skeleton_warmup=warmup_text,
+                    skeleton_cooldown=cooldown_text,
+                )
                 evidence_tier = no_evidence["evidence_tier"]
                 evidence_tier_label = no_evidence["evidence_tier_label"]
                 card["main_set_candidates"] = []
@@ -1580,7 +1605,11 @@ def generate_daily_schedule(
                 load_bias=_load_bias_for_day(day, raw_week),
             )
             if resolved_evidence_tier != evidence_tier:
-                no_evidence = _build_no_evidence_training_card(training_type_raw, str(day.get("notes") or "").strip())
+                no_evidence = _build_no_evidence_training_card(
+                    training_type_raw, str(day.get("notes") or "").strip(),
+                    skeleton_warmup=warmup_text,
+                    skeleton_cooldown=cooldown_text,
+                )
                 evidence_tier = resolved_evidence_tier
                 evidence_tier_label = EVIDENCE_TIER_LABELS["needs_evidence"]
                 source = []
@@ -1677,6 +1706,9 @@ def generate_daily_schedule(
                         cooldown_text=cooldown_text,
                     )
             # 无动作库证据或降级方案：alternatives 保持空列表，不崩，不编造
+            _is_key = workout_type in QUALITY_WORKOUT_TYPES or any(
+                kw in training_type_raw for kw in ("长距离", "阈值", "间歇", "专项", "渐进", "VO2")
+            )
             days.append(DailyScheduleItem(
                 date=f"第{week_index}周{day_label}",
                 day_label=day_label,
@@ -1698,6 +1730,7 @@ def generate_daily_schedule(
                 evidence_tier_label=evidence_tier_label,
                 source=source,
                 evidence_ids=[int(i) for i in (card.get("evidence_ids") or []) if str(i).isdigit()],
+                is_key_session=_is_key,
                 notes=str(day.get("notes") or "").strip(),
                 duration_min=load_estimate.duration_min,
                 training_load=load_estimate.training_load,

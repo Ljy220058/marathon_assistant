@@ -403,6 +403,32 @@
   font-size: 11px;
 }
 
+/* 证据等级 badge：诚实展示训练课依据强度（A 教材 / B 论文 / C 教练实践）*/
+.day-card-top .day-evidence-badge {
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  cursor: help;
+}
+.day-card-top .day-evidence-badge.grade-a {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.day-card-top .day-evidence-badge.grade-b {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+.day-card-top .day-evidence-badge.grade-c {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
 .day-card h3 {
   margin: 0;
   font-size: 16px;

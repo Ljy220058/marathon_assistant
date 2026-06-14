@@ -11,7 +11,7 @@
 """
 
 import re
-from typing import Dict
+from typing import Any, Dict
 
 
 def is_zone_empty(zones: Dict[str, str], expected_count: int = 9) -> bool:
@@ -167,4 +167,82 @@ def calculate_pace_zones(
         "Z7": pace_range(0.92, 0.90),
         "Z8": pace_range(0.90, 0.85),
         "Z9": pace_range(0.85, 0.75),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Critical Speed (CS) 拟合 —— 从多个距离的 PB 反推临界速度与 D'
+# ---------------------------------------------------------------------------
+# CS 模型：distance = D' + CS × time。对 (time, distance) 做最小二乘线性回归，
+# 斜率 = CS（临界速度，m/s，可长时间维持的最大稳态速度），
+# 截距 = D'（D-prime，有限无氧能量储备，m）。
+# CS 约落在乳酸阈与 VO₂max 之间，可作为无 T-Pace 时的强度锚。
+# 出处：Critical Power/Speed 模型（Monod & Scherrer 1965；Poole & Jones 2017 综述）。
+
+_PB_DISTANCE_FIELDS = (
+    (800, "pb_800m"),
+    (1500, "pb_1500m"),
+    (5000, "pb_5k"),
+    (10000, "pb_10k"),
+    (21097.5, "pb_half"),
+    (42195, "pb_full"),
+)
+
+
+def collect_pb_distance_time(profile: Dict[str, Any]) -> Dict[float, int]:
+    """从 profile 的 PB 字段收集 {距离m: 完赛时间s}，供 CS 拟合。
+
+    PB 时间格式（mm:ss / h:mm:ss / 数字）统一用 pace_to_seconds 解析。
+    """
+    result: Dict[float, int] = {}
+    if not isinstance(profile, dict):
+        return result
+    for distance, key in _PB_DISTANCE_FIELDS:
+        raw = profile.get(key)
+        if raw is None or str(raw).strip() in ("", "—", "-"):
+            continue
+        seconds = pace_to_seconds(str(raw))
+        if seconds > 0:
+            result[float(distance)] = seconds
+    return result
+
+
+def calculate_critical_speed(pb_seconds_by_distance: Dict[float, int]) -> Dict[str, Any]:
+    """从多个距离的完赛时间拟合 Critical Speed (CS) 与 D'。
+
+    模型 distance = D' + CS × time，最小二乘回归得 CS（斜率）与 D'（截距）。
+
+    参数：{距离(m): 完赛时间(s)}，至少 2 个点（建议 3-4 个，含 5k/10k/半马/全马）。
+
+    返回：cs_mps / d_prime_m / cs_pace_sec_per_km / cs_pace_str /
+          n_points / r_squared / source_distances_m；点不足或拟合异常返回 {}。
+    """
+    points = [(t, d) for d, t in (pb_seconds_by_distance or {}).items() if d > 0 and t > 0]
+    if len(points) < 2:
+        return {}
+    n = len(points)
+    sum_t = sum(t for t, _ in points)
+    sum_d = sum(d for _, d in points)
+    sum_tt = sum(t * t for t, _ in points)
+    sum_td = sum(t * d for t, d in points)
+    denom = n * sum_tt - sum_t * sum_t
+    if denom <= 0:
+        return {}
+    cs = (n * sum_td - sum_t * sum_d) / denom
+    d_prime = (sum_d - cs * sum_t) / n
+    if cs <= 0 or d_prime < 0:
+        return {}
+    mean_d = sum_d / n
+    ss_tot = sum((d - mean_d) ** 2 for _, d in points)
+    ss_res = sum((d - (cs * t + d_prime)) ** 2 for t, d in points)
+    r_squared = (1 - ss_res / ss_tot) if ss_tot > 0 else 0.0
+    cs_pace_sec_per_km = 1000.0 / cs
+    return {
+        "cs_mps": round(cs, 3),
+        "d_prime_m": round(d_prime, 1),
+        "cs_pace_sec_per_km": round(cs_pace_sec_per_km, 1),
+        "cs_pace_str": seconds_to_pace(round(cs_pace_sec_per_km)),
+        "n_points": n,
+        "r_squared": round(r_squared, 4),
+        "source_distances_m": sorted(d for _, d in points),
     }

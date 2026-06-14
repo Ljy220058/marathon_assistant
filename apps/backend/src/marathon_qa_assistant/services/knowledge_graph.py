@@ -7,8 +7,31 @@ import logging
 import copy
 from typing import List, Dict, Any, Tuple, Optional
 from pathlib import Path
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage
+try:
+    from langchain_ollama import ChatOllama
+except ImportError:  # 运行时缺依赖时降级：仅 STRICT_MODE 离线流水线/检索不需要 LLM
+    class ChatOllama:  # type: ignore[no-redef]
+        """Stub：langchain_ollama 未安装时的占位。
+
+        生产链路 STRICT_MODE=True，图谱检索与候选合并不调用 LLM；
+        仅 LLM 三元组动态抽取需要真实 ChatOllama，缺失时该路径会显式失败。
+        """
+
+        def __init__(self, *args, **kwargs):
+            self._unavailable = True
+
+        def invoke(self, *args, **kwargs):
+            raise RuntimeError(
+                "ChatOllama 不可用：langchain_ollama 未安装。"
+                "图谱 LLM 抽取需要此依赖；检索与候选合并不受影响。"
+            )
+
+try:
+    from langchain_core.messages import HumanMessage
+except ImportError:  # 同上：仅 LLM 抽取路径用到
+    class HumanMessage:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            self.content = kwargs.get("content", args[0] if args else "")
 from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, V2_VECTOR_DIR
 from marathon_qa_assistant.core.settings import get_settings, load_project_dotenv
 from marathon_qa_assistant.services.kb.graph_evidence import (
@@ -322,11 +345,20 @@ _FALLBACK_TEMPLATE_REGISTRY = {
     },
 }
 
-llm = ChatOllama(
-    model=OLLAMA_MODEL,
-    temperature=0.1,
-    base_url=OLLAMA_BASE_URL
-)
+# 懒加载 LLM 单例：避免模块 import 时创建 ChatOllama（Ollama 不可用时会阻塞/失败 import），
+# 首次实际抽取图谱三元组时才创建。后续如需热更新模型配置可在此扩展。
+_llm_instance = None
+
+
+def _get_llm():
+    global _llm_instance
+    if _llm_instance is None:
+        _llm_instance = ChatOllama(
+            model=OLLAMA_MODEL,
+            temperature=0.1,
+            base_url=OLLAMA_BASE_URL,
+        )
+    return _llm_instance
 
 GRAPH_DATA_PATH = V2_VECTOR_DIR / "knowledge_graph.json"
 
@@ -366,34 +398,84 @@ class GraphEngine:
             self.save_graph()
 
     def load_graph(self):
-        """从磁盘加载图谱数据"""
-        if self.GRAPH_DATA_PATH.exists():
+        """从磁盘加载图谱数据。
+
+        fail-loud 策略：JSON 解析失败时**不静默清空** self.nodes/self.edges，
+        而是保留内存中已有图谱（通常是注册表初始化的兜底图），并把损坏文件
+        改名隔离 + 记 error，避免一次截断就让整张抽取图谱无声丢失。
+        """
+        if not self.GRAPH_DATA_PATH.exists():
+            return
+        try:
+            with open(self.GRAPH_DATA_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            # 损坏文件：隔离改名，保留内存现状，明确报错而非静默吞掉
+            import time as _t
+            quarantine = self.GRAPH_DATA_PATH.with_suffix(
+                f".corrupted_{_t.strftime('%Y%m%d_%H%M%S')}.json"
+            )
             try:
-                with open(self.GRAPH_DATA_PATH, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    self.nodes = data.get("nodes", {})
-                    self.edges = data.get("edges", [])
-                    processed = data.get("processed_chunks", {})
-                    if isinstance(processed, list):
-                        self.processed_chunks = {cid: "" for cid in processed}
-                    else:
-                        self.processed_chunks = processed
-                    migrated = self._migrate_graph_schema()
-                    self.clear_cache()
-                    if migrated:
-                        self.save_graph()
-            except Exception as e:
-                logger.error(f"加载图谱失败: {e}")
+                self.GRAPH_DATA_PATH.rename(quarantine)
+                logger.error(
+                    f"[graph_engine] 主图谱 JSON 损坏（{e}），已隔离至 {quarantine.name}；"
+                    f"保留内存图谱({len(self.nodes)}节点)，请从候选重建："
+                    f"python scripts/merge_knowledge_graph_candidates.py"
+                )
+            except OSError as rename_err:
+                logger.error(
+                    f"[graph_engine] 主图谱 JSON 损坏（{e}）且无法隔离（{rename_err}）；"
+                    f"保留内存图谱({len(self.nodes)}节点)，请人工修复。"
+                )
+            return
+        except Exception as e:
+            logger.error(f"加载图谱失败: {e}")
+            return
+
+        # 解析成功才覆盖内存
+        self.nodes = data.get("nodes", {})
+        self.edges = data.get("edges", [])
+        processed = data.get("processed_chunks", {})
+        if isinstance(processed, list):
+            self.processed_chunks = {cid: "" for cid in processed}
+        else:
+            self.processed_chunks = processed
+        migrated = self._migrate_graph_schema()
+        self.clear_cache()
+        if migrated:
+            self.save_graph()
 
     def save_graph(self):
-        """将图谱数据持久化到磁盘"""
-        self.GRAPH_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.GRAPH_DATA_PATH, "w", encoding="utf-8") as f:
-            json.dump({
-                "nodes": self.nodes, 
-                "edges": self.edges,
-                "processed_chunks": self.processed_chunks 
-            }, f, ensure_ascii=False, indent=2)
+        """将图谱数据持久化到磁盘（原子写入，防止中途被杀留下截断文件）。"""
+        import os
+        import tempfile
+
+        target = self.GRAPH_DATA_PATH
+        target.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "nodes": self.nodes,
+            "edges": self.edges,
+            "processed_chunks": self.processed_chunks,
+        }
+        # 先完整写入同目录临时文件并 fsync，再原子 rename 覆盖正式文件。
+        # 这样即使进程在写入中途被杀，正式文件也保持上一份完整版本，不会出现半截 JSON。
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(target.parent), prefix=".kg_tmp_", suffix=".json"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, target)  # 原子替换
+        except Exception:
+            # 写入失败时清理临时文件，不破坏正式文件
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except OSError:
+                pass
+            raise
         self.clear_cache()
 
     def _load_decision_registry(self):
@@ -572,6 +654,108 @@ class GraphEngine:
         # 回写更新后的状态到队列
         if merged > 0:
             _rewrite_queue_status(queue_path)
+
+        return {"merged": merged, "skipped": skipped, "errors": errors}
+
+    def merge_approved_candidates(
+        self,
+        candidates_path: str | Path,
+    ) -> Dict[str, Any]:
+        """合并 merge_approved=True 的新格式候选三元组进主图。
+
+        新候选文件（knowledge_graph_candidates.jsonl）字段：
+          source_chunk_id, confidence_score, merge_approved, merge_status
+
+        与旧 merge_validated_candidates() 不同：
+          - 门控字段是 merge_approved（布尔），不是 status="validated"
+          - 边增加 edge_origin/candidate_id/extraction_method/source_chunk_id/confidence_score 元数据
+        """
+        import json as _json
+        from pathlib import Path as _Path
+
+        queue_path = _Path(candidates_path)
+        if not queue_path.exists():
+            return {"merged": 0, "skipped": 0, "errors": ["queue_not_found"]}
+
+        records: list[Dict[str, Any]] = []
+        with open(queue_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    records.append(_json.loads(line))
+                except _json.JSONDecodeError as exc:
+                    pass
+
+        merged = 0
+        skipped = 0
+        errors: list[str] = []
+
+        for cand in records:
+            if not cand.get("merge_approved"):
+                skipped += 1
+                continue
+            if cand.get("merge_status") == "merged":
+                skipped += 1
+                continue
+
+            head = str(cand.get("head_entity", "")).strip()
+            tail = str(cand.get("tail_entity", "")).strip()
+            relation = str(cand.get("relation", "")).strip()
+            expert_domain = str(cand.get("expert_domain", "training_protocol"))
+            source_chunk_id = str(cand.get("source_chunk_id", ""))
+            source_file = str(cand.get("source_file", ""))
+            page = cand.get("page")
+            confidence_score = float(cand.get("confidence_score", 0.0))
+            candidate_id = str(cand.get("candidate_id", ""))
+            extraction_method = str(cand.get("extraction_method", "llm_offline"))
+
+            if not head or not tail or not relation:
+                errors.append(f"incomplete:{candidate_id}")
+                skipped += 1
+                continue
+
+            head_type = _node_type_for_entity(head, expert_domain)
+            tail_type = _node_type_for_entity(tail, expert_domain)
+
+            evidence = {
+                "source": source_file or "kg_candidate",
+                "source_path": source_file or "",
+                "chunk_id": source_chunk_id,
+                "text_span": str(cand.get("evidence_span", ""))[:300],
+                "confidence": confidence_score,
+                "evidence_domain": str(cand.get("evidence_domain", "sports_science_reference")),
+            }
+            if page:
+                evidence["page"] = int(page)
+
+            self._upsert_edge(
+                head,
+                tail,
+                relation,
+                source_id=str(cand.get("source_registry_id", "")),
+                source_type=head_type,
+                target_type=tail_type,
+                evidence=evidence,
+                edge_extra={
+                    "expert_domain": expert_domain,
+                    "edge_origin": "auto_extracted",
+                    "candidate_id": candidate_id,
+                    "extraction_method": extraction_method,
+                    "source_chunk_id": source_chunk_id,
+                    "confidence_score": confidence_score,
+                },
+            )
+            cand["merge_status"] = "merged"
+            merged += 1
+
+        if merged > 0:
+            self.save_graph()
+            # 回写 merge_status 到候选文件
+            with open(queue_path, "w", encoding="utf-8") as f:
+                for rec in records:
+                    f.write(_json.dumps(rec, ensure_ascii=False) + "\n")
 
         return {"merged": merged, "skipped": skipped, "errors": errors}
 
@@ -1453,7 +1637,7 @@ class GraphEngine:
 JSON 输出："""
         
         try:
-            response = await asyncio.wait_for(llm.ainvoke([HumanMessage(content=prompt)]), timeout=120.0)
+            response = await asyncio.wait_for(_get_llm().ainvoke([HumanMessage(content=prompt)]), timeout=120.0)
             content = response.content.strip()
             
             # 清理包装
@@ -1466,7 +1650,8 @@ JSON 输出："""
                 if isinstance(data, list):
                     valid = [t for t in data if isinstance(t, list) and len(t) >= 3]
                     if valid: return valid
-            except:
+            # 仅捕获 JSON 解析错误走正则兜底；放过 KeyboardInterrupt 等系统异常
+            except (json.JSONDecodeError, ValueError, TypeError):
                 pass
 
             # 正则兜底

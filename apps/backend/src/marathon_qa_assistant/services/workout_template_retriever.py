@@ -529,6 +529,8 @@ _CORE_PRESCRIPTION_CATEGORY_TOKENS = {
     "坡",
     "法特莱克",
     "配速",
+    "轻松跑",
+    "恢复跑",
 }
 
 _NON_CORE_ONLY_CATEGORY_TOKENS = {

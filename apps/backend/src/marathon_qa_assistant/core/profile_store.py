@@ -72,12 +72,18 @@ def _parse_duration_seconds(text: str) -> Optional[int]:
 
 
 def _get_user_profile_path(user_id: str = "default_user") -> Path:
-    """返回用户级别的画像文件路径。多用户模式下每个用户有独立文件。"""
+    """返回用户级别的画像文件路径（仅用于迁移兼容）。"""
     if user_id == "default_user":
         return USER_PROFILE_PATH
     user_dir = USER_PROFILE_PATH.parent / "users" / user_id
     user_dir.mkdir(parents=True, exist_ok=True)
     return user_dir / "profile.json"
+
+
+def _get_db():
+    """惰性获取数据库实例，避免模块级循环导入。"""
+    from marathon_qa_assistant.services.database import get_db
+    return get_db()
 
 
 def _encrypt_data(data: str) -> str:
@@ -193,20 +199,40 @@ def sync_user_zones(profile: Dict[str, Any]) -> bool:
 
 
 def load_user_profile(user_id: str = "default_user") -> Dict[str, Any]:
-    """从磁盘加载用户画像，并在 schema 演进后自动补默认值。"""
+    """从数据库加载用户画像；首次启动时自动迁移 profile.json 文件到 DB。"""
     profile = DEFAULT_PROFILE.copy()
-    profile_path = _get_user_profile_path(user_id)
-    if profile_path.exists():
+
+    db = _get_db()
+    raw_json = db.load_profile(user_id)
+
+    if raw_json is not None:
         try:
-            raw = profile_path.read_text(encoding="utf-8")
-            saved = json.loads(_decrypt_data(raw))
+            saved = json.loads(_decrypt_data(raw_json))
             for key, value in DEFAULT_PROFILE.items():
                 saved.setdefault(key, value)
             profile = saved
         except Exception as exc:
-            logger.warning(f"加载用户画像失败 (user={user_id}): {exc}")
+            logger.warning(f"从 DB 加载用户画像失败 (user={user_id}): {exc}")
+    else:
+        profile_path = _get_user_profile_path(user_id)
+        if profile_path.exists():
+            try:
+                file_raw = profile_path.read_text(encoding="utf-8")
+                saved = json.loads(_decrypt_data(file_raw))
+                for key, value in DEFAULT_PROFILE.items():
+                    saved.setdefault(key, value)
+                profile = saved
+                logger.info(f"从文件迁移用户画像到 DB (user={user_id})")
+                payload = json.dumps(profile, ensure_ascii=False, indent=2)
+                db.save_profile(user_id, _encrypt_data(payload))
+                migrated_path = profile_path.with_suffix(".json.migrated")
+                try:
+                    profile_path.rename(migrated_path)
+                except Exception:
+                    pass
+            except Exception as exc:
+                logger.warning(f"迁移用户画像文件失败 (user={user_id}): {exc}")
 
-    # 清理旧的带括号的 key (历史遗留)
     has_legacy = False
     for zone_type in ["hr_zones", "pace_zones"]:
         zones = profile.get(zone_type, {})
@@ -214,10 +240,8 @@ def load_user_profile(user_id: str = "default_user") -> Dict[str, Any]:
             profile[zone_type] = {}
             has_legacy = True
 
-    # 执行同步逻辑
     changed = sync_user_zones(profile)
 
-    # 如果是因为版本演进导致的数据变动，主动写回磁盘
     if changed or has_legacy:
         save_user_profile(profile, user_id)
 
@@ -225,7 +249,7 @@ def load_user_profile(user_id: str = "default_user") -> Dict[str, Any]:
 
 
 def save_user_profile(profile: Dict[str, Any], user_id: str = "default_user") -> None:
-    """持久化用户画像。保存前会自动同步区间数据。"""
+    """持久化用户画像到数据库。保存前会自动同步区间数据。"""
     try:
         lthr = _coerce_number(profile.get("lthr", 0))
         if lthr > 40:
@@ -236,10 +260,9 @@ def save_user_profile(profile: Dict[str, Any], user_id: str = "default_user") ->
                 profile["t_pace"], target_hmp_seconds=target_hmp
             )
 
-        profile_path = _get_user_profile_path(user_id)
-        profile_path.parent.mkdir(parents=True, exist_ok=True)
         payload = json.dumps(profile, ensure_ascii=False, indent=2)
-        profile_path.write_text(_encrypt_data(payload), encoding="utf-8")
+        db = _get_db()
+        db.save_profile(user_id, _encrypt_data(payload))
         logger.info(f"用户画像已保存并同步区间数据 (user={user_id})。")
     except Exception as exc:
         logger.error(f"保存用户画像失败 (user={user_id}): {exc}")

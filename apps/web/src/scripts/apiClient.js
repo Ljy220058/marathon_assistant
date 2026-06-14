@@ -216,9 +216,63 @@
     return apiFetch("/knowledge/sources", { timeoutMs: 30000 });
   }
 
+  // 流式查询：fetch + ReadableStream 解析 SSE，边推节点进度边等最终结果。
+  // 返回值与 requestQueryPayload 兼容（完整 response payload），供 renderQueryPayload 直接消费。
+  async function streamQueryPayload(query, { responseMode = "full", controller, onNode } = {}) {
+    const base = _getApiBase().replace(/\/$/, "");
+    const timeoutSec = resolveQueryTimeout(responseMode, false);
+    const response = await fetch(`${base}/query/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ..._getApiAuthHeaders() },
+      body: JSON.stringify(buildQueryPayload(query, responseMode, timeoutSec)),
+      signal: controller ? controller.signal : undefined,
+    });
+    if (!response.ok || !response.body) {
+      let detail = `流式请求失败: ${response.status}`;
+      try { const errPayload = await response.json(); detail = errPayload.detail || detail; } catch {}
+      throw new Error(detail);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalPayload = null;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep;
+      // SSE 帧以 \n\n 分隔；逐帧解析 data: 行
+      while ((sep = buffer.indexOf("\n\n")) >= 0) {
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        const dataLine = frame.split("\n").find((l) => l.startsWith("data:"));
+        if (!dataLine) continue;
+        let evt;
+        try { evt = JSON.parse(dataLine.slice(5).trim()); } catch { continue; }
+        if (evt.type === "node") {
+          if (typeof onNode === "function") onNode(evt);
+        } else if (evt.type === "complete") {
+          finalPayload = evt.response;
+          if (finalPayload && typeof finalPayload === "object" && typeof state !== "undefined" && state.lastRequestId) {
+            finalPayload.__request_id = state.lastRequestId;
+          }
+        } else if (evt.type === "timeout") {
+          throw new Error(evt.message || "工作流超时");
+        } else if (evt.type === "error") {
+          throw new Error(evt.message || "工作流执行错误");
+        } else if (evt.type === "workflow_error") {
+          const errMsg = (evt.workflow_error && evt.workflow_error.message) || "工作流规则校验未通过";
+          throw Object.assign(new Error(errMsg), { workflowError: evt.workflow_error });
+        }
+      }
+    }
+    if (!finalPayload) throw new Error("流式响应未返回完整结果");
+    return finalPayload;
+  }
+
   // 挂载到 window 供外部引用
   window.__apiClient = {
-    apiFetch, detectApiBase, requestQueryPayload, submitFeedback, loadPlanDetail,
+    apiFetch, detectApiBase, requestQueryPayload, streamQueryPayload, submitFeedback, loadPlanDetail,
     explainApiError, requestQueryPayloadFromBase,
     loadKnowledgeSourceSummary, loadKnowledgeSources,
   };

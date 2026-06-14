@@ -124,6 +124,8 @@ class FallbackIntegratedApp:
         if current == "context_fanout":
             return after_context_fanout_route(state)
         if current == "evidence_retriever":
+            return "crag_corrector"
+        if current == "crag_corrector":
             return "conditioning_constraints"
         if current == "conditioning_constraints":
             return after_conditioning_route(state)
@@ -207,6 +209,7 @@ def build_integrated_app(node_handlers):
         "router",
         "context_fanout",
         "evidence_retriever",
+        "crag_corrector",
         "conditioning_constraints",
         "supervisor",
         "formatter",
@@ -249,7 +252,8 @@ def build_integrated_app(node_handlers):
             "evidence_retriever": "evidence_retriever",
         },
     )
-    workflow.add_edge("evidence_retriever", "conditioning_constraints")
+    workflow.add_edge("evidence_retriever", "crag_corrector")
+    workflow.add_edge("crag_corrector", "conditioning_constraints")
     workflow.add_conditional_edges(
         "conditioning_constraints",
         after_conditioning_route,

@@ -13,6 +13,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from marathon_qa_assistant.core.settings import get_settings
+
 logger = logging.getLogger("periodization_advisor")
 
 # B1: 精英来源过滤关键词 — 业余跑者 (新手/初级/中级) 检索时自动排除匹配项
@@ -297,13 +299,15 @@ def _call_llm_sync(prompt: str, timeout_sec: float = 60.0) -> Optional[str]:
         logger.warning("periodization advisor: requests 库不可用")
         return None
 
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
+    settings = get_settings()
+    api_key = settings.deepseek_api_key
     if not api_key:
         logger.info("periodization advisor: DEEPSEEK_API_KEY 未设置——使用确定性规则生成训练计划")
         return None
 
-    base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
-    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+    base_url = settings.deepseek_base_url.rstrip("/")
+    # 对齐全局配置（默认 v4-pro），避免此处另用 deepseek-chat 造成同一链路模型质量不一致
+    model = settings.deepseek_model
 
     try:
         response = requests.post(
@@ -317,6 +321,8 @@ def _call_llm_sync(prompt: str, timeout_sec: float = 60.0) -> Optional[str]:
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.2,
                 "max_tokens": 800,
+                # 强制 JSON 输出，避免 LLM 返回非 JSON 导致 archetype/periodization 解析失败降级
+                "response_format": {"type": "json_object"},
             },
             timeout=timeout_sec,
         )

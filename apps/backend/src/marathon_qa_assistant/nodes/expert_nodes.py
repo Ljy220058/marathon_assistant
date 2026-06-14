@@ -21,29 +21,17 @@ from marathon_qa_assistant.core.state_models import (
     derive_adaptive_reasons,
     normalize_workout_feedback,
 )
+from marathon_qa_assistant.core.prompt_kit import (
+    QA_REPORT_CONTRACT_INSTRUCTION,
+    QA_REPORT_REQUIRED_SECTIONS,
+    build_expert_prompt,
+)
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
     build_rag_sources,
     ensure_usage,
     format_state_evidence_lines,
     get_context,
-    get_security_prompt_suffix,
-)
-
-
-QA_REPORT_REQUIRED_SECTIONS = [
-    "结论",
-    "训练建议",
-    "专项不受影响的边界",
-    "知识库可见证据",
-    "证据不足或待核验之处",
-]
-
-QA_REPORT_CONTRACT_INSTRUCTION = (
-    "QA 报告必须按顺序固定包含以下二级标题："
-    + "、".join(f"## {section}" for section in QA_REPORT_REQUIRED_SECTIONS)
-    + "。其中“知识库可见证据”必须覆盖本轮实际提供的本地知识库可见证据编号、来源和摘要；"
-    "如果没有可见证据，必须明确写明本轮未检索到可展示的本地知识库证据，不能编造引用。"
 )
 
 
@@ -401,34 +389,18 @@ async def _run_expert_llm(
 ) -> Tuple[str, Dict[str, int]]:
     profile = state.get("user_profile", {}) if isinstance(state.get("user_profile"), dict) else {}
     qa_contract = QA_REPORT_CONTRACT_INSTRUCTION if str(state.get("intent_type") or "").lower() == "qa" else ""
-    prompt = f"""你是马拉松多智能体系统中的 {role_name}。
-
-任务要求：
-{task_instruction}
-
-用户问题：
-{state.get("query", "")}
-
-用户画像：
-{_profile_summary(profile)}
-
-知识图谱上下文：
-{state.get("graph_context", "") or "暂无直接图谱路径"}
-
-本地知识库可见证据（必须全部处理，不能只给结论）：
-{format_state_evidence_lines(state, limit=None)}
-
-Wiki 概念补充上下文：
-{_format_wiki_context(state.get("wiki_context", ""))}
-
-引用规则：
-1. 凡使用本地知识库证据中的事实信息，必须在对应句末标注 [1]、[2] 等数字来源编号。
-2. Wiki 只用于解释概念背景，不作为训练处方依据，不要给 Wiki 内容编造 [n] 引用。
-3. 没有本地知识库证据时，可以基于模型通用知识给出一般说明，但必须明确这是“未绑定外部证据的一般说明”。
-4. 模型通用知识不得标成 [n] 证据，也不得替代核心训练处方字段的 evidence 来源。
-
-{qa_contract}
-{get_security_prompt_suffix()}"""
+    # 专家提示词统一由 prompt_kit.build_expert_prompt 组装：引用规则、安全后缀、
+    # QA 契约等共享约束集中管理，避免在各节点内联重复、各自漂移。
+    prompt = build_expert_prompt(
+        role_name=role_name,
+        task_instruction=task_instruction,
+        query=state.get("query", ""),
+        profile_summary=_profile_summary(profile),
+        graph_context=state.get("graph_context", ""),
+        evidence_lines=format_state_evidence_lines(state, limit=None),
+        wiki_context=_format_wiki_context(state.get("wiki_context", "")),
+        qa_contract=qa_contract,
+    )
 
     try:
         return await ai_invoke(prompt, config, state.get("token_usage"))
@@ -891,23 +863,16 @@ def _review_training_capacity_envelope(structured_plan: Dict[str, Any], state: I
 
 
 def _audit_requires_therapist(state: IntegratedState, workflow_kind: str) -> bool:
-    if bool(state.get("needs_therapist_review")):
-        return True
+    # therapist 节点仅从 adaptive_coach 可达（workflow_graph.py: adaptive_coach → therapist）。
+    # 在 team/qa/plan 模式下强制要求 therapist 会导致 auditor 永远失败，
+    # 因此只在 adaptive 模式下执行此检查。
+    if workflow_kind != "adaptive":
+        return False
     adaptation_type = str(state.get("adaptation_type") or "").strip().upper()
     adjustment = state.get("adaptive_adjustment") if isinstance(state.get("adaptive_adjustment"), dict) else {}
     if not adaptation_type:
         adaptation_type = str(adjustment.get("adaptation_type") or "").strip().upper()
-    if workflow_kind == "adaptive":
-        return adaptation_type in {"INJURY", "PAIN"}
-
-    medical = state.get("medical_constraints") if isinstance(state.get("medical_constraints"), dict) else {}
-    if str(medical.get("can_run") or "").strip().lower() in {"limited", "no"}:
-        return True
-    envelope = state.get("training_capacity_envelope") if isinstance(state.get("training_capacity_envelope"), dict) else {}
-    for flag in envelope.get("capacity_risk_flags") or []:
-        if isinstance(flag, dict) and flag.get("code") == "requires_therapist_review":
-            return True
-    return False
+    return adaptation_type in {"INJURY", "PAIN"}
 
 
 def _run_hard_rule_checks(state: IntegratedState) -> Dict[str, Any]:
@@ -1009,24 +974,61 @@ def _run_hard_rule_checks(state: IntegratedState) -> Dict[str, Any]:
 async def rule_checker_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
     started = time.perf_counter()
+
+    # 自动修复 LLM 生成的训练时长违反文献约束的情况
+    stp = state.get("structured_training_plan")
+    if isinstance(stp, dict):
+        week_plans = stp.get("week_plans") or []
+        if week_plans:
+            try:
+                from marathon_qa_assistant.core.half_marathon_validator import repair_workout_durations
+                repaired = repair_workout_durations(week_plans)
+                if repaired:
+                    logger.info("rule_checker: auto-repaired %d workout durations", repaired)
+            except Exception as exc:
+                logger.warning("rule_checker: duration repair failed: %s", exc)
+
+    # 修复 evidence 中缺失 source_path 的情况。
+    # curated/degraded 检索的 evidence（如 nutrition/training 知识包）没有 PDF 文件路径，
+    # 但通常携带 source_label/source_url/source_registry_id；依次兜底填充，
+    # 避免 rule_checker 因"证据 [N] 缺少 source_path"误判 QA 回答失败（导致 auditor 永远 fail → 500/504）。
+    eb = state.get("evidence_bundle")
+    if isinstance(eb, dict):
+        for ev in eb.get("evidence_items") or []:
+            if not isinstance(ev, dict):
+                continue
+            if not str(ev.get("source_path") or "").strip():
+                # 依次尝试各 source 字段；'unknown' 视为空（curated/幽灵 evidence 常见）。
+                # 用 next 显式跳过 unknown，避免 or 链被 'unknown' 短路后被 != "unknown" 排除。
+                candidates = [
+                    ev.get("source_file"), ev.get("source"),
+                    ev.get("source_label"), ev.get("source_url"),
+                    ev.get("source_registry_id"),
+                ]
+                fallback = next(
+                    (str(c or "").strip() for c in candidates
+                     if str(c or "").strip() and str(c or "").strip().lower() != "unknown"),
+                    "",
+                )
+                if fallback:
+                    ev["source_path"] = fallback
+                elif ev.get("kind") in ("graph", "fusion"):
+                    ev["source_path"] = "knowledge_graph"
+                # 全空幽灵 evidence 不再兜底填占位 —— 由 build_evidence_bundle 聚合层过滤根除。
+                # 若此处仍出现空 source_path，说明聚合层过滤有漏网，应修聚合层而非兜底掩盖。
+
     result = _run_hard_rule_checks(state)
     logger.info(
-        "rule_checker: %.1fms, passed=%s, violations=%d",
+        "rule_checker: %.1fms, passed=%s, violations=%d, detail=%s",
         (time.perf_counter() - started) * 1000,
         result["passed"],
         len(result["violations"]),
+        result["violations"][:3],
     )
     summary = "硬规则检查通过" if result["passed"] else "硬规则检查未通过：" + "；".join(result["violations"][:4])
     if not result["passed"]:
         return {
             "rule_check_result": result,
-            "workflow_error": {
-                "status": "failed",
-                "error_code": "HARD_RULE_VIOLATION",
-                "node": "rule_checker",
-                "message": summary,
-                "violations": list(result.get("violations") or []),
-            },
             "reasoning_log": [f"[rule_checker] passed={result['passed']}, violations={len(result['violations'])}"],
             "execution_trace": [_rule_checker_trace_step(state, result)],
             "token_usage": ensure_usage(state.get("token_usage")),

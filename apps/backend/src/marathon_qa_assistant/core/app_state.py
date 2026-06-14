@@ -107,7 +107,8 @@ async def check_ollama_status():
         writer.close()
         await writer.wait_closed()
         return True
-    except:
+    # 端口探测：连接/超时异常均视为不可用；不吞 KeyboardInterrupt/SystemExit
+    except Exception:
         return False
 
 def pick_free_port(host: str, preferred_port: int | None, max_tries: int = 50) -> int:

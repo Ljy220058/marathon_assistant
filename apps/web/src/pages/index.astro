@@ -295,7 +295,7 @@ const advancedProfileFields = new Set(["currentHalfTime", "targetPace", "weight"
               <label>
                 <span class="field-label">模型</span>
                 <select id="llmModel">
-                  <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+                  <option value="deepseek-v4-flash">deepseek-v4-flash</option>
                 </select>
               </label>
             </div>
@@ -334,6 +334,11 @@ const advancedProfileFields = new Set(["currentHalfTime", "targetPace", "weight"
               <div class="progress-insight">
                 <span id="planProgressPhase">等待生成</span>
                 <strong id="planProgressSignal">日历尚未开始生成</strong>
+              </div>
+              <!-- 等待时价值填充：预期时间 + 跑步知识轮播（把干等变成学一点，提升留存） -->
+              <div class="progress-extra" hidden data-plan-progress-extra>
+                <span class="progress-eta" id="planProgressEta"></span>
+                <div class="progress-tip tip-fade" id="planProgressTip" aria-live="polite"></div>
               </div>
             </div>
           </section>

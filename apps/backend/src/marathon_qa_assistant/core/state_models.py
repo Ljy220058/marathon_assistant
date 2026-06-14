@@ -932,7 +932,7 @@ class UserProfile(TypedDict):
     sex: Optional[str]            # P1-8: 性别 "男" / "女"
     weight_kg: Optional[float]    # P1-8: 体重 (kg)
     nutrition_profile: Optional[NutritionProfile]
-    long_term_memory: Optional[List[str]]
+    long_term_memory: Optional[List[Dict[str, Any]]]
     verified_facts: Optional[Dict[str, Any]]
 
 
@@ -974,6 +974,9 @@ class Evidence(TypedDict):
     hybrid_score: float
     citation_label: str  # [1], [2] 等
     trace: Dict[str, Any]
+    # CRAG 纠正字段（crag_corrector 节点写入；旧证据缺这两键，读取方用 .get() 兜底）
+    refined_text: str
+    refinement_meta: Dict[str, Any]
 
 
 class EvidenceBundleItem(TypedDict, total=False):
@@ -1076,6 +1079,7 @@ class IntegratedState(TypedDict):
     needs_nutrition_review: bool
     psychologist_done: bool
     needs_psychology_review: bool
+    framework: Optional[str]  # 预留：教练/训练框架选择（如 "Daniels"/"Hansen"/"80_20"），多框架对比功能的扩展点，None=现有默认逻辑
 
 
 WorkingState = IntegratedState

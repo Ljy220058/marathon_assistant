@@ -43,17 +43,25 @@ def _fake_empty_bundle(**kwargs):
     return {"evidence_items": [], "health": {}}
 
 
-common.ai_invoke = _fake_ai_invoke
-plan_nodes.ai_invoke = _fake_ai_invoke
-expert_nodes.ai_invoke = _fake_ai_invoke
-profile_and_retrieval.ai_invoke = _fake_ai_invoke
-profile_and_retrieval.get_context = _fake_get_context
-profile_and_retrieval.semantic_match_entities = _fake_empty_list
-profile_and_retrieval.infer_entities = _fake_empty_list
-profile_and_retrieval.expand_entities_for_kg = _fake_empty_list
-profile_and_retrieval.get_graph_context = lambda *args, **kwargs: ("", "flowchart TD\n  Empty[Stub]")
-profile_and_retrieval.build_ranked_evidence = _fake_empty_list
-profile_and_retrieval.build_evidence_bundle = _fake_empty_bundle
+def _apply_workflow_mocks() -> None:
+    """为 __main__ 手动集成测试注入 fake，避免触发真实 FAISS/LLM。
+
+    仅在 run_integration_test 入口调用；不在模块级执行，以免污染其他测试模块
+    的 `from profile_and_retrieval import build_ranked_evidence` 绑定
+    （pytest 按字母序收集，integration_ 先于 test_ import，模块级赋值会让
+    后续 test_domain_expert_retrieval 等绑定到返回空列表的 fake build_ranked_evidence）。
+    """
+    common.ai_invoke = _fake_ai_invoke
+    plan_nodes.ai_invoke = _fake_ai_invoke
+    expert_nodes.ai_invoke = _fake_ai_invoke
+    profile_and_retrieval.ai_invoke = _fake_ai_invoke
+    profile_and_retrieval.get_context = _fake_get_context
+    profile_and_retrieval.semantic_match_entities = _fake_empty_list
+    profile_and_retrieval.infer_entities = _fake_empty_list
+    profile_and_retrieval.expand_entities_for_kg = _fake_empty_list
+    profile_and_retrieval.get_graph_context = lambda *args, **kwargs: ("", "flowchart TD\n  Empty[Stub]")
+    profile_and_retrieval.build_ranked_evidence = _fake_empty_list
+    profile_and_retrieval.build_evidence_bundle = _fake_empty_bundle
 
 
 def _build_state() -> IntegratedState:
@@ -126,6 +134,7 @@ def test_integration_workflow_returns_consistent_final_state():
 
 
 async def run_integration_test():
+    _apply_workflow_mocks()
     print("[Start] 启动当前工作流集成测试...")
     state = _build_state()
     print(f"\n[Question] 测试问题: {state['query']}")

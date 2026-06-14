@@ -229,7 +229,6 @@ class _Database:
             """
         )
         self._ensure_schema_migrations_checksum(conn)
-        self._apply_migrations(conn)
         self._ensure_columns(
             conn,
             "training_event_feedback",
@@ -303,6 +302,9 @@ class _Database:
                     conn.execute("CREATE UNIQUE INDEX idx_users_token_hash ON users(api_token_hash)")
                 except Exception:
                     pass
+        # users 表已就绪后再跑 migrations：0007_consent_version 需要 ALTER TABLE users。
+        # 原顺序 _apply_migrations 在建 users 之前，导致全新 DB 初始化时 0007 报 no such table: users。
+        self._apply_migrations(conn)
         conn.commit()
 
     def _table_exists(self, conn: sqlite3.Connection, table_name: str) -> bool:
@@ -457,6 +459,7 @@ class _Database:
         privacy_consent: bool = False,
         health_data_consent: bool = False,
         terms_accepted: bool = False,
+        consent_version: str = "v1.0",
     ) -> bool:
         parts = ["updated_at = datetime('now')"]
         if privacy_consent:
@@ -465,6 +468,8 @@ class _Database:
             parts.append("health_data_consent_at = datetime('now')")
         if terms_accepted:
             parts.append("terms_accepted_at = datetime('now')")
+        if consent_version:
+            parts.append(f"consent_version = '{consent_version}'")
         if len(parts) == 1:
             return False
         conn = self._get_conn()
@@ -1295,6 +1300,39 @@ class _Database:
         )
         conn.commit()
         return True
+
+    # ---- user_profiles 表操作 ----
+
+    def load_profile(self, user_id: str) -> Optional[str]:
+        row = self._get_conn().execute(
+            "SELECT profile_json FROM user_profiles WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        return row["profile_json"] if row else None
+
+    def save_profile(self, user_id: str, profile_json: str) -> None:
+        conn = self._get_conn()
+        existing = conn.execute(
+            "SELECT user_id FROM user_profiles WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        if existing:
+            conn.execute(
+                "UPDATE user_profiles SET profile_json = ?, updated_at = datetime('now') WHERE user_id = ?",
+                (profile_json, user_id),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO user_profiles (user_id, profile_json) VALUES (?, ?)",
+                (user_id, profile_json),
+            )
+        conn.commit()
+
+    def delete_profile(self, user_id: str) -> bool:
+        conn = self._get_conn()
+        conn.execute("DELETE FROM user_profiles WHERE user_id = ?", (user_id,))
+        conn.commit()
+        return conn.total_changes > 0
 
 
 _db_instance: Optional[_Database] = None

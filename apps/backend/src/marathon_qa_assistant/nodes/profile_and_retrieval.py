@@ -13,6 +13,7 @@ from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
 from marathon_qa_assistant.core.physiology import calculate_hr_zones, calculate_pace_zones
 from marathon_qa_assistant.core.profile_store import load_user_profile, save_user_profile
 from marathon_qa_assistant.core.settings import get_settings
+from marathon_qa_assistant.core.prompt_kit import SECURITY_SUFFIX
 from marathon_qa_assistant.core.state_models import Evidence, IntegratedState
 from marathon_qa_assistant.nodes.common import (
     ai_invoke,
@@ -35,13 +36,18 @@ logger = logging.getLogger("workflow_engine")
 INTENT_DOMAIN_POLICIES = {
     "nutrition": {
         "categories": {"nutritionist"},
-        "query_terms": {"营养", "补给", "碳水", "能量胶", "喝水", "电解质", "盐丸"},
+        "query_terms": {"营养", "补给", "碳水", "能量胶", "喝水", "电解质", "盐丸", "蛋白质", "氨基酸"},
         "domains": {"nutrition_race_fueling", "nutrition", "race_fueling", "hydration"},
     },
     "injury_safety": {
         "categories": {"therapist"},
-        "query_terms": {"疼", "痛", "伤", "膝", "跟腱", "足底", "恢复", "康复", "无法承重", "应力", "骨折", "肌肉拉伤"},
+        "query_terms": {"疼", "痛", "伤", "膝", "跟腱", "足底", "恢复", "康复", "无法承重", "应力", "骨折", "肌肉拉伤", "髂胫束", "筋膜"},
         "domains": {"medical_safety", "rehab_strength_mobility", "medical_risk", "injury_prevention", "injury", "rehabilitation", "recovery"},
+    },
+    "sport_psychology": {
+        "categories": {"psychologist"},
+        "query_terms": {"心理", "焦虑", "压力", "动力", "意志", "专注", "比赛心理", "心理准备", "情绪", "恐惧"},
+        "domains": {"sport_psychology"},
     },
 }
 
@@ -289,7 +295,7 @@ EXTRACT_PROFILE_SYSTEM = (
 )
 
 
-def _normalize_profile(raw_profile: Dict[str, Any]) -> Dict[str, Any]:
+def _normalize_profile(raw_profile: Dict[str, Any], query: str = "") -> Dict[str, Any]:
     profile = load_user_profile()
     profile.update(raw_profile or {})
 
@@ -301,8 +307,20 @@ def _normalize_profile(raw_profile: Dict[str, Any]) -> Dict[str, Any]:
     if t_pace:
         profile["pace_zones"] = calculate_pace_zones(t_pace)
 
-    if not isinstance(profile.get("long_term_memory"), list):
-        profile["long_term_memory"] = []
+    if query:
+        try:
+            from marathon_qa_assistant.services.memory_store import get_memory_store
+            ms = get_memory_store()
+            user_id = str(profile.get("user_id", "default_user"))
+            memories = ms.search_relevant_memories(user_id, query, top_k=5)
+            profile["long_term_memory"] = memories
+        except Exception:
+            if not isinstance(profile.get("long_term_memory"), list):
+                profile["long_term_memory"] = []
+    else:
+        if not isinstance(profile.get("long_term_memory"), list):
+            profile["long_term_memory"] = []
+
     if not isinstance(profile.get("verified_facts"), dict):
         profile["verified_facts"] = {}
     return profile
@@ -723,7 +741,9 @@ def _compute_relevance_score(
 ) -> tuple[float, Dict[str, float]]:
     """把 FAISS 距离分与词面/实体命中合成用户可见相关度。"""
     term_mismatch_penalty = 0.0
-    if term_overlap <= 0.0 and entity_overlap <= 0.0 and raw_vector_score > 0:
+    # 跨语言命中（bilingual_match=True，如中文 query 命中英文文献）字面本就不重叠，
+    # 视为向量已确认的语义相关，不罚；仅同语言下字面/实体全不匹配才视为跑题假阳性。
+    if term_overlap <= 0.0 and entity_overlap <= 0.0 and raw_vector_score > 0 and not bilingual_match:
         term_mismatch_penalty = 0.35
     graph_anchor_penalty = 0.25 if (is_graph_only and not has_trace_anchor) else 0.0
     # 权重归一化 (Phase 0b): 原 0.55+0.25+0.20+0.15=1.15, 归一化到同比例 1.00
@@ -893,6 +913,21 @@ def build_ranked_evidence(
                 ev[meta_key] = hit.get(meta_key)
                 ev["trace"].setdefault(meta_key, hit.get(meta_key))
 
+        # source_path fallback: 571 chunks 缺少此 key，用 source_file 兜底
+        if not str(ev.get("source_path") or "").strip() and source and source != "unknown":
+            ev["source_path"] = source
+            ev["trace"].setdefault("source_path", source)
+
+        # 根因修复：过滤无有效来源的幽灵 evidence（检索返回的元数据全空 chunk）。
+        # 这类 evidence 缺少 source_path/source_file/source_label/source_url/source_registry_id，
+        # 会触发 rule_checker "证据 [N] 缺少 source_path" 违规（auditor fail → 500/504），
+        # 且对用户无定位价值。在构造层过滤，不依赖下游 rule_checker 兜底。
+        if not any(
+            str(ev.get(k) or "").strip().lower() not in {"", "unknown"}
+            for k in ("source_path", "source_file", "source_label", "source_url", "source_registry_id")
+        ):
+            continue
+
         # 以 chunk_id 为核心去重键
         key = chunk_id if chunk_id else f"{source}_{page}"
         evidence_map[key] = ev
@@ -1022,6 +1057,13 @@ def build_ranked_evidence(
         is_graph_only = ev["kind"] == "graph"
         has_trace_anchor = bool(ev.get("chunk_id")) or str(ev.get("source_file", "")).strip().lower() not in {"", "unknown"}
         term_overlap = _term_overlap_score(f"{ev.get('text', '')} {ev.get('snippet', '')}", relevance_terms)
+        # 跨语言检测：中文 query 命中纯英文证据时，字面/实体不匹配是语言差异，
+        # 标记 bilingual_match 以跳过 term_mismatch_penalty（向量已确认语义相关）。
+        if term_overlap <= 0.0 and not ev.get("bilingual_match"):
+            if any("一" <= ch <= "鿿" for ch in query) and not any(
+                "一" <= ch <= "鿿" for ch in str(ev.get("text") or "")
+            ):
+                ev["bilingual_match"] = True
         relevance_score, score_breakdown = _compute_relevance_score(
             raw_vector_score=raw_vector_score,
             entity_overlap=float(ev.get("entity_overlap", 0.0) or 0.0),
@@ -1114,9 +1156,8 @@ def build_ranked_evidence(
 
 
 async def profiler_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    current_profile = _normalize_profile(state.get("user_profile", {}))
-
     query = state.get("query", "")
+    current_profile = _normalize_profile(state.get("user_profile", {}), query=query)
     extracted = {}
     if query:
         extracted = await _extract_profile_from_query(query, config, state.get("token_usage"))
@@ -1225,7 +1266,11 @@ async def _collect_evidence_context(
 
     # ── 跨语言检索：仅当 intent 策略明确命中英文文献域时才翻译 ──
     # _EN_INTENT_MAP: intent_policy_name → (en_domain_hint)
-    _EN_INTENT_MAP = {"nutrition": "nutrition", "injury_safety": "rehab_safety"}
+    _EN_INTENT_MAP = {
+        "nutrition": "nutrition",
+        "injury_safety": "rehab_safety",
+        "sport_psychology": "sport_psychology",
+    }
     policy_name, _ = _intent_domain_policy(category=category, query=query)
     needs_translation = policy_name in _EN_INTENT_MAP
     en_query = ""
@@ -1580,6 +1625,8 @@ async def missing_info_handler_node(state: IntegratedState, config: RunnableConf
             f"控制在 120 字以内。"
         )
 
+    # 用户提问直接进入 prompt，注入安全后缀防止服从其中的指令性语句。
+    prompt = prompt + SECURITY_SUFFIX
     try:
         result, usage = await ai_invoke(prompt, config, state.get("token_usage"))
         content = f"## 需要更多信息\n{result}" if result else _static_fallback(missing, rag_sources, experience_level)

@@ -1,0 +1,211 @@
+{
+  "constraint_registry": {
+    "c_quality_sessions_weekly_cap": {
+      "label": "每周质量课最多 2 次",
+      "type": "constraint",
+      "rule": "quality_sessions_per_week <= 2",
+      "description": "限制节奏跑、无氧阈、摄氧量、重复跑等高质量训练的周频次。"
+    },
+    "c_quality_gap_48h": {
+      "label": "高质量课间隔至少 48 小时",
+      "type": "constraint",
+      "rule": "hours_between_quality_sessions >= 48",
+      "description": "避免连续高强度刺激，保留恢复窗口。"
+    },
+    "c_long_run_weekly_cap": {
+      "label": "每周长距离最多 1 次",
+      "type": "constraint",
+      "rule": "long_run_sessions_per_week <= 1",
+      "description": "防止长距离课过量堆叠。"
+    },
+    "c_long_run_duration_cap": {
+      "label": "长距离时长不得超过单次上限",
+      "type": "constraint",
+      "rule": "long_run_duration_min <= athlete.max_session_minutes",
+      "description": "长距离模板必须受用户单次最长训练时长约束。"
+    },
+    "c_easy_after_quality": {
+      "label": "高质量课后优先恢复或轻松跑",
+      "type": "constraint",
+      "rule": "day_after_quality in {'easy_run','recovery','rest'}",
+      "description": "控制高强度训练后的次日安排。"
+    }
+  },
+  "template_registry": {
+    "tpl_easy_run_duration_v1": {
+      "label": "轻松跑模板 30-60min",
+      "type": "template",
+      "workout_labels": [
+        "轻松跑",
+        "恢复跑"
+      ],
+      "zone_label": "Z1",
+      "physiology_targets": [
+        "有氧基础"
+      ],
+      "adaptation_targets": [
+        "恢复能力",
+        "基础耐力"
+      ],
+      "fields": {
+        "duration_min": "30-60",
+        "intensity": "Z1",
+        "rest": "无",
+        "surface": "公园|公路"
+      },
+      "constraint_ids": [
+        "c_easy_after_quality"
+      ]
+    },
+    "tpl_long_run_base_v1": {
+      "label": "长距离模板 80-120min",
+      "type": "template",
+      "workout_labels": [
+        "长距离",
+        "长距离有氧"
+      ],
+      "zone_label": "Z2",
+      "physiology_targets": [
+        "脂代谢",
+        "有氧基础"
+      ],
+      "adaptation_targets": [
+        "耐力提升"
+      ],
+      "fields": {
+        "duration_min": "80-120",
+        "intensity": "Z2",
+        "progression": "optional_last_20min",
+        "surface": "公路|公园"
+      },
+      "constraint_ids": [
+        "c_long_run_weekly_cap",
+        "c_long_run_duration_cap"
+      ]
+    },
+    "tpl_aerobic_threshold_continuous_v1": {
+      "label": "有氧阈模板 30-50min",
+      "type": "template",
+      "workout_labels": [
+        "有氧阈"
+      ],
+      "zone_label": "Z3",
+      "physiology_targets": [
+        "有氧阈"
+      ],
+      "adaptation_targets": [
+        "稳态耐力"
+      ],
+      "fields": {
+        "duration_min": "30-50",
+        "intensity": "Z3",
+        "rest": "无",
+        "surface": "公路|跑道"
+      },
+      "constraint_ids": [
+        "c_quality_gap_48h"
+      ]
+    },
+    "tpl_tempo_continuous_v1": {
+      "label": "节奏跑模板 20-40min",
+      "type": "template",
+      "workout_labels": [
+        "节奏跑",
+        "阈值节奏跑"
+      ],
+      "zone_label": "Z4",
+      "physiology_targets": [
+        "乳酸阈"
+      ],
+      "adaptation_targets": [
+        "阈值提升"
+      ],
+      "fields": {
+        "duration_min": "20-40",
+        "intensity": "Z4",
+        "rest": "无",
+        "surface": "公路|跑道"
+      },
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "tpl_threshold_cruise_v1": {
+      "label": "无氧阈模板 4x1600m",
+      "type": "template",
+      "workout_labels": [
+        "无氧阈"
+      ],
+      "zone_label": "Z5",
+      "physiology_targets": [
+        "乳酸阈"
+      ],
+      "adaptation_targets": [
+        "高阈值耐受"
+      ],
+      "fields": {
+        "reps": "4",
+        "distance": "1600m",
+        "intensity": "Z5",
+        "rest": "2min jog"
+      },
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "tpl_vo2_1k_v1": {
+      "label": "摄氧量模板 6x1km",
+      "type": "template",
+      "workout_labels": [
+        "摄氧量",
+        "高强度间歇"
+      ],
+      "zone_label": "Z8",
+      "physiology_targets": [
+        "vo2max"
+      ],
+      "adaptation_targets": [
+        "最大摄氧量提升"
+      ],
+      "fields": {
+        "reps": "5-6",
+        "distance": "1km",
+        "intensity": "Z8",
+        "rest": "90s jog"
+      },
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "tpl_repetition_400_v1": {
+      "label": "重复跑模板 8x400m",
+      "type": "template",
+      "workout_labels": [
+        "重复跑",
+        "极限间歇"
+      ],
+      "zone_label": "Z9",
+      "physiology_targets": [
+        "跑步经济性"
+      ],
+      "adaptation_targets": [
+        "神经肌肉刺激"
+      ],
+      "fields": {
+        "reps": "8",
+        "distance": "400m",
+        "intensity": "Z9",
+        "rest": "200m walk"
+      },
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    }
+  },
+  "source_id": "decision_graph_registry_v1",
+  "_note": "Editable config for training decision registries. Changes take effect on next GraphEngine init."
+}
