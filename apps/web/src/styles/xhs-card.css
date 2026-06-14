@@ -220,3 +220,10 @@ body.ui-calendar-converged .calendar-grid {
   transform: translateY(-2px);
 }
 
+/* 触屏: 抑制长按选中文字/调出系统菜单(tap 反馈 :active 见上, focus-visible 见上) */
+.xhs-card {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+

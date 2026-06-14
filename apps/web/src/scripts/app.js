@@ -5146,6 +5146,16 @@ function renderCalendar(response) {
       if (tiltCard) { tiltCard.style.transition = ""; tiltCard.style.transform = ""; tiltCard = null; }
     });
   }
+  // 键盘可达: article[role=button] 的 Enter/Space 触发点击(所有设备, dataset防重复)
+  if (!calendarBox.dataset.xhsKeydownBound) {
+    calendarBox.dataset.xhsKeydownBound = "1";
+    calendarBox.addEventListener("keydown", (ev) => {
+      if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches("[data-xhs-card]")) {
+        ev.preventDefault();
+        ev.target.click();
+      }
+    });
+  }
   calendarActionPanel?.querySelectorAll("[data-calendar-action]").forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.calendarAction || "";
