@@ -163,3 +163,12 @@ body.ui-calendar-converged .calendar-grid {
 .calendar-grid.xhs-enter-play .xhs-card:nth-child(7) { animation-delay: .38s; }
 .calendar-grid.xhs-enter-play .xhs-card:nth-child(n+8) { animation-delay: .44s; }
 
+/* ===== hover 抬升 + 移动端 tap 反馈(3D 倾斜由 JS pointermove 驱动) ===== */
+.xhs-card:hover {
+  transform: perspective(800px) translateY(-4px) scale(1.03);
+  box-shadow: var(--shadow, 0 10px 24px rgba(15, 23, 42, .06));
+}
+.xhs-card:active {
+  transform: perspective(800px) translateY(-1px) scale(.99);
+}
+

@@ -5108,6 +5108,27 @@ function renderCalendar(response) {
       openDayModal(days[index], null, button);
     });
   });
+  // 3D 倾斜跟随光标(仅 hover:pointer-fine 设备, 触屏跳过); dataset 标志防重复绑定
+  if (!calendarBox.dataset.xhsTiltBound && window.matchMedia("(hover:hover) and (pointer:fine)").matches) {
+    calendarBox.dataset.xhsTiltBound = "1";
+    let tiltCard = null;
+    calendarBox.addEventListener("pointermove", (ev) => {
+      const card = ev.target.closest("[data-xhs-card]");
+      if (card !== tiltCard) {
+        if (tiltCard) { tiltCard.style.transition = ""; tiltCard.style.transform = ""; }
+        tiltCard = card;
+      }
+      if (!card) return;
+      const r = card.getBoundingClientRect();
+      const px = (ev.clientX - r.left) / r.width - 0.5;
+      const py = (ev.clientY - r.top) / r.height - 0.5;
+      card.style.transition = "none";
+      card.style.transform = `perspective(800px) translateY(-4px) scale(1.03) rotateX(${-py * 8}deg) rotateY(${px * 8}deg)`;
+    });
+    calendarBox.addEventListener("pointerleave", () => {
+      if (tiltCard) { tiltCard.style.transition = ""; tiltCard.style.transform = ""; tiltCard = null; }
+    });
+  }
   calendarActionPanel?.querySelectorAll("[data-calendar-action]").forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.calendarAction || "";
