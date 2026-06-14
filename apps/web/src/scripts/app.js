@@ -4687,6 +4687,19 @@ function trainingTypeVisual(day) {
   return TRAINING_TYPE_VISUALS["轻松跑"];
 }
 
+// 当日总公里数（热身+主课+放松），封面副信息用
+function totalKm(day) {
+  const sum = numberValue(day?.warmup_km, 0) + numberValue(day?.main_km, 0) + numberValue(day?.cooldown_km, 0);
+  return sum > 0 ? Math.round(sum * 10) / 10 : 0;
+}
+// 判断当日是否今天，用于封面"今天"呼吸角标
+function isToday(day) {
+  const d = day?.date || day?.scheduled_date;
+  if (!d) return false;
+  const today = new Date(); const target = new Date(d);
+  return today.toDateString() === target.toDateString();
+}
+
 function renderDayCard(day, index, loadPoint = null) {
   const isRest = isRestDay(day);
   const needsRecheck = requiresProtocolRecheck(day);
@@ -4725,38 +4738,34 @@ function renderDayCard(day, index, loadPoint = null) {
   const evidenceBadge = evidenceGrade
     ? `<span class="day-evidence-badge grade-${evidenceGrade.toLowerCase()}" title="${escapeHtml(`证据等级 ${evidenceGrade}：${evidenceSource || "未标注"}（A=同行评审教材 / B=论文 / C=教练实践）`)}">依据${evidenceGrade}</span>`
     : "";
+  // 小红书封面卡：训练类型大字 + 强度代号 + 副信息(km·配速) + 日期角标；功能信息(证据/复核/关键)降为封面微角标
+  const visual = trainingTypeVisual(day);
+  const code = visual.code || (isRest ? "" : zone);
+  const km = totalKm(day);
+  const subInfo = isRest ? durationLabel : `${durationLabel}${km ? ` · ${km}km` : ""}${day.pace_range ? ` · ${day.pace_range}` : ""}`;
+  const dayOfWeek = dayDateLabel(day) || `第${day.day_index ?? index + 1}天`;
+  const cornerBadges = [
+    evidenceBadge,
+    needsRecheck ? `<span class="cover-corner recheck" title="待复核">复核</span>` : "",
+    isQualityTraining(day) ? `<span class="cover-corner key" title="关键课">关键</span>` : "",
+  ].filter(Boolean).join("");
   return `
-    <button class="day-card ${isRest ? "rest" : ""} ${isQualityTraining(day) ? "key-session" : ""} ${needsRecheck ? "needs-recheck" : ""} ${loadInfo.className}" data-day-index="${index}" type="button" title="${escapeHtml(hoverTitle)}">
-      <div class="day-card-top">
-        <strong>${escapeHtml(label)}</strong>
-        <span>${escapeHtml(badgeLabel)}</span>
-        ${evidenceBadge}
+    <article class="xhs-card accent-${escapeHtml(visual.accent)} ${isRest ? "is-rest" : ""} ${isQualityTraining(day) ? "is-key" : ""} ${needsRecheck ? "needs-recheck" : ""} ${isToday(day) ? "is-today" : ""}"
+             data-day-index="${index}" data-xhs-card data-accent="${escapeHtml(visual.accent)}"
+             tabindex="0" role="button" aria-label="${escapeHtml(hoverTitle)}">
+      <div class="xhs-cover" aria-hidden="true">
+        <span class="xhs-cover-icon">${visual.icon}</span>
+        <span class="xhs-cover-day">${escapeHtml(dayOfWeek)}</span>
+        ${cornerBadges ? `<div class="xhs-cover-corners">${cornerBadges}</div>` : ""}
+        <span class="xhs-cover-shine" aria-hidden="true"></span>
       </div>
-      <h3>${escapeHtml(title)}</h3>
-      <p class="day-card-summary">${escapeHtml(isRest ? durationLabel : `${durationLabel} · ${zone}`)}</p>
-      <div class="day-card-essentials" aria-label="日卡要点">
-        <span class="day-status-chip ${escapeHtml(loadTone)}"><i aria-hidden="true"></i>${escapeHtml(pressureText)}</span>
-        <span class="day-status-chip ${escapeHtml(safetyTone)}"><i aria-hidden="true"></i>${escapeHtml(safetyText)}</span>
+      <div class="xhs-body">
+        <h3 class="xhs-title">${escapeHtml(visual.label)}</h3>
+        ${code ? `<span class="xhs-code">${escapeHtml(code)}</span>` : ""}
+        <p class="xhs-sub">${escapeHtml(subInfo)}</p>
       </div>
-      <div class="day-risk-pill">${escapeHtml(riskText)}</div>
-      <div class="day-load-row" hidden data-expert-only>
-        <span>计划代理负荷 ${escapeHtml(formatLoad(load))}${load ? ` · 课表内${escapeHtml(loadInfo.label)}` : ""}</span>
-        <span>${escapeHtml(formatDuration(duration))}</span>
-      </div>
-      <div class="day-load-ratio-row" aria-label="当天预估负荷比" hidden data-expert-only>
-        <span>占7日累计 ${escapeHtml(percentLabel(acuteRatio))}</span>
-        <span>占42日折算代理周负荷 ${escapeHtml(percentLabel(chronicRatio))}</span>
-      </div>
-      <div class="day-load-meter" aria-hidden="true" hidden data-expert-only>
-        <i style="width: ${load ? loadPercent : 0}%"></i>
-      </div>
-      <div class="day-load-tooltip" role="tooltip" hidden data-expert-only>
-        <strong>当日预估负荷比</strong>
-        <span>占7日累计：${escapeHtml(percentLabel(acuteRatio))}</span>
-        <span>占42日折算代理周负荷：${escapeHtml(percentLabel(chronicRatio))}</span>
-        <small>当日计划代理负荷 ${escapeHtml(formatLoad(load))} · ${escapeHtml(loadInfo.label)}</small>
-      </div>
-    </button>
+      <span class="xhs-chev" aria-hidden="true">›</span>
+    </article>
   `;
 }
 
