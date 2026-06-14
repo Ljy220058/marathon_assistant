@@ -5738,10 +5738,39 @@ function openDayModal(day, feedbackPreset = null, opener = null) {
   if (!day) return;
   state.selectedDay = day;
   state.lastDayModalTrigger = opener instanceof HTMLElement ? opener : document.activeElement;
+  // FLIP First: 记录触发卡片(opener)位置尺寸，用于封面卡→modal 共享元素过渡
+  const flipEnabled = opener instanceof HTMLElement && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const firstRect = flipEnabled ? opener.getBoundingClientRect() : null;
   dayModalContent.innerHTML = buildDayModalHtml(day);
   dayModal.classList.add("open");
   dayModal.hidden = false;
   dayModal.setAttribute("aria-hidden", "false");
+  // FLIP Last+Invert+Play: 封面卡→modal-card 平滑展开(仿小红书点笔记进详情)
+  if (firstRect) {
+    const card = dayModal.querySelector(".day-modal-card");
+    if (card) {
+      const lastRect = card.getBoundingClientRect();
+      const dx = firstRect.left - lastRect.left;
+      const dy = firstRect.top - lastRect.top;
+      const sx = lastRect.width ? firstRect.width / lastRect.width : 1;
+      const sy = lastRect.height ? firstRect.height / lastRect.height : 1;
+      card.style.transformOrigin = "top left";
+      card.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+      card.style.transition = "none";
+      // 双 rAF: 先应用 invert，下一帧再 play 过渡到原位
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        card.style.transition = "transform .35s cubic-bezier(.2,.8,.2,1)";
+        card.style.transform = "";
+      }));
+      const cleanup = () => {
+        card.style.transition = "";
+        card.style.transform = "";
+        card.style.transformOrigin = "";
+        card.removeEventListener("transitionend", cleanup);
+      };
+      card.addEventListener("transitionend", cleanup);
+    }
+  }
   activateFocusTrap(dayModal, closeDayModal);
   dayModalClose.focus();
   resetDayModalScrollPosition();
