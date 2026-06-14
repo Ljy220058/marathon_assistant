@@ -18,6 +18,7 @@ const state = {
   queryController: null,
   queryRunId: 0,
   planProgressTimer: null,
+  planTipsTimer: null,
   planProgressPercent: 0,
   historyExpanded: false,
   lastPlanIntent: null,
@@ -402,6 +403,33 @@ const PLAN_PROGRESS_STEPS = [
   { id: "enrich", label: "补全解释", detail: "生成可读解释" },
 ];
 
+// 跑步知识小贴士：等待时轮播，把"干等"变成"学一点"，是等待留存的核心杠杆。
+const RUNNING_TIPS = [
+  "轻松跑（E 配速）应占周跑量 70-80%，是提升有氧基础的关键，不是‘太慢’。",
+  "长距离跑的目的不是练速度，而是训练身体利用脂肪供能、适应长时间负荷。",
+  "赛前 3 天开始碳水负荷，能让肌糖原储备提升 50-100%，显著延缓撞墙。",
+  "配速前 2/3 应感觉‘还能说话’，把余力留给最后 1/3——多数人栽在起跑太快。",
+  "跑后 30 分钟内补充碳水+蛋白质（约 3:1），糖原合成效率最高。",
+  "每周跑量增幅建议不超过 10%，急剧加量是过劳伤的头号诱因。",
+  "每周 2 次力量训练可降低约 50% 的跑步损伤风险，重点强化臀中肌与核心。",
+  "高强度间歇每周不超过 1-2 次，需 48 小时恢复，过度会抑制免疫力。",
+  "睡眠是最强恢复手段：每少睡 1 小时，次日受伤风险上升约 15%。",
+  "赛中补水按出汗率，每小时 400-800ml，过量饮水可能引发低钠血症。",
+  "减量期（赛前 1-2 周）跑量降 40-60% 但保持强度，能消疲劳又不丢体能。",
+  "跑步经济性（每公里耗氧）比最大摄氧量更能预测成绩，靠技术与力量提升。",
+];
+
+// 阶段轮播文案：每个步骤配多条信号文案，drift 时轮换，避免单调的固定文案。
+const PROGRESS_PHASE_COPY = {
+  connect: ["连接训练服务中…", "确认模型与知识库就绪…"],
+  profile: ["解析你的目标与周期…", "结合跑量和可训练日…", "评估伤病与疲劳限制…"],
+  skeleton: ["教练正在规划每周节奏…", "匹配训练模板与强度区间…", "生成可查看的周计划初稿…"],
+  validate: ["安全审查：恢复是否充足…", "校验强度递进与容量上限…", "排查过劳与伤病风险…"],
+  calendar: ["转换为可点击训练日历…", "安排长距离与间歇的日期…"],
+  evidence: ["绑定科学依据与来源…", "为每个训练安排替代方案…"],
+  enrich: ["生成可读的训练解释…", "补充每日训练要点…"],
+};
+
 function clampProgress(value) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
 }
@@ -429,6 +457,11 @@ function stopPlanProgressDrift() {
 }
 
 function renderPlanProgress({ percent = 0, activeStep = "connect", status = "idle", phase = "等待生成", signal = "日历尚未开始生成" } = {}) {
+  // 终态统一收尾：无论哪个调用方设完成/错误/取消，都停止小贴士轮播并隐藏附加区
+  if (["complete", "ready", "ready_with_fallback", "error", "cancelled", "fallback"].includes(status)) {
+    stopTipsRotation();
+    showProgressExtra(false);
+  }
   const normalizedPercent = state.planReady && status !== "idle" && status !== "error" && status !== "cancelled"
     ? Math.max(clampProgress(percent), currentPlanProgressPercent())
     : clampProgress(percent);
@@ -555,20 +588,100 @@ function applyGenerationStatusView(view) {
 
 function startPlanProgressDrift(maxPercent = 72) {
   stopPlanProgressDrift();
+  showProgressExtra(true);
+  startTipsRotation();
+  updateProgressEta(0);
+  let phaseTick = 0;
   state.planProgressTimer = window.setInterval(() => {
     const current = currentPlanProgressPercent();
     if (current >= maxPercent) {
-      stopPlanProgressDrift();
+      // 到达模拟上限后停在"等待最终生成"：百分比不再推进，但 ETA/文案/动画继续，避免卡死观感
+      updateProgressEta(current);
       return;
     }
+    const nextPercent = Math.min(maxPercent, current + 3);
+    const activeStep =
+      nextPercent < 18 ? "connect"
+      : nextPercent < 34 ? "profile"
+      : nextPercent < 56 ? "skeleton"
+      : nextPercent < 78 ? "validate"
+      : nextPercent < 90 ? "calendar"
+      : "evidence";
+    const copies = PROGRESS_PHASE_COPY[activeStep] || PROGRESS_PHASE_COPY.skeleton;
+    const signal = copies[Math.floor(phaseTick / 2) % copies.length];
+    phaseTick += 1;
     renderPlanProgress({
-      percent: Math.min(maxPercent, current + 3),
-      activeStep: current < 18 ? "connect" : current < 34 ? "profile" : current < 56 ? "skeleton" : "validate",
+      percent: nextPercent,
+      activeStep,
       status: "running",
-      phase: current < 56 ? "等待计划初稿" : "等待安全校验与日历排布",
-      signal: "正在整理训练日历；日历可用后会先展示训练安排，再补充解释。",
+      phase: activeStep === "skeleton" ? "等待计划初稿" : activeStep === "validate" ? "等待安全校验" : "正在生成训练日历",
+      signal,
     });
+    updateProgressEta(nextPercent);
   }, 720);
+}
+
+// 进度区附加内容（预期时间 + 跑步知识小贴士）的显隐与轮播
+function showProgressExtra(show) {
+  const extra = document.querySelector("[data-plan-progress-extra]");
+  if (extra) extra.hidden = !show;
+}
+
+function startTipsRotation() {
+  stopTipsRotation();
+  const tipEl = $("planProgressTip");
+  if (!tipEl) return;
+  let idx = Math.floor(Math.random() * RUNNING_TIPS.length);
+  const renderTip = () => {
+    tipEl.textContent = RUNNING_TIPS[idx % RUNNING_TIPS.length];
+    tipEl.classList.remove("tip-fade");
+    void tipEl.offsetWidth; // 触发重绘以重启淡入动画
+    tipEl.classList.add("tip-fade");
+    idx += 1;
+  };
+  renderTip();
+  state.planTipsTimer = window.setInterval(renderTip, 6000);
+}
+
+function stopTipsRotation() {
+  if (state.planTipsTimer) {
+    window.clearInterval(state.planTipsTimer);
+    state.planTipsTimer = null;
+  }
+}
+
+// 预估剩余时间：百分比越高剩余越少，给用户明确预期，降低"还要多久"的不确定焦虑
+function updateProgressEta(percent) {
+  const etaEl = $("planProgressEta");
+  if (!etaEl) return;
+  const remaining = percent >= 95
+    ? "即将完成"
+    : `预计还需 ${Math.max(5, Math.round((100 - percent) * 0.55))} 秒`;
+  etaEl.textContent = `⏱ ${remaining}`;
+}
+
+// 流式真实节点 → 进度映射：收到节点事件后停模拟 drift，按 stepId 精确推进
+const STEP_ID_TO_PERCENT = {
+  connect: 12, profile: 28, skeleton: 48, validate: 68, calendar: 84, evidence: 92, enrich: 96,
+};
+const STEP_ID_LABEL = {
+  connect: "准备计划", profile: "解析画像", skeleton: "生成初稿",
+  validate: "安全校验", calendar: "排布日历", evidence: "绑定依据", enrich: "补全解释",
+};
+
+function updateProgressFromNode(nodeName, stepId) {
+  stopPlanProgressDrift(); // 停模拟漂移，改用真实节点驱动进度
+  const percent = STEP_ID_TO_PERCENT[stepId] || currentPlanProgressPercent();
+  const copies = PROGRESS_PHASE_COPY[stepId] || [];
+  const signal = copies[0] || `正在执行：${nodeName}`;
+  renderPlanProgress({
+    percent,
+    activeStep: stepId || "skeleton",
+    status: "running",
+    phase: STEP_ID_LABEL[stepId] || "处理中",
+    signal,
+  });
+  updateProgressEta(percent);
 }
 
 function formatTimingSummary(payload) {
@@ -602,6 +715,8 @@ function syncPlanProgressFromPayload(payload, mode = "received") {
 
 function resetPlanProgress() {
   stopPlanProgressDrift();
+  stopTipsRotation();
+  showProgressExtra(false);
   state.planReady = false;
   renderPlanProgress();
 }
@@ -918,11 +1033,11 @@ async function loadLlmOptions() {
     llmProviderInput.value = localStorage.getItem("marathon_llm_provider") || "ds";
     llmProviderInput.dataset.models = JSON.stringify({
       ollama: ["qwen2.5:latest"],
-      ds: ["deepseek-v4-pro"],
+      ds: ["deepseek-v4-flash"],
     });
     llmProviderInput.dataset.defaults = JSON.stringify({
       ollama: "qwen2.5:latest",
-      ds: "deepseek-v4-pro",
+      ds: "deepseek-v4-flash",
     });
     llmProviderInput.dataset.providerConfig = JSON.stringify({
       ollama: { api_key_configured: true, api_key_config_visible: true },
@@ -938,7 +1053,7 @@ function renderModelOptions(preferredModel = "") {
   const modelsByProvider = JSON.parse(llmProviderInput.dataset.models || "{}");
   const defaultsByProvider = JSON.parse(llmProviderInput.dataset.defaults || "{}");
   const provider = llmProviderInput.value || "ds";
-  const models = modelsByProvider[provider] || [defaultsByProvider[provider] || "deepseek-v4-pro"];
+  const models = modelsByProvider[provider] || [defaultsByProvider[provider] || "deepseek-v4-flash"];
   const selected = preferredModel && models.includes(preferredModel)
     ? preferredModel
     : (defaultsByProvider[provider] || models[0] || "");
@@ -3603,56 +3718,97 @@ function protocolViolationLabels(day) {
     .join(" / ");
 }
 
+function formatInlineText(text) {
+  // 先转义 HTML，再还原行内 markdown 加粗（** 不是 HTML 特殊字符，escapeHtml 不会转义，
+  // 因此顺序安全）。支持 **加粗**；斜体/链接等暂不处理以避免误伤医学文本。
+  let s = escapeHtml(text);
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  return s;
+}
+
 function renderReportMarkdown(markdown) {
   const source = String(markdown || "").trim();
   if (!source) return "";
   const lines = source.split(/\r?\n/);
   const blocks = [];
-  let listItems = [];
+  let unorderedItems = [];
+  // 有序列表项：{ text, subItems } —— 支持有序项携带缩进的无序子项（嵌套），
+  // 避免 "1. A / -a1 / 2. B" 被拆成多个 <ol> 导致编号重置为 1,1。
+  let orderedEntries = [];
+  let currentOrderedEntry = null;
   let paragraphLines = [];
 
   const flushParagraph = () => {
     if (!paragraphLines.length) return;
-    blocks.push(`<p>${escapeHtml(paragraphLines.join(" "))}</p>`);
+    blocks.push(`<p>${formatInlineText(paragraphLines.join(" "))}</p>`);
     paragraphLines = [];
   };
-
-  const flushList = () => {
-    if (!listItems.length) return;
-    blocks.push(`<ul>${listItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`);
-    listItems = [];
+  const flushUnordered = () => {
+    if (!unorderedItems.length) return;
+    blocks.push(`<ul>${unorderedItems.map((item) => `<li>${formatInlineText(item)}</li>`).join("")}</ul>`);
+    unorderedItems = [];
   };
+  const flushOrdered = () => {
+    if (currentOrderedEntry) { orderedEntries.push(currentOrderedEntry); currentOrderedEntry = null; }
+    if (!orderedEntries.length) return;
+    blocks.push(`<ol>${orderedEntries.map((entry) => {
+      const sub = entry.subItems.length
+        ? `<ul>${entry.subItems.map((s) => `<li>${formatInlineText(s)}</li>`).join("")}</ul>`
+        : "";
+      return `<li>${formatInlineText(entry.text)}${sub}</li>`;
+    }).join("")}</ol>`);
+    orderedEntries = [];
+  };
+  const flushLists = () => { flushOrdered(); flushUnordered(); };
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) {
-      flushList();
+      flushLists();
       flushParagraph();
       continue;
     }
+    const indented = /^\s+/.test(line); // 行首缩进：标记为上一项的子内容
     if (trimmed.startsWith("### ")) {
+      flushLists();
       flushParagraph();
-      flushList();
-      blocks.push(`<h3>${escapeHtml(trimmed.slice(4))}</h3>`);
+      blocks.push(`<h3>${formatInlineText(trimmed.slice(4))}</h3>`);
       continue;
     }
     if (trimmed.startsWith("## ")) {
+      flushLists();
       flushParagraph();
-      flushList();
-      blocks.push(`<h2>${escapeHtml(trimmed.slice(3))}</h2>`);
+      blocks.push(`<h2>${formatInlineText(trimmed.slice(3))}</h2>`);
       continue;
     }
-    if (/^[-*]\s+/.test(trimmed)) {
+    const orderedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (orderedMatch && !indented) {
+      // 新的顶级有序项：归档上一个有序项，保持同一 <ol> 内编号连续
       flushParagraph();
-      listItems.push(trimmed.replace(/^[-*]\s+/, ""));
+      flushUnordered();
+      if (currentOrderedEntry) orderedEntries.push(currentOrderedEntry);
+      currentOrderedEntry = { text: orderedMatch[2], subItems: [] };
       continue;
     }
-    flushList();
+    const unorderedMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    if (unorderedMatch) {
+      flushParagraph();
+      if (indented && currentOrderedEntry) {
+        // 缩进无序项：作为当前有序项的嵌套子项
+        currentOrderedEntry.subItems.push(unorderedMatch[1]);
+      } else {
+        // 顶级无序项：先关闭有序列表，避免与独立无序列表混淆
+        flushOrdered();
+        unorderedItems.push(unorderedMatch[1]);
+      }
+      continue;
+    }
+    flushLists();
     paragraphLines.push(trimmed);
   }
 
+  flushLists();
   flushParagraph();
-  flushList();
   return `<div class="report-markdown">${blocks.join("")}</div>`;
 }
 
@@ -3697,23 +3853,66 @@ function renderFullReportDetails(response, uiPolicy = {}) {
   </details>`;
 }
 
+function renderMedicalDisclaimer(response) {
+  // 运动医学安全合规字段：后端返回 medical_disclaimer 即渲染为醒目提示，
+  // 避免医疗免责声明被丢弃（伤病/康复类回答必须可见）。
+  const disclaimer = String(response?.medical_disclaimer || "").trim();
+  if (!disclaimer) return "";
+  return `<aside class="callout-card warning-card medical-disclaimer" role="note" aria-label="医疗免责声明">
+    <span>医疗免责声明</span>
+    <p>${escapeHtml(disclaimer)}</p>
+  </aside>`;
+}
+
 function renderReport(response) {
   const summary = summarizePlan(response);
   const generationStatus = String(response?.generation_status || "").trim();
   const isSkeleton = Boolean(generationStatus && generationStatus !== "complete");
   const requestedWeeks = state.lastPlanIntent?.requestedWeeks || "";
   const actualWeeks = String(summary.weeks || "");
+  // workflow_pause：后端要求补齐画像字段才能继续生成计划。展示缺失字段清单，
+  // 而非把后端占位符 final_report="__FILL_FIELDS__" 当普通 markdown 文本渲染。
+  const workflowPause = response?.workflow_pause;
+  if (generationStatus === "workflow_pause" && workflowPause && typeof workflowPause === "object") {
+    const missingLabels = (Array.isArray(workflowPause.field_labels) && workflowPause.field_labels.length)
+      ? workflowPause.field_labels
+      : (Array.isArray(workflowPause.missing_fields) ? workflowPause.missing_fields : []);
+    const pendingQuery = String(workflowPause.pending_query || "").trim();
+    reportBox.className = "report-content";
+    reportBox.innerHTML = `<div class="callout-card warning-card workflow-pause-notice">
+      <span>需要补齐信息</span>
+      <p>${escapeHtml(pendingQuery ? `针对「${pendingQuery}」生成训练计划` : "为生成安全、可执行的训练计划")}</p>
+      ${missingLabels.length
+        ? `<p>请补充以下关键字段后重新提交，工作流将从路由节点继续：</p><ul>${missingLabels.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul>`
+        : "<p>请在画像面板补齐关键指标后重新提交。</p>"}
+    </div>${renderMedicalDisclaimer(response)}`;
+    resultBadge.textContent = "等待补齐";
+    return;
+  }
+  // security_intercepted：安全护栏拦截，工作流已终止
+  if (generationStatus === "security_intercepted") {
+    reportBox.className = "report-content";
+    reportBox.innerHTML = `<div class="callout-card warning-card"><span>请求已拦截</span><p>${escapeHtml(response?.message || "请求已被安全护栏拦截，工作流已终止。")}</p></div>`;
+    resultBadge.textContent = "已拦截";
+    return;
+  }
   if (!summary.hasStructuredPlan) {
     const rawReport = String(response?.report || "").trim();
     const uiPolicy = response?.ui_policy || {};
     const answerCardHtml = response?.answer_card ? renderAnswerCard(response.answer_card, uiPolicy) : "";
-    reportBox.className = rawReport || answerCardHtml ? "report-content" : "empty-state";
-    reportBox.innerHTML = answerCardHtml || rawReport
-      ? `${answerCardHtml || `<div class="callout-card"><span>模型回复</span><p>${escapeHtml(rawReport)}</p></div>`}
-         ${renderFullReportDetails(response, uiPolicy)}
-         <div class="callout-card secondary"><span>结构化计划</span><p>当前响应没有返回可渲染的结构化周计划。请检查模型调用是否成功，或稍后重新生成。</p></div>`
+    const hasAnswerCard = Boolean(answerCardHtml);
+    // QA/纯文本响应：有 answer_card 时主区域展示卡片，完整报告折叠在 details；
+    // 无 answer_card 时主区域直接渲染 report markdown，避免 escapeHtml 纯文本降级（##、** 原样显示）
+    // 以及与 renderFullReportDetails 内的重复渲染。
+    const mainContent = hasAnswerCard
+      ? answerCardHtml
+      : (rawReport ? renderReportMarkdown(rawReport) : "");
+    const fullReportDetails = hasAnswerCard ? renderFullReportDetails(response, uiPolicy) : "";
+    reportBox.className = mainContent ? "report-content" : "empty-state";
+    reportBox.innerHTML = mainContent
+      ? `${mainContent}${fullReportDetails}${renderMedicalDisclaimer(response)}`
       : "本次没有返回训练计划内容。请检查模型配置或重新生成。";
-    resultBadge.textContent = rawReport || answerCardHtml ? "回答可查看" : "无结果";
+    resultBadge.textContent = mainContent ? "回答可查看" : "无结果";
     return;
   }
   const sections = [
@@ -3754,6 +3953,8 @@ function renderReport(response) {
   if (response?.answer_card) {
     sections.push(renderFullReportDetails(response, response?.ui_policy || {}));
   }
+  // 医疗免责声明始终展示（后端返回即渲染，运动医学应用的安全合规字段）
+  sections.push(renderMedicalDisclaimer(response));
 
   reportBox.className = "report-content";
   reportBox.innerHTML = sections.join("");
@@ -4488,11 +4689,18 @@ function renderDayCard(day, index, loadPoint = null) {
   const safetyText = effect ? needsMedicalStop ? "需评估" : "已调整" : needsRecheck ? "先复核" : needsEvidence ? "先查看" : isRest ? "按感觉" : "已自检";
   const loadTone = isRest ? "recovery" : (needsRecheck || needsEvidence) ? "warning" : loadInfo.className || "stable";
   const safetyTone = effect ? needsMedicalStop ? "warning" : "feedback" : (needsRecheck || needsEvidence) ? "warning" : "stable";
+  // 证据等级 badge（A=教材/B=论文/C=教练实践），诚实展示每节训练课的依据强度
+  const evidenceGrade = String(day.evidence_grade || "").trim().toUpperCase();
+  const evidenceSource = String(day.evidence_source || "").trim();
+  const evidenceBadge = evidenceGrade
+    ? `<span class="day-evidence-badge grade-${evidenceGrade.toLowerCase()}" title="${escapeHtml(`证据等级 ${evidenceGrade}：${evidenceSource || "未标注"}（A=同行评审教材 / B=论文 / C=教练实践）`)}">依据${evidenceGrade}</span>`
+    : "";
   return `
     <button class="day-card ${isRest ? "rest" : ""} ${isQualityTraining(day) ? "key-session" : ""} ${needsRecheck ? "needs-recheck" : ""} ${loadInfo.className}" data-day-index="${index}" type="button" title="${escapeHtml(hoverTitle)}">
       <div class="day-card-top">
         <strong>${escapeHtml(label)}</strong>
         <span>${escapeHtml(badgeLabel)}</span>
+        ${evidenceBadge}
       </div>
       <h3>${escapeHtml(title)}</h3>
       <p class="day-card-summary">${escapeHtml(isRest ? durationLabel : `${durationLabel} · ${zone}`)}</p>
@@ -5829,20 +6037,29 @@ async function runQuery(textValue) {
   try {
     let payload;
     try {
-      payload = await window.__apiClient.requestQueryPayload(query, { responseMode: "full", controller });
+      if (planLike) {
+        // 流式优先：真实节点进度驱动；失败降级非流式（保留多 base + 重试）
+        payload = await window.__apiClient.streamQueryPayload(query, {
+          responseMode: "full", controller,
+          onNode: (evt) => updateProgressFromNode(evt.node, evt.stepId),
+        });
+      } else {
+        payload = await window.__apiClient.requestQueryPayload(query, { responseMode: "full", controller });
+      }
     } catch (error) {
-      if (!planLike || controller.signal.aborted) {
+      if (controller.signal.aborted || !planLike) {
         throw error;
       }
+      // 流式或首次请求未完成：降级非流式重试（更长窗口）
       stopPlanProgressDrift();
       renderPlanProgress({
         percent: 74,
         activeStep: "calendar",
         status: "running",
         phase: "计划请求重试中",
-        signal: "长计划第一次等待超时，正在用更长窗口重试结构化日历",
+        signal: "流式或首次请求未完成，正在用更长窗口重试结构化日历",
       });
-      queryHint.textContent = "长计划第一次超时，正在自动重试一次。";
+      queryHint.textContent = "首次请求未完成，正在自动重试一次。";
       payload = await window.__apiClient.requestQueryPayload(query, { responseMode: "full", controller, retry: true });
     }
     if (runId !== state.queryRunId || controller.signal.aborted) {
