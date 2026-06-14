@@ -126,3 +126,24 @@
   font-size: var(--text-lg, 18px);
 }
 .xhs-card.is-rest .xhs-title { color: var(--muted, #64748b); }
+
+/* ===== 卡片墙布局：有序 grid 保周一→周日顺序（不用无序瀑布流）=====
+   覆盖 calendar.css 的 auto-fit；用 body.ui-calendar-converged 前缀确保特异性压过原规则 */
+.calendar-grid,
+body.ui-calendar-converged .calendar-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));   /* 手机 2 列 */
+}
+@media (min-width: 640px) {
+  .calendar-grid,
+  body.ui-calendar-converged .calendar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .calendar-grid,
+  body.ui-calendar-converged .calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+}
+/* 大量卡片懒渲染，降低滚动成本 */
+.xhs-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px;
+}
+
