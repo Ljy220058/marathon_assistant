@@ -16,7 +16,18 @@ from typing import List, Dict, Any, Tuple
 # 配置日志
 logger = logging.getLogger("vector_kb")
 
-from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, RUNTIME_USER_VECTOR_DIR, USER_VECTOR_DIR, V2_VECTOR_DIR, LEGACY_UPLOAD_DOCS_DIR, UPLOAD_DOCS_DIR
+from marathon_qa_assistant.core.app_state import (
+    BASE_DIR,
+    DATA_DIR,
+    DEFAULT_VECTOR_DIR,
+    LEGACY_DEFAULT_VECTOR_DIR,
+    LEGACY_UPLOAD_DOCS_DIR,
+    LEGACY_USER_VECTOR_DIR,
+    RUNTIME_USER_VECTOR_DIR,
+    UPLOAD_DOCS_DIR,
+    USER_VECTOR_DIR,
+    V2_VECTOR_DIR,
+)
 from marathon_qa_assistant.core.settings import get_settings
 from marathon_qa_assistant.services.document_preprocess import normalize_text, filter_non_prose_lines
 from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
@@ -1438,6 +1449,102 @@ def probe_vector_kb_health(vector_dir: Path) -> dict:
         return report
     report.update({"ok": True, "ready": True, "faiss_ready": True, "fallback_active": False, "reason": ""})
     return report
+
+
+
+def _trusted_vector_dirs() -> list[Path]:
+    """限定允许反序列化 FAISS pickle 的项目内 KB 目录。"""
+    return [
+        V2_VECTOR_DIR,
+        USER_VECTOR_DIR,
+        RUNTIME_USER_VECTOR_DIR,
+        LEGACY_USER_VECTOR_DIR,
+        DEFAULT_VECTOR_DIR,
+        LEGACY_DEFAULT_VECTOR_DIR,
+    ]
+
+
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.absolute().relative_to(parent.absolute())
+        return True
+    except ValueError:
+        return False
+
+
+def _load_faiss_store(faiss_dir: Path, embeddings: Any):
+    """只从受信 KB 目录加载 FAISS，避免任意外部 index.pkl 反序列化。"""
+    vector_dir = faiss_dir.parent
+    if not any(_is_relative_to(vector_dir, trusted_dir) for trusted_dir in _trusted_vector_dirs()):
+        return None
+    return FAISS.load_local(str(faiss_dir), embeddings, allow_dangerous_deserialization=True)
+
+
+def _infer_vector_source(vector_dir: Path) -> str:
+    """根据目录名给健康报告标出 KB 来源。"""
+    name = vector_dir.name.lower()
+    if name == "v2":
+        return "v2"
+    if name in {"default", "vector_kb"}:
+        return "default"
+    if name == "user" or "user" in str(vector_dir).lower():
+        return "user"
+    return name or "unknown"
+
+
+_kb_source_label = _infer_vector_source
+
+
+def probe_vector_kb_health(vector_dir: Path) -> dict:
+    """轻量检查向量 KB 是否可用于 runtime，不触发 embedding 或 FAISS 加载。"""
+    from marathon_qa_assistant.services.kb.health import summarize_runtime_index_schema
+
+    vector_path = Path(vector_dir)
+    chunks_file = vector_path / "chunks.jsonl"
+    faiss_index = vector_path / "faiss_db" / "index.faiss"
+    source = _infer_vector_source(vector_path)
+
+    if not chunks_file.exists():
+        return {
+            "ok": False,
+            "ready": False,
+            "source": "missing" if not vector_path.exists() else source,
+            "vector_dir": str(vector_path),
+            "reason": f"missing chunks.jsonl: {chunks_file}",
+            "chunks_count": 0,
+            "faiss_ready": False,
+            "index_schema_version": "missing",
+            "metadata_completeness": 0.0,
+            "runtime_core_prescription_enabled": False,
+            "core_permission_violation_count": 0,
+        }
+
+    chunks = load_chunks(chunks_file)
+    schema = summarize_runtime_index_schema(chunks)
+    faiss_ready = faiss_index.exists()
+    ok = bool(chunks) and faiss_ready
+
+    # reason 只在不可用时填写，方便启动日志直接显示阻塞原因。
+    if not chunks:
+        reason = "chunks.jsonl is empty"
+    elif not faiss_ready:
+        reason = f"missing FAISS index.faiss: {faiss_index}"
+    else:
+        reason = ""
+
+    return {
+        "ok": ok,
+        "ready": ok,
+        "source": source,
+        "vector_dir": str(vector_path),
+        "reason": reason,
+        "chunks_count": len(chunks),
+        "faiss_ready": faiss_ready,
+        "index_schema_version": schema["index_schema_version"],
+        "metadata_completeness": schema["metadata_completeness"],
+        "runtime_core_prescription_enabled": schema["runtime_core_prescription_enabled"],
+        "core_permission_violation_count": schema["core_permission_violation_count"],
+    }
 
 
 def load_vector_kb(vector_dir: Path):

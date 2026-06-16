@@ -1,0 +1,994 @@
+{
+  "status": "blocked",
+  "global_blockers": [
+    "action_library",
+    "ai_rag_evidence_explanation",
+    "endurance_training_protocols",
+    "hci_health_recommender_systems",
+    "load_injury_safety",
+    "nutrition_hydration_race_fueling",
+    "training_protocols",
+    "user_profile_cases"
+  ],
+  "domain_packs": {
+    "training_protocols": {
+      "domain_pack": "training_protocols",
+      "status": "partial",
+      "can_write_core": true,
+      "current_source_count": 7,
+      "target_source_count": 20,
+      "source_coverage_ratio": 0.35,
+      "current_rule_count": 63,
+      "target_rule_count": 50,
+      "rule_coverage_ratio": 1.26,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 64,
+      "permission_counts": {
+        "explanation_only": 1,
+        "can_write_core": 63
+      },
+      "quality_tier_counts": {
+        "candidate_official_or_consensus": 1,
+        "internal_seed_needs_domain_review": 63
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 1,
+        "domain_pack": 63
+      }
+    },
+    "action_library": {
+      "domain_pack": "action_library",
+      "status": "weak_partial",
+      "can_write_core": true,
+      "current_source_count": 1,
+      "target_source_count": 20,
+      "source_coverage_ratio": 0.05,
+      "current_rule_count": 120,
+      "target_rule_count": 100,
+      "rule_coverage_ratio": 1.2,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 180,
+      "permission_counts": {
+        "can_write_core": 180
+      },
+      "quality_tier_counts": {
+        "internal_seed_needs_domain_review": 180
+      },
+      "knowledge_layer_counts": {
+        "domain_pack": 180
+      }
+    },
+    "training_load": {
+      "domain_pack": "training_load",
+      "status": "partial",
+      "can_write_core": false,
+      "current_source_count": 7,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.5833,
+      "current_rule_count": 36,
+      "target_rule_count": 30,
+      "rule_coverage_ratio": 1.2,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 37,
+      "permission_counts": {
+        "explanation_only": 37
+      },
+      "quality_tier_counts": {
+        "candidate_official_or_consensus": 1,
+        "internal_seed_needs_domain_review": 36
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 1,
+        "domain_pack": 36
+      }
+    },
+    "medical_risk": {
+      "domain_pack": "medical_risk",
+      "status": "partial",
+      "can_write_core": false,
+      "current_source_count": 3,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.25,
+      "current_rule_count": 42,
+      "target_rule_count": 40,
+      "rule_coverage_ratio": 1.05,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 43,
+      "permission_counts": {
+        "explanation_only": 43
+      },
+      "quality_tier_counts": {
+        "candidate_official_or_consensus": 1,
+        "internal_seed_needs_domain_review": 42
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 1,
+        "domain_pack": 42
+      }
+    },
+    "rehab_return_to_run": {
+      "domain_pack": "rehab_return_to_run",
+      "status": "partial",
+      "can_write_core": false,
+      "current_source_count": 3,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.25,
+      "current_rule_count": 42,
+      "target_rule_count": 40,
+      "rule_coverage_ratio": 1.05,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 42,
+      "permission_counts": {
+        "explanation_only": 42
+      },
+      "quality_tier_counts": {
+        "internal_seed_needs_domain_review": 42
+      },
+      "knowledge_layer_counts": {
+        "domain_pack": 42
+      }
+    },
+    "strength_conditioning": {
+      "domain_pack": "strength_conditioning",
+      "status": "weak_partial",
+      "can_write_core": false,
+      "current_source_count": 1,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.0833,
+      "current_rule_count": 72,
+      "target_rule_count": 60,
+      "rule_coverage_ratio": 1.2,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 72,
+      "permission_counts": {
+        "explanation_only": 72
+      },
+      "quality_tier_counts": {
+        "internal_seed_needs_domain_review": 72
+      },
+      "knowledge_layer_counts": {
+        "domain_pack": 72
+      }
+    },
+    "mobility_recovery": {
+      "domain_pack": "mobility_recovery",
+      "status": "weak_partial",
+      "can_write_core": false,
+      "current_source_count": 1,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.0833,
+      "current_rule_count": 48,
+      "target_rule_count": 40,
+      "rule_coverage_ratio": 1.2,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 48,
+      "permission_counts": {
+        "explanation_only": 48
+      },
+      "quality_tier_counts": {
+        "internal_seed_needs_domain_review": 48
+      },
+      "knowledge_layer_counts": {
+        "domain_pack": 48
+      }
+    },
+    "nutrition_race_fueling": {
+      "domain_pack": "nutrition_race_fueling",
+      "status": "partial",
+      "can_write_core": false,
+      "current_source_count": 7,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.5833,
+      "current_rule_count": 48,
+      "target_rule_count": 40,
+      "rule_coverage_ratio": 1.2,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 48,
+      "permission_counts": {
+        "explanation_only": 48
+      },
+      "quality_tier_counts": {
+        "internal_seed_needs_domain_review": 48
+      },
+      "knowledge_layer_counts": {
+        "domain_pack": 48
+      }
+    },
+    "environment_race_context": {
+      "domain_pack": "environment_race_context",
+      "status": "weak_partial",
+      "can_write_core": false,
+      "current_source_count": 2,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.1667,
+      "current_rule_count": 36,
+      "target_rule_count": 30,
+      "rule_coverage_ratio": 1.2,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 37,
+      "permission_counts": {
+        "explanation_only": 37
+      },
+      "quality_tier_counts": {
+        "candidate_official_or_consensus": 1,
+        "internal_seed_needs_domain_review": 36
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 1,
+        "domain_pack": 36
+      }
+    },
+    "competitor_product_tasks": {
+      "domain_pack": "competitor_product_tasks",
+      "status": "partial",
+      "can_write_core": false,
+      "current_source_count": 6,
+      "target_source_count": 12,
+      "source_coverage_ratio": 0.5,
+      "current_rule_count": 40,
+      "target_rule_count": 40,
+      "rule_coverage_ratio": 1.0,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 45,
+      "permission_counts": {
+        "explanation_only": 45
+      },
+      "quality_tier_counts": {
+        "candidate_official_or_consensus": 5,
+        "internal_seed_needs_domain_review": 40
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 5,
+        "domain_pack": 40
+      }
+    },
+    "user_profile_cases": {
+      "domain_pack": "user_profile_cases",
+      "status": "gap",
+      "can_write_core": false,
+      "current_source_count": 0,
+      "target_source_count": 100,
+      "source_coverage_ratio": 0.0,
+      "current_rule_count": 0,
+      "target_rule_count": 100,
+      "rule_coverage_ratio": 0.0,
+      "current_question_count": 10,
+      "target_question_count": 10,
+      "chunk_count": 100,
+      "permission_counts": {
+        "explanation_only": 100
+      },
+      "quality_tier_counts": {
+        "internal_seed_needs_domain_review": 100
+      },
+      "knowledge_layer_counts": {
+        "domain_pack": 100
+      }
+    },
+    "endurance_training_protocols": {
+      "domain_pack": "endurance_training_protocols",
+      "status": "runtime_only",
+      "can_write_core": false,
+      "current_source_count": 0,
+      "target_source_count": 0,
+      "source_coverage_ratio": 0.0,
+      "current_rule_count": 0,
+      "target_rule_count": 0,
+      "rule_coverage_ratio": 0.0,
+      "current_question_count": 0,
+      "target_question_count": 0,
+      "chunk_count": 7,
+      "permission_counts": {
+        "explanation_only": 7
+      },
+      "quality_tier_counts": {
+        "review": 5,
+        "systematic_review": 1,
+        "observational_study": 1
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 7
+      }
+    },
+    "load_injury_safety": {
+      "domain_pack": "load_injury_safety",
+      "status": "runtime_only",
+      "can_write_core": false,
+      "current_source_count": 0,
+      "target_source_count": 0,
+      "source_coverage_ratio": 0.0,
+      "current_rule_count": 0,
+      "target_rule_count": 0,
+      "rule_coverage_ratio": 0.0,
+      "current_question_count": 0,
+      "target_question_count": 0,
+      "chunk_count": 7,
+      "permission_counts": {
+        "explanation_only": 7
+      },
+      "quality_tier_counts": {
+        "review": 2,
+        "systematic_review": 2,
+        "consensus": 1,
+        "study": 1,
+        "qualitative_study": 1
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 7
+      }
+    },
+    "nutrition_hydration_race_fueling": {
+      "domain_pack": "nutrition_hydration_race_fueling",
+      "status": "runtime_only",
+      "can_write_core": false,
+      "current_source_count": 0,
+      "target_source_count": 0,
+      "source_coverage_ratio": 0.0,
+      "current_rule_count": 0,
+      "target_rule_count": 0,
+      "rule_coverage_ratio": 0.0,
+      "current_question_count": 0,
+      "target_question_count": 0,
+      "chunk_count": 7,
+      "permission_counts": {
+        "explanation_only": 7
+      },
+      "quality_tier_counts": {
+        "position_stand": 3,
+        "review": 3,
+        "consensus": 1
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 7
+      }
+    },
+    "ai_rag_evidence_explanation": {
+      "domain_pack": "ai_rag_evidence_explanation",
+      "status": "runtime_only",
+      "can_write_core": false,
+      "current_source_count": 0,
+      "target_source_count": 0,
+      "source_coverage_ratio": 0.0,
+      "current_rule_count": 0,
+      "target_rule_count": 0,
+      "rule_coverage_ratio": 0.0,
+      "current_question_count": 0,
+      "target_question_count": 0,
+      "chunk_count": 7,
+      "permission_counts": {
+        "explanation_only": 7
+      },
+      "quality_tier_counts": {
+        "conference_paper": 3,
+        "survey": 1,
+        "systematic_review": 1,
+        "demo_paper": 1,
+        "candidate_official_or_consensus": 1
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 7
+      }
+    },
+    "hci_health_recommender_systems": {
+      "domain_pack": "hci_health_recommender_systems",
+      "status": "runtime_only",
+      "can_write_core": false,
+      "current_source_count": 0,
+      "target_source_count": 0,
+      "source_coverage_ratio": 0.0,
+      "current_rule_count": 0,
+      "target_rule_count": 0,
+      "rule_coverage_ratio": 0.0,
+      "current_question_count": 0,
+      "target_question_count": 0,
+      "chunk_count": 6,
+      "permission_counts": {
+        "explanation_only": 6
+      },
+      "quality_tier_counts": {
+        "conference_paper": 2,
+        "perspective": 1,
+        "scoping_review": 3
+      },
+      "knowledge_layer_counts": {
+        "source_registry": 6
+      }
+    }
+  },
+  "experts": {
+    "coach_node": {
+      "status": "blocked",
+      "blocking_domains": [
+        "training_protocols",
+        "action_library"
+      ],
+      "domain_names": [
+        "training_protocols",
+        "action_library",
+        "training_load"
+      ],
+      "chunk_count": 281,
+      "domain_packs": {
+        "training_protocols": {
+          "domain_pack": "training_protocols",
+          "status": "partial",
+          "can_write_core": true,
+          "current_source_count": 7,
+          "target_source_count": 20,
+          "source_coverage_ratio": 0.35,
+          "current_rule_count": 63,
+          "target_rule_count": 50,
+          "rule_coverage_ratio": 1.26,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 64,
+          "permission_counts": {
+            "explanation_only": 1,
+            "can_write_core": 63
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 63
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 63
+          }
+        },
+        "action_library": {
+          "domain_pack": "action_library",
+          "status": "weak_partial",
+          "can_write_core": true,
+          "current_source_count": 1,
+          "target_source_count": 20,
+          "source_coverage_ratio": 0.05,
+          "current_rule_count": 120,
+          "target_rule_count": 100,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 180,
+          "permission_counts": {
+            "can_write_core": 180
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 180
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 180
+          }
+        },
+        "training_load": {
+          "domain_pack": "training_load",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 7,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.5833,
+          "current_rule_count": 36,
+          "target_rule_count": 30,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 37,
+          "permission_counts": {
+            "explanation_only": 37
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 36
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 36
+          }
+        }
+      }
+    },
+    "executor_node": {
+      "status": "blocked",
+      "blocking_domains": [
+        "training_protocols",
+        "action_library"
+      ],
+      "domain_names": [
+        "training_protocols",
+        "action_library"
+      ],
+      "chunk_count": 244,
+      "domain_packs": {
+        "training_protocols": {
+          "domain_pack": "training_protocols",
+          "status": "partial",
+          "can_write_core": true,
+          "current_source_count": 7,
+          "target_source_count": 20,
+          "source_coverage_ratio": 0.35,
+          "current_rule_count": 63,
+          "target_rule_count": 50,
+          "rule_coverage_ratio": 1.26,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 64,
+          "permission_counts": {
+            "explanation_only": 1,
+            "can_write_core": 63
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 63
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 63
+          }
+        },
+        "action_library": {
+          "domain_pack": "action_library",
+          "status": "weak_partial",
+          "can_write_core": true,
+          "current_source_count": 1,
+          "target_source_count": 20,
+          "source_coverage_ratio": 0.05,
+          "current_rule_count": 120,
+          "target_rule_count": 100,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 180,
+          "permission_counts": {
+            "can_write_core": 180
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 180
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 180
+          }
+        }
+      }
+    },
+    "nutritionist_node": {
+      "status": "blocked",
+      "blocking_domains": [
+        "nutrition_hydration_race_fueling"
+      ],
+      "domain_names": [
+        "nutrition_race_fueling",
+        "nutrition_hydration_race_fueling"
+      ],
+      "chunk_count": 55,
+      "domain_packs": {
+        "nutrition_race_fueling": {
+          "domain_pack": "nutrition_race_fueling",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 7,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.5833,
+          "current_rule_count": 48,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 48,
+          "permission_counts": {
+            "explanation_only": 48
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 48
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 48
+          }
+        },
+        "nutrition_hydration_race_fueling": {
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "status": "runtime_only",
+          "can_write_core": false,
+          "current_source_count": 0,
+          "target_source_count": 0,
+          "source_coverage_ratio": 0.0,
+          "current_rule_count": 0,
+          "target_rule_count": 0,
+          "rule_coverage_ratio": 0.0,
+          "current_question_count": 0,
+          "target_question_count": 0,
+          "chunk_count": 7,
+          "permission_counts": {
+            "explanation_only": 7
+          },
+          "quality_tier_counts": {
+            "position_stand": 3,
+            "review": 3,
+            "consensus": 1
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 7
+          }
+        }
+      }
+    },
+    "adaptive_coach_node": {
+      "status": "partial",
+      "blocking_domains": [],
+      "domain_names": [
+        "training_load",
+        "medical_risk",
+        "mobility_recovery"
+      ],
+      "chunk_count": 128,
+      "domain_packs": {
+        "training_load": {
+          "domain_pack": "training_load",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 7,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.5833,
+          "current_rule_count": 36,
+          "target_rule_count": 30,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 37,
+          "permission_counts": {
+            "explanation_only": 37
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 36
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 36
+          }
+        },
+        "medical_risk": {
+          "domain_pack": "medical_risk",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 3,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.25,
+          "current_rule_count": 42,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.05,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 43,
+          "permission_counts": {
+            "explanation_only": 43
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 42
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 42
+          }
+        },
+        "mobility_recovery": {
+          "domain_pack": "mobility_recovery",
+          "status": "weak_partial",
+          "can_write_core": false,
+          "current_source_count": 1,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.0833,
+          "current_rule_count": 48,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 48,
+          "permission_counts": {
+            "explanation_only": 48
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 48
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 48
+          }
+        }
+      }
+    },
+    "therapist_node": {
+      "status": "partial",
+      "blocking_domains": [],
+      "domain_names": [
+        "medical_risk",
+        "rehab_return_to_run"
+      ],
+      "chunk_count": 85,
+      "domain_packs": {
+        "medical_risk": {
+          "domain_pack": "medical_risk",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 3,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.25,
+          "current_rule_count": 42,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.05,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 43,
+          "permission_counts": {
+            "explanation_only": 43
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 42
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 42
+          }
+        },
+        "rehab_return_to_run": {
+          "domain_pack": "rehab_return_to_run",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 3,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.25,
+          "current_rule_count": 42,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.05,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 42,
+          "permission_counts": {
+            "explanation_only": 42
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 42
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 42
+          }
+        }
+      }
+    },
+    "critic_auditor_node": {
+      "status": "partial",
+      "blocking_domains": [],
+      "domain_names": [
+        "training_protocols",
+        "action_library",
+        "medical_risk",
+        "rehab_return_to_run",
+        "nutrition_race_fueling"
+      ],
+      "chunk_count": 377,
+      "domain_packs": {
+        "training_protocols": {
+          "domain_pack": "training_protocols",
+          "status": "partial",
+          "can_write_core": true,
+          "current_source_count": 7,
+          "target_source_count": 20,
+          "source_coverage_ratio": 0.35,
+          "current_rule_count": 63,
+          "target_rule_count": 50,
+          "rule_coverage_ratio": 1.26,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 64,
+          "permission_counts": {
+            "explanation_only": 1,
+            "can_write_core": 63
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 63
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 63
+          }
+        },
+        "action_library": {
+          "domain_pack": "action_library",
+          "status": "weak_partial",
+          "can_write_core": true,
+          "current_source_count": 1,
+          "target_source_count": 20,
+          "source_coverage_ratio": 0.05,
+          "current_rule_count": 120,
+          "target_rule_count": 100,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 180,
+          "permission_counts": {
+            "can_write_core": 180
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 180
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 180
+          }
+        },
+        "medical_risk": {
+          "domain_pack": "medical_risk",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 3,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.25,
+          "current_rule_count": 42,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.05,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 43,
+          "permission_counts": {
+            "explanation_only": 43
+          },
+          "quality_tier_counts": {
+            "candidate_official_or_consensus": 1,
+            "internal_seed_needs_domain_review": 42
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 1,
+            "domain_pack": 42
+          }
+        },
+        "rehab_return_to_run": {
+          "domain_pack": "rehab_return_to_run",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 3,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.25,
+          "current_rule_count": 42,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.05,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 42,
+          "permission_counts": {
+            "explanation_only": 42
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 42
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 42
+          }
+        },
+        "nutrition_race_fueling": {
+          "domain_pack": "nutrition_race_fueling",
+          "status": "partial",
+          "can_write_core": false,
+          "current_source_count": 7,
+          "target_source_count": 12,
+          "source_coverage_ratio": 0.5833,
+          "current_rule_count": 48,
+          "target_rule_count": 40,
+          "rule_coverage_ratio": 1.2,
+          "current_question_count": 10,
+          "target_question_count": 10,
+          "chunk_count": 48,
+          "permission_counts": {
+            "explanation_only": 48
+          },
+          "quality_tier_counts": {
+            "internal_seed_needs_domain_review": 48
+          },
+          "knowledge_layer_counts": {
+            "domain_pack": 48
+          }
+        }
+      }
+    },
+    "research_analyst_node": {
+      "status": "blocked",
+      "blocking_domains": [
+        "endurance_training_protocols",
+        "load_injury_safety",
+        "nutrition_hydration_race_fueling"
+      ],
+      "domain_names": [
+        "endurance_training_protocols",
+        "load_injury_safety",
+        "nutrition_hydration_race_fueling"
+      ],
+      "chunk_count": 21,
+      "domain_packs": {
+        "endurance_training_protocols": {
+          "domain_pack": "endurance_training_protocols",
+          "status": "runtime_only",
+          "can_write_core": false,
+          "current_source_count": 0,
+          "target_source_count": 0,
+          "source_coverage_ratio": 0.0,
+          "current_rule_count": 0,
+          "target_rule_count": 0,
+          "rule_coverage_ratio": 0.0,
+          "current_question_count": 0,
+          "target_question_count": 0,
+          "chunk_count": 7,
+          "permission_counts": {
+            "explanation_only": 7
+          },
+          "quality_tier_counts": {
+            "review": 5,
+            "systematic_review": 1,
+            "observational_study": 1
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 7
+          }
+        },
+        "load_injury_safety": {
+          "domain_pack": "load_injury_safety",
+          "status": "runtime_only",
+          "can_write_core": false,
+          "current_source_count": 0,
+          "target_source_count": 0,
+          "source_coverage_ratio": 0.0,
+          "current_rule_count": 0,
+          "target_rule_count": 0,
+          "rule_coverage_ratio": 0.0,
+          "current_question_count": 0,
+          "target_question_count": 0,
+          "chunk_count": 7,
+          "permission_counts": {
+            "explanation_only": 7
+          },
+          "quality_tier_counts": {
+            "review": 2,
+            "systematic_review": 2,
+            "consensus": 1,
+            "study": 1,
+            "qualitative_study": 1
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 7
+          }
+        },
+        "nutrition_hydration_race_fueling": {
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "status": "runtime_only",
+          "can_write_core": false,
+          "current_source_count": 0,
+          "target_source_count": 0,
+          "source_coverage_ratio": 0.0,
+          "current_rule_count": 0,
+          "target_rule_count": 0,
+          "rule_coverage_ratio": 0.0,
+          "current_question_count": 0,
+          "target_question_count": 0,
+          "chunk_count": 7,
+          "permission_counts": {
+            "explanation_only": 7
+          },
+          "quality_tier_counts": {
+            "position_stand": 3,
+            "review": 3,
+            "consensus": 1
+          },
+          "knowledge_layer_counts": {
+            "source_registry": 7
+          }
+        }
+      }
+    }
+  }
+}
