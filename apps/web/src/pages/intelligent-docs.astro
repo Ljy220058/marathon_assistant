@@ -1,0 +1,136 @@
+---
+import "../styles/global.css";
+import "../styles/intelligent-docs.css";
+
+const evidenceGroups = [
+  {
+    title: "暂无来源",
+    expanded: true,
+    file: "等待提问",
+    locator: "",
+    quote: "回答生成后会显示可核对来源。",
+  },
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>智能文档 · 马拉松助手</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23090b10'/%3E%3Cpath d='M14 42c11-18 20-24 36-24M20 44h27' stroke='%2322d3ee' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='20' cy='22' r='5' fill='%23f6f7fb'/%3E%3C/svg%3E" />
+    <meta
+      name="description"
+      content="基于马拉松训练知识库提问、生成回答，并查看可追溯到文件和页码的引用依据。"
+    />
+  </head>
+  <body class="docs-page">
+    <a class="skip-link" href="#docs-main">跳到智能文档内容</a>
+    <div class="grid-background" aria-hidden="true"></div>
+
+    <header class="docs-top" data-docs-top>
+      <a class="docs-brand" href="/" aria-label="返回马拉松助手首页">
+        <span class="docs-logo" aria-hidden="true">M</span>
+        <span>马拉松助手</span>
+      </a>
+      <nav class="docs-nav" aria-label="主导航">
+        <a href="/#plan">今日</a>
+        <a href="/#calendar-section">计划</a>
+        <a href="/#profile">我的情况</a>
+        <a href="/intelligent-docs/" aria-current="page">依据</a>
+      </nav>
+      <div id="docsHealth" class="docs-health" hidden aria-live="polite">连接中</div>
+    </header>
+
+    <nav class="docs-mobile-nav" aria-label="移动端快捷导航">
+      <a href="/#plan">今日</a>
+      <a href="/#calendar-section">计划</a>
+      <a href="/#profile">我的情况</a>
+      <a href="/intelligent-docs/" aria-current="page">依据</a>
+    </nav>
+
+    <main class="docs-shell" id="docs-main">
+      <section class="docs-main-column" aria-label="知识库问答">
+        <h1>问知识库</h1>
+        <form class="docs-input-row" data-docs-form role="search">
+          <label class="sr-only" for="docsQuestion">向知识库提问</label>
+          <textarea
+            id="docsQuestion"
+            data-docs-question
+            rows="1"
+            placeholder="例如：膝盖疼还能继续跑吗？"
+          ></textarea>
+          <button class="docs-send" type="submit" data-docs-submit>发送</button>
+        </form>
+
+        <section class="docs-source-summary" data-source-summary>
+          <div>
+            <p class="eyebrow">知识源</p>
+            <h2>知识源概览</h2>
+            <p data-source-summary-text>优先使用可核对正文；仅登记来源只作线索。</p>
+          </div>
+          <dl class="docs-source-stats">
+            <div>
+              <dt>全部</dt>
+              <dd data-total-source-count>-</dd>
+            </div>
+            <div>
+              <dt>可回答</dt>
+              <dd data-ready-source-count>-</dd>
+            </div>
+            <div>
+              <dt>线索</dt>
+              <dd data-registry-only-source-count>-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="docs-answer" aria-live="polite" aria-labelledby="docs-answer-title" data-docs-answer>
+          <div class="docs-answer-head">
+            <h2 id="docs-answer-title" data-docs-answer-title>AI 回答</h2>
+            <span data-docs-request-id hidden></span>
+          </div>
+          <div class="docs-alert" role="status" data-docs-alert>
+            <div><strong>提示：</strong>输入问题后，这里会生成回答。</div>
+          </div>
+          <div class="docs-answer-body" data-docs-answer-body>
+            <p>你可以先问训练安排、专项技术、恢复或伤病风险。</p>
+          </div>
+          <div class="docs-actions" aria-label="回答操作">
+            <button type="button" data-docs-action="profile">补充个人情况</button>
+            <span aria-hidden="true">·</span>
+            <button type="button" data-docs-action="retry">重新生成</button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="docs-evidence" aria-label="回答来源">
+        <div class="docs-evidence-head">
+          <button class="docs-expand-all" type="button" data-docs-expand-all aria-controls="docsEvidenceRows">全部展开</button>
+        </div>
+        <div class="docs-rows" id="docsEvidenceRows" data-docs-evidence-list>
+          {evidenceGroups.map((group) => (
+            <section class="docs-row" data-docs-evidence-row>
+              <button class="docs-toggle" type="button" aria-expanded={group.expanded ? "true" : "false"}>
+                <span class="docs-source-dot" aria-hidden="true"></span>
+                <span>{group.title}</span>
+                <span class="docs-chevron" aria-hidden="true">{group.expanded ? "⌃" : "⌄"}</span>
+              </button>
+              {group.expanded ? (
+                <div class="docs-source">
+                  <div class="docs-file">{group.file}</div>
+                  <div class="docs-locator">{group.locator}</div>
+                  <div class="docs-quote">{group.quote}</div>
+                </div>
+              ) : null}
+            </section>
+          ))}
+        </div>
+      </aside>
+    </main>
+
+    <script src="../scripts/apiClient.js"></script>
+    <script src="../scripts/intelligentDocs.js"></script>
+  </body>
+</html>

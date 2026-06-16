@@ -1,0 +1,40 @@
+C:\Users\26318\Documents\trae_projects\ollama_pro\����������\scripts\full_rag_query.py:8: DeprecationWarning: `langchain-community` is being sunset and is no longer actively maintained. See https://github.com/langchain-ai/langchain-community/issues/674 for details and migration guidance toward standalone integration packages.
+  from langchain_community.vectorstores import FAISS
+GRAPHRAG_API_KEY δ���û���Ϊ����Ĭ��ֵ��֪ʶͼ�׽���ʼ��Ϊ��ͼ��
+提问: 我膝盖外侧疼，还能继续跑步吗
+分类: therapist
+
+[意图域策略] injury_safety → evidence_domains={'recovery', 'injury_prevention', 'medical_safety', 'rehabilitation', 'medical_risk', 'injury', 'rehab_strength_mobility'}
+[实体抽取] ['95/100/105% HMP 的累计量必须按周跑量、训练频率和恢复状态缩放 休息 一周几次 加量 几次 里程 训练量 每周几次 每周安排 恢复日 每周跑量 跑步 周里程 慢跑 安排 跑量增加 恢复跑 轻松跑', '周跑量、训练频率和恢复状态 休息 一周几次 加量 几次 里程 训练量 每周几次 每周安排 恢复日 每周跑量 跑步 周里程 慢跑 安排 跑量增加 恢复跑 轻松跑', '低跑量、可训练日少、近期全马、疲劳/伤病或缺少 5K/10K 校准时 加量 里程 训练量 跑步 慢跑 跑量增加 周跑量', '中距离 跑步 events 强度 during 赛前减量 长跑 训练 慢跑 减量期 减少训练 削减跑量', '高ly fit 跑者s performing8k track 时间 trial 跑步 训练 慢跑']
+
+[向量检索] 15 → 域过滤后 8:
+  域分布: {'training_theory': 8}
+  [1] [training_theory] pasted_20260428_193434.txt p1 | 
+  [2] [training_theory] pasted_20260428_225958.txt p1 | 
+  [3] [training_theory] pasted_20260428_193434.txt p1 | 
+  [4] [training_theory] beginner_guide.md p1 | 
+  [5] [training_theory] pasted_20260428_193434.txt p1 | 
+
+[图搜索] 26 条边 / 3 个域:
+
+  capacity_management (3 条):
+    高质量课后优先恢复或轻松跑 休息 恢复日 跑步 训练 慢跑  →[桥接]→ 恢复跑 休息 恢复日 跑步 训练 慢跑 轻松跑 [跨域:handoff]  (bridge_detection)
+    高质量课后优先恢复或轻松跑 休息 恢复日 跑步 训练 慢跑  →[桥接]→ 轻松跑 跑步 训练 慢跑 [跨域:handoff]  (bridge_detection)
+    轻松跑模板 30-60min 跑步 训练 慢跑 →[约束]→ 高质量课后优先恢复或轻松跑 休息 恢复日 跑步 训练 慢跑   (decision_graph_registry)
+
+  training_theory (19 条):
+    周跑量、训练频率和恢复状态 休息 一周几次 加量 几次 里程 →[调节]→ 95/100/105% HMP 的累计量必须按周跑量、训练频  (half_marathon_hmp_protoco)
+    恢复跑 休息 恢复日 跑步 训练 慢跑 轻松跑 →[改善]→ 有氧基础  (decision_graph_registry)
+    恢复跑 休息 恢复日 跑步 训练 慢跑 轻松跑 →[促进]→ 恢复能力 休息 恢复跑 恢复日 轻松跑  (decision_graph_registry)
+    恢复跑 休息 恢复日 跑步 训练 慢跑 轻松跑 →[促进]→ 基础耐力  (decision_graph_registry)
+    轻松跑 跑步 训练 慢跑 →[改善]→ 有氧基础  (decision_graph_registry)
+    ... 及 14 条
+
+  workout_prescription (4 条):
+    恢复跑 休息 恢复日 跑步 训练 慢跑 轻松跑 →[需要]→ 轻松跑模板 30-60min 跑步 训练 慢跑  (decision_graph_registry)
+    恢复跑 休息 恢复日 跑步 训练 慢跑 轻松跑 →[需要]→ Z1  (decision_graph_registry)
+    轻松跑 跑步 训练 慢跑 →[需要]→ 轻松跑模板 30-60min 跑步 训练 慢跑  (decision_graph_registry)
+    轻松跑 跑步 训练 慢跑 →[需要]→ Z1  (decision_graph_registry)
+
+==================================================
+KG: 473 节点 / 423 边 / FAISS: 8420 chunks

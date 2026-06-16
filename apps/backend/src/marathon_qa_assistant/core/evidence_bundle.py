@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional
 
 from marathon_qa_assistant.core.half_marathon_glossary import get_hmp_glossary_terms
@@ -10,6 +11,51 @@ from marathon_qa_assistant.services.security_guards import InputGuard
 
 
 _INPUT_GUARD = InputGuard()
+_EMBEDDED_CITATION_RE = re.compile(r"\[(\d+)\]")
+
+
+def _neutralize_embedded_citation_numbers(text: str) -> str:
+    """Prevent source-local reference numbers from looking like system citations."""
+    return _EMBEDDED_CITATION_RE.sub(lambda match: f"({match.group(1)})", str(text or ""))
+
+
+class EvidenceTier(str, Enum):
+    """证据层级：区分科学文献、动作库参考、系统规则三种来源。"""
+    SCIENTIFIC = "scientific_evidence"      # 同行评审文献 / 运动科学文献
+    EXERCISE_REF = "exercise_reference"     # 动作库 / 教练实践参考
+    PROTOCOL_RULE = "protocol_rule"          # 系统规则层
+
+
+def _infer_evidence_tier(item: Dict) -> str:
+    """从 source_file / domain_pack / knowledge_layer 推断证据层级。
+
+    优先级：domain_pack > knowledge_layer > source_file 关键词匹配。
+    默认 fallback 为 exercise_reference（最保守分类）。
+    """
+    source_file = str(item.get("source_file", "")).lower()
+    domain_pack = str(item.get("domain_pack", "")).lower()
+    knowledge_layer = str(item.get("knowledge_layer", "")).lower()
+
+    # 科学文献：含 DOI/PMID 或 domain_pack 为 sports_science/literature
+    if any(kw in source_file for kw in ["doi", "pmid", "10.", "pubmed"]):
+        return EvidenceTier.SCIENTIFIC.value
+    if domain_pack in ("sports_science", "literature", "research_paper"):
+        return EvidenceTier.SCIENTIFIC.value
+    if knowledge_layer == "literature":
+        return EvidenceTier.SCIENTIFIC.value
+
+    # 动作库参考
+    if "动作库" in source_file or domain_pack == "action_library":
+        return EvidenceTier.EXERCISE_REF.value
+
+    # 系统规则
+    if domain_pack in ("protocol_rule", "system_rule") or knowledge_layer in ("protocol", "system"):
+        return EvidenceTier.PROTOCOL_RULE.value
+    if item.get("evidence_domain") == "protocol_rule":
+        return EvidenceTier.PROTOCOL_RULE.value
+
+    # 默认：动作库参考（最保守的分类）
+    return EvidenceTier.EXERCISE_REF.value
 
 
 PROTOCOL_SOURCE_DOCS = (
@@ -23,12 +69,17 @@ EVIDENCE_METADATA_KEYS = (
     "source_url",
     "local_path",
     "section",
+    "section_anchor",
     "paragraph_index",
+    "paragraph_hash",
     "char_start",
     "char_end",
+    "text_span_hash",
     "language",
     "evidence_domain",
     "knowledge_layer",
+    "framework",
+    "source_grade",
     "domain_pack",
     "allowed_use",
     "prescription_permission",
@@ -37,7 +88,37 @@ EVIDENCE_METADATA_KEYS = (
     "exclude_from_training_generation",
     "needs_review",
     "retrieval_mode",
+    "retrieval_status",
+    "query_variant",
+    "query_variants",
+    "query_variant_count",
+    "best_query_variant",
+    "bilingual_match",
+    "consensus_count",
+    "score_breakdown",
+    "relevance_score",
+    "relevance_percent",
+    "raw_vector_score",
+    "confidence_level",
+    "graph_relation_strength",
+    "evidence_source_type",
+    "decision_gate",
+    "decision_gate_reason",
+    "governance_conflict_id",
+    "conflict_detected",
+    "conflict_reason",
+    "conflicting_sources",
 )
+def _resolve_health_snapshot(health: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    live_health = get_knowledge_base_health_snapshot()
+    if not isinstance(health, dict):
+        return live_health
+    if bool(health.get("ready") or health.get("ok")):
+        return health
+    # 运行时快照比初始 working_state 的占位值更可信；若 live 已 ready，则优先使用 live。
+    if bool(live_health.get("ready") or live_health.get("ok")):
+        return live_health
+    return health
 
 
 def build_evidence_bundle(
@@ -65,30 +146,56 @@ def build_evidence_bundle(
         if structured_training_plan and not items:
             _append_item(items, seen, _plan_only_item(structured_training_plan))
 
+    # 根因修复：过滤无有效来源的幽灵 evidence（跨所有来源：ranked/rag/protocol）。
+    # 检索或上游可能返回元数据全空的 chunk（source_path/source_file/source_label/source_url/
+    # source_registry_id 均缺失或为 'unknown'），这类 evidence 会触发 rule_checker
+    # "证据 [N] 缺少 source_path" 违规（auditor fail → 500/504），且对用户无定位价值。
+    # 在聚合层统一过滤，不依赖下游 rule_checker 兜底。
+    items = [
+        it for it in items
+        if isinstance(it, dict) and any(
+            str(it.get(k) or "").strip().lower() not in {"", "unknown"}
+            for k in ("source_path", "source_file", "source_label", "source_url", "source_registry_id")
+        )
+    ]
+
     _renumber(items)
     return {
         "query": str(query or ""),
         "evidence_items": items,
-        "health": _normalize_health(health),
+        # 初始 working_state 可能携带未初始化占位健康态；构建证据包时刷新一次 runtime 快照，避免 trace 误报 kb_not_ready。
+        "health": _normalize_health(_resolve_health_snapshot(health)),
     }
 
 
-def format_evidence_bundle_lines(bundle: Optional[Dict[str, Any]], limit: int = 3) -> str:
+def format_evidence_bundle_lines(bundle: Optional[Dict[str, Any]], limit: Optional[int] = None) -> str:
     if not isinstance(bundle, dict):
         return "（暂无可用证据）"
     items = [item for item in (bundle.get("evidence_items") or []) if isinstance(item, dict)]
+    if limit is not None:
+        items = items[:limit]
     if not items:
         return "（暂无可用证据）"
 
     lines = []
-    for item in items[:limit]:
+    for item in items:
         label = str(item.get("citation_label") or "").strip() or "[?]"
         tier = str(item.get("tier") or "kb_fallback").strip()
-        source = str(item.get("source_file") or item.get("source") or "unknown").strip()
+        permission = str(item.get("prescription_permission") or item.get("trace", {}).get("prescription_permission") or "").strip()
+        display_mode = str(item.get("display_mode") or item.get("trace", {}).get("display_mode") or "").strip()
+        is_core = permission == "can_write_core" and display_mode not in {"graph_hint", "legacy_explanation", "model_general_knowledge", "needs_evidence", "rejected_source"}
+        boundary = "core evidence" if is_core else "visible context only: graph/model/legacy hint"
+        source = str(item.get("source_label") or item.get("source_file") or item.get("source") or "unknown").strip()
+        locator = str(item.get("locator_hint") or item.get("page_hint") or "").strip()
         page = item.get("page")
-        page_text = f" p.{page}" if page not in (None, "", 0) else ""
-        snippet = str(item.get("snippet") or item.get("text") or "").replace("\n", " ").strip()
-        lines.append(f"{label} [{tier}] {source}{page_text}: {snippet[:220]}")
+        page_text = f" p.{page}" if page not in (None, "", 0) and not locator else ""
+        snippet = str(item.get("text_span") or item.get("snippet") or item.get("text") or "").replace("\n", " ").strip()
+        snippet = _neutralize_embedded_citation_numbers(snippet)
+        locator_text = f" {locator}" if locator else page_text
+        lines.append(f"{label} [{boundary}] {source}{locator_text}: {snippet[:220]}")
+    visible_count = len(items)
+    lines.append(f"（可用引用编号范围：[1] 到 [{visible_count}]，请勿使用超出此范围的编号）")
+    lines.append("（证据边界：只有 core evidence 可用于核心训练处方；graph/model/legacy hint 只能作为可见背景或待核验线索。）")
     return "\n".join(lines)
 
 
@@ -112,7 +219,7 @@ def find_invalid_citations(text: str, bundle: Optional[Dict[str, Any]]) -> List[
     return invalid
 
 
-def evidence_base_from_bundle(bundle: Optional[Dict[str, Any]], limit: Optional[int] = 5) -> List[Dict[str, Any]]:
+def evidence_base_from_bundle(bundle: Optional[Dict[str, Any]], limit: Optional[int] = None) -> List[Dict[str, Any]]:
     if not isinstance(bundle, dict):
         return []
     items = [item for item in (bundle.get("evidence_items") or []) if isinstance(item, dict)]
@@ -127,6 +234,7 @@ def evidence_base_from_bundle(bundle: Optional[Dict[str, Any]], limit: Optional[
             "evidence_id": item.get("evidence_id", f"evidence_{index}"),
             "citation_label": item.get("citation_label", f"[{index}]"),
             "tier": item.get("tier", "kb_fallback"),
+            "evidence_tier": item.get("evidence_tier", EvidenceTier.EXERCISE_REF.value),
             "document": item.get("source_file", "unknown"),
             "source": item.get("source_file", "unknown"),
             "path": item.get("source_path", "") or item.get("source_file", ""),
@@ -145,24 +253,40 @@ def _item_from_ranked_evidence(source: Dict[str, Any]) -> EvidenceBundleItem:
     tier = "graph" if kind == "graph" else "kb_fallback"
     if kind == "fusion":
         tier = "kb_fallback"
-    text = _scan_and_clean_context(str(source.get("text") or source.get("snippet") or ""))
+    # CRAG：优先用 crag_corrector 精炼后的 refined_text（去噪关键片段），
+    # 缺失时回退原 text/snippet。原 text 仍保留在 ranked_evidence 供引用回溯。
+    text = _scan_and_clean_context(str(source.get("refined_text") or source.get("text") or source.get("snippet") or ""))
+    # P0-2: 若 source_path 为空，尝试从 source_file 推断
+    source_path = str(source.get("source_path") or "")
+    if not source_path:
+        source_file = str(source.get("source_file") or "")
+        if source_file and source_file != "unknown":
+            from marathon_qa_assistant.services.vector_store import infer_source_path as _infer_sp
+            source_path = _infer_sp(source_file)
+    # 证据层级标注：从 source 元数据推断 evidence_tier
+    evidence_tier = _infer_evidence_tier(source)
     item = {
         "evidence_id": str(source.get("evidence_id") or source.get("chunk_id") or ""),
         "citation_label": str(source.get("citation_label") or ""),
         "tier": tier,
+        "display_mode": str(source.get("display_mode") or ""),
+        "evidence_tier": evidence_tier,
         "source_file": str(source.get("source_file") or "unknown"),
-        "source_path": str(source.get("source_path") or ""),
+        "source_path": source_path,
         "page": _safe_int(source.get("page")),
         "chunk_id": str(source.get("chunk_id") or ""),
         "snippet": text[:300],
         "text": text,
-        "score": float(source.get("hybrid_score") or source.get("retrieval_score") or source.get("score") or 0.0),
+        "score": float(source.get("relevance_score") or source.get("hybrid_score") or source.get("retrieval_score") or source.get("score") or 0.0),
         "trace": dict(source.get("trace") or {"kind": kind}),
     }
     for key in EVIDENCE_METADATA_KEYS:
         if key in source:
             item[key] = source.get(key)
             item["trace"].setdefault(key, source.get(key))
+    # P0-2: 确保 source_path 不为空（metadata 循环可能会用空值覆盖）
+    if not item.get("source_path"):
+        item["source_path"] = source_path
     return item
 
 
@@ -170,10 +294,13 @@ def _item_from_rag_source(source: Dict[str, Any]) -> EvidenceBundleItem:
     text = _scan_and_clean_context(str(source.get("text") or source.get("snippet") or ""))
     chunk_id = str(source.get("chunk_id") or "")
     source_file = str(source.get("source_file") or source.get("source") or "unknown")
+    evidence_tier = _infer_evidence_tier(source)
     item = {
         "evidence_id": f"kb_{chunk_id}" if chunk_id else _stable_evidence_id("kb", source_file, text),
         "citation_label": "",
         "tier": "kb_fallback",
+        "display_mode": str(source.get("display_mode") or ""),
+        "evidence_tier": evidence_tier,
         "source_file": source_file,
         "source_path": str(source.get("source_path") or ""),
         "page": _safe_int(source.get("page")),
@@ -208,6 +335,8 @@ def _protocol_rule_items(structured_training_plan: Dict[str, Any]) -> List[Evide
         "evidence_id": "protocol_half_marathon_hmp",
         "citation_label": "",
         "tier": "protocol_rule",
+        "display_mode": "verified_source",
+        "evidence_tier": EvidenceTier.PROTOCOL_RULE.value,
         "source_file": PROTOCOL_SOURCE_DOCS[1],
         "source_path": PROTOCOL_SOURCE_DOCS[1],
         "page": None,
@@ -230,6 +359,8 @@ def _plan_only_item(structured_training_plan: Dict[str, Any]) -> EvidenceBundleI
         "evidence_id": "plan_only_structured_skeleton",
         "citation_label": "",
         "tier": "plan_only",
+        "display_mode": "needs_evidence",
+        "evidence_tier": EvidenceTier.PROTOCOL_RULE.value,
         "source_file": "structured_training_plan",
         "source_path": "",
         "page": None,
@@ -263,11 +394,17 @@ def _renumber(items: Iterable[EvidenceBundleItem]) -> None:
 
 def _normalize_health(health: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     raw = health if isinstance(health, dict) else get_knowledge_base_health_snapshot()
+    source = str(raw.get("source") or raw.get("mode") or "")
+    # 保留 evidence display boundary 需要的 runtime gate 字段，避免 bundle 投影时丢失健康态。
     return {
         "kb_ready": bool(raw.get("ready") or raw.get("ok")),
-        "source": str(raw.get("source") or raw.get("mode") or ""),
+        "source": source,
         "chunks_count": int(raw.get("chunks_count") or 0),
         "faiss_ready": bool(raw.get("faiss_ready")),
+        "index_schema_version": str(raw.get("index_schema_version") or source or "unknown"),
+        "metadata_completeness": float(raw.get("metadata_completeness") or 0.0),
+        "runtime_core_prescription_enabled": bool(raw.get("runtime_core_prescription_enabled")),
+        "commercial_core_prescription_enabled": bool(raw.get("commercial_core_prescription_enabled")),
     }
 
 
@@ -296,9 +433,11 @@ def _scan_and_clean_context(text: str) -> str:
 
 
 __all__ = [
+    "EvidenceTier",
     "build_evidence_bundle",
     "citation_labels",
     "evidence_base_from_bundle",
     "find_invalid_citations",
     "format_evidence_bundle_lines",
+    "_infer_evidence_tier",
 ]

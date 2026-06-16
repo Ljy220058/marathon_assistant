@@ -1,11 +1,11 @@
-# Ollama Pro GraphRAG Platform v2.0 项目执行计划书
+﻿# Ollama Pro GraphRAG Platform v2.0 项目执行计划书
 
 ## 1. 项目基本信息
 - **项目名称**: Ollama Pro GraphRAG Platform v2.0
-- **需求描述**: 
+- **需求描述**:
     - 升级原有 LangGraph 工作流为 Team + Subagent 混合架构。
     - 引入全流程 Token 管控模块，实现成本可视化与配额限制。
-    - 深度整合前后端，增强 Gradio UI 的流式反馈与风险拦截能力。
+    - 深度整合前后端，增强当前 Astro/FastAPI 前端的流式反馈与风险拦截能力。
     - 建立 AI 审计机制，确保生成内容的合规性与质量。
 - **截止时间**: 2026-04-23 (7天)
 - **总 Token 预算**: 5,000,000 Tokens
@@ -58,8 +58,8 @@
 - **组间实现方法**:
   - `marathon_qa_assistant/nodes/expert_nodes.py`: `auditor_node` 基于 `is_approved`、`iteration_count`、`ranked_evidence[:5].hybrid_score`、`entities` 计算动态分数，并补充 `score_sources` 说明字段。
   - `marathon_qa_assistant/nodes/output_nodes.py`: 将 `audit_scores`、`score_sources` 与 `evidence_base` 装配到统一的 `structured_report.audit_block`，作为前端唯一消费入口。
-  - `marathon_qa_assistant/ui/legacy_ui.py`: 在共享渲染器中新增“质量与安全审计”面板，统一输出“分数 + 评分依据 + 关联证据”，供当前 Astro/FastAPI 链路复用。
-  - `marathon_qa_assistant/ui/plan_ui.py`: 保留可复用展示 props 构造逻辑，作为已移除 Chainlit 入口后的中立 UI 辅助层。
+  - `marathon_qa_assistant/ui/report_ui.py`: 在共享渲染器中新增“质量与安全审计”面板，统一输出“分数 + 评分依据 + 关联证据”，供当前 Astro/FastAPI 链路复用。
+  - `marathon_qa_assistant/ui/plan_ui.py`: 保留可复用展示 props 构造逻辑，作为当前 Astro/FastAPI 链路的中立 UI 辅助层。
   - `marathon_qa_assistant/services/vector_store.py`: 在用户知识库构建前显式创建 `faiss_db/`，避免倒计时与审计修复期间被索引构建异常阻断联调。
 - **验收标准**:
   - 相同问答在证据列表变化时，ROI 不再长期固定在 `80%`。

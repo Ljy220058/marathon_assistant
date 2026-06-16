@@ -1,0 +1,18 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="智能对话" subtitle="智能对话" activeTab="dialog" showSidebar={true} sidebarActive="dialog">
+  <article class="journal-card journal-card-pad journal-chat">
+    <div class="journal-chat-thread" id="dialogThread"></div>
+    <div class="journal-chip-row" id="dialogSuggests">
+      <button type="button" class="journal-badge is-action" data-suggest>如何预防膝盖疼？</button>
+      <button type="button" class="journal-badge is-action" data-suggest>跑前吃什么？</button>
+      <button type="button" class="journal-badge is-action" data-suggest>什么是轻松跑？</button>
+    </div>
+    <div class="journal-input-bar">
+      <input id="dialogInput" class="journal-input" type="text" placeholder="问我任何跑步问题…" />
+      <button id="dialogSend" class="journal-btn primary" type="button">发送</button>
+    </div>
+  </article>
+</JournalLayout>

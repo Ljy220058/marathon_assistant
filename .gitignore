@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+﻿# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -162,14 +162,14 @@ artifacts/**/tmp/
 artifacts/frontend-audit/chrome-*-profile/
 archive/local_caches/
 
+# Runtime-generated files at root (canonical locations under data/vector_kb/).
+/vector_kb_user/
+/vector_kb_report.json
+
 # Local dependencies and runtime caches
 lib/
-.chainlit/
 .files/
-apps/**/.chainlit/
 apps/**/.files/
-!archive/legacy_chainlit/
-!archive/legacy_chainlit/**
 
 # Frontend generated files
 frontend/
@@ -191,3 +191,11 @@ research/**/manuscript/**/build*/
 *.run.xml
 *.synctex.gz
 *.toc
+
+# Binary index files (FAISS) and large KB artifacts
+*.faiss
+data/knowledge/external_candidates/*.pdf
+data/vector_kb/v2/chunks.jsonl
+
+# Claude Code worktrees（独立工作树，不应入库）
+.claude/worktrees/

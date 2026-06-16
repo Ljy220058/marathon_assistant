@@ -1,0 +1,95 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  activeTab?: "today" | "calendar" | "dialog" | "profile";
+  toolbarSlot?: string;
+  showSidebar?: boolean;
+  sidebarActive?: string;
+  showBottomTabs?: boolean;
+}
+
+const {
+  title,
+  subtitle = "",
+  activeTab = "today",
+  showSidebar = false,
+  sidebarActive = "",
+  showBottomTabs = true,
+} = Astro.props;
+
+const tabs = [
+  { key: "today", label: "今天", href: "/" },
+  { key: "calendar", label: "日历", href: "/calendar" },
+  { key: "dialog", label: "对话", href: "/dialog" },
+  { key: "profile", label: "我的", href: "/profile" },
+];
+
+const sidebarLinks = [
+  { key: "plan", label: "训练计划", href: "/" },
+  { key: "profile", label: "我的情况", href: "/profile" },
+  { key: "dialog", label: "智能对话", href: "/dialog" },
+  { key: "basis", label: "训练复盘", href: "/basis" },
+  { key: "history", label: "历史记录", href: "/history" },
+  { key: "feedback", label: "今日反馈", href: "/feedback" },
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} - 马拉松助手</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23090b10'/%3E%3Cpath d='M14 42c11-18 20-24 36-24M20 44h27' stroke='%2322d3ee' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='20' cy='22' r='5' fill='%23f6f7fb'/%3E%3C/svg%3E" />
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <a class="journal-brand" href="/" style="text-decoration:none;color:inherit;">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>{subtitle || title}</span>
+          </div>
+        </a>
+        <div class="journal-toolbar">
+          <slot name="toolbar" />
+          <div data-auth-header></div>
+        </div>
+      </header>
+
+      <slot name="hero" />
+
+      {showSidebar ? (
+        <section class="journal-layout">
+          <aside class="journal-sidebar">
+            <nav class="journal-nav">
+              {sidebarLinks.map((link) => (
+                <a class={sidebarActive === link.key ? "is-active" : ""} href={link.href}>{link.label}</a>
+              ))}
+            </nav>
+          </aside>
+          <section class="journal-main">
+            <slot />
+          </section>
+        </section>
+      ) : (
+        <slot />
+      )}
+
+      {showBottomTabs && (
+        <nav class="journal-bottom-tabs" aria-label="底部导航">
+          {tabs.map((tab) => (
+            <a class={activeTab === tab.key ? "is-active" : ""} href={tab.href}>{tab.label}</a>
+          ))}
+        </nav>
+      )}
+    </main>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/apiClient.js"></script>
+    <script src="../scripts/journal-app.js"></script>
+  </body>
+</html>

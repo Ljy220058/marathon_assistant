@@ -1,0 +1,422 @@
+{
+  "vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\expert_candidate_20260528",
+  "top_k": 5,
+  "question_count": 5,
+  "results": [
+    {
+      "question": "如何定义并安排周期化训练以支持长期跑步表现提升？",
+      "answer": "Mass General Running Injury Prevention Domain pack: strength_conditioning. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Support runner strength, plyometric, mileage-monitoring, and active-rest  Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only. Brigham and Women's Running Injury Prevention Tips and Strength Training Program for Runners Domain pack: strength_conditioning. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Support runner stre",
+      "citations": [
+        {
+          "source_file": "external_mgh_running_injury_prevention.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_mgh_running_injury_prevention_0025",
+          "score": 0.542667
+        },
+        {
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "score": 0.540883
+        },
+        {
+          "source_file": "external_bwh_strength_training_runners.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_bwh_strength_training_runners_0014",
+          "score": 0.540324
+        },
+        {
+          "source_file": "expert_rrca_marathon_training_guide.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_rrca_marathon_training_guide_0011",
+          "score": 0.538551
+        },
+        {
+          "source_file": "external_mgh_marathon_recovery.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_mgh_marathon_recovery_0023",
+          "score": 0.53717
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.542667,
+          "chunk_id": "chunkv2_src_external_mgh_running_injury_prevention_0025",
+          "source_file": "external_mgh_running_injury_prevention.url",
+          "source_path": "data/knowledge/external_candidates/external_mgh_running_injury_prevention.url",
+          "page": 1,
+          "text": "Mass General Running Injury Prevention Domain pack: strength_conditioning. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Support runner strength, plyometric, mileage-monitoring, and active-rest explanation boundaries.",
+          "distance": 0.8427495956420898
+        },
+        {
+          "score": 0.540883,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "text": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.8488277196884155
+        },
+        {
+          "score": 0.540324,
+          "chunk_id": "chunkv2_src_external_bwh_strength_training_runners_0014",
+          "source_file": "external_bwh_strength_training_runners.url",
+          "source_path": "data/knowledge/external_candidates/external_bwh_strength_training_runners.url",
+          "page": 1,
+          "text": "Brigham and Women's Running Injury Prevention Tips and Strength Training Program for Runners Domain pack: strength_conditioning. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Support runner strength-training explanation, progression caution, and injury-prevention context.",
+          "distance": 0.8507410287857056
+        },
+        {
+          "score": 0.538551,
+          "chunk_id": "chunkv2_src_expert_rrca_marathon_training_guide_0011",
+          "source_file": "expert_rrca_marathon_training_guide.url",
+          "source_path": "data/knowledge/external_candidates/expert_rrca_marathon_training_guide.url",
+          "page": 1,
+          "text": "RRCA Marathon Training Guidance Domain pack: training_protocols. Evidence domain: protocol. Permission: explanation_only. Runner education and marathon training guidance candidate for beginner and recreational marathon planning.",
+          "distance": 0.8568345904350281
+        },
+        {
+          "score": 0.53717,
+          "chunk_id": "chunkv2_src_external_mgh_marathon_recovery_0023",
+          "source_file": "external_mgh_marathon_recovery.url",
+          "source_path": "data/knowledge/external_candidates/external_mgh_marathon_recovery.url",
+          "page": 1,
+          "text": "Mass General Crossing the Finish Line: Strategies for Marathon Recovery and a Return to Running Domain pack: mobility_recovery. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Support post-race recovery, active recovery, and gradual return-to-running explanation.",
+          "distance": 0.8616064786911011
+        }
+      ]
+    },
+    {
+      "question": "马拉松训练期如何进行营养与补给规划？",
+      "answer": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only. A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only. World Athletics Nutrition for Distance Runners Domain pack: nutrition_race_fueling. Evidence domain: nutrition_race_fueling. Permission: explanation_only. Expert candidate for distance running fueling, hydration, and rac",
+      "citations": [
+        {
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0020",
+          "score": 0.66733
+        },
+        {
+          "source_file": "nutrition_carb_during_exercise_2014.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0021",
+          "score": 0.647614
+        },
+        {
+          "source_file": "nutrition_world_athletics_2019.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_world_athletics_nutrition_runners_0012",
+          "score": 0.645208
+        },
+        {
+          "source_file": "expert_acsm_nutrition_athletic_performance_2016.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_acsm_nutrition_athletic_performance_2016_0002",
+          "score": 0.626019
+        },
+        {
+          "source_file": "nutrition_ultramarathon_issn_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_ultramarathon_issn_2019_0017",
+          "score": 0.619131
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.66733,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0020",
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "text": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.4985083341598511
+        },
+        {
+          "score": 0.647614,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0021",
+          "source_file": "nutrition_carb_during_exercise_2014.metadata",
+          "source_path": "data/knowledge/governance/src_nutrition_carb_during_exercise_2014.metadata",
+          "page": 1,
+          "text": "A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.5441306829452515
+        },
+        {
+          "score": 0.645208,
+          "chunk_id": "chunkv2_src_expert_world_athletics_nutrition_runners_0012",
+          "source_file": "nutrition_world_athletics_2019.url",
+          "source_path": "data/knowledge/external_candidates/nutrition_world_athletics_2019.url",
+          "page": 1,
+          "text": "World Athletics Nutrition for Distance Runners Domain pack: nutrition_race_fueling. Evidence domain: nutrition_race_fueling. Permission: explanation_only. Expert candidate for distance running fueling, hydration, and race-day nutrition planning.",
+          "distance": 0.5498877167701721
+        },
+        {
+          "score": 0.626019,
+          "chunk_id": "chunkv2_src_expert_acsm_nutrition_athletic_performance_2016_0002",
+          "source_file": "expert_acsm_nutrition_athletic_performance_2016.url",
+          "source_path": "data/knowledge/external_candidates/expert_acsm_nutrition_athletic_performance_2016.url",
+          "page": 1,
+          "text": "Nutrition and Athletic Performance Domain pack: nutrition_race_fueling. Evidence domain: nutrition_race_fueling. Permission: explanation_only. Position stand candidate for carbohydrate, hydration, and performance nutrition boundaries.",
+          "distance": 0.5973958969116211
+        },
+        {
+          "score": 0.619131,
+          "chunk_id": "chunkv2_src_nutrition_ultramarathon_issn_2019_0017",
+          "source_file": "nutrition_ultramarathon_issn_2019.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_ultramarathon_issn_2019.pdf",
+          "page": 1,
+          "text": "ISSN Position Stand: Nutritional Considerations for Single-Stage Ultra-Marathon Training and Racing. Domain pack: nutrition_hydration_race_fueling. Permission: explanation_only.",
+          "distance": 0.615167498588562
+        }
+      ]
+    },
+    {
+      "question": "过度训练常见风险信号有哪些，如何识别？",
+      "answer": "IOC Consensus Statement on Load in Sport and Risk of Injury Domain pack: training_load. Evidence domain: sports_science_reference. Permission: explanation_only. Consensus candidate for training load progression, injury r How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury. Domain pack: load_injury_safety. Permission: explanation_only. Training Errors and Running Related Injuries: A Systematic Review. Domain pack: load_injury_safety. Permission: explanation_only.",
+      "citations": [
+        {
+          "source_file": "external_ioc_load_injury_2016.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_ioc_load_injury_consensus_2016_0008",
+          "score": 0.591492
+        },
+        {
+          "source_file": "safety_ioc_load_injury_2016.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_ioc_load_injury_2016_0011",
+          "score": 0.584884
+        },
+        {
+          "source_file": "safety_training_errors_2012.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_safety_training_errors_2012_0009",
+          "score": 0.58041
+        },
+        {
+          "source_file": "external_ioc_load_injury_2016.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_ioc_load_injury_2016_0036",
+          "score": 0.57399
+        },
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.571248
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.591492,
+          "chunk_id": "chunkv2_src_expert_ioc_load_injury_consensus_2016_0008",
+          "source_file": "external_ioc_load_injury_2016.url",
+          "source_path": "data/knowledge/external_candidates/external_ioc_load_injury_2016.url",
+          "page": 1,
+          "text": "IOC Consensus Statement on Load in Sport and Risk of Injury Domain pack: training_load. Evidence domain: sports_science_reference. Permission: explanation_only. Consensus candidate for training load progression, injury risk, and monitoring boundaries.",
+          "distance": 0.6906399130821228
+        },
+        {
+          "score": 0.584884,
+          "chunk_id": "chunkv2_src_safety_ioc_load_injury_2016_0011",
+          "source_file": "safety_ioc_load_injury_2016.metadata",
+          "source_path": "data/knowledge/governance/src_safety_ioc_load_injury_2016.metadata",
+          "page": 1,
+          "text": "How much is too much? Part 1: IOC consensus statement on load in sport and risk of injury. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7097412347793579
+        },
+        {
+          "score": 0.58041,
+          "chunk_id": "chunkv2_src_safety_training_errors_2012_0009",
+          "source_file": "safety_training_errors_2012.metadata",
+          "source_path": "data/knowledge/governance/src_safety_training_errors_2012.metadata",
+          "page": 1,
+          "text": "Training Errors and Running Related Injuries: A Systematic Review. Domain pack: load_injury_safety. Permission: explanation_only.",
+          "distance": 0.7229199409484863
+        },
+        {
+          "score": 0.57399,
+          "chunk_id": "chunkv2_src_external_ioc_load_injury_2016_0036",
+          "source_file": "external_ioc_load_injury_2016.url",
+          "source_path": "data/knowledge/external_candidates/external_ioc_load_injury_2016.url",
+          "page": 1,
+          "text": "IOC consensus statement on load in sport and risk of injury. Domain pack: training_load. Permission: explanation_only.",
+          "distance": 0.7421920895576477
+        },
+        {
+          "score": 0.571248,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7505537271499634
+        }
+      ]
+    },
+    {
+      "question": "高温环境下训练有哪些安全建议？",
+      "answer": "Heat and Athletes Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Public health candidate for heat exposure, heat illness prevention, and athlete safety bou Heat Illness Symptoms and First Aid Domain pack: medical_risk. Evidence domain: medical_safety. Permission: explanation_only. Public health candidate for heat illness red flags, first aid, and stop-training boundaries. CDC Treatment for Heat-Related Illnesses Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Support heat-risk environment warnings, stop-activity guidance, and",
+      "citations": [
+        {
+          "source_file": "external_cdc_heat_athletes.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_cdc_heat_athletes_0005",
+          "score": 0.599028
+        },
+        {
+          "source_file": "external_cdc_heat_treatment.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_cdc_heat_illness_treatment_0006",
+          "score": 0.580375
+        },
+        {
+          "source_file": "external_cdc_heat_treatment.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_cdc_heat_treatment_0017",
+          "score": 0.577982
+        },
+        {
+          "source_file": "external_ioc_load_injury_2016.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_ioc_load_injury_consensus_2016_0008",
+          "score": 0.575251
+        },
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.573369
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.599028,
+          "chunk_id": "chunkv2_src_expert_cdc_heat_athletes_0005",
+          "source_file": "external_cdc_heat_athletes.url",
+          "source_path": "data/knowledge/external_candidates/external_cdc_heat_athletes.url",
+          "page": 1,
+          "text": "Heat and Athletes Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Public health candidate for heat exposure, heat illness prevention, and athlete safety boundaries.",
+          "distance": 0.6693713068962097
+        },
+        {
+          "score": 0.580375,
+          "chunk_id": "chunkv2_src_expert_cdc_heat_illness_treatment_0006",
+          "source_file": "external_cdc_heat_treatment.url",
+          "source_path": "data/knowledge/external_candidates/external_cdc_heat_treatment.url",
+          "page": 1,
+          "text": "Heat Illness Symptoms and First Aid Domain pack: medical_risk. Evidence domain: medical_safety. Permission: explanation_only. Public health candidate for heat illness red flags, first aid, and stop-training boundaries.",
+          "distance": 0.7230231761932373
+        },
+        {
+          "score": 0.577982,
+          "chunk_id": "chunkv2_src_external_cdc_heat_treatment_0017",
+          "source_file": "external_cdc_heat_treatment.url",
+          "source_path": "data/knowledge/external_candidates/external_cdc_heat_treatment.url",
+          "page": 1,
+          "text": "CDC Treatment for Heat-Related Illnesses Domain pack: environment_race_context. Evidence domain: environment_race_context. Permission: explanation_only. Support heat-risk environment warnings, stop-activity guidance, and medical-referral boundaries.",
+          "distance": 0.7301573753356934
+        },
+        {
+          "score": 0.575251,
+          "chunk_id": "chunkv2_src_expert_ioc_load_injury_consensus_2016_0008",
+          "source_file": "external_ioc_load_injury_2016.url",
+          "source_path": "data/knowledge/external_candidates/external_ioc_load_injury_2016.url",
+          "page": 1,
+          "text": "IOC Consensus Statement on Load in Sport and Risk of Injury Domain pack: training_load. Evidence domain: sports_science_reference. Permission: explanation_only. Consensus candidate for training load progression, injury risk, and monitoring boundaries.",
+          "distance": 0.7383718490600586
+        },
+        {
+          "score": 0.573369,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7440787553787231
+        }
+      ]
+    },
+    {
+      "question": "力量训练与耐力训练如何在同一训练计划中平衡？",
+      "answer": "NSCA Concurrent Strength and Endurance Training Guidance Domain pack: strength_conditioning. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Strength and conditioning guidance candidate for balanc Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only. Strength Training for Runners Domain pack: action_library. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Clinical education candidate for runner strength exercises, alternatives, and safe moveme",
+      "citations": [
+        {
+          "source_file": "expert_nsca_concurrent_training_runners.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_nsca_concurrent_training_runners_0010",
+          "score": 0.607634
+        },
+        {
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "score": 0.58121
+        },
+        {
+          "source_file": "external_bwh_strength_training_runners.url",
+          "page": 1,
+          "chunk_id": "chunkv2_src_expert_bwh_strength_training_runners_0004",
+          "score": 0.577439
+        },
+        {
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "score": 0.567478
+        },
+        {
+          "source_file": "train_tid_theory_2025.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_train_tid_theory_2025_0002",
+          "score": 0.566924
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.607634,
+          "chunk_id": "chunkv2_src_expert_nsca_concurrent_training_runners_0010",
+          "source_file": "expert_nsca_concurrent_training_runners.url",
+          "source_path": "data/knowledge/external_candidates/expert_nsca_concurrent_training_runners.url",
+          "page": 1,
+          "text": "NSCA Concurrent Strength and Endurance Training Guidance Domain pack: strength_conditioning. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Strength and conditioning guidance candidate for balancing resistance training with endurance running.",
+          "distance": 0.645727813243866
+        },
+        {
+          "score": 0.58121,
+          "chunk_id": "chunkv2_src_train_recreational_endurance_2020_0005",
+          "source_file": "train_recreational_endurance_2020.metadata",
+          "source_path": "data/knowledge/governance/src_train_recreational_endurance_2020.metadata",
+          "page": 1,
+          "text": "Factors Affecting Training and Physical Performance in Recreational Endurance Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7205479145050049
+        },
+        {
+          "score": 0.577439,
+          "chunk_id": "chunkv2_src_expert_bwh_strength_training_runners_0004",
+          "source_file": "external_bwh_strength_training_runners.url",
+          "source_path": "data/knowledge/external_candidates/external_bwh_strength_training_runners.url",
+          "page": 1,
+          "text": "Strength Training for Runners Domain pack: action_library. Evidence domain: rehab_strength_mobility. Permission: explanation_only. Clinical education candidate for runner strength exercises, alternatives, and safe movement boundaries.",
+          "distance": 0.7317848205566406
+        },
+        {
+          "score": 0.567478,
+          "chunk_id": "chunkv2_src_train_world_class_middle_distance_2021_0004",
+          "source_file": "train_world_class_middle_distance_2021.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_world_class_middle_distance_2021.pdf",
+          "page": 1,
+          "text": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7621830701828003
+        },
+        {
+          "score": 0.566924,
+          "chunk_id": "chunkv2_src_train_tid_theory_2025_0002",
+          "source_file": "train_tid_theory_2025.pdf",
+          "source_path": "knowledge_base\\raw_sources\\academic_literature\\endurance_training_protocols\\train_tid_theory_2025.pdf",
+          "page": 1,
+          "text": "Recent advances in training intensity distribution theory for cyclic endurance sports. Domain pack: endurance_training_protocols. Permission: explanation_only.",
+          "distance": 0.7639044523239136
+        }
+      ]
+    }
+  ]
+}

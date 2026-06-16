@@ -12,6 +12,15 @@
 | `basic_training_methodology` | [Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf](Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf) | training methodology | uploaded seed | 基础训练方法知识库候选资料 | active | 后续新文件名应避免特殊冒号字符 |
 | `jhse_8_ii_350_366` | [jhse_Vol_8_N_II_350-366.pdf](jhse_Vol_8_N_II_350-366.pdf) | exercise science | uploaded seed | 待主题归类资料 | active | 补题名、来源和主题 |
 | `movement_library_cn` | [动作库.pdf](动作库.pdf) | exercise movement library | uploaded seed | 中文动作资料入口 | active | 后续迁移时使用 ASCII slug，中文保留在标题或 manifest |
+| `vo2max_lactate_threshold_cn` | [VO₂max与乳酸阈专项训练.txt](VO₂max与乳酸阈专项训练.txt) | VO2max and lactate threshold training | uploaded seed | 中文专项训练 seed 文本 | needs_review | 补来源、作者/生成方式、证据质量和适用人群 |
+| `recreational_masters_runner_cn` | [大众跑者与老将跑者训练指南.txt](大众跑者与老将跑者训练指南.txt) | recreational and masters runners | uploaded seed | 中文训练指南 seed 文本 | needs_review | 补来源、作者/生成方式、证据质量和适用人群 |
+| `running_biomechanics_injury_cn` | [跑步生物力学与常见运动损伤预防.txt](跑步生物力学与常见运动损伤预防.txt) | biomechanics and injury prevention | uploaded seed | 中文损伤预防 seed 文本 | needs_review | 补来源、医学边界、证据质量和适用人群 |
+| `marathon_taper_prerace_cn` | [马拉松减量训练与赛前策略.txt](马拉松减量训练与赛前策略.txt) | marathon taper and pre-race strategy | uploaded seed | 中文赛前策略 seed 文本 | needs_review | 补来源、作者/生成方式、证据质量和适用人群 |
+| `marathon_periodization_cn` | [马拉松周期化训练体系.txt](马拉松周期化训练体系.txt) | marathon periodization | uploaded seed | 中文周期化训练 seed 文本 | needs_review | 补来源、作者/生成方式、证据质量和适用人群 |
+| `marathon_psychology_cn` | [马拉松心理训练与意志力策略.txt](马拉松心理训练与意志力策略.txt) | marathon psychology | uploaded seed | 中文心理训练 seed 文本 | needs_review | 补来源、心理健康边界、证据质量和适用人群 |
+| `marathon_recovery_sleep_cn` | [马拉松恢复科学与睡眠优化策略.txt](马拉松恢复科学与睡眠优化策略.txt) | recovery and sleep | uploaded seed | 中文恢复睡眠 seed 文本 | needs_review | 补来源、医学边界、证据质量和适用人群 |
+| `marathon_race_execution_cn` | [马拉松比赛策略与赛道执行.txt](马拉松比赛策略与赛道执行.txt) | marathon race execution | uploaded seed | 中文比赛执行 seed 文本 | needs_review | 补来源、作者/生成方式、证据质量和适用人群 |
+| `heat_adaptation_hydration_cn` | [高温环境下的热适应与补水策略.txt](高温环境下的热适应与补水策略.txt) | heat adaptation and hydration | uploaded seed | 中文高温补水 seed 文本 | needs_review | 补来源、医学边界、证据质量和适用人群 |
 
 ## Quarantined files
 

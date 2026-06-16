@@ -1,0 +1,37 @@
+{
+  "can_replace_runtime": false,
+  "cannot_claim": [
+    "human_expert_reviewed",
+    "release_runtime_replaceable",
+    "medical_diagnosis_or_treatment"
+  ],
+  "commercial_core_domains": [
+    "action_library",
+    "training_protocols"
+  ],
+  "commercial_staging_ready": true,
+  "domain_counts": {
+    "action_library": 1,
+    "environment_race_context": 1,
+    "medical_risk": 1,
+    "nutrition_race_fueling": 1,
+    "rehab_return_to_run": 1,
+    "training_protocols": 1
+  },
+  "explanation_or_risk_only_domains": [
+    "environment_race_context",
+    "medical_risk",
+    "nutrition_race_fueling",
+    "rehab_return_to_run"
+  ],
+  "medical_referral_boundaries": [
+    "src_commercial_cdc_heat_health_athletes",
+    "src_commercial_medlineplus_chest_pain"
+  ],
+  "release_blockers": [],
+  "release_ready": false,
+  "source_license_limitations": [
+    "link_only_or_summary_by_default"
+  ],
+  "warnings": []
+}

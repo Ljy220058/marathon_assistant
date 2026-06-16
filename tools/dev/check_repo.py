@@ -1,4 +1,4 @@
-"""Repository hygiene checks for the marathon assistant monorepo."""
+﻿"""Repository hygiene checks for the marathon assistant monorepo."""
 
 from __future__ import annotations
 
@@ -34,25 +34,34 @@ VERSION_EXCLUDED_ROOT_PATTERNS = (
 )
 
 OLD_PATH_PATTERNS = (
+    # Pre-monorepo paper project path (migrated to research/stai2026/).
     "docs/paper_project",
+    # Old frontend flat structure (migrated to apps/web/src).
     "frontend/src",
     "frontend/node_modules",
-    "vector_kb_user",
+    # Old upload/docs root dirs (migrated to data/uploads/, data/domain_docs/).
     "uploaded_docs",
-    ".chainlit",
 )
 
 ROOT_ALLOWLIST = {
+    # Git and search config.
     ".git",
     ".github",
     ".gitignore",
     ".rgignore",
-    ".pytest_cache",
+    # Project-level config and entry files.
     "pytest.ini",
+    ".env.example",
+    # README and long-term index.
     "README.md",
     "TODO.md",
     "CONTRIBUTING.md",
     "requirements.txt",
+    # Agent instructions (Claude, CI, etc.).
+    ".claude",
+    "AGENTS.md",
+    "CLAUDE.md",
+    # First-level functional directories.
     "apps",
     "archive",
     "artifacts",
@@ -64,6 +73,9 @@ ROOT_ALLOWLIST = {
     "scripts",
     "tests",
     "tools",
+    # Build/generated outputs (already in .gitignore, tolerated on disk).
+    "outputs",
+    ".pytest_cache",
 }
 
 MANIFEST_FILES = (

@@ -115,6 +115,17 @@ def test_database_applies_schema_migrations_to_empty_db(tmp_path):
     assert conn.execute("PRAGMA table_info(training_event_feedback)").fetchall()
 
 
+def test_database_connection_sets_busy_timeout_and_foreign_keys(tmp_path):
+    db = _Database(tmp_path / "pragmas.db")
+    conn = db._get_conn()
+
+    busy_timeout = conn.execute("PRAGMA busy_timeout").fetchone()[0]
+    foreign_keys = conn.execute("PRAGMA foreign_keys").fetchone()[0]
+
+    assert busy_timeout == 5000
+    assert foreign_keys == 1
+
+
 def test_database_migrates_legacy_feedback_audit_fields(tmp_path):
     db_path = tmp_path / "legacy.db"
     _create_old_feedback_db(db_path)
@@ -131,6 +142,23 @@ def test_database_migrates_legacy_feedback_audit_fields(tmp_path):
     assert latest["feedback_id"] == "feedback-1"
     assert latest["risk_gate"] == {}
     assert latest["protocol_recheck"] == {}
+
+
+def test_database_migrates_legacy_plan_version_fields(tmp_path):
+    db_path = tmp_path / "legacy_plan_versions.db"
+    _create_old_feedback_db(db_path)
+
+    db = _Database(db_path)
+    columns = {
+        row["name"]
+        for row in db._get_conn().execute("PRAGMA table_info(training_plans)").fetchall()
+    }
+    plan = db.get_plan("plan-1")
+
+    assert {"lineage_id", "version", "parent_plan_id", "parent_version", "trigger", "trigger_detail"} <= columns
+    assert plan["lineage_id"] == "plan-1"
+    assert plan["version"] == 1
+    assert plan["trigger"] == "initial"
 
 
 def test_database_migrates_legacy_schema_migrations_checksum_column(tmp_path, monkeypatch):
@@ -222,3 +250,9 @@ def test_database_rejects_modified_applied_migration(tmp_path, monkeypatch):
     )
     with pytest.raises(RuntimeError, match="checksum mismatch"):
         _Database(db_path)
+
+
+def test_database_health_check_returns_true_for_initialized_db(tmp_path):
+    db = _Database(tmp_path / "health.db")
+
+    assert db.health_check() is True

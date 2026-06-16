@@ -1,0 +1,86 @@
+<h2>去卡片化最终稿：智能文档 / 依据页</h2>
+<p class="subtitle">基于 frontend-designer、design-critique、accessibility-auditor 的约束：不做卡片堆叠，不做装饰性营销页，改为安静、可扫描、可追溯的文档工作台。</p>
+
+<style>
+  .final-shell{border:1px solid #d7e0ea;border-radius:30px;overflow:hidden;background:#fbfcfb;color:#17211c;font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .final-top{height:58px;display:grid;grid-template-columns:220px 1fr auto;align-items:center;border-bottom:1px solid #dde6ee;background:#fff;padding:0 24px;gap:22px}
+  .final-brand{display:flex;align-items:center;gap:10px;font-weight:850;letter-spacing:-.02em}.final-logo{width:28px;height:28px;border-radius:9px;background:#10231b;color:#d9f99d;display:grid;place-items:center;font-size:13px;font-weight:900}.final-search{height:34px;border:1px solid #d8e2eb;border-radius:999px;background:#f8faf9;color:#64748b;display:flex;align-items:center;padding:0 14px;font-size:13px;max-width:420px}.final-nav{display:flex;gap:18px;font-size:13px;color:#64748b}.final-nav strong{color:#10231b}
+  .final-body{display:grid;grid-template-columns:220px minmax(0,1fr) 320px;min-height:620px}.final-side{border-right:1px solid #dde6ee;background:#fff;padding:28px 24px}.side-group{margin-bottom:28px}.side-kicker{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:#7a8a81;margin-bottom:14px}.side-link{display:flex;justify-content:space-between;align-items:center;padding:9px 0;color:#607068;font-size:14px}.side-link.active{color:#10231b;font-weight:780}.side-link.active::before{content:"";width:6px;height:6px;border-radius:99px;background:#10b981;margin-right:8px}.side-link span:first-child{display:flex;align-items:center}.side-meta{font-size:12px;color:#94a3b8}
+  .final-main{padding:42px 48px 48px;background:linear-gradient(180deg,#fbfcfb 0%,#f7faf8 100%)}.page-label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#728077;margin-bottom:8px}.headline{font-size:38px;line-height:1.08;letter-spacing:-.045em;margin:0;color:#10231b}.subcopy{margin:14px 0 30px;color:#586861;line-height:1.65;max-width:660px;font-size:15px}.ask-row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;border-bottom:1.5px solid #b8c7bf;padding-bottom:12px;margin-bottom:34px}.ask-label{display:block;font-size:12px;color:#66766e;margin-bottom:8px}.ask-input{font-size:18px;line-height:1.4;color:#10231b}.ask-input .placeholder{color:#87958d}.send-btn{border:0;background:#10231b;color:#fff;border-radius:999px;padding:10px 18px;font-weight:760;min-height:42px}.send-btn:focus-visible,.text-link:focus-visible,.evidence-toggle:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+  .answer-section{border-top:1px solid #dde6ee;padding-top:26px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.section-title{font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:#728077}.answer-time{font-size:12px;color:#87958d}.notice{display:grid;grid-template-columns:auto 1fr;gap:10px;border-top:1px solid #f3cc8b;border-bottom:1px solid #f3cc8b;background:#fffaf0;padding:13px 0;margin:0 0 18px;color:#8a4b0b}.notice strong{font-size:16px}.notice-title{font-weight:780;margin-bottom:3px}.notice-copy{font-size:13px;line-height:1.55}.answer-text{font-size:17px;line-height:1.85;color:#17211c;margin:0;max-width:760px}.answer-text mark{background:#e7f8ef;color:#064e3b;border-radius:5px;padding:0 4px}.answer-actions{display:flex;gap:18px;margin-top:18px}.text-link{border:0;background:transparent;color:#0f766e;font-weight:720;padding:0;cursor:pointer}.followup-line{margin-top:36px;border-top:1px solid #dde6ee;padding-top:20px;display:grid;grid-template-columns:1fr auto;gap:12px}.followup-input{color:#87958d;font-size:15px}.secondary-send{border:1px solid #bccbc3;background:#fff;border-radius:999px;padding:8px 14px;color:#10231b;font-weight:700}
+  .final-evidence{border-left:1px solid #dde6ee;background:#fbfcfb;padding:32px 28px}.kb-state{display:flex;align-items:center;gap:8px;color:#047857;font-size:13px;margin-bottom:30px}.kb-dot{width:8px;height:8px;border-radius:99px;background:#10b981}.evidence-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.evidence-title{font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:#728077}.evidence-all{font-size:12px;color:#0f766e;font-weight:730}.evidence-summary{font-size:13px;color:#607068;line-height:1.55;margin-bottom:18px}.evidence-list{border-top:1px solid #dde6ee}.evidence-toggle{width:100%;border:0;background:transparent;padding:16px 0;border-bottom:1px solid #dde6ee;display:grid;grid-template-columns:1fr auto;gap:12px;text-align:left;color:#17211c;cursor:pointer}.evidence-toggle:hover{background:#f3f7f4}.evidence-name{font-weight:760;font-size:14px}.evidence-meta{font-size:12px;color:#728077;margin-top:4px}.evidence-arrow{color:#728077}.source-preview{padding:14px 0 16px;border-bottom:1px solid #dde6ee}.source-preview.hidden{display:none}.source-line{font-size:13px;line-height:1.6;color:#45564e;margin-bottom:10px}.source-ref{font-size:12px;color:#0f766e}.safety-note{margin-top:28px;padding-top:18px;border-top:1px solid #dde6ee;color:#8a4b0b;font-size:13px;line-height:1.6}
+  .mobile-frame{margin-top:24px;border:1px solid #d7e0ea;border-radius:26px;background:#fff;overflow:hidden;max-width:390px}.mobile-head{padding:18px 20px;border-bottom:1px solid #dde6ee;display:flex;justify-content:space-between}.mobile-body{padding:22px 20px}.mobile-title{font-size:26px;line-height:1.12;letter-spacing:-.035em;margin:0 0 20px}.mobile-input{border-bottom:1.5px solid #b8c7bf;padding-bottom:12px;color:#87958d;margin-bottom:22px}.mobile-answer{border-top:1px solid #dde6ee;padding-top:18px}.mobile-evidence{margin-top:20px;border-top:1px solid #dde6ee}.mobile-row{padding:14px 0;border-bottom:1px solid #dde6ee;display:flex;justify-content:space-between;font-size:14px}
+  @media(max-width:980px){.final-body{grid-template-columns:1fr}.final-side,.final-evidence{display:none}.final-top{grid-template-columns:1fr auto}.final-search{display:none}.final-main{padding:30px 24px}.headline{font-size:31px}.ask-row{grid-template-columns:1fr}.send-btn{justify-self:start}.answer-text{font-size:16px}.final-nav{display:none}}
+</style>
+
+<div class="final-shell">
+  <div class="final-top">
+    <div class="final-brand"><div class="final-logo">M</div><span>马拉松助手</span></div>
+    <div class="final-search">⌕ 搜索训练、计划、依据</div>
+    <nav class="final-nav" aria-label="主导航"><span>今日</span><span>计划</span><span>我的情况</span><strong>依据</strong></nav>
+  </div>
+  <div class="final-body">
+    <aside class="final-side" aria-label="训练导航">
+      <div class="side-group"><div class="side-kicker">Workspace</div><div class="side-link"><span>今日训练</span><span class="side-meta">1</span></div><div class="side-link"><span>训练日历</span><span class="side-meta">12周</span></div><div class="side-link"><span>我的情况</span><span class="side-meta">已同步</span></div><div class="side-link active"><span>依据</span><span class="side-meta">RAG</span></div></div>
+      <div class="side-group"><div class="side-kicker">Context</div><div class="side-link"><span>当前画像</span></div><div class="side-link"><span>知识库状态</span></div><div class="side-link"><span>历史问答</span></div></div>
+    </aside>
+
+    <main class="final-main" id="main-content">
+      <div class="page-label">Intelligent Documents</div>
+      <h1 class="headline">问知识库，查训练依据。</h1>
+      <p class="subcopy">把训练、恢复、营养和伤病风险相关资料变成可以追问的依据层。系统优先给出结论，但会明确标出证据覆盖程度。</p>
+
+      <div class="ask-row" role="search">
+        <div><label class="ask-label" for="knowledge-question-final">向知识库提问</label><div id="knowledge-question-final" class="ask-input"><span class="placeholder">例如：膝盖疼还能继续跑吗？</span></div></div>
+        <button class="send-btn" type="button">发送</button>
+      </div>
+
+      <section class="answer-section" aria-live="polite">
+        <div class="section-head"><div class="section-title">AI 回答</div><div class="answer-time">基于 4 组依据生成</div></div>
+        <div class="notice" role="status"><strong aria-hidden="true">⚠</strong><div><div class="notice-title">证据覆盖不足</div><div class="notice-copy">当前知识库缺少你的疼痛等级、持续时间和是否影响步态。下面回答只能作为一般训练参考。</div></div></div>
+        <p class="answer-text">如果只是轻微不适，可以先把接下来 24–48 小时的训练调整为<mark>低强度或休息</mark>，避免间歇跑、节奏跑和长距离。如果疼痛持续、加重，或已经影响步态，应停止跑步并寻求专业评估。</p>
+        <div class="answer-actions"><button class="text-link" type="button">查看风险依据</button><button class="text-link" type="button">补充个人情况</button><button class="text-link" type="button">重新生成</button></div>
+        <div class="followup-line"><div class="followup-input">继续追问，例如：如果只是 2/10 疼痛呢？</div><button class="secondary-send" type="button">追问</button></div>
+      </section>
+    </main>
+
+    <aside class="final-evidence" aria-label="引用依据">
+      <div class="kb-state"><span class="kb-dot"></span><span>知识库已连接</span></div>
+      <div class="evidence-title-row"><div class="evidence-title">Evidence</div><button class="text-link evidence-all" type="button">全部展开</button></div>
+      <div class="evidence-summary">按主题折叠引用。展开后可查看命中文档片段、来源类型和相关性。</div>
+      <div class="evidence-list">
+        <button class="evidence-toggle" type="button" aria-expanded="true"><span><span class="evidence-name">伤病风险依据</span><span class="evidence-meta">2 条 · 较高相关</span></span><span class="evidence-arrow">↑</span></button>
+        <div class="source-preview"><div class="source-line">[1] 疼痛持续、负荷突然增加和既往伤病史会提高跑步过度使用伤风险。</div><div class="source-ref">论文来源 · 相关性高</div></div>
+        <button class="evidence-toggle" type="button" aria-expanded="false"><span><span class="evidence-name">训练强度调整</span><span class="evidence-meta">3 条 · 中等相关</span></span><span class="evidence-arrow">↓</span></button>
+        <button class="evidence-toggle" type="button" aria-expanded="false"><span><span class="evidence-name">恢复与营养建议</span><span class="evidence-meta">1 条 · 部分覆盖</span></span><span class="evidence-arrow">↓</span></button>
+        <button class="evidence-toggle" type="button" aria-expanded="false"><span><span class="evidence-name">官方/论文来源</span><span class="evidence-meta">4 条 · 可追溯</span></span><span class="evidence-arrow">↓</span></button>
+      </div>
+      <div class="safety-note"><strong>安全优先：</strong>如果出现胸痛、晕厥、呼吸异常、疼痛加重或影响步态，请停止训练并寻求专业帮助。</div>
+    </aside>
+  </div>
+</div>
+
+<div class="section">
+  <h3>移动端折叠方式</h3>
+  <p class="subtitle">移动端不使用右栏，不堆卡片；内容按“标题 → 输入 → 回答 → 依据折叠组”自然流式排列。</p>
+  <div class="mobile-frame">
+    <div class="mobile-head"><strong>马拉松助手</strong><span>依据</span></div>
+    <div class="mobile-body">
+      <h3 class="mobile-title">问知识库，查训练依据。</h3>
+      <div class="mobile-input">向知识库提问…</div>
+      <div class="mobile-answer"><div class="notice" style="margin-bottom:14px"><strong>⚠</strong><div><div class="notice-title">证据覆盖不足</div><div class="notice-copy">缺少疼痛等级和持续时间。</div></div></div><p style="line-height:1.7;margin:0">先降低强度并观察；疼痛加重或影响步态时停止跑步。</p></div>
+      <div class="mobile-evidence"><div class="mobile-row">伤病风险依据 <span>↓</span></div><div class="mobile-row">训练强度调整 <span>↓</span></div><div class="mobile-row">官方/论文来源 <span>↓</span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>设计依据</h3>
+  <ul>
+    <li><strong>NN/g / Laws of UX：</strong>单一主任务、降低选择复杂度、用折叠减少认知负荷。</li>
+    <li><strong>Microsoft & Google Human-AI：</strong>证据不足前置，不伪装确定性；提供补充信息和重新生成出口。</li>
+    <li><strong>WCAG：</strong>状态不只靠颜色，按钮具备 focus-visible，折叠项预留 aria-expanded。</li>
+    <li><strong>Carbon / TDesign / Material：</strong>使用状态、分隔线、列表、标签等基础企业组件语言，不做装饰性堆叠。</li>
+    <li><strong>Linear Method：</strong>一条清晰路径：提问 → 回答 → 核对依据 → 追问。</li>
+  </ul>
+</div>

@@ -1,4 +1,5 @@
 from marathon_qa_assistant.core.evidence_bundle import build_evidence_bundle
+from marathon_qa_assistant.core.state_models import build_workflow_trace
 from marathon_qa_assistant.nodes.common import build_rag_sources
 from marathon_qa_assistant.nodes.profile_and_retrieval import build_ranked_evidence
 from marathon_qa_assistant.services.kb.evidence_chain import build_evidence_chain_payload
@@ -18,7 +19,7 @@ V2_HIT = {
     "source_url": "https://example.com/approved-protocol",
     "page": 7,
     "section": "week-structure",
-    "text": "Approved protocol text for week structure.",
+    "text": "Approved protocol text for half marathon week structure and training week structure.",
     "score": 0.92,
     "language": "en",
     "evidence_domain": "protocol",
@@ -42,6 +43,62 @@ def test_build_rag_sources_preserves_v2_metadata():
     assert source["evidence_domain"] == "protocol"
     assert source["prescription_permission"] == "can_write_core"
     assert source["review_status"] == "approved"
+
+
+def test_relevance_penalizes_entity_mismatch_and_preserves_raw_score():
+    ranked = build_ranked_evidence(
+        query="中长跑选手怎么把短跑技术融入进去，不影响专项？",
+        vector_hits=[
+            {
+                **V2_HIT,
+                "chunk_id": "specific-sprint-technique",
+                "text": "中长跑选手可以用短跑技术中的放松摆臂、快速触地和短距离加速跑融入专项训练，但应控制总量，避免影响有氧主课。",
+                "score": 0.70,
+            },
+            {
+                **V2_HIT,
+                "chunk_id": "cold-finger-lactate",
+                "text": "手指冰冷时采样效果差，寒冷环境下手指末梢血流减少，可能导致乳酸采样缓慢。",
+                "score": 0.95,
+            },
+        ],
+        graph_edges=[],
+        entities=["中长跑", "短跑", "专项"],
+        top_k=None,
+    )
+
+    assert ranked[0]["chunk_id"] == "specific-sprint-technique"
+    assert ranked[0]["relevance_score"] > ranked[1]["relevance_score"]
+    assert ranked[0]["raw_vector_score"] == 0.70
+    assert ranked[1]["raw_vector_score"] == 0.95
+    assert ranked[1]["score_breakdown"]["term_mismatch_penalty"] > 0
+
+
+def test_evidence_bundle_health_uses_current_runtime_health_for_workflow_trace(monkeypatch):
+    import marathon_qa_assistant.core.evidence_bundle as evidence_bundle_module
+
+    monkeypatch.setattr(
+        evidence_bundle_module,
+        "get_knowledge_base_health_snapshot",
+        lambda: {"ok": True, "ready": True, "chunks_count": 99, "faiss_ready": True, "source": "v2"},
+    )
+    bundle = build_evidence_bundle(
+        query="half marathon week structure",
+        ranked_evidence=build_ranked_evidence(
+            query="half marathon week structure",
+            vector_hits=[V2_HIT],
+            graph_edges=[],
+            entities=["half marathon", "week"],
+            top_k=1,
+        ),
+        health=None,
+    )
+
+    trace = build_workflow_trace(query="half marathon week structure", evidence_bundle=bundle)
+
+    assert trace["evidence_state"]["status"] == "ok"
+    assert trace["evidence_state"]["kb_ready"] is True
+    assert "kb_not_ready" not in trace["evidence_state"]["missing_evidence"]
 
 
 def test_build_ranked_evidence_preserves_v2_metadata_for_vector_hits():
@@ -112,11 +169,37 @@ def test_legacy_hit_is_explicitly_explanation_only_after_chain_projection():
     assert item["source_url"] == ""
 
 
+def test_legacy_chunk_id_page_hint_survives_bundle_to_canonical_chain():
+    legacy_hit = {
+        "chunk_id": "2016+-+Nutrition+for+Marathon+Running_p0003_c0002",
+        "source_file": "Nutrition for Marathon Running.pdf",
+        "source_path": "back/legacy_kb_archive_20260613/data/vector_kb/default/nutrition.pdf",
+        "page": None,
+        "text": "Fueling guidance.",
+        "score": 0.8,
+    }
+    bundle = build_evidence_bundle(
+        query="legacy locator",
+        rag_sources=build_rag_sources([legacy_hit]),
+        health={"index_schema_version": "legacy", "runtime_core_prescription_enabled": False},
+    )
+    chain = build_evidence_chain_payload(query="legacy locator", evidence_bundle=bundle)
+
+    item = chain["items"][0]
+    assert item["display_mode"] == "legacy_explanation"
+    assert item["source_label"] == "Nutrition for Marathon Running.pdf"
+    assert item["text_span"] == "Fueling guidance."
+    assert item["chunk_id"] == "2016+-+Nutrition+for+Marathon+Running_p0003_c0002"
+    assert item["page"] is None
+    assert item["page_hint"] == 3
+    assert chain["source_path_leak_count"] == 0
+
+
 def test_merge_ranked_hits_keeps_more_complete_metadata_for_same_chunk():
     first_hit = {
         "chunk_id": "same-chunk",
         "source_file": "legacy.pdf",
-        "source_path": "data/vector_kb/default/legacy.pdf",
+        "source_path": "back/legacy_kb_archive_20260613/data/vector_kb/default/legacy.pdf",
         "page": 1,
         "text": "Legacy sparse text.",
         "score": 0.95,

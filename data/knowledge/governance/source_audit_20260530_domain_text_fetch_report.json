@@ -1,0 +1,68 @@
+{
+  "batch_file": "data/knowledge/external_candidates/expert_sources_20260530_domain_text_batch.jsonl",
+  "fetch_report": [
+    {
+      "chars": 3882,
+      "path": "data/knowledge/raw_sources/official_public_health/environment_race_context/cdc_heat_athletes.md",
+      "source_registry_id": "src_external_cdc_heat_athletes",
+      "status": "ok"
+    },
+    {
+      "chars": 4977,
+      "path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+      "source_registry_id": "src_external_cdc_heat_illnesses",
+      "status": "ok"
+    },
+    {
+      "chars": 5028,
+      "path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heart_attack_symptoms.md",
+      "source_registry_id": "src_external_cdc_heart_attack_symptoms",
+      "status": "ok"
+    },
+    {
+      "chars": 3382,
+      "path": "data/knowledge/raw_sources/official_public_health/mobility_recovery/cdc_sleep_about.md",
+      "source_registry_id": "src_external_cdc_sleep_about",
+      "status": "ok"
+    },
+    {
+      "chars": 2448,
+      "path": "data/knowledge/raw_sources/official_public_health/strength_conditioning/cdc_adult_activity_strength_guidelines.md",
+      "source_registry_id": "src_external_cdc_adult_activity_strength_guidelines",
+      "status": "ok"
+    },
+    {
+      "chars": 19503,
+      "path": "data/knowledge/raw_sources/official_product_docs/competitor_product_tasks/strava_uploads_api.md",
+      "source_registry_id": "src_external_strava_uploads_api",
+      "status": "ok"
+    },
+    {
+      "error": "403 Client Error: Forbidden for url: https://support.strava.com/hc/en-us/articles/206535704-Training-Log",
+      "source_registry_id": "src_external_strava_training_log",
+      "status": "fetch_failed"
+    },
+    {
+      "chars": 70205,
+      "path": "data/knowledge/raw_sources/academic_literature/rehab_return_to_run/src_pmc_return_running_tibial_bsi_2024.md",
+      "pmcid": "PMC11393297",
+      "source_registry_id": "src_pmc_return_running_tibial_bsi_2024",
+      "status": "ok"
+    },
+    {
+      "chars": 99903,
+      "path": "data/knowledge/raw_sources/academic_literature/strength_conditioning/src_pmc_strength_training_running_economy_2024.md",
+      "pmcid": "PMC11052887",
+      "source_registry_id": "src_pmc_strength_training_running_economy_2024",
+      "status": "ok"
+    },
+    {
+      "chars": 64993,
+      "path": "data/knowledge/raw_sources/academic_literature/medical_risk/src_pmc_running_overuse_risk_factors_2020.md",
+      "pmcid": "PMC7856562",
+      "source_registry_id": "src_pmc_running_overuse_risk_factors_2020",
+      "status": "ok"
+    }
+  ],
+  "rows": 9
+}

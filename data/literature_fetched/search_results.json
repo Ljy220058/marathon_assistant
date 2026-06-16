@@ -1,0 +1,298 @@
+{
+  "omega3": {
+    "priority": "P0",
+    "query": "omega-3 fatty acid supplementation athletes performance review",
+    "papers": [
+      {
+        "pmid": "38999792",
+        "title": "Omega-3 Fatty Acid Supplementation on Post-Exercise Inflammation, Muscle Damage, Oxidative Response, and Sports Performance in Physically Healthy Adults-A Systematic Review of Randomized Controlled Trials.",
+        "source": "Nutrients",
+        "pubdate": "2024 Jun 27",
+        "doi": "10.3390/nu16132044",
+        "pmc": ""
+      },
+      {
+        "pmid": "38777432",
+        "title": "Effects of Omega-3 fatty acids supplementation and resistance training on skeletal muscle.",
+        "source": "Clin Nutr ESPEN",
+        "pubdate": "2024 Jun",
+        "doi": "10.1016/j.clnesp.2024.03.019",
+        "pmc": ""
+      },
+      {
+        "pmid": "33266318",
+        "title": "Omega-3 Fatty Acids for Sport Performance-Are They Equally Beneficial for Athletes and Amateurs? A Narrative Review.",
+        "source": "Nutrients",
+        "pubdate": "2020 Nov 30",
+        "doi": "10.3390/nu12123712",
+        "pmc": ""
+      }
+    ]
+  },
+  "reds": {
+    "priority": "P0",
+    "query": "IOC consensus RED-S relative energy deficiency sport Mountjoy",
+    "papers": [],
+    "error": "HTTPSConnectionPool(host='eutils.ncbi.nlm.nih.gov', port=443): Max retries exceeded with url: /entrez/eutils/esummary.fcgi?db=pubmed&id=29773536%2C37752011%2C24620037&retmode=json (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))"
+  },
+  "itbs": {
+    "priority": "P1",
+    "query": "iliotibial band syndrome runners treatment clinical practice guideline",
+    "papers": []
+  },
+  "achilles": {
+    "priority": "P1",
+    "query": "Achilles tendinopathy management runners clinical guideline",
+    "papers": []
+  },
+  "stress_fx": {
+    "priority": "P1",
+    "query": "stress fracture bone stress injury runners management review",
+    "papers": [
+      {
+        "pmid": "39141251",
+        "title": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review.",
+        "source": "Sports Med",
+        "pubdate": "2024 Sep",
+        "doi": "10.1007/s40279-024-02051-y",
+        "pmc": ""
+      },
+      {
+        "pmid": "33673892",
+        "title": "Stress Fractures of the Hip and Pelvis.",
+        "source": "Clin Sports Med",
+        "pubdate": "2021 Apr",
+        "doi": "10.1016/j.csm.2020.11.007",
+        "pmc": ""
+      },
+      {
+        "pmid": "17414993",
+        "title": "Stress fractures in athletes.",
+        "source": "Top Magn Reson Imaging",
+        "pubdate": "2006 Oct",
+        "doi": "",
+        "pmc": ""
+      }
+    ]
+  },
+  "heat_stroke": {
+    "priority": "P1",
+    "query": "exertional heat stroke athletes prevention management consensus",
+    "papers": [
+      {
+        "pmid": "33878177",
+        "title": "Roundtable on Preseason Heat Safety in Secondary School Athletics: Heat Acclimatization.",
+        "source": "J Athl Train",
+        "pubdate": "2021 Apr 1",
+        "doi": "10.4085/1062-6050-596-20",
+        "pmc": ""
+      },
+      {
+        "pmid": "36150754",
+        "title": "IOC consensus statement on recommendations and regulations for sport events in the heat.",
+        "source": "Br J Sports Med",
+        "pubdate": "2023 Jan",
+        "doi": "10.1136/bjsports-2022-105942",
+        "pmc": ""
+      },
+      {
+        "pmid": "39345935",
+        "title": "Hyperthermia and Exertional Heatstroke During Running, Cycling, Open Water Swimming, and Triathlon Events.",
+        "source": "Open Access J Sports Med",
+        "pubdate": "2024",
+        "doi": "10.2147/OAJSM.S482959",
+        "pmc": ""
+      }
+    ]
+  },
+  "heat_acclim": {
+    "priority": "P1",
+    "query": "heat acclimation acclimatization endurance performance review",
+    "papers": [
+      {
+        "pmid": "26069301",
+        "title": "Consensus recommendations on training and competing in the heat.",
+        "source": "Br J Sports Med",
+        "pubdate": "2015 Sep",
+        "doi": "10.1136/bjsports-2015-094915",
+        "pmc": ""
+      },
+      {
+        "pmid": "31891914",
+        "title": "Sports Dietitians Australia Position Statement: Nutrition for Exercise in Hot Environments.",
+        "source": "Int J Sport Nutr Exerc Metab",
+        "pubdate": "2020 Jan 1",
+        "doi": "10.1123/ijsnem.2019-0300",
+        "pmc": ""
+      },
+      {
+        "pmid": "41022024",
+        "title": "Mitochondrial adaptations from heat acclimation - A narrative review.",
+        "source": "J Therm Biol",
+        "pubdate": "2025 Oct",
+        "doi": "10.1016/j.jtherbio.2025.104283",
+        "pmc": ""
+      }
+    ]
+  },
+  "cadence": {
+    "priority": "P1",
+    "query": "running cadence step rate manipulation injury biomechanics",
+    "papers": [
+      {
+        "pmid": "39780322",
+        "title": "Influence of cadence manipulation on running biomechanics in high school cross-country runners.",
+        "source": "Sports Biomech",
+        "pubdate": "2025 Aug",
+        "doi": "10.1080/14763141.2025.2450644",
+        "pmc": ""
+      },
+      {
+        "pmid": "36126939",
+        "title": "The Effects of Cadence Manipulation on Joint Kinetic Patterns and Stride-to-Stride Kinetic Variability in Female Runners.",
+        "source": "J Appl Biomech",
+        "pubdate": "2022 Dec 1",
+        "doi": "10.1123/jab.2022-0077",
+        "pmc": ""
+      },
+      {
+        "pmid": "24790690",
+        "title": "Influence of stride frequency and length on running mechanics: a systematic review.",
+        "source": "Sports Health",
+        "pubdate": "2014 May",
+        "doi": "10.1177/1941738113508544",
+        "pmc": ""
+      }
+    ]
+  },
+  "running_form": {
+    "priority": "P1",
+    "query": "running gait biomechanics technique performance injury review",
+    "papers": [
+      {
+        "pmid": "16005396",
+        "title": "Biomechanics and analysis of running gait.",
+        "source": "Phys Med Rehabil Clin N Am",
+        "pubdate": "2005 Aug",
+        "doi": "",
+        "pmc": ""
+      },
+      {
+        "pmid": "36801698",
+        "title": "The impact of previous musculoskeletal injury on running gait variability: A systematic review.",
+        "source": "Gait Posture",
+        "pubdate": "2023 Mar",
+        "doi": "10.1016/j.gaitpost.2023.01.018",
+        "pmc": ""
+      },
+      {
+        "pmid": "36242762",
+        "title": "Wearables for Running Gait Analysis: A Systematic Review.",
+        "source": "Sports Med",
+        "pubdate": "2023 Jan",
+        "doi": "10.1007/s40279-022-01760-6",
+        "pmc": ""
+      }
+    ]
+  },
+  "hydration": {
+    "priority": "P1",
+    "query": "ACSM position hydration fluid replacement exercise athletes",
+    "papers": []
+  },
+  "hyponatremia": {
+    "priority": "P1",
+    "query": "exercise-associated hyponatremia diagnosis treatment guidelines",
+    "papers": [
+      {
+        "pmid": "15049715",
+        "title": "Recommendations for treatment of hyponatraemia at endurance events.",
+        "source": "Sports Med",
+        "pubdate": "2004",
+        "doi": "",
+        "pmc": ""
+      },
+      {
+        "pmid": "25935312",
+        "title": "Hiker Fatality From Severe Hyponatremia in Grand Canyon National Park.",
+        "source": "Wilderness Environ Med",
+        "pubdate": "2015 Sep",
+        "doi": "10.1016/j.wem.2015.03.001",
+        "pmc": ""
+      },
+      {
+        "pmid": "19687309",
+        "title": "Exertional dysnatremia in collapsed marathon runners: a critical role for point-of-care testing to guide appropriate therapy.",
+        "source": "Am J Clin Pathol",
+        "pubdate": "2009 Sep",
+        "doi": "10.1309/AJCP30OGLSLWLEIY",
+        "pmc": ""
+      }
+    ]
+  },
+  "caffeine": {
+    "priority": "P1",
+    "query": "caffeine supplementation endurance exercise performance meta-analysis",
+    "papers": [
+      {
+        "pmid": "36615805",
+        "title": "Effects of Caffeine Intake on Endurance Running Performance and Time to Exhaustion: A Systematic Review and Meta-Analysis.",
+        "source": "Nutrients",
+        "pubdate": "2022 Dec 28",
+        "doi": "10.3390/nu15010148",
+        "pmc": ""
+      },
+      {
+        "pmid": "30926628",
+        "title": "Wake up and smell the coffee: caffeine supplementation and exercise performance-an umbrella review of 21 published meta-analyses.",
+        "source": "Br J Sports Med",
+        "pubdate": "2020 Jun",
+        "doi": "10.1136/bjsports-2018-100278",
+        "pmc": ""
+      },
+      {
+        "pmid": "28067808",
+        "title": "Effects of Beetroot Juice Supplementation on Cardiorespiratory Endurance in Athletes. A Systematic Review.",
+        "source": "Nutrients",
+        "pubdate": "2017 Jan 6",
+        "doi": "10.3390/nu9010043",
+        "pmc": ""
+      }
+    ]
+  },
+  "supplements": {
+    "priority": "P1",
+    "query": "evidence-based supplements athletes AIS IOC classification review",
+    "papers": []
+  },
+  "strength_re": {
+    "priority": "P1",
+    "query": "strength training running economy endurance runners systematic review",
+    "papers": [
+      {
+        "pmid": "38165636",
+        "title": "Effect of Strength Training Programs in Middle- and Long-Distance Runners' Economy at Different Running Speeds: A Systematic Review with Meta-analysis.",
+        "source": "Sports Med",
+        "pubdate": "2024 Apr",
+        "doi": "10.1007/s40279-023-01978-y",
+        "pmc": ""
+      },
+      {
+        "pmid": "29249083",
+        "title": "Effects of Strength Training on the Physiological Determinants of Middle- and Long-Distance Running Performance: A Systematic Review.",
+        "source": "Sports Med",
+        "pubdate": "2018 May",
+        "doi": "10.1007/s40279-017-0835-7",
+        "pmc": ""
+      },
+      {
+        "pmid": "28544858",
+        "title": "Effects of resistance training on performance in previously trained endurance runners: A systematic review.",
+        "source": "J Sports Sci",
+        "pubdate": "2018 Mar",
+        "doi": "10.1080/02640414.2017.1326618",
+        "pmc": ""
+      }
+    ]
+  }
+}

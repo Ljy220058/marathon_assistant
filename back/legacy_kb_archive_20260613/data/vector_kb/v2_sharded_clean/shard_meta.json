@@ -1,0 +1,15 @@
+{
+  "embedding_model": "nomic-embed-text:latest",
+  "header_stripping": true,
+  "stripped_files": 40,
+  "source": "v2 chunks cleaned",
+  "shards": {
+    "training_protocol": 5280,
+    "nutrition": 3863,
+    "injury_safety": 732,
+    "medical_safety": 390,
+    "external_reference": 3773
+  },
+  "total_chunks": 14038,
+  "build_time_s": 85.6
+}

@@ -1,0 +1,116 @@
+======================================================================
+跑者提问：我膝盖外侧疼，还能继续跑步吗？
+期望领域：康复安全 (rehab_safety)
+背景：这是一个典型的外侧膝痛问题，可能涉及ITBS。系统需要检索伤病机制 + 风险证据 + 替代建议。
+
+* 命中的知识实体：
+  （未匹配到实体）
+
+======================================================================
+跑者提问：全马想破3小时，赛前两周怎么减量？
+期望领域：比赛策略 (race_strategy)
+背景：减量是比赛策略的核心问题。系统需要命中减量相关的训练证据 + 比赛配速策略。
+
+* 命中的知识实体：
+  [race_strategy            ] 赛前减量 持续时间 削减跑量 减量期 减少训练
+  [race_strategy            ] 阶梯式 赛前减量 削减跑量 减量期 减少训练
+  [race_strategy            ] 赛前减量 削减跑量 减量期 减少训练
+  [race_strategy            ] pre-比赛 赛前减量 削减跑量 减量期 减少训练
+  [race_strategy            ] 中距离 跑步 events 强度 during 赛前减量 长跑 训练 慢跑 减量期 减少训
+
+* race_strategy 证据（10条）：
+  赛前减量 持续时间 削减跑量 减量期 减少训练 →[约束]→ 训练负荷 减少 范围和speed 跑量 强度 训练压力 训练 (train_tapering_meta_2023.pdf)
+  赛前减量 持续时间 削减跑量 减量期 减少训练 →[改善]→ 训练 效果s用于athletic 比赛s (train_tapering_meta_2023.pdf)
+  赛前减量 持续时间 削减跑量 减量期 减少训练 →[调节]→ 疲劳 恢复 balance 休息 恢复跑 恢复日 轻松跑 (train_tapering_meta_2023.pdf)
+  赛前减量 持续时间 削减跑量 减量期 减少训练 →[改善]→ 耐力 运动员s 表现 (train_tapering_meta_2023.pdf)
+  赛前减量 持续时间 削减跑量 减量期 减少训练 →[改善]→ 耐力 运动员 表现 (train_tapering_meta_2023.pdf)
+  阶梯式 赛前减量 削减跑量 减量期 减少训练 →[改善]→ TT (train_tapering_meta_2023.pdf)
+
+
+======================================================================
+跑者提问：跑步补剂肌酸有用吗？安全吗？
+期望领域：营养 (nutrition)
+背景：补剂问题是营养域常见查询。系统需要检索肌酸的改善效果 + 风险证据。
+
+* 命中的知识实体：
+  [nutrition                ] 肌酸 monohyd率 补剂 creatine补剂 肌酸补剂 肌酸补充
+  [nutrition                ] 肌酸 monohyd率 creatine补剂 肌酸补剂 肌酸补充
+
+* nutrition 证据（5条）：
+  肌酸 monohyd率 补剂 creatine补剂 肌酸补剂 →[改善]→ 肌肉量 (Kreider_2018_ISSN_Sports_Nutrition.)
+  肌酸 monohyd率 补剂 creatine补剂 肌酸补剂 →[减少]→ incidence损伤 during 训练 伤害 伤病 受伤 (Kreider_2018_ISSN_Sports_Nutrition.)
+  肌酸 monohyd率 补剂 creatine补剂 肌酸补剂 →[调节]→ weight gain (Kreider_2018_ISSN_Sports_Nutrition.)
+  肌酸 monohyd率 creatine补剂 肌酸补剂 肌酸 →[改善]→ 肌肉量 (Kreider_2018_ISSN_Sports_Nutrition.)
+  肌酸 monohyd率 creatine补剂 肌酸补剂 肌酸 →[减少]→ incidence损伤 during 训练 伤害 伤病 受伤 (Kreider_2018_ISSN_Sports_Nutrition.)
+
+
+======================================================================
+跑者提问：间歇跑一周安排几次比较好？
+期望领域：训练处方 + 容量管理 (workout_prescription + capacity_management)
+背景：训练频率问题涉及处方和容量管理两个域。系统应命中强度课约束 + 间歇训练设计。
+
+* 命中的知识实体：
+  [race_strategy            ] 训练 频率 一周几次 几次 每周几次 每周安排 安排
+  [race_strategy            ] 训练 频率 减少 一周几次 几次 每周几次 每周安排 安排
+  [workout_prescription     ] 频率课次s/周 一周几次 几次 每周几次 每周安排 安排
+  [race_strategy            ] 频率 一周几次 几次 每周几次 每周安排 安排
+  [rehab_safety             ] 运动 频率 一周几次 几次 每周几次 每周安排 安排
+
+* race_strategy 证据（14条）：
+  训练负荷 跑量 强度 训练压力 训练量 →[调节]→ 训练 频率 一周几次 几次 每周几次 每周安排 安排 (train_tapering_meta_2023.pdf)
+  训练 频率 一周几次 几次 每周几次 每周安排 安排 →[减少]→ TT (SMD, −0.32; 95% CI, −0.76到 (train_tapering_meta_2023.pdf)
+  训练 频率 一周几次 几次 每周几次 每周安排 安排 →[减少]→ motor sens和technical proficien (train_tapering_meta_2023.pdf)
+  训练 频率 一周几次 几次 每周几次 每周安排 安排 →[减少]→ TT 表现 (train_tapering_meta_2023.pdf)
+  训练 频率 一周几次 几次 每周几次 每周安排 安排 →[调节]→ pre-比赛 motor sens (train_tapering_meta_2023.pdf)
+  训练 频率 一周几次 几次 每周几次 每周安排 安排 →[促进]→ 比赛期 表现 水平 (train_tapering_meta_2023.pdf)
+
+* workout_prescription 证据（1条）：
+  Intervention →[调节]→ 频率课次s/周 一周几次 几次 每周几次 每周安排 安排 (Sports Medicine (2024) 542071–2095.)
+
+
+======================================================================
+跑者提问：乳酸阈值跑应该用什么配速和距离？
+期望领域：训练理论 (training_theory)
+背景：阈值训练是训练理论的核心话题。系统需要检索乳酸阈值相关的生理证据 + 训练参数。
+
+* 命中的知识实体：
+  [training_theory          ] 乳酸阈
+  [training_theory          ] T ventilatory或乳酸 阈值
+
+* training_theory 证据（7条）：
+  节奏跑 跑步 训练 慢跑 →[改善]→ 乳酸阈
+  阈值节奏跑 跑步 训练 慢跑 →[改善]→ 乳酸阈
+  无氧阈 →[改善]→ 乳酸阈
+  乳酸阈 →[桥接]→ Z5 [跨域:dependency] (bridge_detection)
+  乳酸阈 →[桥接]→ 无氧阈模板 4x1600m [跨域:dependency] (bridge_detection)
+  乳酸阈 →[桥接]→ Z4 [跨域:dependency] (bridge_detection)
+
+
+======================================================================
+跑者提问：最近跑量增加后小腿前侧疼，是不是应力骨折？
+期望领域：康复安全 + 容量管理 (rehab_safety + capacity_management)
+背景：这是一个跨域问题：康复域需要应力骨折识别证据，容量域需要负荷-损伤风险证据。
+
+* 命中的知识实体：
+  [training_theory          ] 总跑量 加量 里程 训练量 跑步 训练 慢跑 跑量增加 周跑量
+  [training_theory          ] 周跑量、训练频率和恢复状态 休息 一周几次 加量 几次 里程 训练量 每周几次 每周安排 
+  [training_theory          ] 95/100/105% HMP 的累计量必须按周跑量、训练频率和恢复状态缩放 休息 一周几
+  [training_theory          ] 低跑量、可训练日少、近期全马、疲劳/伤病或缺少 5K/10K 校准时 加量 里程 训练量 
+  [rehab_safety             ] 有增加的历史 髌股关节负荷 跑量 强度 训练负荷 训练量
+
+* training_theory 证据（2条）：
+  轻松跑 跑步 训练 慢跑 →[改善]→ 总跑量 加量 里程 训练量 跑步 训练 慢跑 跑量增加 周跑 (half_marathon_hmp_protocol.md)
+  周跑量、训练频率和恢复状态 休息 一周几次 加量 几次 里程 →[调节]→ 95/100/105% HMP 的累计量必须按周跑量、训练频 (half_marathon_hmp_protocol.md)
+
+
+======================================================================
+知识图谱统计：
+  总节点：473  总边：423
+  capacity_management: 5 nodes
+  nutrition: 94 nodes
+  race_strategy: 94 nodes
+  rehab_safety: 122 nodes
+  training_theory: 97 nodes
+  workout_prescription: 61 nodes
+  关系类型：{'requires': 64, 'improves': 112, 'supports': 34, 'constrains': 30, 'adjusts': 56, 'reduces': 51, 'bridges_to': 60, 'risks': 16}
+  桥接边：60

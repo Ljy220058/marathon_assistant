@@ -8,13 +8,16 @@ def test_openapi_exposes_core_training_plan_endpoints():
     assert "/query" in paths
     assert "/feedback" in paths
     assert "/plans/{plan_id}" in paths
+    assert "/plans/{plan_id}/feedback/{feedback_id}/actions" in paths
 
     query_post = paths["/query"]["post"]
     feedback_post = paths["/feedback"]["post"]
+    feedback_action_post = paths["/plans/{plan_id}/feedback/{feedback_id}/actions"]["post"]
     plan_get = paths["/plans/{plan_id}"]["get"]
 
     assert query_post["responses"]["200"]["content"]["application/json"]["schema"]
     assert feedback_post["responses"]["200"]["content"]["application/json"]["schema"]
+    assert feedback_action_post["responses"]["200"]["content"]["application/json"]["schema"]
     assert plan_get["responses"]["200"]["content"]["application/json"]["schema"]
 
 
@@ -27,6 +30,8 @@ def test_openapi_uses_named_schemas_for_public_contracts():
         "QueryResponse",
         "FeedbackRequest",
         "FeedbackResponse",
+        "FeedbackActionRequest",
+        "FeedbackActionResponse",
         "PlanDetailResponse",
         "OpsMetricsResponse",
         "SavePlanRequest",
@@ -50,6 +55,12 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
         "plan_diff",
         "generation_status",
     }
+    assert "feedback_replan" in schemas["FeedbackResponse"]["properties"]
+    assert "schedule_constraints" in schemas["FeedbackRequest"]["properties"]
+    assert set(schemas["FeedbackActionRequest"]["required"]) >= {"action"}
+    assert "feedback_replan" in schemas["FeedbackActionResponse"]["properties"]
+    assert "affected_events" in schemas["FeedbackActionResponse"]["properties"]
+    assert "plan_diff" in schemas["FeedbackActionResponse"]["properties"]
     assert set(schemas["PlanDetailResponse"]["required"]) >= {
         "plan",
         "structured_training_plan",
@@ -58,10 +69,15 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
         "adjustment_history",
     }
     assert "training_plan_review" in schemas["QueryResponse"]["properties"]
+    assert "resume_from_workflow_pause" in schemas["QueryRequest"]["properties"]
     assert "training_plan_review" in schemas["PlanDetailResponse"]["properties"]
     assert "training_plan_review" in schemas["TrainingCalendarResponse"]["properties"]
     assert "answer_source_mode" in schemas["QueryResponse"]["properties"]
+    assert "answer_card" in schemas["QueryResponse"]["properties"]
+    assert "full_report" in schemas["QueryResponse"]["properties"]
+    assert "ui_policy" in schemas["QueryResponse"]["properties"]
     assert "rag_health" in schemas["QueryResponse"]["properties"]
+    assert "workflow_pause" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["QueryResponse"]["properties"]
     assert "evidence_chain" in schemas["PlanDetailResponse"]["properties"]
     assert "evidence_chain" in schemas["TrainingCalendarResponse"]["properties"]
@@ -74,6 +90,7 @@ def test_openapi_response_schemas_match_shared_delivery_contract():
         "medical_referral_total",
     }
     assert "request_route_counts" in schemas["OpsMetricsResponse"]["properties"]
+    assert "plan_persist_status_counts" in schemas["OpsMetricsResponse"]["properties"]
     assert "llm_provider_error_counts" in schemas["OpsMetricsResponse"]["properties"]
 
 

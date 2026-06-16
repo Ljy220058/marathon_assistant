@@ -1,0 +1,62 @@
+{
+  "experience_level": "新手",
+  "weekly_mileage": "40",
+  "goal": "合法目标",
+  "injury_history": [
+    "无"
+  ],
+  "long_term_memory": [],
+  "verified_facts": {},
+  "last_race_time": "未知",
+  "pb_800m": "",
+  "pb_1500m": "",
+  "pb_5k": "",
+  "pb_10k": "",
+  "pb_half": "",
+  "pb_full": "",
+  "lthr": "181",
+  "t_pace": "3:15/km",
+  "hr_zones": {
+    "Z1": "<130 bpm",
+    "Z2": "130-141 bpm",
+    "Z3": "143-152 bpm",
+    "Z4": "154-161 bpm",
+    "Z5": "163-168 bpm",
+    "Z6": "170-176 bpm",
+    "Z7": "177-181 bpm",
+    "Z8": "183-190 bpm",
+    "Z9": ">190 bpm"
+  },
+  "pace_zones": {
+    "Z1": "4:14-3:44",
+    "Z2": "3:44-3:31",
+    "Z3": "3:31-3:19",
+    "Z4": "3:19-3:13",
+    "Z5": "设置目标配速后自动计算",
+    "Z6": "3:05-2:59",
+    "Z7": "2:59-2:56",
+    "Z8": "2:56-2:46",
+    "Z9": "2:46-2:26"
+  },
+  "nutrition_profile": {
+    "weight_kg": 65.0,
+    "diet_preference": "无偏好",
+    "allergies": [],
+    "daily_calories": 2500,
+    "hydration_strategy": "运动中每 20 分钟饮水 150-250ml"
+  },
+  "target_race_date": "2026-10-18",
+  "plan_duration_weeks": 12,
+  "recent_four_week_mileage": "50 km",
+  "available_days": "周二、周四、周三，周六、周日",
+  "vo2max": "68",
+  "max_session_minutes": "40 分钟",
+  "terrain_preference": "田径场,公园,公路",
+  "training_types": "轻松跑、渐加速跑",
+  "notes": "无",
+  "last_month_mileage": "50 km",
+  "injury": "",
+  "recovery_state": "",
+  "injury_or_fatigue": false,
+  "not_a_real_field": "boom"
+}

@@ -1,0 +1,68 @@
+<h2>极简 Proof-First Flow</h2>
+<p class="subtitle">删除重复标题、英文标签和多余说明，只保留用户完成任务必须看到的内容：输入、回答、证据、来源定位。</p>
+
+<style>
+  .minimal-board{padding:34px 22px 46px;background:#eef5ef;border-radius:28px;color:#10231b;font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  .minimal-app{width:min(1030px,100%);margin:0 auto;border:2px solid #0d1c16;border-radius:25px;background:#fdfefc;overflow:hidden;box-shadow:0 22px 44px rgba(13,28,22,.18);}
+  .minimal-top{height:64px;display:grid;grid-template-columns:230px minmax(260px,1fr) 290px;align-items:center;border-bottom:1px solid #d9e3dc;background:rgba(255,255,255,.82);}
+  .minimal-brand{display:flex;align-items:center;gap:10px;padding-left:26px;font-weight:850;font-size:18px;}.minimal-logo{width:35px;height:35px;border-radius:10px;background:#11271d;color:#c8ff70;display:grid;place-items:center;font-weight:950;font-size:20px;}.minimal-search{height:39px;border:1px solid #d5dfd8;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 14px;color:#8b978f;font-size:14px;max-width:450px}.minimal-search span{font-size:18px;color:#9aa59e;margin-right:7px}.minimal-nav{display:flex;align-items:center;justify-content:flex-end;gap:28px;padding-right:25px;font-size:16px;color:#33443b}.minimal-nav strong{font-weight:900;color:#0f1d17}
+  .minimal-body{display:grid;grid-template-columns:236px minmax(0,1fr) 254px;min-height:500px}.minimal-side{border-right:1px solid #d9e3dc;padding:24px 18px 28px 26px;background:#fbfdfb}.minimal-side-section{margin-bottom:32px}.minimal-side h3{margin:0 0 13px;font-size:20px;letter-spacing:-.02em;color:#14221b}.minimal-side ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.minimal-side li{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:9px;font-size:16px;color:#26362e}.minimal-side li.active{background:#e7ece8;font-weight:850}.minimal-side li::before{content:"";width:10px;height:10px;border-radius:50%;background:#d6ddd8;flex:0 0 auto}.minimal-side .context li::before{background:#35a762}
+  .minimal-main{padding:34px 28px 26px;background:#fdfefc}.minimal-main h1{margin:0 0 24px;font-size:36px;line-height:1.12;letter-spacing:-.045em;color:#10231b;font-weight:950}.minimal-input-row{height:48px;display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:22px}.minimal-input{border:1px solid #d7e1da;border-radius:12px;background:#fff;color:#8a968e;display:flex;align-items:center;padding:0 16px;font-size:15px}.minimal-send{border:0;border-radius:11px;background:#10231b;color:#fff;font-size:16px;font-weight:850;padding:0 18px;min-width:62px}.minimal-answer{border:1px solid #d9e2dc;border-radius:14px;background:#fff;padding:18px 15px 17px}.minimal-answer h2{margin:0 0 13px;font-size:21px;letter-spacing:-.02em;color:#0f1d17}.minimal-alert{border:1px solid #e9c858;background:#fff6c9;color:#2d2a16;border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:10px;margin-bottom:17px}.minimal-alert-icon{width:18px;height:18px;border-radius:50%;border:1.8px solid #c99b10;color:#a67600;display:grid;place-items:center;font-size:12px;font-weight:900;margin-top:1px}.minimal-alert strong{font-weight:900}.minimal-alert div:last-child{font-size:15px;line-height:1.55}.minimal-answer p{font-size:16px;line-height:1.68;margin:0;color:#111f19}.minimal-answer mark{background:#e7f8d0;color:#12261b;border-radius:4px;padding:0 3px}.minimal-actions{margin-top:15px;display:flex;gap:12px;color:#24352d;font-size:15px}.minimal-actions button{border:0;background:transparent;color:#24352d;padding:0;font:inherit}
+  .minimal-evidence{border-left:1px solid #d9e3dc;background:#fbfdfb;padding:26px 21px 20px}.minimal-evidence-head{display:flex;justify-content:flex-end;border-bottom:1px solid #d9e3dc;padding-bottom:14px}.minimal-expand-all{border:1px solid #d3ddd6;border-radius:9px;background:#fff;padding:7px 10px;font-size:14px;font-weight:750;color:#101d17}.minimal-rows{border-bottom:1px solid #d9e3dc}.minimal-row{border-top:1px solid #d9e3dc;padding:13px 0}.minimal-toggle{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;width:100%;border:0;background:transparent;padding:0;text-align:left;color:#111f19;font-size:16px;font-weight:850}.minimal-switch{width:34px;height:21px;border-radius:999px;background:#0c2118;position:relative}.minimal-switch::after{content:"";position:absolute;right:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff}.minimal-chevron{font-size:20px;color:#47564f;line-height:1}.minimal-source{margin:10px 0 2px 31px;border-left:2px solid #6dbd85;border-right:2px solid #6dbd85;padding:8px 10px 8px 11px;color:#10231b;font-size:14px;line-height:1.5;background:rgba(250,255,250,.72)}.minimal-file{font-weight:850;margin-bottom:5px}.minimal-locator{color:#63746b;font-size:13px;margin-bottom:8px}.minimal-quote{font-size:14px}.minimal-link{margin-top:7px;color:#0f6b42;font-weight:780;font-size:13px}
+  @media(max-width:900px){.minimal-top{grid-template-columns:1fr;gap:12px;height:auto;padding:16px}.minimal-brand{padding-left:0}.minimal-search{max-width:none}.minimal-nav{justify-content:flex-start;padding-right:0}.minimal-body{grid-template-columns:1fr}.minimal-side,.minimal-evidence{border:0;border-top:1px solid #d9e3dc}.minimal-main{padding:24px 20px}.minimal-main h1{font-size:30px}.minimal-input-row{grid-template-columns:1fr}.minimal-send{height:42px;justify-self:start}}
+</style>
+
+<div class="minimal-board">
+  <div class="minimal-app">
+    <header class="minimal-top">
+      <div class="minimal-brand"><div class="minimal-logo">M</div><span>马拉松助手</span></div>
+      <div class="minimal-search"><span>⌕</span>搜索训练、计划、依据</div>
+      <nav class="minimal-nav" aria-label="主导航"><span>今日</span><span>计划</span><span>我的情况</span><strong>依据</strong></nav>
+    </header>
+
+    <div class="minimal-body">
+      <aside class="minimal-side" aria-label="训练导航">
+        <section class="minimal-side-section">
+          <h3>Workspace</h3>
+          <ul><li>搜索训练</li><li>计划强度</li><li>我的情况</li></ul>
+        </section>
+        <section class="minimal-side-section">
+          <h3>Context</h3>
+          <ul class="context"><li>伤病训练</li><li>计划</li><li class="active">依据</li></ul>
+        </section>
+      </aside>
+
+      <main class="minimal-main">
+        <h1>问知识库，查训练依据。</h1>
+        <div class="minimal-input-row" role="search">
+          <div class="minimal-input" aria-label="向知识库提问">例如：膝盖疼还能继续跑吗？</div>
+          <button class="minimal-send" type="button">发送</button>
+        </div>
+        <section class="minimal-answer" aria-live="polite">
+          <h2>AI 回答（基于 4 组依据生成）</h2>
+          <div class="minimal-alert" role="status"><div class="minimal-alert-icon" aria-hidden="true">!</div><div><strong>证据覆盖不足：</strong>缺少疼痛等级、持续时间和是否影响步态。下面回答只能作为一般训练参考。</div></div>
+          <p>如果只是轻微不适，可以先把接下来 24–48 小时的训练调整为 <mark>低强度或休息</mark>，避免间歇跑、节奏跑和长距离。如果疼痛持续、加重，或已经影响步态，应停止跑步并寻求专业评估。</p>
+          <div class="minimal-actions"><button type="button">查看风险依据</button><span>·</span><button type="button">补充个人情况</button><span>·</span><button type="button">重新生成</button></div>
+        </section>
+      </main>
+
+      <aside class="minimal-evidence" aria-label="引用依据">
+        <div class="minimal-evidence-head"><button class="minimal-expand-all" type="button">全部展开</button></div>
+        <div class="minimal-rows">
+          <div class="minimal-row">
+            <button class="minimal-toggle" type="button" aria-expanded="true"><span class="minimal-switch" aria-hidden="true"></span><span>伤病风险依据</span><span class="minimal-chevron">⌃</span></button>
+            <div class="minimal-source">
+              <div class="minimal-file">src_pmc_running_overuse_risk_factors_2020.md</div>
+              <div class="minimal-locator">p. 12–13 · 相关性高</div>
+              <div class="minimal-quote">疼痛持续、负荷突然增加和既往伤病史会提高跑步过度使用伤风险。</div>
+              <div class="minimal-link">打开原文片段</div>
+            </div>
+          </div>
+          <div class="minimal-row"><button class="minimal-toggle" type="button" aria-expanded="false"><span class="minimal-switch" aria-hidden="true"></span><span>训练强度调整</span><span class="minimal-chevron">⌄</span></button></div>
+          <div class="minimal-row"><button class="minimal-toggle" type="button" aria-expanded="false"><span class="minimal-switch" aria-hidden="true"></span><span>恢复与营养建议</span><span class="minimal-chevron">⌄</span></button></div>
+          <div class="minimal-row"><button class="minimal-toggle" type="button" aria-expanded="false"><span class="minimal-switch" aria-hidden="true"></span><span>官方/论文来源</span><span class="minimal-chevron">⌄</span></button></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>

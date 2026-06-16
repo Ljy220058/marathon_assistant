@@ -1,0 +1,330 @@
+[
+  {
+    "question": "What combination of nutrients during exercise was found to improve performance and reduce muscle damage?",
+    "ground_truth": "A carbohydrate and protein combination taken during exercise significantly improved performance and reduced muscle damage. The effective nutrient gel provided 0.146 grams of carbohydrate per kilogram of body weight and 0.0365 grams of protein per kilogram.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_nutrient_timing_2017_0072",
+    "source_file": "nutrition_issn_nutrient_timing_2017.pdf"
+  },
+  {
+    "question": "What are the observed renal complications after marathon running?",
+    "ground_truth": "Marathon running exerts extreme stress on the renal system. Acute kidney injury, acute tubular necrosis, and fluid/electrolyte imbalances are frequently observed after marathons. The long-term effects on renal function and chronic kidney disease remain unclear.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0138",
+    "source_file": "train_marathon_physiology_2025.md"
+  },
+  {
+    "question": "What hematological biomarker alterations are commonly observed after a marathon race?",
+    "ground_truth": "A marathon race may lead to a certain degree of hemolysis, indicated by increased levels of free hemoglobin, indirect bilirubin, and LDH, along with decreased haptoglobin levels.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0262",
+    "source_file": "train_marathon_physiology_2025.md"
+  },
+  {
+    "question": "What percentage of reviewed studies recognized addressing biomechanical abnormalities as important for return-to-running?",
+    "ground_truth": "62% of the reviewed studies acknowledged that addressing lower extremity biomechanical abnormalities thought to contribute to the initial injury is crucial when returning to running after a tibial bone stress injury.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0054",
+    "source_file": "src_pmc_return_running_tibial_bsi_2024.md"
+  },
+  {
+    "question": "What are the effects of calcium supplementation on health and exercise performance?",
+    "ground_truth": "Calcium supplementation may be beneficial for populations at risk of osteoporosis and can promote fat metabolism to help manage body composition. However, it provides no ergogenic effect on exercise performance.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0203",
+    "source_file": "nutrition_issn_review_2018.pdf"
+  },
+  {
+    "question": "What do studies on glycerol hyperhydration indicate about its effects on athletic performance?",
+    "ground_truth": "Studies on glycerol hyperhydration show mixed results. One study found it significantly improved VO2max performance in hot conditions, while three other studies reported no improvement in cycling distance, cardiovascular/thermoregulatory functions, or anaerobic power.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0446",
+    "source_file": "nutrition_issn_review_2018.pdf"
+  },
+  {
+    "question": "What does sports science research suggest about intensified training compared to high-volume low-intensity training?",
+    "ground_truth": "Carefully planned intensified training can be an equally feasible method to traditional high-volume low-intensity training. Athletes often rely on low-intensity training, but with proper planning, intensified training offers a viable alternative.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_low_intensity_2025_0078",
+    "source_file": "train_low_intensity_2025.md"
+  },
+  {
+    "question": "Does ZMA supplementation increase testosterone levels or improve strength and body composition?",
+    "ground_truth": "ZMA supplementation does not increase free or total testosterone levels. An 8-week double-blind study found no changes in testosterone, strength, or fat-free mass. Any reported increases may result from correcting zinc deficiencies rather than a direct pharmacological effect.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0396",
+    "source_file": "nutrition_issn_review_2018.pdf"
+  },
+  {
+    "question": "What are the main limitations in comparing risk factors for short- and long-distance runners?",
+    "ground_truth": "Differences in risk factors may be biased because certain factors were studied only in one group. Despite searching five databases, some eligible articles and unpublished studies might have been missed.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_pmc_running_overuse_risk_factors_2020_0169",
+    "source_file": "src_pmc_running_overuse_risk_factors_2020.md"
+  },
+  {
+    "question": "What is mental fatigue in sports science?",
+    "ground_truth": "Mental fatigue is a psychobiological state caused by demanding cognitive activity. Non-physical factors like mental fatigue, effort, stress, and motivation have received comparatively little attention compared to physical factors in training load monitoring.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_subjective_load_2018_0024",
+    "source_file": "safety_subjective_load_2018.pdf"
+  },
+  {
+    "question": "What cardiac biomarkers are elevated during marathon running and what do they suggest?",
+    "ground_truth": "During and after marathon completion, elevations in cardiac troponin-I, creatine kinase, CK-MB, myoglobin, ANP, and NT-proBNP have been observed. These indicate myocardial stress or damage including cardiomyocyte injury and increased cardiac wall stress.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0055",
+    "source_file": "train_marathon_physiology_2025.md"
+  },
+  {
+    "question": "What factors influence athletes' decisions to use supplements, and how common is supplement use?",
+    "ground_truth": "Supplement use prevalence among athletes ranges from 37% to 89%, being higher in elite and older athletes. Their choices are often guided by family, friends, teammates, coaches, and the Internet, rather than by sports dietitians.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0264",
+    "source_file": "nutrition_acsm_position_2016.pdf"
+  },
+  {
+    "question": "What are the dosage recommendations for omega-3 fatty acids DHA and EPA and how might they benefit athletes?",
+    "ground_truth": "The American Heart Association endorses supplemental DHA and EPA with a daily dosage of 3000-5000 mg. Prudent use of these supplements may help athletes stay healthy and tolerate training better.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_review_2018_0489",
+    "source_file": "nutrition_issn_review_2018.pdf"
+  },
+  {
+    "question": "What is the impact of pre-exercise low glycemic index carbohydrate intake on performance?",
+    "ground_truth": "Pre-exercise intake of low glycemic index carbohydrate has not been shown to universally improve performance. Carbohydrate intake during exercise provides benefits through glycogen sparing, exogenous muscle substrate, hypoglycemia prevention, and CNS reward center activation.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0252",
+    "source_file": "nutrition_acsm_position_2016.pdf"
+  },
+  {
+    "question": "What is the relationship between training volume and injury risk in novice runners?",
+    "ground_truth": "Novice runners without experience face higher injury risk, likely due to rapidly increasing training without giving tissues time to adapt. Running over 60 minutes per week is protective, whereas lower training volume is a risk factor for injuries among short-distance runners.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_pmc_running_overuse_risk_factors_2020_0164",
+    "source_file": "src_pmc_running_overuse_risk_factors_2020.md"
+  },
+  {
+    "question": "How does high load strength training improve running economy?",
+    "ground_truth": "High load strength training involves 80% or more of 1RM. It improves running economy through better intra- and inter-muscular coordination, increased muscle-tendon stiffness, heightened motor unit recruitment and firing rate, and morphological changes.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_pmc_strength_training_running_economy_2024_0024",
+    "source_file": "src_pmc_strength_training_running_economy_2024.md"
+  },
+  {
+    "question": "What is the classic carbohydrate loading protocol from the 1970s?",
+    "ground_truth": "3-4 days of high-volume training with limited carbohydrate intake, followed by a diet of over 70% carbohydrates and sharply reduced training volume. This leads to supersaturated muscle glycogen stores to improve prolonged exercise performance.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_nutrient_timing_2017_0040",
+    "source_file": "nutrition_issn_nutrient_timing_2017.pdf"
+  },
+  {
+    "question": "What is the six-zone intensity model adopted by the Norwegian Olympic Committee?",
+    "ground_truth": "Zones 1-2 are low-intensity, Zone 3 is moderate, and Zones 4-6 are high-intensity training for elite endurance athletes.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_tid_theory_2025_0041",
+    "source_file": "train_tid_theory_2025.md"
+  },
+  {
+    "question": "What is the optimal tapering protocol before competition based on meta-analyses?",
+    "ground_truth": "A 14-day taper with unchanged intensity and frequency, but training volume reduced by 41-60%, appears most effective.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_tapering_meta_2023_0017",
+    "source_file": "train_tapering_meta_2023.pdf"
+  },
+  {
+    "question": "Why do athletes with similar VO2max but better running economy perform better?",
+    "ground_truth": "Because they can run at a higher relative intensity or maintain a constant intensity for a relatively longer period of time.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0089",
+    "source_file": "nutrition_distance_runners_2019.pdf"
+  },
+  {
+    "question": "What were the eligibility criteria for the Running Injury Continuum study?",
+    "ground_truth": "Ran at least once per week for the previous six months, were 18 years or older, and had no previous education or training in musculoskeletal injuries.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_injury_continuum_2023_0022",
+    "source_file": "safety_injury_continuum_2023.pdf"
+  },
+  {
+    "question": "What do training load models commonly use and how does monitoring vary across sports?",
+    "ground_truth": "Training load models commonly use training impulse, the product of an intensity factor and volume/duration factor. Methods of monitoring training load vary considerably depending on sport type.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_subjective_load_2018_0014",
+    "source_file": "safety_subjective_load_2018.pdf"
+  },
+  {
+    "question": "What hematological changes are observed after a marathon that indicate hemolysis?",
+    "ground_truth": "Increased free hemoglobin, indirect bilirubin, LDH, and decreased haptoglobin.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_marathon_physiology_2025_0389",
+    "source_file": "train_marathon_physiology_2025.md"
+  },
+  {
+    "question": "What is RED-S according to the 2018 IOC consensus statement?",
+    "ground_truth": "RED-S is impaired physiological functioning from relative energy deficiency, affecting metabolic rate, menstrual function, bone health, immunity, protein synthesis, and cardiovascular health.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0160",
+    "source_file": "nutrition_distance_runners_2019.pdf"
+  },
+  {
+    "question": "What factor complicates direct comparison across studies on Training Intensity Distribution?",
+    "ground_truth": "Substantial methodological variability.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_tid_theory_2025_0210",
+    "source_file": "train_tid_theory_2025.md"
+  },
+  {
+    "question": "What is the definition of RED-S according to the IOC consensus statement?",
+    "ground_truth": "RED-S is a syndrome affecting health and performance caused by inadequate energy intake relative to exercise energy expenditure.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "src_173c5a6a63ed_a709fe4c0267_p0002_cd67e746cac36887_cd67e746cac36887",
+    "source_file": "nutrition_acsm_position_2016.pdf"
+  },
+  {
+    "question": "What did a systematic review find about previous running experience as a risk factor for injuries?",
+    "ground_truth": "No previous running experience is a risk factor for injuries among short-distance runners. Novice runners may build up training too quickly. The risk depends on distances run.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "src_9f8a5156cc54_c255751d518c_p0001_d9e2bed9b3e25bcd_d9e2bed9b3e25bcd",
+    "source_file": "src_pmc_running_overuse_risk_factors_2020.md"
+  },
+  {
+    "question": "What do studies on subjective training load monitoring show?",
+    "ground_truth": "Methods vary by sport type. Allostatic stress and cognitive appraisal models may help understand training load measurement effectiveness.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_subjective_load_2018_0029",
+    "source_file": "safety_subjective_load_2018.pdf"
+  },
+  {
+    "question": "What is the relationship between meal frequency and adiposity according to studies?",
+    "ground_truth": "Initial epidemiological work suggested an inverse relationship between meal frequency and adiposity, but controlled experiments do not agree with these observational findings.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_nutrient_timing_2017_0122",
+    "source_file": "nutrition_issn_nutrient_timing_2017.pdf"
+  },
+  {
+    "question": "How does protein intake timing affect muscle protein synthesis and recovery?",
+    "ground_truth": "Post-exercise protein intake most impacts muscle protein synthesis. Co-ingesting protein and carbohydrate during ultraendurance exercise may extend the metabolic adaptation window and stimulate muscle reconditioning.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_acsm_position_2016_0262",
+    "source_file": "nutrition_acsm_position_2016.pdf"
+  },
+  {
+    "question": "Why was the search scope widened for the tibial BSI return-to-running review?",
+    "ground_truth": "Initial literature searches revealed few papers specific to returning to running following tibial BSIs, so the scope was widened to include lower extremity BSIs and any return to running-based activities.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0027",
+    "source_file": "src_pmc_return_running_tibial_bsi_2024.md"
+  },
+  {
+    "question": "What are the ACSM guidelines for carbohydrate intake during endurance exercise?",
+    "ground_truth": "30-60 grams of carbohydrate per hour during endurance exercise over 1 hour, or 0.7 grams per kilogram per hour.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0038",
+    "source_file": "nutrition_carb_during_exercise_2014.md"
+  },
+  {
+    "question": "What is the first nutrient timing strategy in sports nutrition history?",
+    "ground_truth": "Carbohydrate loading, developed in the 1970s. It involved 3-4 days of high-volume training with limited carbs, followed by a diet of over 70% carbs with sharply reduced training volume to supersaturate muscle glycogen and improve prolonged exercise performance.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "src_95090527d22c_a709fe4c0267_p0003_c9c16149aa21ec06_c9c16149aa21ec06",
+    "source_file": "nutrition_issn_nutrient_timing_2017.pdf"
+  },
+  {
+    "question": "How does strength training improve running economy?",
+    "ground_truth": "Through improved intra- and inter-muscular coordination, improved muscle-tendon stiffness, and increased recruitment and firing rate of motor units, plus morphological changes.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "src_8bd64e83a795_26aca7941a99_p0001_539bcf0b9fd2ab6c_539bcf0b9fd2ab6c",
+    "source_file": "src_pmc_strength_training_running_economy_2024.md"
+  },
+  {
+    "question": "What are the effects of a short-term running injury?",
+    "ground_truth": "Severe discomfort, dull pain, and sharp pain that progressively worsens until the runner must stop for days to weeks. It affects daily life with constant pain at work, and runners alter decisions like driving instead of walking.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_injury_continuum_2023_0078",
+    "source_file": "safety_injury_continuum_2023.pdf"
+  },
+  {
+    "question": "What does research show about injury risk among novice runners?",
+    "ground_truth": "Novice runners without experience have higher injury risk, likely from building training too quickly without tissue adaptation. Running over 60 minutes per week was found to be protective.",
+    "domain": "injury_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_running_msk_injuries_2012_0026",
+    "source_file": "safety_running_msk_injuries_2012.md"
+  },
+  {
+    "question": "What does elevation of cardiac biomarkers during and after marathon suggest?",
+    "ground_truth": "Myocardial damage or cardiac stress.",
+    "domain": "medical_safety",
+    "sample_type": "positive",
+    "reference_chunk_id": "src_2ff90fb7fcc0_a709fe4c0267_p0004_2dd7cb5c6563d7fe_2dd7cb5c6563d7fe",
+    "source_file": "train_marathon_physiology_2025.pdf"
+  },
+  {
+    "question": "What is the recommended dosage of omega-3 for athletes?",
+    "ground_truth": "3000-5000 mg daily of DHA and EPA.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_safety_injury_continuum_2023_0056",
+    "source_file": "safety_injury_continuum_2023.pdf"
+  },
+  {
+    "question": "When does protein ingestion have the greatest impact on muscle protein synthesis?",
+    "ground_truth": "Post-exercise, compared to pre-exercise or during-exercise intake.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_nutrition_issn_nutrient_timing_2017_0115",
+    "source_file": "nutrition_issn_nutrient_timing_2017.pdf"
+  },
+  {
+    "question": "What influences athletes' supplement choices?",
+    "ground_truth": "Family, friends, teammates, coaches, and the Internet, rather than sports dietitians. Supplement use prevalence is 37-89%, higher in elite and older athletes.",
+    "domain": "nutrition",
+    "sample_type": "positive",
+    "reference_chunk_id": "src_e9d0f60baa9c_38bfd15a5f5d_p0008_32270fddee72c515_32270fddee72c515",
+    "source_file": "Thomas_2016_ACSM_Nutrition.pdf"
+  },
+  {
+    "question": "What percentage of marathon workouts occur on weekends?",
+    "ground_truth": "98.6%, based on fitness app data analysis.",
+    "domain": "training_protocol",
+    "sample_type": "positive",
+    "reference_chunk_id": "chunkv2_src_train_app_data_marathon_2021_0092",
+    "source_file": "train_app_data_marathon_2021.pdf"
+  }
+]

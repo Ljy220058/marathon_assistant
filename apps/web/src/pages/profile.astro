@@ -1,0 +1,32 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="我的情况" subtitle="我的情况" activeTab="profile" showSidebar={true} sidebarActive="profile">
+  <article class="journal-card journal-card-pad">
+    <div class="journal-profile-head">
+      <div>
+        <p class="journal-section-kicker">运动员画像</p>
+        <h2>我的情况</h2>
+      </div>
+      <a class="journal-btn" href="/profile-edit">编辑个人画像</a>
+    </div>
+    <div class="journal-grid-3" style="margin-top: 18px;">
+      <div class="journal-tile"><span>目标</span><strong data-profile-value="goal">半马完赛</strong></div>
+      <div class="journal-tile"><span>比赛日期</span><strong data-profile-value="raceDate">2026-09-21</strong></div>
+      <div class="journal-tile"><span>训练日</span><strong data-profile-value="trainingDays">周二 / 周四 / 周六</strong></div>
+      <div class="journal-tile"><span>最长训练</span><strong data-profile-value="longestRun">12 km</strong></div>
+      <div class="journal-tile"><span>最近配速</span><strong data-profile-value="recentPace">6'48"/km</strong><div class="journal-footnote">最近一次</div></div>
+      <div class="journal-tile journal-status-warn"><span>膝部</span><strong data-profile-value="kneeStatus">轻度紧张</strong><div class="journal-footnote">当前状态</div></div>
+    </div>
+    <div style="margin-top:18px;">
+      <p class="journal-section-kicker" style="margin-bottom:10px;">个人最佳成绩</p>
+      <div class="journal-grid-3">
+        <div class="journal-tile"><span>5K PB</span><strong data-profile-value="pb5k">—</strong></div>
+        <div class="journal-tile"><span>10K PB</span><strong data-profile-value="pb10k">—</strong></div>
+        <div class="journal-tile"><span>半马 PB</span><strong data-profile-value="pbHalf">—</strong></div>
+        <div class="journal-tile"><span>全马 PB</span><strong data-profile-value="pbFull">—</strong></div>
+      </div>
+    </div>
+  </article>
+</JournalLayout>

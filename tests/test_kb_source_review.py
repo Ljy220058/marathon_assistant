@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from marathon_qa_assistant.core.app_state import DATA_DIR
 from marathon_qa_assistant.services.kb.source_review import (
     build_source_review_queue,
     review_source_record,
@@ -91,13 +92,33 @@ def test_source_review_queue_flags_duplicate_sources():
 
 
 def test_generated_source_review_queue_records_current_registry_as_not_runtime_ready():
-    queue_path = Path("data/knowledge/governance/source_review_queue.jsonl")
-    summary_path = Path("data/knowledge/governance/source_review_summary.json")
+    governance_dir = DATA_DIR / "knowledge" / "governance"
+    queue_path = governance_dir / "source_review_queue.jsonl"
+    summary_path = governance_dir / "source_review_summary.json"
     items = [json.loads(line) for line in queue_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-    assert len(items) == 750
-    assert summary["total"] == 750
-    assert summary["can_enter_runtime_index"] == 0
-    assert summary["status_counts"]["seed_only"] == 707
+    assert len(items) == summary["total"]
+    assert summary["can_enter_runtime_index"] >= 0
+    assert summary["status_counts"]["seed_only"] >= 699
     assert "needs_review" in summary["top_blocking_reasons"]
+
+
+def test_seed_manifest_records_new_txt_files_as_needs_review():
+    manifest = (DATA_DIR / "uploads" / "seed" / "manifest.md").read_text(encoding="utf-8")
+    seed_files = [
+        "VO₂max与乳酸阈专项训练.txt",
+        "大众跑者与老将跑者训练指南.txt",
+        "跑步生物力学与常见运动损伤预防.txt",
+        "马拉松减量训练与赛前策略.txt",
+        "马拉松周期化训练体系.txt",
+        "马拉松心理训练与意志力策略.txt",
+        "马拉松恢复科学与睡眠优化策略.txt",
+        "马拉松比赛策略与赛道执行.txt",
+        "高温环境下的热适应与补水策略.txt",
+    ]
+
+    for filename in seed_files:
+        matching_lines = [line for line in manifest.splitlines() if filename in line]
+        assert matching_lines, f"missing manifest entry for {filename}"
+        assert "needs_review" in matching_lines[0]

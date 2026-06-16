@@ -1,0 +1,53 @@
+.kb-governance-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.kb-governance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kb-governance-grid div,
+.kb-governance-list article {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-muted);
+  padding: 10px;
+}
+
+.kb-governance-grid span,
+.kb-governance-list span,
+.kb-governance-list em {
+  display: block;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kb-governance-grid strong,
+.kb-governance-list strong {
+  display: block;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.kb-governance-list {
+  display: grid;
+  gap: 8px;
+}
+
+.kb-governance-content {
+  display: grid;
+  gap: 12px;
+}
+
+.kb-governance-content h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}

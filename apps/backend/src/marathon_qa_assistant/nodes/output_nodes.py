@@ -520,6 +520,46 @@ def _build_daily_workout_cards(
     return cards
 
 
+def _sync_daily_workout_cards_with_schedule_evidence(
+    daily_workout_cards: List[Dict[str, Any]],
+    daily_schedule_cards: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Copy verified prescription provenance from executable day cards into legacy explanation cards."""
+
+    if not daily_workout_cards or not daily_schedule_cards:
+        return daily_workout_cards
+
+    schedule_by_key: Dict[Tuple[int, str], Dict[str, Any]] = {}
+    for schedule_card in daily_schedule_cards:
+        if not isinstance(schedule_card, dict):
+            continue
+        key = (
+            int(schedule_card.get("week_index") or 0),
+            _safe_text(schedule_card.get("day_label") or schedule_card.get("day"), ""),
+        )
+        if key[0] and key[1]:
+            schedule_by_key[key] = schedule_card
+
+    for card in daily_workout_cards:
+        if not isinstance(card, dict):
+            continue
+        key = (int(card.get("week_index") or 0), _safe_text(card.get("day"), ""))
+        schedule_card = schedule_by_key.get(key)
+        if not schedule_card:
+            continue
+        schedule_tier = _safe_text(schedule_card.get("evidence_tier"), "")
+        if schedule_tier and schedule_tier != "plan_only":
+            card["evidence_tier"] = schedule_tier
+            card["evidence_tier_label"] = _safe_text(schedule_card.get("evidence_tier_label"), "")
+            card["schedule_card_status"] = _safe_text(schedule_card.get("card_status"), "")
+            card["schedule_source_authority"] = _safe_text(schedule_card.get("source_authority"), "")
+            if isinstance(schedule_card.get("field_sources"), dict):
+                card["schedule_field_sources"] = schedule_card.get("field_sources")
+            if isinstance(schedule_card.get("action_match"), dict):
+                card["action_match"] = schedule_card.get("action_match")
+    return daily_workout_cards
+
+
 def _build_half_marathon_protocol_panel(structured_training_plan: Any) -> Dict[str, Any]:
     if not isinstance(structured_training_plan, dict):
         return {}
@@ -727,6 +767,10 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
         item.to_dict() if hasattr(item, "to_dict") else item
         for item in (monthly_training_calendar.days if monthly_training_calendar else [])
     ]
+    daily_workout_cards = _sync_daily_workout_cards_with_schedule_evidence(
+        daily_workout_cards,
+        daily_schedule_cards,
+    )
     summary = final_report if final_report and final_report.strip() else "（本轮未产生实质性回复内容）"
     audit_scores = state.get("audit_scores", {})
     workflow_trace = state.get("workflow_trace") if isinstance(state.get("workflow_trace"), dict) else {}
@@ -741,8 +785,6 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             adaptive_feedback=state.get("adaptive_feedback") if isinstance(state.get("adaptive_feedback"), dict) else None,
             adaptive_adjustment=adaptive_adjustment if isinstance(adaptive_adjustment, dict) else None,
         )
-    if isinstance(structured_training_plan, dict):
-        structured_training_plan["workflow_trace"] = workflow_trace
     training_explanation_panel = _build_training_explanation_panel(
         structured_training_plan,
         training_plan_weeks,
@@ -858,6 +900,7 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
             "review_feedback": state.get("review_feedback", ""),
             "risk_alert": risk_alert,
         },
+        "expert_evidence_trace": state.get("expert_evidence_trace", {}),
         "evidence_bundle": evidence_bundle,
         "evidence_base": evidence_base,
     }
@@ -866,10 +909,32 @@ def _build_structured_report(state: IntegratedState, final_report: str) -> Dict[
 async def formatter_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
     raw_content = state.get("final_report") or state.get("draft_plan") or "当前没有可格式化的输出。"
+    logs: list[str] = []
+
+    # ── 轨迹级安全扫描：在 output_guard 之前审计完整节点链路 ──
+    try:
+        from marathon_qa_assistant.nodes.security import scan_execution_trace
+        trace_result = scan_execution_trace(state)
+        risk_level = trace_result.get("risk_level", "none")
+        alerts = trace_result.get("alerts", [])
+        if risk_level in ("medium", "high"):
+            logs.append(
+                f"[trace_security] risk={risk_level} alerts={'|'.join(alerts)}"
+            )
+        if risk_level == "high":
+            # 高风险告警写入 risk_alert，前端可展示
+            state["risk_alert"] = (
+                '<div class="github-flash-error">'
+                f'<strong>执行轨迹安全告警：</strong>{"；".join(alerts)}'
+                '</div>'
+            )
+    except Exception:
+        pass  # 轨迹扫描失败不阻塞输出
+
     is_safe, cleaned_output, reason = output_guard_obj.check(raw_content)
     structured_report = _build_structured_report(state, cleaned_output)
 
-    logs = ["[formatter] 已生成结构化报告"]
+    logs.append("[formatter] 已生成结构化报告")
     if not is_safe:
         logs.append(f"[formatter] 输出安全清洗: {reason}")
 

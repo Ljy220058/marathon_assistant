@@ -1,0 +1,133 @@
+<h2>Proof-First Flow 还原稿</h2>
+<p class="subtitle">按你给的参考图重做：左侧 Workspace / Context，中间知识库问答，右侧 Proof-First Flow 依据栏；去掉 AI 感溢出，保留更像“证据优先文档工作台”的质感。</p>
+
+<style>
+  .proof-board{padding:34px 22px 46px;background:#eef5ef;border-radius:28px;color:#10231b;font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  .proof-title{font-size:32px;font-weight:820;letter-spacing:-.035em;margin:0 0 30px 0;color:#0e1b16;}
+  .proof-title strong{font-weight:920;}
+  .proof-app{width:min(1030px,100%);margin:0 auto;border:2px solid #0d1c16;border-radius:25px;background:#fdfefc;overflow:hidden;box-shadow:0 22px 44px rgba(13,28,22,.18);}
+  .proof-top{height:66px;display:grid;grid-template-columns:230px minmax(260px,1fr) 290px;align-items:center;border-bottom:1px solid #d9e3dc;background:rgba(255,255,255,.78);}
+  .proof-brand{display:flex;align-items:center;gap:10px;padding-left:26px;font-weight:850;font-size:18px;}
+  .proof-logo{width:35px;height:35px;border-radius:10px;background:#11271d;color:#c8ff70;display:grid;place-items:center;font-weight:950;font-size:20px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+  .proof-search{height:39px;border:1px solid #d5dfd8;border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 14px;color:#8b978f;font-size:14px;max-width:450px;}
+  .proof-search span{font-size:18px;color:#9aa59e;margin-right:7px;}
+  .proof-nav{display:flex;align-items:center;justify-content:flex-end;gap:28px;padding-right:25px;font-size:16px;color:#33443b;}
+  .proof-nav strong{font-weight:900;color:#0f1d17;}
+  .proof-body{display:grid;grid-template-columns:236px minmax(0,1fr) 254px;min-height:525px;}
+  .proof-side{border-right:1px solid #d9e3dc;padding:24px 18px 28px 26px;background:#fbfdfb;}
+  .proof-side-section{margin-bottom:32px;}
+  .proof-side h3{margin:0 0 13px;font-size:20px;letter-spacing:-.02em;color:#14221b;}
+  .proof-side ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+  .proof-side li{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:9px;font-size:16px;color:#26362e;}
+  .proof-side li.active{background:#e7ece8;font-weight:850;}
+  .proof-side li::before{content:"";width:10px;height:10px;border-radius:50%;background:#d6ddd8;flex:0 0 auto;}
+  .proof-side .context li::before{background:#35a762;}
+  .proof-main{padding:26px 28px 26px 28px;background:#fdfefc;}
+  .proof-kicker{font-size:17px;color:#31423a;margin-bottom:8px;}
+  .proof-main h1{margin:0;font-size:35px;line-height:1.12;letter-spacing:-.045em;color:#10231b;font-weight:950;}
+  .proof-sub{margin:9px 0 21px;font-size:16px;color:#14221b;}
+  .proof-input-row{height:48px;display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:20px;}
+  .proof-input{border:1px solid #d7e1da;border-radius:12px;background:#fff;color:#8a968e;display:flex;align-items:center;padding:0 16px;font-size:15px;}
+  .proof-send{border:0;border-radius:11px;background:#10231b;color:#fff;font-size:16px;font-weight:850;padding:0 18px;min-width:62px;}
+  .proof-answer{border:1px solid #d9e2dc;border-radius:14px;background:#fff;padding:18px 15px 17px;}
+  .proof-answer h2{margin:0 0 13px;font-size:21px;letter-spacing:-.02em;color:#0f1d17;}
+  .proof-alert{border:1px solid #e9c858;background:#fff6c9;color:#2d2a16;border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:10px;margin-bottom:17px;box-shadow:0 0 0 1px rgba(231,197,64,.18) inset;}
+  .proof-alert-icon{width:18px;height:18px;border-radius:50%;border:1.8px solid #c99b10;color:#a67600;display:grid;place-items:center;font-size:12px;font-weight:900;margin-top:1px;}
+  .proof-alert strong{font-weight:900;}
+  .proof-alert div:last-child{font-size:15px;line-height:1.55;}
+  .proof-answer p{font-size:16px;line-height:1.68;margin:0;color:#111f19;}
+  .proof-answer mark{background:#e7f8d0;color:#12261b;border-radius:4px;padding:0 3px;}
+  .proof-actions{margin-top:15px;display:flex;gap:12px;color:#24352d;font-size:15px;}
+  .proof-actions button{border:0;background:transparent;color:#24352d;padding:0;font:inherit;}
+  .proof-evidence{border-left:1px solid #d9e3dc;background:#fbfdfb;padding:26px 21px 20px;}
+  .proof-evidence h2{font-size:22px;line-height:1.12;margin:0 0 21px;font-weight:940;color:#101d17;}
+  .proof-evidence-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d9e3dc;padding-bottom:16px;margin-bottom:0;}
+  .proof-kb-state{font-size:15px;color:#26362e;}
+  .proof-expand-all{border:1px solid #d3ddd6;border-radius:9px;background:#fff;padding:7px 10px;font-size:14px;font-weight:750;color:#101d17;}
+  .proof-rows{border-bottom:1px solid #d9e3dc;}
+  .proof-row{border-top:1px solid #d9e3dc;padding:13px 0;}
+  .proof-toggle{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;width:100%;border:0;background:transparent;padding:0;text-align:left;color:#111f19;font-size:16px;font-weight:850;}
+  .proof-switch{width:34px;height:21px;border-radius:999px;background:#0c2118;position:relative;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);}
+  .proof-switch::after{content:"";position:absolute;right:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;}
+  .proof-chevron{font-size:20px;color:#47564f;line-height:1;}
+  .proof-source{margin:10px 0 2px 31px;border-left:2px solid #6dbd85;border-right:2px solid #6dbd85;padding:8px 10px 8px 11px;color:#10231b;font-size:15px;line-height:1.48;background:rgba(250,255,250,.72);}
+  .proof-source .quote{font-weight:700;}
+  .proof-source .meta{display:block;margin-top:7px;color:#63746b;font-size:14px;text-align:right;}
+  .proof-mobile-note{margin-top:18px;color:#53635b;font-size:14px;line-height:1.55;}
+  @media(max-width:900px){.proof-top{grid-template-columns:1fr;gap:12px;height:auto;padding:16px}.proof-brand{padding-left:0}.proof-search{max-width:none}.proof-nav{justify-content:flex-start;padding-right:0}.proof-body{grid-template-columns:1fr}.proof-side,.proof-evidence{border:0;border-top:1px solid #d9e3dc}.proof-main{padding:24px 20px}.proof-main h1{font-size:30px}.proof-input-row{grid-template-columns:1fr}.proof-send{height:42px;justify-self:start}.proof-title{font-size:25px}}
+</style>
+
+<div class="proof-board">
+  <h1 class="proof-title"><strong>Option B:</strong> The Proof-First Flow</h1>
+  <div class="proof-app">
+    <header class="proof-top">
+      <div class="proof-brand"><div class="proof-logo">M</div><span>马拉松助手</span></div>
+      <div class="proof-search"><span>⌕</span>搜索训练、计划、依据</div>
+      <nav class="proof-nav" aria-label="主导航"><span>今日</span><span>计划</span><span>我的情况</span><strong>依据</strong></nav>
+    </header>
+
+    <div class="proof-body">
+      <aside class="proof-side" aria-label="训练导航">
+        <section class="proof-side-section">
+          <h3>Workspace</h3>
+          <ul>
+            <li>搜索训练</li>
+            <li>计划强度</li>
+            <li>我的情况</li>
+          </ul>
+        </section>
+        <section class="proof-side-section">
+          <h3>Context</h3>
+          <ul class="context">
+            <li>伤病训练</li>
+            <li>计划</li>
+            <li class="active">依据</li>
+          </ul>
+        </section>
+      </aside>
+
+      <main class="proof-main">
+        <div class="proof-kicker">Intelligent Documents</div>
+        <h1>问知识库，查训练依据。</h1>
+        <p class="proof-sub">Subcopy：问知识库，查训练依据。</p>
+        <div class="proof-input-row" role="search">
+          <div class="proof-input" aria-label="向知识库提问">例如：膝盖疼还能继续跑吗？</div>
+          <button class="proof-send" type="button">发送</button>
+        </div>
+
+        <section class="proof-answer" aria-live="polite">
+          <h2>AI 回答（基于 4 组依据生成）</h2>
+          <div class="proof-alert" role="status">
+            <div class="proof-alert-icon" aria-hidden="true">!</div>
+            <div><strong>证据覆盖不足：</strong>当前知识库缺少你的疼痛等级、持续时间和是否影响步态。下面回答只能作为一般训练参考。</div>
+          </div>
+          <p>如果只是轻微不适，可以先把接下来 24–48 小时的训练调整为 [low_intensity] <mark>低强度或休息</mark>[/low_intensity]，避免间歇跑、节奏跑和长距离。如果疼痛持续、加重，或已经影响步态，应停止跑步并寻求专业评估。</p>
+          <div class="proof-actions"><button type="button">查看风险依据</button><span>·</span><button type="button">补充个人情况</button><span>·</span><button type="button">重新生成</button></div>
+        </section>
+      </main>
+
+      <aside class="proof-evidence" aria-label="Proof-First Flow 引用依据">
+        <h2>Proof-First Flow</h2>
+        <div class="proof-evidence-head">
+          <div class="proof-kb-state">知识库已连接</div>
+          <button class="proof-expand-all" type="button">全部展开</button>
+        </div>
+        <div class="proof-rows">
+          <div class="proof-row">
+            <button class="proof-toggle" type="button" aria-expanded="true">
+              <span class="proof-switch" aria-hidden="true"></span><span>伤病风险依据</span><span class="proof-chevron">⌃</span>
+            </button>
+            <div class="proof-source">
+              <span class="quote">[1] 疼痛持续、负荷突然增加和既往伤病史会提高跑步过度使用伤风险。</span>
+              <span class="meta">—— 论文来源 · 相关性高</span>
+            </div>
+          </div>
+          <div class="proof-row"><button class="proof-toggle" type="button" aria-expanded="false"><span class="proof-switch" aria-hidden="true"></span><span>训练强度调整</span><span class="proof-chevron">⌄</span></button></div>
+          <div class="proof-row"><button class="proof-toggle" type="button" aria-expanded="false"><span class="proof-switch" aria-hidden="true"></span><span>恢复与营养建议</span><span class="proof-chevron">⌄</span></button></div>
+          <div class="proof-row"><button class="proof-toggle" type="button" aria-expanded="false"><span class="proof-switch" aria-hidden="true"></span><span>官方/论文来源</span><span class="proof-chevron">⌄</span></button></div>
+        </div>
+        <p class="proof-mobile-note">移动端改为主内容下方的折叠依据列表，不保留右侧栏。</p>
+      </aside>
+    </div>
+  </div>
+</div>

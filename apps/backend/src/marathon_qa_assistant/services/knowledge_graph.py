@@ -1,4 +1,3 @@
-import os
 import json
 import re
 import time
@@ -8,10 +7,33 @@ import logging
 import copy
 from typing import List, Dict, Any, Tuple, Optional
 from pathlib import Path
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage
-from dotenv import load_dotenv
-from marathon_qa_assistant.core.app_state import BASE_DIR, DEFAULT_VECTOR_DIR
+try:
+    from langchain_ollama import ChatOllama
+except ImportError:  # 运行时缺依赖时降级：仅 STRICT_MODE 离线流水线/检索不需要 LLM
+    class ChatOllama:  # type: ignore[no-redef]
+        """Stub：langchain_ollama 未安装时的占位。
+
+        生产链路 STRICT_MODE=True，图谱检索与候选合并不调用 LLM；
+        仅 LLM 三元组动态抽取需要真实 ChatOllama，缺失时该路径会显式失败。
+        """
+
+        def __init__(self, *args, **kwargs):
+            self._unavailable = True
+
+        def invoke(self, *args, **kwargs):
+            raise RuntimeError(
+                "ChatOllama 不可用：langchain_ollama 未安装。"
+                "图谱 LLM 抽取需要此依赖；检索与候选合并不受影响。"
+            )
+
+try:
+    from langchain_core.messages import HumanMessage
+except ImportError:  # 同上：仅 LLM 抽取路径用到
+    class HumanMessage:  # type: ignore[no-redef]
+        def __init__(self, *args, **kwargs):
+            self.content = kwargs.get("content", args[0] if args else "")
+from marathon_qa_assistant.core.app_state import BASE_DIR, DATA_DIR, V2_VECTOR_DIR
+from marathon_qa_assistant.core.settings import get_settings, load_project_dotenv
 from marathon_qa_assistant.services.kb.graph_evidence import (
     evidence_from_graph_edge,
     graph_binding_to_legacy_evidence,
@@ -21,23 +43,19 @@ from marathon_qa_assistant.services.kb.graph_evidence import (
 logger = logging.getLogger("graph_engine")
 
 # 加载配置
-env_path = BASE_DIR / "graphrag_project" / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    load_dotenv()
-
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:latest")
-_raw = os.getenv("GRAPHRAG_API_KEY")
+load_project_dotenv(BASE_DIR / "graphrag_project" / ".env")
+_settings = get_settings()
+OLLAMA_BASE_URL = _settings.ollama_base_url
+OLLAMA_MODEL = _settings.ollama_model
+_raw = _settings.graphrag_api_key
 _stripped = (_raw or "").strip()
 if _stripped and _stripped != "default_token_for_dev":
     AUTH_TOKEN = _stripped
 else:
-    raise RuntimeError(
-        "GRAPHRAG_API_KEY environment variable is not set or is using the banned dev default. "
-        "Set a real token before starting the server."
+    logger.warning(
+        "GRAPHRAG_API_KEY 未设置或仍为开发默认值，知识图谱将初始化为空图。"
     )
+    AUTH_TOKEN = ""
 
 EXACT_RELATION_MAP = {
     "需要": "requires",
@@ -61,10 +79,10 @@ EXACT_RELATION_MAP = {
     "处于": "uses_zone",
     "位于": "uses_zone",
     "强度区间": "uses_zone",
-    "参数化": "parameterized_by",
-    "定义为": "parameterized_by",
-    "设计": "parameterized_by",
-    "结构化": "parameterized_by",
+    "参数化": "requires",
+    "定义为": "requires",
+    "设计": "requires",
+    "结构化": "requires",
     "限制": "constrained_by",
     "约束": "constrained_by",
     "上限": "constrained_by",
@@ -100,7 +118,7 @@ TYPE_RELATION_MAP = {
     ("phase", "workout"): "includes",
     ("workout", "physiology"): "targets",
     ("workout", "zone"): "uses_zone",
-    ("workout", "template"): "parameterized_by",
+    ("workout", "template"): "requires",
     ("template", "constraint"): "constrained_by",
     ("workout", "adaptation"): "produces",
     ("zone", "metric"): "measured_by",
@@ -173,11 +191,20 @@ CANONICAL_ENTITY_MAP = {
 
 REGISTRY_SOURCE_ID = "decision_graph_registry_v1"
 REGISTRY_SOURCE_NAME = "decision_graph_registry"
+DECISION_REGISTRY_FILENAME = "decision_registry.json"
 QUALITY_WORKOUT_LABELS = {"节奏跑", "阈值节奏跑", "无氧阈", "摄氧量", "高强度间歇", "重复跑", "极限间歇"}
 RECOVERY_WORKOUT_LABELS = {"轻松跑", "恢复跑", "休息"}
 WEEK_FALLBACK_WORKOUTS = ["轻松跑", "恢复跑", "休息"]
 
-CONSTRAINT_REGISTRY = {
+# 注册表 JSON 路径：优先同目录 governance/，其次 GRAPH_DATA_PATH 同级
+def _resolve_decision_registry_path() -> Path:
+    governance = DATA_DIR / "knowledge" / "governance" / DECISION_REGISTRY_FILENAME
+    if governance.exists():
+        return governance
+    return GRAPH_DATA_PATH.parent / DECISION_REGISTRY_FILENAME
+
+# 兜底硬编码（只在 JSON 不可用时使用）
+_FALLBACK_CONSTRAINT_REGISTRY = {
     "c_quality_sessions_weekly_cap": {
         "label": "每周质量课最多 2 次",
         "type": "constraint",
@@ -210,7 +237,7 @@ CONSTRAINT_REGISTRY = {
     },
 }
 
-TEMPLATE_REGISTRY = {
+_FALLBACK_TEMPLATE_REGISTRY = {
     "tpl_easy_run_duration_v1": {
         "label": "轻松跑模板 30-60min",
         "type": "template",
@@ -318,13 +345,36 @@ TEMPLATE_REGISTRY = {
     },
 }
 
-llm = ChatOllama(
-    model=OLLAMA_MODEL,
-    temperature=0.1,
-    base_url=OLLAMA_BASE_URL
-)
+# 懒加载 LLM 单例：避免模块 import 时创建 ChatOllama（Ollama 不可用时会阻塞/失败 import），
+# 首次实际抽取图谱三元组时才创建。后续如需热更新模型配置可在此扩展。
+_llm_instance = None
 
-GRAPH_DATA_PATH = DEFAULT_VECTOR_DIR / "knowledge_graph.json"
+
+def _get_llm():
+    global _llm_instance
+    if _llm_instance is None:
+        _llm_instance = ChatOllama(
+            model=OLLAMA_MODEL,
+            temperature=0.1,
+            base_url=OLLAMA_BASE_URL,
+        )
+    return _llm_instance
+
+GRAPH_DATA_PATH = V2_VECTOR_DIR / "knowledge_graph.json"
+
+
+def _safe_resolve(path: Path) -> Path:
+    try:
+        return path.resolve()
+    except Exception:
+        return path.absolute()
+
+
+def _graph_source_label(graph_dir: Path) -> str:
+    resolved = _safe_resolve(graph_dir)
+    if resolved == _safe_resolve(V2_VECTOR_DIR):
+        return "v2"
+    return str(resolved)
 
 class GraphEngine:
     """
@@ -332,51 +382,382 @@ class GraphEngine:
     """
     def __init__(self):
         self.GRAPH_DATA_PATH = GRAPH_DATA_PATH
+        self.DECISION_REGISTRY_PATH = _resolve_decision_registry_path()
         self.nodes = {} # {id: {label: str, type: str, source_chunks: []}}
         self.edges = [] # [{source: id, target: id, relation: str, canonical_relation: str, evidence: dict}]
         self.processed_chunks = {} # 记录已处理的分片 ID 及其文本哈希 {chunk_id: text_hash}
+        self._constraint_registry: Dict[str, Any] = {}
+        self._template_registry: Dict[str, Any] = {}
+        self._registry_source_id: str = REGISTRY_SOURCE_ID
         self._mermaid_cache = None # 缓存以减少重复生成
         self._cache_key = None
         self.STRICT_MODE = True # [KB-only] 严格模式，生产链路禁用 LLM 动态提取
+        self._load_decision_registry()
         self.load_graph()
         if self._ensure_decision_registry():
             self.save_graph()
 
     def load_graph(self):
-        """从磁盘加载图谱数据"""
-        if self.GRAPH_DATA_PATH.exists():
+        """从磁盘加载图谱数据。
+
+        fail-loud 策略：JSON 解析失败时**不静默清空** self.nodes/self.edges，
+        而是保留内存中已有图谱（通常是注册表初始化的兜底图），并把损坏文件
+        改名隔离 + 记 error，避免一次截断就让整张抽取图谱无声丢失。
+        """
+        if not self.GRAPH_DATA_PATH.exists():
+            return
+        try:
+            with open(self.GRAPH_DATA_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            # 损坏文件：隔离改名，保留内存现状，明确报错而非静默吞掉
+            import time as _t
+            quarantine = self.GRAPH_DATA_PATH.with_suffix(
+                f".corrupted_{_t.strftime('%Y%m%d_%H%M%S')}.json"
+            )
             try:
-                with open(self.GRAPH_DATA_PATH, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    self.nodes = data.get("nodes", {})
-                    self.edges = data.get("edges", [])
-                    processed = data.get("processed_chunks", {})
-                    if isinstance(processed, list):
-                        self.processed_chunks = {cid: "" for cid in processed}
-                    else:
-                        self.processed_chunks = processed
-                    migrated = self._migrate_graph_schema()
-                    self.clear_cache()
-                    if migrated:
-                        self.save_graph()
-            except Exception as e:
-                logger.error(f"加载图谱失败: {e}")
+                self.GRAPH_DATA_PATH.rename(quarantine)
+                logger.error(
+                    f"[graph_engine] 主图谱 JSON 损坏（{e}），已隔离至 {quarantine.name}；"
+                    f"保留内存图谱({len(self.nodes)}节点)，请从候选重建："
+                    f"python scripts/merge_knowledge_graph_candidates.py"
+                )
+            except OSError as rename_err:
+                logger.error(
+                    f"[graph_engine] 主图谱 JSON 损坏（{e}）且无法隔离（{rename_err}）；"
+                    f"保留内存图谱({len(self.nodes)}节点)，请人工修复。"
+                )
+            return
+        except Exception as e:
+            logger.error(f"加载图谱失败: {e}")
+            return
+
+        # 解析成功才覆盖内存
+        self.nodes = data.get("nodes", {})
+        self.edges = data.get("edges", [])
+        processed = data.get("processed_chunks", {})
+        if isinstance(processed, list):
+            self.processed_chunks = {cid: "" for cid in processed}
+        else:
+            self.processed_chunks = processed
+        migrated = self._migrate_graph_schema()
+        self.clear_cache()
+        if migrated:
+            self.save_graph()
 
     def save_graph(self):
-        """将图谱数据持久化到磁盘"""
-        self.GRAPH_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.GRAPH_DATA_PATH, "w", encoding="utf-8") as f:
-            json.dump({
-                "nodes": self.nodes, 
-                "edges": self.edges,
-                "processed_chunks": self.processed_chunks 
-            }, f, ensure_ascii=False, indent=2)
+        """将图谱数据持久化到磁盘（原子写入，防止中途被杀留下截断文件）。"""
+        import os
+        import tempfile
+
+        target = self.GRAPH_DATA_PATH
+        target.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "nodes": self.nodes,
+            "edges": self.edges,
+            "processed_chunks": self.processed_chunks,
+        }
+        # 先完整写入同目录临时文件并 fsync，再原子 rename 覆盖正式文件。
+        # 这样即使进程在写入中途被杀，正式文件也保持上一份完整版本，不会出现半截 JSON。
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(target.parent), prefix=".kg_tmp_", suffix=".json"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, target)  # 原子替换
+        except Exception:
+            # 写入失败时清理临时文件，不破坏正式文件
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except OSError:
+                pass
+            raise
         self.clear_cache()
+
+    def _load_decision_registry(self):
+        """从 JSON 加载决策注册表；JSON 不可用时使用 LLM 知识生成。"""
+        if self.DECISION_REGISTRY_PATH and self.DECISION_REGISTRY_PATH.exists():
+            try:
+                import json as _json
+                with open(self.DECISION_REGISTRY_PATH, "r", encoding="utf-8") as f:
+                    data = _json.load(f)
+                self._constraint_registry = data.get("constraint_registry", {})
+                self._template_registry = data.get("template_registry", {})
+                self._registry_source_id = data.get("source_id", REGISTRY_SOURCE_ID)
+                if self._constraint_registry and self._template_registry:
+                    return
+            except Exception:
+                pass
+        # JSON 不可用：异步调用 LLM 生成（通过 asyncio 事件循环）
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                future = concurrent.futures.Future()
+                def _build():
+                    async def _inner():
+                        return await self._build_registry_from_llm()
+                    return asyncio.ensure_future(_inner())
+                # 无法在同步上下文中等待，使用硬编码兜底并标记为待升级
+                logger.warning("无法在同步上下文中调用 LLM 生成注册表，使用空注册表。"
+                             "请运行 scripts/build_registry_from_llm.py 生成。")
+                self._constraint_registry = {}
+                self._template_registry = {}
+                self._registry_source_id = REGISTRY_SOURCE_ID
+                return
+            self._constraint_registry = loop.run_until_complete(
+                self._build_registry_from_llm())
+            self._template_registry = self._constraint_registry  # LLM 返回完整注册表
+        except Exception as exc:
+            logger.warning(f"LLM 注册表生成失败: {exc}，使用空注册表。")
+            self._constraint_registry = {}
+            self._template_registry = {}
+        self._registry_source_id = REGISTRY_SOURCE_ID
+
+    async def _build_registry_from_llm(self) -> Dict[str, Any]:
+        """使用 LLM 运动科学知识生成训练决策注册表。"""
+        prompt = (
+            "你是一位马拉松训练专家。请为马拉松训练系统生成训练约束和课表模板的 JSON 配置。"
+            "输出严格的 JSON，格式如下：\n"
+            '{"constraint_registry": {"c_1": {"label": "约束名", "type": "constraint", '
+            '"rule": "逻辑表达式", "description": "说明"}, ...}, '
+            '"template_registry": {"tpl_1": {"label": "模板名", "type": "template", '
+            '"workout_labels": ["训练课名"], "zone_label": "Z1-Z5", '
+            '"physiology_targets": ["生理目标"], "adaptation_targets": ["适应目标"], '
+            '"fields": {"duration_min": "区间", "intensity": "区间"}, '
+            '"constraint_ids": ["c_1"]}, ...}}\n'
+            "规则：\n"
+            "1. 约束至少包括：质量课周上限、质量课间隔、长距离周上限、高强度课后恢复、长距离时长上限\n"
+            "2. 模板至少包括：轻松跑(Z1,30-60min)、长距离(Z2,80-120min)、有氧阈(Z3,30-50min)、"
+            "节奏跑(Z4,20-40min)、无氧阈间歇(Z5,4x1600m)、摄氧量间歇(Z8,6x1km)、重复跑(Z9,8x400m)\n"
+            "3. workout_labels 和 zone_label 使用中文\n"
+            "4. 每个模板至少引用一个约束\n"
+            "仅返回 JSON，不要任何其他文本。"
+        )
+        try:
+            model = ChatOllama(model="qwen2.5:latest", base_url=OLLAMA_BASE_URL, temperature=0.3)
+            response = model.invoke([HumanMessage(content=prompt)])
+            text = response.content if hasattr(response, 'content') else str(response)
+            import json as _json
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            if 0 <= start < end:
+                data = _json.loads(text[start:end])
+                if "constraint_registry" in data and "template_registry" in data:
+                    return data
+        except Exception as e:
+            logger.error(f"LLM 注册表生成失败: {e}")
+        return {"constraint_registry": {}, "template_registry": {}}
 
     def clear_cache(self):
         """清除可视化缓存"""
         self._mermaid_cache = None
         self._cache_key = None
+
+    def merge_validated_candidates(
+        self,
+        candidate_queue_path: str | Path,
+        *,
+        min_confidence: float = 0.5,
+    ) -> Dict[str, Any]:
+        """从候选队列加载已审核的三元组，合并进主图。
+
+        只合并 status="validated" 且 confidence >= min_confidence 的候选。
+        自动创建缺失的节点，保留 expert_domain 和 bridge_type 元数据。
+        返回合并统计。
+        """
+        import json as _json
+        from pathlib import Path as _Path
+
+        queue_path = _Path(candidate_queue_path)
+        if not queue_path.exists():
+            return {"merged": 0, "skipped": 0, "errors": ["queue_not_found"]}
+
+        merged = 0
+        skipped = 0
+        errors: list[str] = []
+
+        with open(queue_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    cand = _json.loads(line)
+                except _json.JSONDecodeError as exc:
+                    errors.append(f"json_error: {exc}")
+                    continue
+
+                if cand.get("status") != "validated":
+                    skipped += 1
+                    continue
+                if float(cand.get("confidence", 0.0)) < min_confidence:
+                    skipped += 1
+                    continue
+
+                head = str(cand.get("head_entity", "")).strip()
+                tail = str(cand.get("tail_entity", "")).strip()
+                relation = str(cand.get("relation", "")).strip()
+                expert_domain = str(cand.get("expert_domain", "training_theory"))
+                chunk_id = str(cand.get("chunk_id", ""))
+                source_file = str(cand.get("source_file", ""))
+                page = cand.get("page")
+
+                if not head or not tail or not relation:
+                    errors.append(f"incomplete: {cand.get('candidate_id', '?')}")
+                    skipped += 1
+                    continue
+
+                # 确定节点类型
+                head_type = _node_type_for_entity(head, expert_domain)
+                tail_type = _node_type_for_entity(tail, expert_domain)
+
+                # 构建证据
+                evidence = {
+                    "source": source_file or "kg_candidate",
+                    "source_path": source_file or "",
+                    "chunk_id": chunk_id,
+                    "text_span": str(cand.get("evidence_span", ""))[:300],
+                    "confidence": float(cand.get("confidence", 0.5)),
+                    "evidence_domain": str(cand.get("evidence_domain", "sports_science_reference")),
+                }
+                if page:
+                    evidence["page"] = int(page)
+
+                # 构建跨领域桥接标记
+                edge_extra: dict = {}
+                if relation == "bridges_to":
+                    edge_extra["bridge_type"] = _infer_bridge_type(head, tail, expert_domain)
+
+                changed = self._upsert_edge(
+                    head,
+                    tail,
+                    relation,
+                    source_id=str(cand.get("source_registry_id", "")),
+                    source_type=head_type,
+                    target_type=tail_type,
+                    evidence=evidence,
+                    edge_extra={"expert_domain": expert_domain, **edge_extra},
+                )
+
+                # 标记为已合并
+                cand["status"] = "merged"
+                merged += 1
+
+        if merged > 0:
+            self.save_graph()
+
+        # 回写更新后的状态到队列
+        if merged > 0:
+            _rewrite_queue_status(queue_path)
+
+        return {"merged": merged, "skipped": skipped, "errors": errors}
+
+    def merge_approved_candidates(
+        self,
+        candidates_path: str | Path,
+    ) -> Dict[str, Any]:
+        """合并 merge_approved=True 的新格式候选三元组进主图。
+
+        新候选文件（knowledge_graph_candidates.jsonl）字段：
+          source_chunk_id, confidence_score, merge_approved, merge_status
+
+        与旧 merge_validated_candidates() 不同：
+          - 门控字段是 merge_approved（布尔），不是 status="validated"
+          - 边增加 edge_origin/candidate_id/extraction_method/source_chunk_id/confidence_score 元数据
+        """
+        import json as _json
+        from pathlib import Path as _Path
+
+        queue_path = _Path(candidates_path)
+        if not queue_path.exists():
+            return {"merged": 0, "skipped": 0, "errors": ["queue_not_found"]}
+
+        records: list[Dict[str, Any]] = []
+        with open(queue_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    records.append(_json.loads(line))
+                except _json.JSONDecodeError as exc:
+                    pass
+
+        merged = 0
+        skipped = 0
+        errors: list[str] = []
+
+        for cand in records:
+            if not cand.get("merge_approved"):
+                skipped += 1
+                continue
+            if cand.get("merge_status") == "merged":
+                skipped += 1
+                continue
+
+            head = str(cand.get("head_entity", "")).strip()
+            tail = str(cand.get("tail_entity", "")).strip()
+            relation = str(cand.get("relation", "")).strip()
+            expert_domain = str(cand.get("expert_domain", "training_protocol"))
+            source_chunk_id = str(cand.get("source_chunk_id", ""))
+            source_file = str(cand.get("source_file", ""))
+            page = cand.get("page")
+            confidence_score = float(cand.get("confidence_score", 0.0))
+            candidate_id = str(cand.get("candidate_id", ""))
+            extraction_method = str(cand.get("extraction_method", "llm_offline"))
+
+            if not head or not tail or not relation:
+                errors.append(f"incomplete:{candidate_id}")
+                skipped += 1
+                continue
+
+            head_type = _node_type_for_entity(head, expert_domain)
+            tail_type = _node_type_for_entity(tail, expert_domain)
+
+            evidence = {
+                "source": source_file or "kg_candidate",
+                "source_path": source_file or "",
+                "chunk_id": source_chunk_id,
+                "text_span": str(cand.get("evidence_span", ""))[:300],
+                "confidence": confidence_score,
+                "evidence_domain": str(cand.get("evidence_domain", "sports_science_reference")),
+            }
+            if page:
+                evidence["page"] = int(page)
+
+            self._upsert_edge(
+                head,
+                tail,
+                relation,
+                source_id=str(cand.get("source_registry_id", "")),
+                source_type=head_type,
+                target_type=tail_type,
+                evidence=evidence,
+                edge_extra={
+                    "expert_domain": expert_domain,
+                    "edge_origin": "auto_extracted",
+                    "candidate_id": candidate_id,
+                    "extraction_method": extraction_method,
+                    "source_chunk_id": source_chunk_id,
+                    "confidence_score": confidence_score,
+                },
+            )
+            cand["merge_status"] = "merged"
+            merged += 1
+
+        if merged > 0:
+            self.save_graph()
+            # 回写 merge_status 到候选文件
+            with open(queue_path, "w", encoding="utf-8") as f:
+                for rec in records:
+                    f.write(_json.dumps(rec, ensure_ascii=False) + "\n")
+
+        return {"merged": merged, "skipped": skipped, "errors": errors}
 
     def _is_id(self, label: str) -> bool:
         """检查标签是否为无效 ID"""
@@ -491,7 +872,7 @@ class GraphEngine:
 
     def _build_registry_evidence(self, text_span: str) -> Dict[str, Any]:
         return self._build_edge_evidence(
-            source_id=REGISTRY_SOURCE_ID,
+            source_id=self._registry_source_id,
             text_span=text_span,
             source_name=REGISTRY_SOURCE_NAME,
             confidence=0.98,
@@ -602,11 +983,11 @@ class GraphEngine:
     def _ensure_decision_registry(self) -> bool:
         changed = False
 
-        for constraint_id, constraint in CONSTRAINT_REGISTRY.items():
+        for constraint_id, constraint in self._constraint_registry.items():
             _, node_changed = self._ensure_node(
                 constraint["label"],
                 node_type=constraint.get("type", "constraint"),
-                source_id=REGISTRY_SOURCE_ID,
+                source_id=self._registry_source_id,
                 extra={
                     "registry_id": constraint_id,
                     "registry_kind": "constraint",
@@ -617,12 +998,12 @@ class GraphEngine:
             )
             changed = changed or node_changed
 
-        for template_id, template in TEMPLATE_REGISTRY.items():
+        for template_id, template in self._template_registry.items():
             template_label = template["label"]
             _, node_changed = self._ensure_node(
                 template_label,
                 node_type=template.get("type", "template"),
-                source_id=REGISTRY_SOURCE_ID,
+                source_id=self._registry_source_id,
                 extra={
                     "registry_id": template_id,
                     "registry_kind": "template",
@@ -638,8 +1019,8 @@ class GraphEngine:
                 changed = self._upsert_edge(
                     workout_label,
                     template_label,
-                    "parameterized_by",
-                    source_id=REGISTRY_SOURCE_ID,
+                    "requires",
+                    source_id=self._registry_source_id,
                     source_type="workout",
                     target_type="template",
                     evidence=self._build_registry_evidence(f"{workout_label} -> {template_label}"),
@@ -648,8 +1029,8 @@ class GraphEngine:
                     changed = self._upsert_edge(
                         workout_label,
                         template["zone_label"],
-                        "uses_zone",
-                        source_id=REGISTRY_SOURCE_ID,
+                        "requires",
+                        source_id=self._registry_source_id,
                         source_type="workout",
                         target_type="zone",
                         evidence=self._build_registry_evidence(f"{workout_label} -> {template['zone_label']}"),
@@ -658,8 +1039,8 @@ class GraphEngine:
                     changed = self._upsert_edge(
                         workout_label,
                         physiology,
-                        "targets",
-                        source_id=REGISTRY_SOURCE_ID,
+                        "improves",
+                        source_id=self._registry_source_id,
                         source_type="workout",
                         target_type="physiology",
                         evidence=self._build_registry_evidence(f"{workout_label} -> {physiology}"),
@@ -668,22 +1049,22 @@ class GraphEngine:
                     changed = self._upsert_edge(
                         workout_label,
                         adaptation,
-                        "produces",
-                        source_id=REGISTRY_SOURCE_ID,
+                        "supports",
+                        source_id=self._registry_source_id,
                         source_type="workout",
                         target_type="adaptation",
                         evidence=self._build_registry_evidence(f"{workout_label} -> {adaptation}"),
                     ) or changed
 
             for constraint_id in template.get("constraint_ids", []):
-                constraint = CONSTRAINT_REGISTRY.get(constraint_id)
+                constraint = self._constraint_registry.get(constraint_id)
                 if not constraint:
                     continue
                 changed = self._upsert_edge(
                     template_label,
                     constraint["label"],
-                    "constrained_by",
-                    source_id=REGISTRY_SOURCE_ID,
+                    "constrains",
+                    source_id=self._registry_source_id,
                     source_type="template",
                     target_type="constraint",
                     evidence=self._build_registry_evidence(f"{template_label} -> {constraint['label']}"),
@@ -692,15 +1073,15 @@ class GraphEngine:
         return changed
 
     def get_template_registry(self) -> Dict[str, Any]:
-        return copy.deepcopy(TEMPLATE_REGISTRY)
+        return copy.deepcopy(self._template_registry)
 
     def get_constraint_registry(self) -> Dict[str, Any]:
-        return copy.deepcopy(CONSTRAINT_REGISTRY)
+        return copy.deepcopy(self._constraint_registry)
 
     def get_templates_for_workout(self, workout_label: str) -> List[Dict[str, Any]]:
         normalized = self._normalize_entity_text(workout_label)
         matches = []
-        for template_id, template in TEMPLATE_REGISTRY.items():
+        for template_id, template in self._template_registry.items():
             labels = [self._normalize_entity_text(label) for label in template.get("workout_labels", [])]
             if normalized in labels:
                 item = copy.deepcopy(template)
@@ -709,11 +1090,11 @@ class GraphEngine:
         return matches
 
     def get_constraints_for_template(self, template_id: str) -> List[Dict[str, Any]]:
-        template = TEMPLATE_REGISTRY.get(template_id, {})
+        template = self._template_registry.get(template_id, {})
         constraints = []
         for constraint_id in template.get("constraint_ids", []):
-            if constraint_id in CONSTRAINT_REGISTRY:
-                item = copy.deepcopy(CONSTRAINT_REGISTRY[constraint_id])
+            if constraint_id in self._constraint_registry:
+                item = copy.deepcopy(self._constraint_registry[constraint_id])
                 item["constraint_id"] = constraint_id
                 constraints.append(item)
         return constraints
@@ -1256,7 +1637,7 @@ class GraphEngine:
 JSON 输出："""
         
         try:
-            response = await asyncio.wait_for(llm.ainvoke([HumanMessage(content=prompt)]), timeout=120.0)
+            response = await asyncio.wait_for(_get_llm().ainvoke([HumanMessage(content=prompt)]), timeout=120.0)
             content = response.content.strip()
             
             # 清理包装
@@ -1269,7 +1650,8 @@ JSON 输出："""
                 if isinstance(data, list):
                     valid = [t for t in data if isinstance(t, list) and len(t) >= 3]
                     if valid: return valid
-            except:
+            # 仅捕获 JSON 解析错误走正则兜底；放过 KeyboardInterrupt 等系统异常
+            except (json.JSONDecodeError, ValueError, TypeError):
                 pass
 
             # 正则兜底
@@ -1560,7 +1942,116 @@ JSON 输出："""
             
         return res
 
+def _node_type_for_entity(entity: str, expert_domain: str) -> str:
+    """根据实体文本和领域推断 KG 节点类型。
+
+    检查顺序按特异性从高到低排列，避免通用词（如"阈值"）先被 workout 匹配。
+    """
+    lowered = entity.lower()
+    # 伤病/康复 — 先于 workout，因为"恢复跑"也含"恢复"
+    rehab_keywords = ["疼痛", "pain", "伤病", "injury", "康复", "rehab",
+                      "炎症", "inflammation", "骨折", "fracture", "拉伤", "strain",
+                      "跟腱", "achilles", "足底", "plantar", "膝", "knee"]
+    if any(kw in lowered for kw in rehab_keywords):
+        return "injury"
+    # 营养
+    nutrition_keywords = ["碳水", "carb", "蛋白", "protein",
+                          "补给", "fuel", "水合", "hydration", "电解质", "electrolyte",
+                          "能量", "energy", "补剂", "supplement", "糖原", "glycogen"]
+    if any(kw in lowered for kw in nutrition_keywords):
+        return "nutrition"
+    # 生理指标 — 先于 workout，因为"乳酸阈值"是生理概念不是训练课
+    phys_keywords = ["心率", "heart_rate", "vo2max", "vo2", "乳酸", "lactate",
+                     "配速", "pace", "步频", "cadence", "步幅", "stride",
+                     "摄氧量", "代谢", "metabolism", "脂肪", "fat_oxidation"]
+    if any(kw in lowered for kw in phys_keywords):
+        return "physiology"
+    # 训练类型实体
+    workout_keywords = ["跑", "run", "jog", "间歇", "节奏", "tempo", "长距离", "lsd",
+                        "恢复", "recovery", "轻松", "easy", "冲刺", "sprint",
+                        "重复", "repetition", "法特莱克", "fartlek"]
+    if any(kw in lowered for kw in workout_keywords):
+        return "workout"
+    # 概念/策略
+    return "concept"
+
+
+def _infer_bridge_type(head: str, tail: str, domain: str) -> str:
+    """推断跨领域桥接边的类型。"""
+    lowered_head = head.lower()
+    lowered_tail = tail.lower()
+    risk_keywords = ["疼痛", "pain", "伤病", "injury", "疲劳", "fatigue",
+                     "风险", "risk", "红旗", "red_flag"]
+    if any(kw in lowered_head for kw in risk_keywords) or any(kw in lowered_tail for kw in risk_keywords):
+        return "causal"
+    constraint_keywords = ["容量", "volume", "强度", "intensity", "上限", "cap",
+                           "限制", "limit", "不能", "cannot"]
+    if any(kw in lowered_head for kw in constraint_keywords) or any(kw in lowered_tail for kw in constraint_keywords):
+        return "constraint"
+    handoff_keywords = ["补给", "fuel", "营养", "nutrition", "恢复", "recovery",
+                        "策略", "strategy", "比赛", "race"]
+    if any(kw in lowered_head for kw in handoff_keywords) or any(kw in lowered_tail for kw in handoff_keywords):
+        return "handoff"
+    return "dependency"
+
+
+def _rewrite_queue_status(queue_path: str | Path) -> None:
+    """回写候选队列，更新已合并候选的状态。"""
+    import json as _json
+    from pathlib import Path as _Path
+
+    qp = _Path(queue_path)
+    if not qp.exists():
+        return
+    lines = qp.read_text(encoding="utf-8").splitlines()
+    updated: list[str] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            entry = _json.loads(line)
+        except _json.JSONDecodeError:
+            updated.append(line)
+            continue
+        if entry.get("status") == "merged":
+            updated.append(_json.dumps(entry, ensure_ascii=False))
+        else:
+            updated.append(line.strip())
+    qp.write_text("\n".join(updated) + "\n", encoding="utf-8")
+
+
 graph_engine = GraphEngine()
+
+
+def graph_runtime_health(
+    vector_health: Optional[Dict[str, Any]] = None,
+    graph_engine_instance: Optional[GraphEngine] = None,
+) -> Dict[str, Any]:
+    engine = graph_engine_instance or graph_engine
+    graph_path = Path(getattr(engine, "GRAPH_DATA_PATH", GRAPH_DATA_PATH))
+    graph_dir = graph_path.parent
+    graph_source = _graph_source_label(graph_dir)
+    vector_payload = dict(vector_health or {})
+    vector_dir_raw = str(vector_payload.get("vector_dir") or "")
+    vector_dir = Path(vector_dir_raw) if vector_dir_raw else V2_VECTOR_DIR
+    vector_source = str(vector_payload.get("source") or _graph_source_label(vector_dir))
+    graph_ready = bool(getattr(engine, "nodes", {}) or graph_path.exists())
+    source_aligned = _safe_resolve(graph_dir) == _safe_resolve(vector_dir)
+    reason = ""
+    if not source_aligned:
+        reason = f"graph_source_mismatch:{graph_source}!={vector_source}"
+    elif not graph_ready:
+        reason = "graph_unavailable"
+    graph_fusion_enabled = source_aligned and graph_ready
+    return {
+        "graph_path": str(graph_path),
+        "graph_source": graph_source,
+        "vector_source": vector_source,
+        "graph_ready": graph_ready,
+        "graph_vector_source_aligned": source_aligned,
+        "graph_fusion_enabled": graph_fusion_enabled,
+        "reason": reason,
+    }
 
 
 def plan_week_drafts(

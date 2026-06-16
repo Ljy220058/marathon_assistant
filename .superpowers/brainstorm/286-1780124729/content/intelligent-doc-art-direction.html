@@ -1,0 +1,54 @@
+<h2>智能文档美术风格探索</h2>
+<p class="subtitle">同一套「答案优先 + 折叠依据」结构，下面展示 4 种视觉方向。请重点看：可信感、专业感、马拉松产品辨识度、长期使用是否舒服。</p>
+
+<style>
+  .style-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.style-card{border:1px solid #dbe3ef;border-radius:20px;overflow:hidden;background:#fff;cursor:pointer}.style-card.selected{outline:3px solid #2563eb}.style-preview{min-height:310px;padding:18px}.mini-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.mini-title{font-weight:800;font-size:16px}.mini-pill{font-size:11px;border-radius:999px;padding:5px 8px}.mini-input{border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:12px}.mini-answer{border-radius:16px;padding:13px;margin-bottom:12px}.mini-warning{border-radius:12px;padding:8px 10px;font-size:11px;margin-bottom:10px}.mini-lines i{display:block;height:7px;border-radius:99px;margin:7px 0}.mini-acc{display:grid;gap:7px}.mini-acc div{border-radius:12px;padding:9px 10px;font-size:12px;display:flex;justify-content:space-between}.style-body{padding:14px 16px;border-top:1px solid #e5e7eb}.style-body h3{margin:0 0 6px}.style-body p{margin:0;color:#64748b;font-size:13px;line-height:1.5}
+  .s-science{background:linear-gradient(180deg,#f8fcff,#eefaf8);color:#102033}.s-science .mini-pill{background:#d8f8ef;color:#047857}.s-science .mini-input{background:#fff;border:1px solid #cde7ef;color:#527086}.s-science .mini-answer{background:#fff;border:1px solid #d8e8ee;box-shadow:0 12px 28px rgba(20,95,120,.08)}.s-science .mini-warning{background:#fff7ed;border-left:4px solid #f59e0b;color:#92400e}.s-science .mini-lines i{background:#c8dbe4}.s-science .mini-lines i:first-child{background:#164e63}.s-science .mini-acc div{background:#f2fbfd;border:1px solid #d5ecf2;color:#164e63}
+  .s-linear{background:#fafafa;color:#171717}.s-linear .mini-pill{background:#111827;color:#fff}.s-linear .mini-input{background:#fff;border:1px solid #e5e5e5;color:#737373}.s-linear .mini-answer{background:#fff;border:1px solid #e5e5e5;box-shadow:0 10px 30px rgba(0,0,0,.05)}.s-linear .mini-warning{background:#fff;border:1px solid #fde68a;color:#92400e}.s-linear .mini-lines i{background:#d4d4d4}.s-linear .mini-lines i:first-child{background:#171717}.s-linear .mini-acc div{background:#fff;border:1px solid #e5e5e5;color:#404040}
+  .s-energy{background:radial-gradient(circle at 20% 0%,#0ea5e9 0,#07111f 36%,#050816 100%);color:#e5f4ff}.s-energy .mini-pill{background:rgba(34,211,238,.16);color:#67e8f9;border:1px solid rgba(103,232,249,.35)}.s-energy .mini-input{background:rgba(15,23,42,.85);border:1px solid rgba(34,211,238,.32);color:#93c5fd}.s-energy .mini-answer{background:rgba(15,23,42,.78);border:1px solid rgba(148,163,184,.28);box-shadow:0 16px 36px rgba(0,0,0,.26)}.s-energy .mini-warning{background:rgba(251,146,60,.12);border-left:4px solid #fb923c;color:#fed7aa}.s-energy .mini-lines i{background:rgba(148,163,184,.45)}.s-energy .mini-lines i:first-child{background:#22d3ee}.s-energy .mini-acc div{background:rgba(15,23,42,.72);border:1px solid rgba(34,211,238,.24);color:#bae6fd}
+  .s-tdesign{background:#f3f7ff;color:#1f2937}.s-tdesign .mini-pill{background:#e8f2ff;color:#0052d9}.s-tdesign .mini-input{background:#fff;border:1px solid #c9d8f2;color:#5f7291}.s-tdesign .mini-answer{background:#fff;border:1px solid #d6e2f5;box-shadow:0 10px 26px rgba(0,82,217,.08)}.s-tdesign .mini-warning{background:#fff6e6;border:1px solid #ffd18c;color:#8f4b00}.s-tdesign .mini-lines i{background:#c9d8f2}.s-tdesign .mini-lines i:first-child{background:#0052d9}.s-tdesign .mini-acc div{background:#fff;border:1px solid #d6e2f5;color:#0052d9}
+</style>
+
+<div class="style-grid">
+  <div class="style-card" data-choice="science" onclick="toggleSelect(this)">
+    <div class="style-preview s-science">
+      <div class="mini-top"><div class="mini-title">智能文档</div><span class="mini-pill">知识库已连接</span></div>
+      <div class="mini-input">问知识库：膝盖疼还能继续跑吗？</div>
+      <div class="mini-answer"><div class="mini-warning">⚠ 证据覆盖不足：缺少疼痛等级和持续时间。</div><div class="mini-lines"><i style="width:62%"></i><i style="width:92%"></i><i style="width:76%"></i></div></div>
+      <div class="mini-acc"><div>伤病风险依据 · 2 条 <span>▾</span></div><div>训练强度调整 · 3 条 <span>▾</span></div><div>官方/论文来源 · 4 条 <span>▾</span></div></div>
+    </div>
+    <div class="style-body"><h3>A. 运动科学可信风</h3><p>白底、青绿/浅蓝、医疗级提示色。最稳妥，适合训练与伤病建议。</p></div>
+  </div>
+
+  <div class="style-card" data-choice="linear" onclick="toggleSelect(this)">
+    <div class="style-preview s-linear">
+      <div class="mini-top"><div class="mini-title">智能文档</div><span class="mini-pill">Connected</span></div>
+      <div class="mini-input">问知识库：膝盖疼还能继续跑吗？</div>
+      <div class="mini-answer"><div class="mini-warning">⚠ 证据覆盖不足：需要补充上下文。</div><div class="mini-lines"><i style="width:58%"></i><i style="width:90%"></i><i style="width:72%"></i></div></div>
+      <div class="mini-acc"><div>伤病风险依据 <span>⌄</span></div><div>训练强度调整 <span>⌄</span></div><div>官方/论文来源 <span>⌄</span></div></div>
+    </div>
+    <div class="style-body"><h3>B. Linear 极简高端风</h3><p>灰阶、细线、少色彩。高级耐看，但马拉松和运动科学辨识度较弱。</p></div>
+  </div>
+
+  <div class="style-card" data-choice="energy" onclick="toggleSelect(this)">
+    <div class="style-preview s-energy">
+      <div class="mini-top"><div class="mini-title">智能文档</div><span class="mini-pill">LIVE KB</span></div>
+      <div class="mini-input">问知识库：膝盖疼还能继续跑吗？</div>
+      <div class="mini-answer"><div class="mini-warning">⚠ 安全优先：疼痛加重请停止训练。</div><div class="mini-lines"><i style="width:64%"></i><i style="width:94%"></i><i style="width:74%"></i></div></div>
+      <div class="mini-acc"><div>伤病风险依据 · 2 条 <span>▾</span></div><div>训练强度调整 · 3 条 <span>▾</span></div><div>官方/论文来源 · 4 条 <span>▾</span></div></div>
+    </div>
+    <div class="style-body"><h3>C. 运动能量深色风</h3><p>更有速度感和产品记忆点；但长时间阅读文档与引用会更累。</p></div>
+  </div>
+
+  <div class="style-card" data-choice="tdesign" onclick="toggleSelect(this)">
+    <div class="style-preview s-tdesign">
+      <div class="mini-top"><div class="mini-title">智能文档</div><span class="mini-pill">知识库已连接</span></div>
+      <div class="mini-input">问知识库：膝盖疼还能继续跑吗？</div>
+      <div class="mini-answer"><div class="mini-warning">⚠ 证据不足：建议补充个人情况。</div><div class="mini-lines"><i style="width:60%"></i><i style="width:88%"></i><i style="width:70%"></i></div></div>
+      <div class="mini-acc"><div>伤病风险依据 · 2 条 <span>▾</span></div><div>训练强度调整 · 3 条 <span>▾</span></div><div>官方/论文来源 · 4 条 <span>▾</span></div></div>
+    </div>
+    <div class="style-body"><h3>D. TDesign 企业蓝白风</h3><p>规范、稳定、可维护。适合后台化产品，但个性和高级感略弱。</p></div>
+  </div>
+</div>
+
+<div class="section"><h3>我的建议</h3><p>主风格采用 <strong>A 运动科学可信风</strong>，吸收 <strong>B Linear</strong> 的克制线条和留白；深色运动能量可只用于小面积品牌点缀，例如按钮 hover、连接状态、跑步轨迹图标。</p></div>

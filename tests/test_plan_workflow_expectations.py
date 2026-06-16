@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from marathon_qa_assistant.apps import api_app
+from marathon_qa_assistant.apps import response_builders
+from marathon_qa_assistant.apps.routers import query as query_router
 from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
 from marathon_qa_assistant.services.daily_schedule_generator import generate_daily_schedule
 
@@ -169,12 +171,12 @@ def test_api_skeleton_response_matches_frontend_calendar_contract(tmp_path, monk
             raise AssertionError("skeleton mode should not call the full LLM workflow")
 
     db = _Database(tmp_path / "plans.db")
-    monkeypatch.setattr(api_app, "integrated_app", _FailingIntegratedApp())
-    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(query_router, "integrated_app", _FailingIntegratedApp())
+    monkeypatch.setattr("marathon_qa_assistant.apps.response_builders.get_db", lambda: db)
     monkeypatch.setattr(
-        api_app,
+        query_router,
         "load_user_profile",
-        lambda: {
+        lambda _user_id=None: {
             "goal": "半马 PB 1小时45分",
             "weekly_mileage": 35,
             "target_pace": "半马 1:45",
@@ -183,7 +185,7 @@ def test_api_skeleton_response_matches_frontend_calendar_contract(tmp_path, monk
         },
     )
     monkeypatch.setattr(
-        api_app,
+        response_builders,
         "get_knowledge_base_health_snapshot",
         lambda: {"ok": True, "ready": True, "chunks_count": 1398, "faiss_ready": True, "source": "test"},
     )
@@ -224,12 +226,12 @@ def test_adaptive_plan_request_uses_skeleton_plan_path(tmp_path, monkeypatch):
             raise AssertionError("adaptive plan request should use the plan path")
 
     db = _Database(tmp_path / "adaptive-plan.db")
-    monkeypatch.setattr(api_app, "integrated_app", _FailingIntegratedApp())
-    monkeypatch.setattr(api_app, "get_db", lambda: db)
+    monkeypatch.setattr(query_router, "integrated_app", _FailingIntegratedApp())
+    monkeypatch.setattr("marathon_qa_assistant.apps.response_builders.get_db", lambda: db)
     monkeypatch.setattr(
-        api_app,
+        query_router,
         "load_user_profile",
-        lambda: {
+        lambda _user_id=None: {
             "goal": "Half marathon PB",
             "weekly_mileage": 35,
             "target_pace": "1:45 half marathon",
@@ -238,7 +240,7 @@ def test_adaptive_plan_request_uses_skeleton_plan_path(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(
-        api_app,
+        response_builders,
         "get_knowledge_base_health_snapshot",
         lambda: {"ok": True, "ready": True, "chunks_count": 1398, "faiss_ready": True, "source": "test"},
     )

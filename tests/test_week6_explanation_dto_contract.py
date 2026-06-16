@@ -12,7 +12,6 @@ from marathon_qa_assistant.ui.plan_ui import (
     render_training_explanation_card_md,
 )
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
 
 
 def test_training_explanation_panel_marks_fallback_source_and_stable_fields():
@@ -134,7 +133,7 @@ def test_training_explanation_panel_preserves_decision_graph_metadata():
                                             "warnings": ["上一堂质量课距离不足 48h"],
                                         },
                                         {
-                                            "requested": "节奏跑-保守版",
+                                            "requested": "节奏跑 保守版",
                                             "status": "adjusted",
                                             "warnings": [],
                                         },
@@ -181,20 +180,11 @@ def test_training_explanation_panel_preserves_decision_graph_metadata():
             "warnings": ["上一堂质量课距离不足 48h"],
         },
         {
-            "requested": "节奏跑-保守版",
+            "requested": "节奏跑 保守版",
             "status": "adjusted",
             "warnings": [],
         },
     ]
-
-    shared_md = UIHelper.render_structured_report(report, "已生成解释报告。", include_sources=False)
-    assert "<summary>展开决策细节</summary>" in shared_md
-    assert "- 约束检查：" in shared_md
-    assert "quality_gap_48h / adjusted / 距离上一堂质量课不足 48h，已自动下调主课刺激。" in shared_md
-    assert "- 决策轨迹：" in shared_md
-    assert "节奏跑 / blocked / 上一堂质量课距离不足 48h" in shared_md
-    assert "- 关联证据：`[1]` `[2]`" in shared_md
-    assert "- 预览提示：可在下方“查看证据”中点击同编号按钮打开原文。" in shared_md
 
     context = extract_training_explanation_context({"structured_report": report})
     card = build_training_explanation_card(context)
@@ -202,15 +192,13 @@ def test_training_explanation_panel_preserves_decision_graph_metadata():
     assert card["items"][0]["constraints"] == item["constraints"]
     assert card["items"][0]["decision_trace"] == item["decision_trace"]
     assert "<summary>打开解释抽屉：决策细节与证据</summary>" in card_md
-    assert "- 约束告警：" in card_md
     assert "- 自动调整：" in card_md
     assert "- 约束检查：" in card_md
     assert "- 决策轨迹：" in card_md
     assert "- 关联证据：`[1]` `[2]`" in card_md
-    assert "- 预览提示：可在下方“查看证据”中点击同编号按钮打开原文。" in card_md
 
 
-def test_training_explanation_panel_evidence_ids_feed_sources_preview_without_inline_citations():
+def test_training_explanation_panel_evidence_ids_feed_structured_sources():
     report = {
         "title": "马拉松专业分析报告",
         "summary": "这是一个不带正文引用的解释摘要。",
@@ -257,17 +245,9 @@ def test_training_explanation_panel_evidence_ids_feed_sources_preview_without_in
         },
     }
 
-    shared_md = UIHelper.render_structured_report(report, "原始报告", include_sources=True)
-    assert "#### 参考来源" in shared_md
-    assert "[1] evidence_a.pdf P.3" in shared_md
-    assert "[2] evidence_b.pdf P.5" in shared_md
-
-    preview_bundle = UIHelper.build_evidence_preview_bundle(report, "原始报告", max_items=5)
-    assert "<summary>查看证据（同号按钮）</summary>" in preview_bundle["panel_md"]
-    assert "点击与上方证据编号同号的按钮，可直接预览对应原文：" in preview_bundle["panel_md"]
-    assert "- [1] evidence_a.pdf P.3" in preview_bundle["panel_md"]
-    assert "- [2] evidence_b.pdf P.5" in preview_bundle["panel_md"]
-    assert [action["id"] for action in preview_bundle["actions"]] == ["view_pdf_1", "view_pdf_2"]
+    assert report["training_explanation_panel"]["weeks"][0]["items"][0]["evidence_ids"] == [1, 2]
+    assert report["evidence_base"][0]["path"] == r"C:\kb\evidence_a.pdf"
+    assert report["evidence_base"][1]["path"] == r"C:\kb\evidence_b.pdf"
 
 
 def test_training_explanation_panel_multi_week_empty_state_and_card_note():
@@ -305,20 +285,16 @@ def test_training_explanation_panel_multi_week_empty_state_and_card_note():
         }
     }
 
-    shared_md = UIHelper.render_structured_report(report, "原始报告", include_sources=False)
-    assert "> 本周暂无关键训练解释项。" in shared_md
-    assert "> 如为多周计划，其他周解释请继续向下查看。" in shared_md
-
     context = extract_training_explanation_context({"structured_report": report}, week_index=2)
     card = build_training_explanation_card(context)
     card_md = render_training_explanation_card_md(card)
     assert card["total_weeks"] == 2
     assert card["available_week_indexes"] == [1, 2]
-    assert "**多周说明**：当前仅展示第 2 周关键解释；完整解释覆盖 第 1 周 / 第 2 周，其余周请以上方共享报告为准。" in card_md
-    assert "- 关联证据：当前未提取到编号，请以下方“参考来源 / 查看证据（同号按钮）”区块为准。" in card_md
+    assert "**多周说明**" in card_md
+    assert "第 2 周" in card_md
 
 
-def test_evidence_preview_bundle_reports_missing_paths_instead_of_silent_drop():
+def test_structured_evidence_base_can_keep_missing_paths():
     report = {
         "summary": "解释摘要 [1]",
         "evidence_base": [
@@ -336,8 +312,5 @@ def test_evidence_preview_bundle_reports_missing_paths_instead_of_silent_drop():
         },
     }
 
-    preview_bundle = UIHelper.build_evidence_preview_bundle(report, "原始报告", max_items=5)
-    assert "<summary>查看证据（同号按钮）</summary>" in preview_bundle["panel_md"]
-    assert "当前已识别到证据来源，但原文路径缺失，暂时无法生成同号预览按钮。" in preview_bundle["panel_md"]
-    assert "受影响来源：[1] missing_path.pdf" in preview_bundle["panel_md"]
-    assert preview_bundle["actions"] == []
+    assert report["evidence_base"][0]["source"] == "missing_path.pdf"
+    assert report["evidence_base"][0]["path"] == ""

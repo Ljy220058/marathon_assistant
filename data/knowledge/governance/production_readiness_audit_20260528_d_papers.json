@@ -1,0 +1,221 @@
+{
+  "audit_id": "production_readiness_audit_20260528_d_papers",
+  "scope": "Batch D paper-expanded commercial expert knowledge staging runtime",
+  "generated_at": "2026-05-28",
+  "current_conclusion": "commercial_staging_ready_only",
+  "production_decision": {
+    "can_enter_commercial_staging": true,
+    "can_replace_runtime": false,
+    "release_ready": false,
+    "approval_level": "staging_governance_passed",
+    "required_next_approval": "human_expert_review_and_release_owner_signoff"
+  },
+  "business_ownership": {
+    "owner": "marathon_qa_assistant_knowledge_governance",
+    "users": [
+      "marathon training assistant users",
+      "operators validating commercial expert evidence"
+    ],
+    "critical_journey": "Runner asks training, injury-risk, fueling, heat, recovery, or strength question; system retrieves governed expert evidence and keeps medical/nutrition/rehab content within allowed-use boundaries.",
+    "upstream_dependencies": [
+      "source_registry_v2",
+      "Batch B/C authoritative source libraries",
+      "Batch D paper candidates",
+      "license audit",
+      "AI reviewer reports"
+    ],
+    "downstream_dependencies": [
+      "commercial staging chunks",
+      "expert approved staging runtime",
+      "RAG evidence-chain validation",
+      "commercial gold QA"
+    ],
+    "release_owner": "not_assigned",
+    "rollback_owner": "not_assigned",
+    "acceptance_criteria": [
+      "gold QA passes without red-flag regression",
+      "manifest keeps can_replace_runtime=false",
+      "medical/rehab/nutrition/environment sources cannot write core prescriptions",
+      "no fake human_reviewed flag",
+      "license-limited papers do not copy publisher abstract or full text"
+    ],
+    "non_goals": [
+      "full commercial release",
+      "runtime replacement",
+      "medical diagnosis or treatment capability",
+      "claiming human expert review"
+    ]
+  },
+  "architecture_and_interfaces": {
+    "module_boundaries": [
+      "source registration and audit",
+      "AI review gating",
+      "structured evidence extraction",
+      "commercial library splitting",
+      "staging runtime build",
+      "readiness reporting"
+    ],
+    "data_flow": "source candidates -> license audit -> review selection -> AI review reports -> reviewed sources -> expert evidence -> commercial staging chunks -> staging runtime manifest -> readiness reports",
+    "api_contract_impact": "No public API contract change in this batch; artifacts are governance/runtime data files.",
+    "compatibility": "Default and v2 runtime directories are not replaced by Batch D staging runtime.",
+    "idempotency": "Artifact builders are deterministic for the same JSONL inputs and overwrite only the named Batch D output files.",
+    "failure_modes": [
+      "missing two AI reviewer passes blocks staging eligibility",
+      "red_flag review keeps source as candidate",
+      "missing evidence fields block extraction",
+      "manifest can_replace_runtime=true would block release readiness",
+      "gold QA red-flag failure blocks readiness"
+    ]
+  },
+  "tencent_cloud_access_and_network_safety": {
+    "cloud_change": false,
+    "cam_or_iam_change": false,
+    "public_network_exposure_change": false,
+    "secrets_or_long_lived_keys": "none introduced by this artifact batch",
+    "required_before_deploy": [
+      "assign least-privilege runtime artifact reader role",
+      "keep environment-specific paths and credentials out of source files",
+      "define gateway or service access policy before exposing any runtime endpoint"
+    ]
+  },
+  "data_and_privacy": {
+    "data_classification": {
+      "source_metadata": "public_or_third_party_reference_metadata",
+      "paper_license_audit": "internal_governance",
+      "review_reports": "internal_governance",
+      "runner_health_or_training_queries": "sensitive_personal_or_health_adjacent_data_when_runtime_is_enabled"
+    },
+    "privacy_controls_present": [
+      "no user PII added to Batch D artifacts",
+      "paper full text and publisher abstracts are not copied",
+      "human_reviewed remains false without human artifact"
+    ],
+    "required_before_production": [
+      "redact runner PII and health details from logs",
+      "define retention period for queries and evidence traces",
+      "protect exported governance artifacts and runtime manifests"
+    ]
+  },
+  "reliability_and_scale": {
+    "current_runtime_status": "staging runtime built successfully with 13 chunks",
+    "rollback_path": "continue using existing default/v2 runtime; do not route production traffic to Batch D staging runtime until release owner approves",
+    "capacity_assumption": "small staging evidence set; no production throughput claim",
+    "required_before_production": [
+      "runtime health check for manifest load and FAISS/chunks availability",
+      "feature flag or config switch for staging runtime routing",
+      "rollback command or deployment procedure documented",
+      "startup failure should fail closed to existing stable runtime"
+    ]
+  },
+  "observability_and_operations": {
+    "current_observability": [
+      "build reports",
+      "gold QA report",
+      "readiness report",
+      "manifest diagnostics"
+    ],
+    "missing_runtime_signals": [
+      "commercial_runtime_manifest_id",
+      "evidence_hit_count_by_domain",
+      "risk_gate_trigger_count",
+      "medical_referral_trigger_count",
+      "citation_faithfulness_failure_count",
+      "no_evidence_fallback_count",
+      "latency and error rate by QA mode"
+    ],
+    "tencent_tcop_mapping": {
+      "metrics": [
+        "availability",
+        "latency",
+        "error_rate",
+        "risk_gate_trigger_count",
+        "citation_failure_count"
+      ],
+      "traces": [
+        "query_to_retrieval_to_evidence_to_answer trace with correlation_id"
+      ],
+      "logs": [
+        "structured governance decision logs with PII redaction"
+      ],
+      "events": [
+        "runtime_manifest_loaded",
+        "release_gate_blocked",
+        "medical_referral_boundary_triggered"
+      ]
+    },
+    "alert_requirements_before_production": [
+      "owner and severity for citation failure spikes",
+      "owner and severity for medical referral boundary failures",
+      "runbook for fallback to stable runtime"
+    ]
+  },
+  "security_and_compliance_readiness": {
+    "security_posture": "staging_governance_controls_present_but_not_production_approved",
+    "controls_present": [
+      "candidate sources require review before staging eligibility",
+      "medical/rehab/nutrition sources cannot write core prescriptions",
+      "runtime replacement is blocked by manifest",
+      "copyright-sensitive papers remain link-only/metadata/original-summary"
+    ],
+    "compliance_claims_allowed": [],
+    "compliance_claims_blocked": [
+      "等保 certified",
+      "SOC2 ready",
+      "HIPAA ready",
+      "medical device or medical diagnosis capability"
+    ],
+    "required_before_production": [
+      "dependency and secrets scan",
+      "runtime authorization review",
+      "audit trail for release approval and rollback",
+      "human expert review artifact for any medical-adjacent release claim"
+    ]
+  },
+  "delivery_and_verification": {
+    "build_release_run_separation": true,
+    "environment_specific_values_in_source": false,
+    "verification_commands": [
+      {
+        "command": "PYTHONUTF8=1 PYTHONPATH=apps/backend/src GRAPHRAG_API_KEY=ci_test_token python tools/kb/eval_commercial_gold_qa.py --evidence data/knowledge/governance/expert_evidence_20260528_d_papers.jsonl --gold-qa data/knowledge/evals/commercial_gold_qa_20260528.jsonl --output data/knowledge/governance/commercial_gold_qa_report_20260528_d_papers.json",
+        "result": "passed: failure_count=0, red_flag_failures=[]"
+      },
+      {
+        "command": "PYTHONUTF8=1 PYTHONPATH=apps/backend/src GRAPHRAG_API_KEY=ci_test_token python tools/kb/build_commercial_readiness_report.py --source-audit data/knowledge/governance/commercial_source_audit_20260528_paper_expanded.json --review-reports data/knowledge/governance/agent_review_reports_20260528_d_papers.jsonl --evidence data/knowledge/governance/expert_evidence_20260528_d_papers.jsonl --gold-qa-report data/knowledge/governance/commercial_gold_qa_report_20260528_d_papers.json --manifest data/knowledge/governance/expert_approved_staging_20260528_d_papers_manifest.json --output data/knowledge/governance/commercial_readiness_report_20260528_d_papers.json",
+        "result": "passed: commercial_staging_ready=true, release_ready=false, can_replace_runtime=false"
+      }
+    ]
+  },
+  "launch_blockers": [
+    {
+      "severity": "P0",
+      "id": "no_human_expert_review_artifact",
+      "description": "No real human expert approval artifact exists; cannot claim human_expert_reviewed or medical release readiness."
+    },
+    {
+      "severity": "P0",
+      "id": "runtime_replacement_blocked",
+      "description": "Manifest correctly keeps can_replace_runtime=false; production traffic must not switch to Batch D staging runtime."
+    },
+    {
+      "severity": "P0",
+      "id": "medical_scope_not_release_approved",
+      "description": "Medical, rehab, heat, and nutrition content remains guidance/risk-gate only and cannot be marketed as diagnosis or treatment."
+    },
+    {
+      "severity": "P1",
+      "id": "runtime_observability_missing",
+      "description": "Runtime metrics, traces, alerts, and runbooks are not yet implemented for production operations."
+    },
+    {
+      "severity": "P1",
+      "id": "release_owner_and_rollback_owner_unassigned",
+      "description": "Production release and rollback ownership must be assigned before any launch."
+    }
+  ],
+  "residual_risks": [
+    "AI reviewer pass is not a substitute for human domain expert review.",
+    "Paper license audit is conservative but not legal counsel.",
+    "Gold QA covers boundary checks but not full user-query distribution.",
+    "Staging runtime is small and not a production capacity proof."
+  ]
+}

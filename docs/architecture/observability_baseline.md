@@ -30,6 +30,22 @@
 - `plan_generation_duration_buckets`：计划生成耗时桶。
 - `medical_referral_total`：医疗红旗反馈次数。
 
+## 当前适用边界
+
+- 当前 `/ops/metrics` 是进程内聚合端点，只适用于本地开发、测试和受控调试环境。
+- 当服务以公共 host 暴露且没有 auth 时，`/ops/metrics` 应拒绝访问；当前实现已经按此边界 fail-closed。
+- 这不是 Prometheus、OpenTelemetry 或多实例聚合方案。
+- 生产环境如果需要稳定观测，应把进程内计数迁移到正式指标管道，而不是继续依赖单进程内存状态。
+
+## 生产接入接口方向
+
+- Prometheus 路线：
+  - 保留当前指标语义，但改为 exporter 或集中 metrics backend。
+- OpenTelemetry 路线：
+  - 把 request id、duration、generation status、provider error 等结构化信号统一送入 trace / metric pipeline。
+- 当前不做的事情：
+  - 不在这个仓库里把进程内 JSON 端点包装成“生产级观测系统”。
+
 ## SLI / SLO
 
 ### SLI 1：Skeleton 可用率
@@ -99,6 +115,12 @@
 - 不记录 `ds_api_key`、OAuth token、refresh token、authorization header。
 - 不把用户备注作为 metrics label。
 - 不把 profile 私密字段写入公开文档或测试快照。
+
+## 限流 Caveat
+
+- 当前限流实现是单进程内存字典，适合作为本地开发和轻量兜底。
+- 当前实现不保证多实例、跨进程或跨节点的一致限流。
+- 如果进入真正生产环境，限流应交给 API Gateway、负载均衡器或 Redis token bucket 一类的共享基础设施。
 
 ## 验证命令
 

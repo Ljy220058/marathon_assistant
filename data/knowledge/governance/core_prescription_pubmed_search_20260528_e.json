@@ -1,0 +1,5217 @@
+{
+  "candidate_count": 98,
+  "candidates": [
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "35418513"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.2021-0435"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "González-Mohíno F"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "González-Ravé JM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Foster C"
+        }
+      ],
+      "pmid": "35418513",
+      "pubdate": "2022 Jun 1",
+      "pubtype": [
+        "Journal Article",
+        "Systematic Review"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity",
+        "endurance_training_periodization",
+        "running_interval_training",
+        "long_run_training",
+        "running_workout_action_library"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "Training Periodization, Methods, Intensity Distribution, and Volume in Highly Trained and Elite Distance Runners: A Systematic Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "34749417"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1055/a-1559-3623"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Campos Y"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Vieira JG"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Guimarães M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sant'Ana L"
+        }
+      ],
+      "pmid": "34749417",
+      "pubdate": "2022 Apr",
+      "pubtype": [
+        "Journal Article",
+        "Systematic Review"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity",
+        "endurance_training_periodization",
+        "running_interval_training",
+        "running_workout_action_library"
+      ],
+      "source": "Int J Sports Med",
+      "title": "Training-intensity Distribution on Middle- and Long-distance Runners: A Systematic Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "35362850"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8975965"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8975965;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1186/s40798-022-00438-7"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1186/s40798-022-00438-7"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Haugen T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sandbakk Ø"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seiler S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tønnessen E"
+        }
+      ],
+      "pmid": "35362850",
+      "pubdate": "2022 Apr 1",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol",
+        "distance_running_training_intensity",
+        "marathon_taper"
+      ],
+      "source": "Sports Med Open",
+      "title": "The Training Characteristics of World-Class Distance Runners: An Integration of Scientific Literature and Results-Proven Practice."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36900796"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC10000870"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC10000870;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/ijerph20053782"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "ijerph20053782"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Foster C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bakken M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tjelta LI"
+        }
+      ],
+      "pmid": "36900796",
+      "pubdate": "2023 Feb 21",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity",
+        "running_interval_training",
+        "running_workout_action_library"
+      ],
+      "source": "Int J Environ Res Public Health",
+      "title": "Does Lactate-Guided Threshold Interval Training within a High-Volume Low-Intensity Approach Represent the \"Next Step\" in the Evolution of Distance Running Training?"
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "3890068"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-198502020-00002"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sjödin B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Svedenhag J"
+        }
+      ],
+      "pmid": "3890068",
+      "pubdate": "1985 Mar-Apr",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol",
+        "running_workout_action_library"
+      ],
+      "source": "Sports Med",
+      "title": "Applied physiology of marathon running."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "11219499"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-200131010-00002"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Billat LV"
+        }
+      ],
+      "pmid": "11219499",
+      "pubdate": "2001",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't",
+        "Review"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity",
+        "running_interval_training"
+      ],
+      "source": "Sports Med",
+      "title": "Interval training for performance: a scientific and empirical practice. Special recommendations for middle- and long-distance running. Part I: aerobic interval training."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "11772161"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-200232010-00003"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "320103"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Laursen PB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jenkins DG"
+        }
+      ],
+      "pmid": "11772161",
+      "pubdate": "2002",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity",
+        "running_interval_training"
+      ],
+      "source": "Sports Med",
+      "title": "The scientific basis for high-intensity interval training: optimising training programmes and maximising performance in highly trained endurance athletes."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "27329709"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1024/1661-8157/a002369"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nikolaidis PT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rosemann T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rüst CA"
+        }
+      ],
+      "pmid": "27329709",
+      "pubdate": "2016 Jun 22",
+      "pubtype": [
+        "English Abstract",
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol",
+        "long_run_training"
+      ],
+      "source": "Praxis (Bern 1994)",
+      "title": "[Ironman Triathlon]."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "29910741"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC5992463"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC5992463;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3389/fphys.2018.00634"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nikolaidis PT"
+        }
+      ],
+      "pmid": "29910741",
+      "pubdate": "2018",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol",
+        "long_run_training"
+      ],
+      "source": "Front Physiol",
+      "title": "Physiology and Pathophysiology in Ultra-Marathon Running."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "29182410"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.2017-0327"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kenneally M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Santos-Concejero J"
+        }
+      ],
+      "pmid": "29182410",
+      "pubdate": "2018 Oct 1",
+      "pubtype": [
+        "Journal Article",
+        "Systematic Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol",
+        "distance_running_training_intensity"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "The Effect of Periodization and Training Intensity Distribution on Middle- and Long-Distance Running Performance: A Systematic Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "32421886"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC7496388"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC7496388;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/sms.13725"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fokkema T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "van Damme AADN"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fornerod MWJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "de Vos RJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bierma-Zeinstra SMA"
+        }
+      ],
+      "pmid": "32421886",
+      "pubdate": "2020 Sep",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training",
+        "recreational_marathon_training"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Training for a (half-)marathon: Training volume and longest endurance run related to performance and running injuries."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "34651125"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8506252"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8506252;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3389/fspor.2021.735220"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Smyth B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Lawlor A"
+        }
+      ],
+      "pmid": "34651125",
+      "pubdate": "2021",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper",
+        "recreational_marathon_training"
+      ],
+      "source": "Front Sports Act Living",
+      "title": "Longer Disciplined Tapers Improve Marathon Performance for Recreational Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36078489"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC9518107"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC9518107;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/ijerph191710773"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "ijerph191710773"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Prieto-González P"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sedlacek J"
+        }
+      ],
+      "pmid": "36078489",
+      "pubdate": "2022 Aug 29",
+      "pubtype": [
+        "Journal Article",
+        "Randomized Controlled Trial",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "endurance_training_periodization",
+        "running_workout_action_library"
+      ],
+      "source": "Int J Environ Res Public Health",
+      "title": "Effects of Running-Specific Strength Training, Endurance Training, and Concurrent Training on Recreational Endurance Athletes' Performance and Selected Anthropometric Parameters."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "37049635"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC10096545"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC10096545;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/nu15071796"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "nu15071796"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wirnitzer K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tanous D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Motevalli M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Raschner C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wagner KH"
+        }
+      ],
+      "pmid": "37049635",
+      "pubdate": "2023 Apr 6",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper",
+        "recreational_marathon_training"
+      ],
+      "source": "Nutrients",
+      "title": "Training Behaviors and Periodization Outline of Omnivorous, Vegetarian, and Vegan Recreational Runners (Part A)-Results from the NURMI Study (Step 2)."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "40016936"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1249/MSS.0000000000003685"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "00005768-202507000-00027"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zanini M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Folland JP"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wu H"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Blagrove RC"
+        }
+      ],
+      "pmid": "40016936",
+      "pubdate": "2025 Jul 1",
+      "pubtype": [
+        "Journal Article",
+        "Randomized Controlled Trial"
+      ],
+      "query_labels": [
+        "marathon_training_protocol",
+        "running_workout_action_library"
+      ],
+      "source": "Med Sci Sports Exerc",
+      "title": "Strength Training Improves Running Economy Durability and Fatigued High-Intensity Performance in Well-Trained Male Runners: A Randomized Control Trial."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "6652398"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC1859165"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC1859165;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1136/bjsm.17.3.166"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Christensen CL"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ruhling RO"
+        }
+      ],
+      "pmid": "6652398",
+      "pubdate": "1983 Sep",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Br J Sports Med",
+      "title": "Physical characteristics of novice and experienced women marathon runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "3306866"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-198704040-00003"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Noakes TD"
+        }
+      ],
+      "pmid": "3306866",
+      "pubdate": "1987 Jul-Aug",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Sports Med",
+      "title": "Effect of exercise on serum enzyme activities in humans."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "2022559"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1152/jappl.1991.70.2.683"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Joyner MJ"
+        }
+      ],
+      "pmid": "2022559",
+      "pubdate": "1991 Feb",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't",
+        "Research Support, U.S. Gov't, P.H.S."
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "J Appl Physiol (1985)",
+      "title": "Modeling: optimal marathon performance on the basis of physiological factors."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "24572330"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3233/BMR-1996-6106"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "0P79MW3677805G24"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Brennan DK"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wilder RP"
+        }
+      ],
+      "pmid": "24572330",
+      "pubdate": "1996 Jan 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "J Back Musculoskelet Rehabil",
+      "title": "Cross-training and periodization in running."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "9216951"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1152/jappl.1997.83.1.102"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Levine BD"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Stray-Gundersen J"
+        }
+      ],
+      "pmid": "9216951",
+      "pubdate": "1997 Jul",
+      "pubtype": [
+        "Clinical Trial",
+        "Journal Article",
+        "Randomized Controlled Trial",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "J Appl Physiol (1985)",
+      "title": "\"Living high-training low\": effect of moderate-altitude acclimatization with low-altitude training on performance."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "10958372"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s004210000219"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kyröläinen H"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Pullinen T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Candau R"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Avela J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Huttunen P"
+        }
+      ],
+      "pmid": "10958372",
+      "pubdate": "2000 Jul",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Eur J Appl Physiol",
+      "title": "Effects of marathon running on running economy and kinematics."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "10950440"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1055/s-2000-3778"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Child RB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wilkinson DM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fallowfield JL"
+        }
+      ],
+      "pmid": "10950440",
+      "pubdate": "2000 Jul",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Int J Sports Med",
+      "title": "Effects of a training taper on tissue damage indices, serum antioxidant capacity and half-marathon running performance."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "11689745"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1097/00005768-200111000-00019"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Helgerud J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Engen LC"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wisloff U"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hoff J"
+        }
+      ],
+      "pmid": "11689745",
+      "pubdate": "2001 Nov",
+      "pubtype": [
+        "Clinical Trial",
+        "Journal Article",
+        "Randomized Controlled Trial"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Med Sci Sports Exerc",
+      "title": "Aerobic endurance training improves soccer performance."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "12627298"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s00421-002-0741-y"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Spurrs RW"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Murphy AJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Watsford ML"
+        }
+      ],
+      "pmid": "12627298",
+      "pubdate": "2003 Mar",
+      "pubtype": [
+        "Clinical Trial",
+        "Journal Article",
+        "Randomized Controlled Trial"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "Eur J Appl Physiol",
+      "title": "The effect of plyometric training on distance running performance."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "15896092"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-200535050-00006"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "3556"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fredericson M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wolf C"
+        }
+      ],
+      "pmid": "15896092",
+      "pubdate": "2005",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "Sports Med",
+      "title": "Iliotibial band syndrome in runners: innovations in treatment."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "17090506"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1080/00140130600899104"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "KX5837K0G823TML7"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Edworthy J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Waring H"
+        }
+      ],
+      "pmid": "17090506",
+      "pubdate": "2006 Dec 15",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "Ergonomics",
+      "title": "The effects of music tempo and loudness level on treadmill exercise."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "16430681"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/j.1600-0838.2004.00418.x"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "SMS418"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seiler KS"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kjerland GØ"
+        }
+      ],
+      "pmid": "16430681",
+      "pubdate": "2006 Feb",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Quantifying training intensity distribution in elite endurance athletes: is there evidence for an \"optimal\" distribution?"
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "16614353"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1152/japplphysiol.01595.2005"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "01595.2005"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Trappe S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Harber M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Creer A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gallagher P"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Slivka D"
+        }
+      ],
+      "pmid": "16614353",
+      "pubdate": "2006 Sep",
+      "pubtype": [
+        "Clinical Trial",
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "J Appl Physiol (1985)",
+      "title": "Single muscle fiber adaptations with marathon training."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "17465604"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-200737040-00018"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "37NaN18"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Burke LM"
+        }
+      ],
+      "pmid": "17465604",
+      "pubdate": "2007",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Sports Med",
+      "title": "Nutrition strategies for the marathon : fuel for training and racing."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "17414804"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1249/mss.0b013e3180304570"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "00005768-200704000-00012"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Helgerud J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Høydal K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wang E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Karlsen T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Berg P"
+        }
+      ],
+      "pmid": "17414804",
+      "pubdate": "2007 Apr",
+      "pubtype": [
+        "Journal Article",
+        "Randomized Controlled Trial"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Med Sci Sports Exerc",
+      "title": "Aerobic high-intensity intervals improve VO2max more than moderate training."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "17880359"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/j.1440-1681.2007.04752.x"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "CEP4752"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Faulkner JA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Larkin LM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Claflin DR"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Brooks SV"
+        }
+      ],
+      "pmid": "17880359",
+      "pubdate": "2007 Nov",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, N.I.H., Extramural",
+        "Research Support, Non-U.S. Gov't",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "Clin Exp Pharmacol Physiol",
+      "title": "Age-related changes in the structure and function of skeletal muscles."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "19290675"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2165/00007256-200939030-00002"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "2"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Millet GP"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Vleck VE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bentley DJ"
+        }
+      ],
+      "pmid": "19290675",
+      "pubdate": "2009",
+      "pubtype": [
+        "Comparative Study",
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "Sports Med",
+      "title": "Physiological differences between cycling and running: lessons from triathletes."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "21319606"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2466/05.25.PMS.111.6.653-668"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle P"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rosemann T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Senn O"
+        }
+      ],
+      "pmid": "21319606",
+      "pubdate": "2010 Dec",
+      "pubtype": [
+        "Comparative Study",
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Percept Mot Skills",
+      "title": "Sex differences in association of race performance, skin-fold thicknesses, and training variables for recreational half-marathon runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "20840557"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/j.1600-0838.2010.01184.x"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Laursen PB"
+        }
+      ],
+      "pmid": "20840557",
+      "pubdate": "2010 Oct",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Training for intense exercise performance: high-intensity or high-volume training?"
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "20861519"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.5.3.276"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seiler S"
+        }
+      ],
+      "pmid": "20861519",
+      "pubdate": "2010 Sep",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "What is best practice for training intensity and duration distribution in endurance athletes?"
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "21916794"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1080/02640414.2011.610348"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jeukendrup AE"
+        }
+      ],
+      "pmid": "21916794",
+      "pubdate": "2011",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "J Sports Sci",
+      "title": "Nutrition for endurance sports: marathon, triathlon, and road cycling."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "22488182"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC3418934"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC3418934;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.4085/1062-6050-46.6.581"
+        },
+        {
+          "idtype": "sici",
+          "idtypen": 8,
+          "value": "i1062-6050-46-6-581"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "O'Neal EK"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wingo JE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Richardson MT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Leeper JD"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Neggers YH"
+        }
+      ],
+      "pmid": "22488182",
+      "pubdate": "2011 Nov-Dec",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "J Athl Train",
+      "title": "Half-marathon and full-marathon runners' hydration practices and perceptions."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "24179587"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC3497945"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC3497945;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1177/1941738112445871"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1177_1941738112445871"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gallo RA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Plakke M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Silvis ML"
+        }
+      ],
+      "pmid": "24179587",
+      "pubdate": "2012 Nov",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Sports Health",
+      "title": "Common leg injuries of long-distance runners: anatomical and biomechanical approach."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "21477203"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/j.1600-0838.2011.01305.x"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Luden N"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hayes E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Minchev K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Louis E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Raue U"
+        }
+      ],
+      "pmid": "21477203",
+      "pubdate": "2012 Oct",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Skeletal muscle plasticity with marathon training in novice runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "23899754"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1159/000350256"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "000350256"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gibala MJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jones AM"
+        }
+      ],
+      "pmid": "23899754",
+      "pubdate": "2013",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Nestle Nutr Inst Workshop Ser",
+      "title": "Physiological and performance adaptations to high-intensity interval training."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "23832851"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-013-0066-5"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Buchheit M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Laursen PB"
+        }
+      ],
+      "pmid": "23832851",
+      "pubdate": "2013 Oct",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Sports Med",
+      "title": "High-intensity interval training, solutions to the programming puzzle. Part II: anaerobic energy, neuromuscular load and practical applications."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "23914932"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/sms.12104"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rønnestad BR"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Mujika I"
+        }
+      ],
+      "pmid": "23914932",
+      "pubdate": "2014 Aug",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Optimizing strength training for running and cycling endurance performance: A review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "24595813"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1055/s-0033-1361184"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hug B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Heyer L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Naef N"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Buchheit M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wehrlin JP"
+        }
+      ],
+      "pmid": "24595813",
+      "pubdate": "2014 Jul",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Int J Sports Med",
+      "title": "Tapering for marathon and cardiac autonomic function."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "25706955"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC4338213"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC4338213;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1371/journal.pone.0114937"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "PONE-D-13-49829"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "van der Worp MP"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "ten Haaf DS"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "van Cingel R"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "de Wijer A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nijhuis-van der Sanden MW"
+        }
+      ],
+      "pmid": "25706955",
+      "pubdate": "2015",
+      "pubtype": [
+        "Journal Article",
+        "Meta-Analysis",
+        "Research Support, Non-U.S. Gov't",
+        "Systematic Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "PLoS One",
+      "title": "Injuries in runners; a systematic review on risk factors and sex differences."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "25189116"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1080/17461391.2014.955128"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Spilsbury KL"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fudge BW"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ingham SA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Faulkner SH"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nimmo MA"
+        }
+      ],
+      "pmid": "25189116",
+      "pubdate": "2015",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Eur J Sport Sci",
+      "title": "Tapering strategies in elite British endurance runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "25164465"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-014-0246-y"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Barnes KR"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kilding AE"
+        }
+      ],
+      "pmid": "25164465",
+      "pubdate": "2015 Jan",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Sports Med",
+      "title": "Strategies to improve running economy."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "26098073"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1024/0040-5930/a000685"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Stiefel M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rosemann T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rüst C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zingg M"
+        }
+      ],
+      "pmid": "26098073",
+      "pubdate": "2015 May",
+      "pubtype": [
+        "English Abstract",
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Ther Umsch",
+      "title": "[Running and the association with anthropometric and training characteristics]."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "29200895"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC5703178"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC5703178;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2147/OAJSM.S141657"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "oajsm-8-231"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gordon D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wightman S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Basevitch I"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Johnstone J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Espejo-Sanchez C"
+        }
+      ],
+      "pmid": "29200895",
+      "pubdate": "2017",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Open Access J Sports Med",
+      "title": "Physiological and training characteristics of recreational marathon runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "27248704"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.2016-0093"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "2016-0093"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Schumann M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Botella J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Karavirta L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Häkkinen K"
+        }
+      ],
+      "pmid": "27248704",
+      "pubdate": "2017 Mar",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "Training-Load-Guided vs Standardized Endurance Training in Recreational Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "28657821"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.2017-0228"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rønnestad BR"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hansen J"
+        }
+      ],
+      "pmid": "28657821",
+      "pubdate": "2018 Mar 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "A Scientific Approach to Improve Physiological Capacity of an Elite Cyclist."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "33344993"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC7739641"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC7739641;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3389/fspor.2019.00070"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Festa L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tarperi C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Skroce K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "La Torre A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Schena F"
+        }
+      ],
+      "pmid": "33344993",
+      "pubdate": "2019",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Front Sports Act Living",
+      "title": "Effects of Different Training Intensity Distribution in Recreational Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "30747558"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijsnem.2019-0004"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Burke LM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jeukendrup AE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jones AM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Mooses M"
+        }
+      ],
+      "pmid": "30747558",
+      "pubdate": "2019 Mar 1",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "Int J Sport Nutr Exerc Metab",
+      "title": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "31699159"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC6839090"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC6839090;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1186/s12970-019-0312-9"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1186/s12970-019-0312-9"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tiller NB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Roberts JD"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Beasley L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Chapman S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Pinto JM"
+        }
+      ],
+      "pmid": "31699159",
+      "pubdate": "2019 Nov 7",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "J Int Soc Sports Nutr",
+      "title": "International Society of Sports Nutrition Position Stand: nutritional considerations for single-stage ultra-marathon training and racing."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "31427872"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC6683610"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC6683610;"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Menz V"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Marterer N"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Amin SB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Faulhaber M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hansen AB"
+        }
+      ],
+      "pmid": "31427872",
+      "pubdate": "2019 Sep",
+      "pubtype": [
+        "Journal Article",
+        "Randomized Controlled Trial"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "J Sports Sci Med",
+      "title": "Functional Vs. Running Low-Volume High-Intensity Interval Training: Effects on VO(2)max and Muscular Endurance."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "33198277"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC7696145"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC7696145;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/nu12113473"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "nu12113473"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rothschild JA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kilding AE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Plews DJ"
+        }
+      ],
+      "pmid": "33198277",
+      "pubdate": "2020 Nov 12",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Nutrients",
+      "title": "What Should I Eat before Exercise? Pre-Exercise Nutrition and the Response to Endurance Exercise: Current Prospective and Future Directions."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "32351588"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC7183207"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC7183207;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1016/j.jesf.2020.03.001"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "S1728-869X(19)30076-0"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tokinoya K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ishikura K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ra SG"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ebina K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Miyakawa S"
+        }
+      ],
+      "pmid": "32351588",
+      "pubdate": "2020 Sep",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "J Exerc Sci Fit",
+      "title": "Relationship between early-onset muscle soreness and indirect muscle damage markers and their dynamics after a full marathon."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "33613312"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC7890117"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC7890117;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3389/fphys.2021.620404"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tanous DR"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wirnitzer G"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Leitzmann C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rosemann T"
+        }
+      ],
+      "pmid": "33613312",
+      "pubdate": "2021",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Front Physiol",
+      "title": "Training and Racing Behavior of Recreational Runners by Race Distance-Results From the NURMI Study (Step 1)."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "33151776"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1152/japplphysiol.00647.2020"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jones AM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kirby BS"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Clark IE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rice HM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fulkerson E"
+        }
+      ],
+      "pmid": "33151776",
+      "pubdate": "2021 Feb 1",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "J Appl Physiol (1985)",
+      "title": "Physiological demands of running at 2-hour marathon race pace."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "32449500"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1080/17461391.2020.1773934"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kenneally M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gomez-Ezeiza J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Santos-Concejero J"
+        }
+      ],
+      "pmid": "32449500",
+      "pubdate": "2021 Jun",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Eur J Sport Sci",
+      "title": "Training intensity distribution analysis by race pace vs. physiological approach in world-class middle- and long-distance runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "33592494"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1016/j.nut.2021.111154"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "S0899-9007(21)00016-2"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Methenitis S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Mouratidis A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Manga K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Chalari E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Feidantsis K"
+        }
+      ],
+      "pmid": "33592494",
+      "pubdate": "2021 Jun",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Nutrition",
+      "title": "The importance of protein intake in master marathon runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "33977674"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8114151"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8114151;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.14814/phy2.14849"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Maunder E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Plews DJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wallis GA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Brick MJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Leigh WB"
+        }
+      ],
+      "pmid": "33977674",
+      "pubdate": "2021 May",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Physiol Rep",
+      "title": "Temperate performance and metabolic adaptations following endurance training performed under environmental heat stress."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "34001184"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8127206"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8127206;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1186/s12970-021-00435-3"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1186/s12970-021-00435-3"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gejl KD"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nybo L"
+        }
+      ],
+      "pmid": "34001184",
+      "pubdate": "2021 May 17",
+      "pubtype": [
+        "Journal Article",
+        "Meta-Analysis",
+        "Systematic Review"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "J Int Soc Sports Nutr",
+      "title": "Performance effects of periodized carbohydrate restriction in endurance trained athletes - a systematic review and meta-analysis."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "31268991"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1519/JSC.0000000000003199"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "00124278-202111000-00035"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Esteve-Lanao J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Del Rosso S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Larumbe-Zabala E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Cardona C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Alcocer-Gamboa A"
+        }
+      ],
+      "pmid": "31268991",
+      "pubdate": "2021 Nov 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "J Strength Cond Res",
+      "title": "Predicting Recreational Runners' Marathon Performance Time During Their Training Preparation."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "34021488"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8363530"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8363530;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-021-01481-2"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s40279-021-01481-2"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Haugen T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sandbakk Ø"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Enoksen E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seiler S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tønnessen E"
+        }
+      ],
+      "pmid": "34021488",
+      "pubdate": "2021 Sep",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_workout_action_library"
+      ],
+      "source": "Sports Med",
+      "title": "Crossing the Golden Training Divide: The Science and Practice of Training World-Class 800- and 1500-m Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "31045681"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1519/JSC.0000000000003176"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "00124278-202109000-00025"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hanley B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Santos-Concejero J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ruiz-Pérez LM"
+        }
+      ],
+      "pmid": "31045681",
+      "pubdate": "2021 Sep 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "J Strength Cond Res",
+      "title": "World-Class Long-Distance Running Performances Are Best Predicted by Volume of Easy Runs and Deliberate Practice of Short-Interval and Tempo Runs."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "34542868"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8450723"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8450723;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-021-01561-3"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s40279-021-01561-3"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Scheer V"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tiller NB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Doutreleau S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Khodaee M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        }
+      ],
+      "pmid": "34542868",
+      "pubdate": "2022 Apr",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "Sports Med",
+      "title": "Potential Long-Term Health Problems Associated with Ultra-Endurance Running: A Narrative Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "35661059"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.2022-0018"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Foster C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Barroso R"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bok D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Boullosa D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Casado A"
+        }
+      ],
+      "pmid": "35661059",
+      "pubdate": "2022 Aug 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "Simple Approach to Defining Training Intensity in Endurance Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36011428"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC9408689"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC9408689;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/ijerph19169797"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "ijerph19169797"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Špenko M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Potočnik I"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Edwards I"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Potočnik N"
+        }
+      ],
+      "pmid": "36011428",
+      "pubdate": "2022 Aug 9",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Int J Environ Res Public Health",
+      "title": "Training History, Cardiac Autonomic Recovery from Submaximal Exercise and Associated Performance in Recreational Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36281325"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC9586849"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC9586849;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1016/j.ajpc.2022.100425"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "S2666-6677(22)00109-X"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Franklin BA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Eijsvogels TMH"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Pandey A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Quindry J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Toth PP"
+        }
+      ],
+      "pmid": "36281325",
+      "pubdate": "2022 Dec",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "Am J Prev Cardiol",
+      "title": "Physical activity, cardiorespiratory fitness, and cardiovascular health: A clinical practice statement of the American Society for Preventive Cardiology Part II: Physical activity, cardiorespiratory fitness, minimum and goal intensities for exercise training, prescriptive methods, and special patient populations."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "35831667"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC9596560"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC9596560;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s00394-022-02943-7"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s00394-022-02943-7"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nanavati K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rutherfurd-Markwick K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Lee SJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bishop NC"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ali A"
+        }
+      ],
+      "pmid": "35831667",
+      "pubdate": "2022 Dec",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Eur J Nutr",
+      "title": "Effect of curcumin supplementation on exercise-induced muscle damage: a narrative review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "35010758"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC8744745"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC8744745;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/ijerph19010498"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "ijerph19010498"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bonet JB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Javierre C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Guimarães JT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Martins S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rizo-Roca D"
+        }
+      ],
+      "pmid": "35010758",
+      "pubdate": "2022 Jan 3",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Int J Environ Res Public Health",
+      "title": "Benefits on Hematological and Biochemical Parameters of a High-Intensity Interval Training Program for a Half-Marathon in Recreational Middle-Aged Women Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "34792817"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC9299127"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC9299127;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/sms.14101"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Filipas L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bonato M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gallo G"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Codella R"
+        }
+      ],
+      "pmid": "34792817",
+      "pubdate": "2022 Mar",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Effects of 16 weeks of pyramidal and polarized training intensity distributions in well-trained endurance runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "35975912"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC9473708"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC9473708;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1249/MSS.0000000000002968"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "00005768-202210000-00008"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nuuttila OP"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nummela A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Korhonen E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Häkkinen K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Kyröläinen H"
+        }
+      ],
+      "pmid": "35975912",
+      "pubdate": "2022 Oct 1",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Med Sci Sports Exerc",
+      "title": "Individualized Endurance Training Based on Recovery and Training Status in Recreational Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "38164226"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC10758157"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC10758157;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.2147/OAJSM.S444862"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "444862"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nikolaidis PT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        }
+      ],
+      "pmid": "38164226",
+      "pubdate": "2023",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Open Access J Sports Med",
+      "title": "Sedentarism in Recreational Marathon Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "37534223"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC10390894"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC10390894;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.17179/excli2023-6198"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "2023-6198"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nikolaidis PT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knechtle B"
+        }
+      ],
+      "pmid": "37534223",
+      "pubdate": "2023",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "EXCLI J",
+      "title": "Predictors of half-marathon performance in male recreational athletes."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "37804419"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC10721680"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC10721680;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-023-01938-6"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s40279-023-01938-6"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Coates AM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Joyner MJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Little JP"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Jones AM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gibala MJ"
+        }
+      ],
+      "pmid": "37804419",
+      "pubdate": "2023 Dec",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Sports Med",
+      "title": "A Perspective on High-Intensity Interval Training for Performance and Health."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36207466"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s00421-022-05062-7"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s00421-022-05062-7"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Yamaguchi A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Shouji M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Akizuki A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Inoue K"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fukuie T"
+        }
+      ],
+      "pmid": "36207466",
+      "pubdate": "2023 Jan",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Eur J Appl Physiol",
+      "title": "Interactions between monthly training volume, frequency and running distance per workout on marathon time."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "37075554"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1016/j.gaitpost.2023.04.009"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "S0966-6362(23)00087-5"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rodríguez-Barbero S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "González-Mohíno F"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rodrigo-Carranza V"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Santos-Garcia DJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Boullosa D"
+        }
+      ],
+      "pmid": "37075554",
+      "pubdate": "2023 Jun",
+      "pubtype": [
+        "Systematic Review",
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Gait Posture",
+      "title": "Acute effects of interval training on running kinematics in runners: A systematic review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36764885"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1016/j.wem.2022.12.002"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "S1080-6032(22)00217-4"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Armento AM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "VanBaak KD"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seehusen CN"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Howell DR"
+        }
+      ],
+      "pmid": "36764885",
+      "pubdate": "2023 Jun",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Wilderness Environ Med",
+      "title": "Differences in Training and Health Characteristics Between Trail Ultrarunners and Shorter Distance Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "36326594"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1111/sms.14257"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Filipas L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bonato M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Maggio A"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Gallo G"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Codella R"
+        }
+      ],
+      "pmid": "36326594",
+      "pubdate": "2023 Mar",
+      "pubtype": [
+        "Randomized Controlled Trial",
+        "Journal Article"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Scand J Med Sci Sports",
+      "title": "Effects of plyometric training on different 8-week training intensity distributions in well-trained endurance runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "37998313"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC10671292"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC10671292;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3390/ijerph20227082"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "ijerph20227082"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Leite CDFC"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zovico PVC"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rica RL"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Barros BM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Machado AF"
+        }
+      ],
+      "pmid": "37998313",
+      "pubdate": "2023 Nov 20",
+      "pubtype": [
+        "Systematic Review",
+        "Journal Article"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Int J Environ Res Public Health",
+      "title": "Exercise-Induced Muscle Damage after a High-Intensity Interval Exercise Session: Systematic Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "38685085"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC11059738"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC11059738;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1186/s13102-024-00889-3"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1186/s13102-024-00889-3"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Shu D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wang J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zhou T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Chen F"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Meng F"
+        }
+      ],
+      "pmid": "38685085",
+      "pubdate": "2024 Apr 29",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "BMC Sports Sci Med Rehabil",
+      "title": "Prediction of half-marathon performance of male recreational marathon runners using nomogram."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "37555313"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC11195863"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC11195863;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1177/19417381231190876"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hartwell MJ"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tanenbaum JE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Chiampas G"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Terry MA"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tjong VK"
+        }
+      ],
+      "pmid": "37555313",
+      "pubdate": "2024 Jul-Aug",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Sports Health",
+      "title": "Does Running Increase the Risk of Hip and Knee Arthritis? A Survey of 3804 Marathon Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "38680019"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC11056696"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC11056696;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1002/brb3.3480"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Moussiopoulou J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Handrack-Bonnet M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Pross B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Pogarell O"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Keeser D"
+        }
+      ],
+      "pmid": "38680019",
+      "pubdate": "2024 May",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, Non-U.S. Gov't",
+        "Comparative Study"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Brain Behav",
+      "title": "Comparative electroencephalography analysis: Marathon runners during tapering versus sedentary controls reveals no significant differences."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "39012575"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC11560996"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC11560996;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-024-02067-4"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s40279-024-02067-4"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tønnessen E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sandbakk Ø"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sandbakk SB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seiler S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Haugen T"
+        }
+      ],
+      "pmid": "39012575",
+      "pubdate": "2024 Nov",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "running_interval_training"
+      ],
+      "source": "Sports Med",
+      "title": "Training Session Models in Endurance Sports: A Norwegian Perspective on Best Practice Recommendations."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "38204324"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC11531067"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC11531067;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1177/19417381231221125"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Shu D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Dai S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wang J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Meng F"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zhang C"
+        }
+      ],
+      "pmid": "38204324",
+      "pubdate": "2024 Nov-Dec",
+      "pubtype": [
+        "Journal Article",
+        "Systematic Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "Sports Health",
+      "title": "Impact of Running Exercise on Intervertebral Disc: A Systematic Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "40880743"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC12380549"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC12380549;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.3389/fnut.2025.1621966"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zhang J"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Chen Y"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zhao X"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Li X"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Wen W"
+        }
+      ],
+      "pmid": "40880743",
+      "pubdate": "2025",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "recreational_marathon_training"
+      ],
+      "source": "Front Nutr",
+      "title": "Hydration behaviors, knowledge, and attitudes among Chinese recreational marathon runners: a cross-sectional study."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "39616560"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-024-02137-7"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s40279-024-02137-7"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Muniz-Pumares D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hunter B"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Meyler S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Maunder E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Smyth B"
+        }
+      ],
+      "pmid": "39616560",
+      "pubdate": "2025 Apr",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Sports Med",
+      "title": "The Training Intensity Distribution of Marathon Runners Across Performance Levels."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "40278987"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC12031707"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC12031707;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1186/s40798-025-00848-3"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1186/s40798-025-00848-3"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sandbakk Ø"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tønnessen E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Sandbakk SB"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Losnegard T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Seiler S"
+        }
+      ],
+      "pmid": "40278987",
+      "pubdate": "2025 Apr 25",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Sports Med Open",
+      "title": "Best-Practice Training Characteristics Within Olympic Endurance Sports as Described by Norwegian World-Class Coaches."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "39706498"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1016/j.freeradbiomed.2024.12.038"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "S0891-5849(24)01147-X"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Feng Y"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rao Z"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tian X"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Hu Y"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Yue L"
+        }
+      ],
+      "pmid": "39706498",
+      "pubdate": "2025 Feb 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "endurance_training_periodization"
+      ],
+      "source": "Free Radic Biol Med",
+      "title": "Endurance training enhances skeletal muscle mitochondrial respiration by promoting MOTS-c secretion."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "39871014"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC11772678"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC11772678;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1186/s40798-025-00810-3"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1186/s40798-025-00810-3"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Braschler L"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nikolaidis PT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Thuany M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Chlíbková D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Rosemann T"
+        }
+      ],
+      "pmid": "39871014",
+      "pubdate": "2025 Jan 27",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "marathon_training_protocol"
+      ],
+      "source": "Sports Med Open",
+      "title": "Physiology and Pathophysiology of Marathon Running: A narrative Review."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "40312262"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC12045700"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC12045700;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.14814/phy2.70349"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Fentaw S"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Tadesse T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Birhanu Z"
+        }
+      ],
+      "pmid": "40312262",
+      "pubdate": "2025 May",
+      "pubtype": [
+        "Journal Article",
+        "Meta-Analysis"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Physiol Rep",
+      "title": "Methodological and aerobic capacity adaptations of high-intensity interval training at different altitudes in distance runners: A comprehensive meta-analysis."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "41310242"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC12660524"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC12660524;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s12178-025-10000-z"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s12178-025-10000-z"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Perugini JM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Touhey DC"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Brophy RH"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Knapik DM"
+        }
+      ],
+      "pmid": "41310242",
+      "pubdate": "2025 Nov 28",
+      "pubtype": [
+        "Journal Article",
+        "Review"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Curr Rev Musculoskelet Med",
+      "title": "Lower Extremity Musculoskeletal Injuries Associated with Marathon Running."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "41765005"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1123/ijspp.2025-0348"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Bonato M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Villacaro D"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Faelli EL"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Panascì M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Marmondi F"
+        }
+      ],
+      "pmid": "41765005",
+      "pubdate": "2026 Feb 25",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "distance_running_training_intensity"
+      ],
+      "source": "Int J Sports Physiol Perform",
+      "title": "Training Intensity Distribution, Load Management, and Performance in Recreational Long-Distance Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "40913707"
+        },
+        {
+          "idtype": "mid",
+          "idtypen": 8,
+          "value": "NIHMS2107897"
+        },
+        {
+          "idtype": "pmc",
+          "idtypen": 8,
+          "value": "PMC12441744"
+        },
+        {
+          "idtype": "pmcid",
+          "idtypen": 5,
+          "value": "pmc-id: PMC12441744;manuscript-id: NIHMS2107897;"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1007/s40279-025-02304-4"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "10.1007/s40279-025-02304-4"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "DeJong Lempke AF"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ackerman KE"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Stellingwerff T"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Burke LM"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Baggish AL"
+        }
+      ],
+      "pmid": "40913707",
+      "pubdate": "2026 Jan",
+      "pubtype": [
+        "Journal Article",
+        "Research Support, N.I.H., Extramural",
+        "Research Support, Non-U.S. Gov't"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Sports Med",
+      "title": "Training Volume and Training Frequency Changes Associated with Boston Marathon Race Performance."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "40878015"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1249/MSS.0000000000003840"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "00005768-990000000-00891"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Zanini M"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Folland JP"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Blagrove RC"
+        }
+      ],
+      "pmid": "40878015",
+      "pubdate": "2026 Jan 1",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "long_run_training"
+      ],
+      "source": "Med Sci Sports Exerc",
+      "title": "Regular Long Runs and Higher Training Volumes Are Associated with Better Running Economy Durability in Performance Matched Well-Trained Male Runners."
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "41722095"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1093/bmb/ldag010"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "8494446"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Montaruli G"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Nikolaidis PT"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Racil G"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Maffulli N"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Migliaccio GM"
+        }
+      ],
+      "pmid": "41722095",
+      "pubdate": "2026 Jan 2",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "Br Med Bull",
+      "title": "Artificial intelligence-generated marathon training programs: reliable tools in exercise prescription for athletic performance?"
+    },
+    {
+      "articleids": [
+        {
+          "idtype": "pubmed",
+          "idtypen": 1,
+          "value": "41558012"
+        },
+        {
+          "idtype": "doi",
+          "idtypen": 3,
+          "value": "10.1097/ADM.0000000000001657"
+        },
+        {
+          "idtype": "pii",
+          "idtypen": 4,
+          "value": "01271255-990000000-00648"
+        }
+      ],
+      "authors": [
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Olsen Y"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Brunner E"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Ogbonna C"
+        },
+        {
+          "authtype": "Author",
+          "clusterid": "",
+          "name": "Boyle MP"
+        }
+      ],
+      "pmid": "41558012",
+      "pubdate": "2026 Jan 20",
+      "pubtype": [
+        "Journal Article"
+      ],
+      "query_labels": [
+        "marathon_taper"
+      ],
+      "source": "J Addict Med",
+      "title": "Benzodiazepine Tapering: A Marathon, Not a Sprint."
+    }
+  ],
+  "queries": {
+    "distance_running_training_intensity": "((distance runners[Title/Abstract] OR endurance runners[Title/Abstract] OR long-distance runners[Title/Abstract]) AND (training intensity distribution[Title/Abstract] OR polarized training[Title/Abstract] OR threshold training[Title/Abstract] OR interval training[Title/Abstract]))",
+    "endurance_training_periodization": "((endurance training[Title/Abstract]) AND (periodization[Title/Abstract] OR training load[Title/Abstract] OR intensity distribution[Title/Abstract]) AND (runner*[Title/Abstract] OR running[Title/Abstract] OR endurance athlete*[Title/Abstract]))",
+    "long_run_training": "((marathon[Title/Abstract] OR distance running[Title/Abstract]) AND (long run[Title/Abstract] OR training volume[Title/Abstract] OR weekly mileage[Title/Abstract]))",
+    "marathon_taper": "((marathon[Title/Abstract] OR endurance running[Title/Abstract]) AND (taper[Title/Abstract] OR tapering[Title/Abstract] OR peaking[Title/Abstract]))",
+    "marathon_training_protocol": "((marathon[Title/Abstract]) AND (training[Title/Abstract] OR periodization[Title/Abstract] OR taper[Title/Abstract])) AND (systematic review[Publication Type] OR randomized controlled trial[Publication Type] OR review[Publication Type] OR trial[Title/Abstract])",
+    "recreational_marathon_training": "((recreational runners[Title/Abstract] OR novice runners[Title/Abstract]) AND (marathon[Title/Abstract] OR half-marathon[Title/Abstract]) AND training[Title/Abstract])",
+    "running_interval_training": "((running[Title/Abstract] OR runners[Title/Abstract]) AND (interval training[Title/Abstract] OR high-intensity interval training[Title/Abstract] OR HIIT[Title/Abstract]) AND (endurance[Title/Abstract] OR performance[Title/Abstract]))",
+    "running_workout_action_library": "((runners[Title/Abstract] OR running[Title/Abstract]) AND (tempo[Title/Abstract] OR threshold[Title/Abstract] OR strides[Title/Abstract] OR hill training[Title/Abstract] OR sprint interval[Title/Abstract]))"
+  },
+  "query_count": 8
+}

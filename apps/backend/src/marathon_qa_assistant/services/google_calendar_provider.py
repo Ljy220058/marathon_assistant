@@ -1,16 +1,27 @@
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from cryptography.fernet import Fernet
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+
+from marathon_qa_assistant.core.settings import get_settings
+
+try:
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+except ImportError:
+    Request = None
+    Credentials = None
+    InstalledAppFlow = None
+    build = None
+
+    class HttpError(Exception):
+        pass
 
 logger = logging.getLogger("google_calendar")
 
@@ -33,7 +44,7 @@ WORKOUT_COLOR_MAP = {
 
 
 def _get_encryption_key() -> Optional[bytes]:
-    key = os.getenv("MARATHON_SYNC_KEY", "")
+    key = get_settings().sync_key
     if key:
         return key.encode()
     return None
@@ -53,6 +64,16 @@ def _decrypt_token(cipher: str) -> str:
     return Fernet(key).decrypt(cipher.encode()).decode()
 
 
+def _decrypt_optional_token(cipher: str) -> str:
+    # 兼容历史明文 client_secret，同时优先读取新加密值。
+    if not cipher:
+        return ""
+    try:
+        return _decrypt_token(cipher)
+    except Exception:
+        return cipher
+
+
 class GoogleCalendarProvider:
     """管理单个用户的 Google Calendar OAuth 2.0 授权与 API 调用。"""
 
@@ -63,7 +84,7 @@ class GoogleCalendarProvider:
     ):
         self._credentials_path = credentials_path
         self._user_id = user_id
-        self._credentials: Optional[Credentials] = None
+        self._credentials: Optional[Any] = None
         self._service = None
 
     @property
@@ -112,12 +133,13 @@ class GoogleCalendarProvider:
             logger.warning("无法解密 Google 令牌：MARATHON_SYNC_KEY 未设置或不正确")
             return None
 
+        client_secret = _decrypt_optional_token(str(row.get("oauth_client_secret") or ""))
         creds = Credentials(
             token=access_token,
             refresh_token=refresh_token,
             token_uri=row.get("oauth_token_uri", "https://oauth2.googleapis.com/token"),
             client_id=row.get("oauth_client_id", ""),
-            client_secret=row.get("oauth_client_secret", ""),
+            client_secret=client_secret,
             scopes=SCOPES,
         )
 
@@ -127,7 +149,8 @@ class GoogleCalendarProvider:
                 self._credentials = creds
                 self._persist_credentials()
             except Exception as exc:
-                logger.warning(f"刷新 Google token 失败: {exc}")
+                # 只输出错误类型，不输出 token 内容
+                logger.warning(f"刷新 Google token 失败: {type(exc).__name__}")
                 return None
         elif not creds.valid:
             return None
@@ -146,7 +169,7 @@ class GoogleCalendarProvider:
         if self._credentials.expiry:
             data["oauth_token_expiry"] = self._credentials.expiry.isoformat()
         data["oauth_client_id"] = self._credentials.client_id or ""
-        data["oauth_client_secret"] = self._credentials.client_secret or ""
+        data["oauth_client_secret"] = _encrypt_token(self._credentials.client_secret) if self._credentials.client_secret else ""
         data["oauth_token_uri"] = getattr(
             self._credentials, "token_uri", "https://oauth2.googleapis.com/token"
         )

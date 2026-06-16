@@ -5,10 +5,23 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import json
+import logging
+
+from marathon_qa_assistant.core import kb_runtime
 from marathon_qa_assistant.core.app_state import get_preferred_vector_dir, has_vector_kb_artifacts
 from marathon_qa_assistant.core.zone_constants import ZONE_LABELS, ZONE_LABELS_DETAIL
 from marathon_qa_assistant.services.kb.source_registry import build_source_registry_id
-from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve
+# vector_store 懒加载，避免导入时触发 Ollama 连接
+
+logger = logging.getLogger("workout_template_retriever")
+
+
+def _runtime_retrieval_data():
+    if not kb_runtime.KB_CHUNKS or not kb_runtime.RETRIEVE_FUNC:
+        return None
+    chunks = kb_runtime.KB_SHARD_CHUNKS if kb_runtime.KB_SHARD_CHUNKS is not None else kb_runtime.KB_CHUNKS
+    return chunks, kb_runtime.KB_VECTORIZER, kb_runtime.KB_MATRIX, kb_runtime.KB_BM25, kb_runtime.RETRIEVE_FUNC
 
 
 @dataclass
@@ -33,6 +46,7 @@ class DailyWorkoutTemplateCard:
     warmup_suggestion: str = ""
     cooldown_suggestion: str = ""
     alternative_workout: str = ""
+    source_authority: str = ""
     evidence_tier: str = "plan_only"
     evidence_status: Dict[str, str] = field(default_factory=dict)
     evidence: List[WorkoutTemplateEvidence] = field(default_factory=list)
@@ -148,11 +162,11 @@ WORKOUT_TEMPLATE_REGISTRY = {
         "display_name": "马拉松配速跑",
         "training_type_label": "马拉松配速跑（专项配速训练）",
         "aliases": ["马拉松配速跑", "马拉松配速", "Marathon Pace", "专项配速"],
-        "title_template": "配速训练课",
-        "source_priority": ["动作库.pdf"],
-        "zone_range": "Z3-Z4",
-        "intensity_target": "Z3-Z4 稳态有氧区至有氧阈值区",
-        "intensity_keywords": ["Z3", "Z4", "配速"],
+        "title_template": "马拉松配速训练课",
+        "source_priority": ["动作库.pdf", "half_marathon_hmp_protocol.md"],
+        "zone_range": "Z4-Z5",
+        "intensity_target": "Z4-Z5 比赛配速区（100% HMP），配合 85-90% HMP 巡航恢复",
+        "intensity_keywords": ["Z4", "Z5", "配速", "巡航恢复"],
         "extractor": "generic",
     },
     "progression_run": {
@@ -404,9 +418,218 @@ WORKOUT_TEMPLATE_REGISTRY.update({
         "alternative_workout": "若疲劳或5K能力不足，降低到105% HMP附近或改为坡冲。",
         "applicable_phases": ["general", "race_supportive"],
     },
+    # ── P9: 7 个新课型（基于 Daniels/Pfitzinger 教材三角验证） ──
+    "recovery_run_z1": {
+        "display_name": "恢复跑（Z1）",
+        "training_type_label": "恢复跑（Z1 主动恢复）",
+        "aliases": ["恢复跑", "Recovery Run", "Z1恢复", "主动恢复", "极松跑"],
+        "title_template": "恢复跑训练课",
+        "source_priority": ["references/Daniels_Running_Formula_4e.md", "references/Pfitzinger_Advanced_Marathoning_3e.md"],
+        "zone_range": "Z1",
+        "intensity_target": "Z1 恢复放松区（<72% LTHR）",
+        "intensity_keywords": ["Z1", "恢复", "<72%", "Recovery"],
+        "extractor": "generic",
+    },
+    "general_aerobic_z2z3": {
+        "display_name": "一般有氧跑（Z2-Z3）",
+        "training_type_label": "一般有氧跑（Z2-Z3 有氧基础）",
+        "aliases": ["一般有氧跑", "General Aerobic", "GA", "稳定有氧", "基础有氧", "有氧跑", "日常跑"],
+        "title_template": "一般有氧训练课",
+        "source_priority": ["references/Pfitzinger_Advanced_Marathoning_3e.md", "references/Daniels_Running_Formula_4e.md"],
+        "zone_range": "Z2-Z3",
+        "intensity_target": "Z2-Z3 轻松有氧区至稳态有氧区",
+        "intensity_keywords": ["Z2", "Z3", "有氧", "General Aerobic"],
+        "extractor": "generic",
+    },
+    "continuous_tempo_z5z6": {
+        "display_name": "连续节奏跑（Z5-Z6）",
+        "training_type_label": "连续节奏跑（乳酸阈值训练）",
+        "aliases": ["连续节奏跑", "Continuous Tempo", "LT持续跑", "连续T跑"],
+        "title_template": "连续节奏训练课",
+        "source_priority": ["references/Daniels_Running_Formula_4e.md", "references/Pfitzinger_Advanced_Marathoning_3e.md"],
+        "zone_range": "Z5-Z6",
+        "intensity_target": "Z5-Z6 乳酸阈值区（90-97% LTHR）",
+        "intensity_keywords": ["Z5", "Z6", "Tempo", "LT", "乳酸"],
+        "extractor": "generic",
+    },
+    "mp_mixed_long_run": {
+        "display_name": "MP混合长距离",
+        "training_type_label": "MP混合长距离（比赛配速+有氧巡航）",
+        "aliases": ["MP混合长距离", "Long/MP", "配速长距离", "马拉松模拟长距离", "Long Run MP"],
+        "title_template": "MP混合长距离训练课",
+        "source_priority": ["references/Daniels_Running_Formula_4e.md", "references/Pfitzinger_Advanced_Marathoning_3e.md"],
+        "zone_range": "Z2-Z5",
+        "intensity_target": "Z2-Z3 巡航段 + Z4-Z5 比赛配速段",
+        "intensity_keywords": ["Z2", "Z3", "Z4", "Z5", "MP", "配速", "长距离", "Long/MP"],
+        "extractor": "generic",
+    },
+    "strides_z7z9": {
+        "display_name": "跨步跑（Strides）",
+        "training_type_label": "跨步跑（Z7-Z9 短时高速）",
+        "aliases": ["跨步跑", "Strides", "加速跑", "短冲", "跨步", "跑姿经济性"],
+        "title_template": "跨步跑训练课",
+        "source_priority": ["references/Daniels_Running_Formula_4e.md", "references/Pfitzinger_Advanced_Marathoning_3e.md"],
+        "zone_range": "Z7-Z9",
+        "intensity_target": "Z7-Z9 短时高速刺激（80-90% 最大速度）",
+        "intensity_keywords": ["Z7", "Z8", "Z9", "Strides", "跨步", "加速"],
+        "extractor": "generic",
+    },
+    "race_simulation": {
+        "display_name": "比赛模拟跑",
+        "training_type_label": "比赛模拟跑（彩排/调整赛）",
+        "aliases": ["比赛模拟", "Race Simulation", "模拟赛", "Tune-up", "彩排跑", "赛前预演"],
+        "title_template": "比赛模拟训练课",
+        "source_priority": ["references/Pfitzinger_Advanced_Marathoning_3e.md", "references/Daniels_Running_Formula_4e.md"],
+        "zone_range": "Z5-Z7",
+        "intensity_target": "Z5-Z7 比赛努力配速（模拟赛完整流程）",
+        "intensity_keywords": ["Z5", "Z6", "Z7", "模拟", "Tune-up", "比赛"],
+        "extractor": "generic",
+    },
+    "hm_specific_pace_a": {
+        "display_name": "半马专项配速跑（A级教材）",
+        "training_type_label": "半马专项配速跑（Daniels/Pfitzinger 教材级）",
+        "aliases": ["半马专项配速", "HM Pace A", "HMP巡航", "100%HMP", "半马比赛配速", "半马专项"],
+        "title_template": "半马专项配速训练课（教材级）",
+        "source_priority": ["references/Daniels_Running_Formula_4e.md", "references/Pfitzinger_Advanced_Marathoning_3e.md"],
+        "zone_range": "Z4-Z5",
+        "intensity_target": "Z4-Z5 比赛配速区（100% HMP）+ 85% HMP 巡航恢复",
+        "intensity_keywords": ["Z4", "Z5", "100% HMP", "巡航恢复", "半马专项"],
+        "extractor": "generic",
+    },
 })
 
 _ACTION_LIBRARY_SOURCE = "动作库.pdf"
+
+_CORE_PRESCRIPTION_CATEGORY_TOKENS = {
+    "aerobic",
+    "anaerobic",
+    "endurance",
+    "steady-state",
+    "long-run",
+    "marathon",
+    "marathon-spec",
+    "threshold",
+    "tempo",
+    "interval",
+    "intervals",
+    "vo2max",
+    "fartlek",
+    "hills",
+    "strength-endurance",
+    "speed",
+    "lactate",
+    "active-rest",
+    "race",
+    "阈值",
+    "长距离",
+    "⻓距离",
+    "跑走",
+    "节奏",
+    "间歇",
+    "坡",
+    "法特莱克",
+    "配速",
+    "轻松跑",
+    "恢复跑",
+}
+
+_NON_CORE_ONLY_CATEGORY_TOKENS = {
+    "warm-up",
+    "pre-run",
+    "mobility",
+    "flexibility",
+    "self-massage",
+    "activation",
+    "technique",
+    "drills",
+    "热身",
+    "激活",
+    "灵活",
+    "拉伸",
+    "泡沫",
+    "放松",
+    "技术",
+    "马克操",
+}
+
+_WORKOUT_TYPE_REQUIRED_CATEGORY_TOKENS = {
+    "aerobic_threshold": {"steady-state", "阈值", "最大脂肪", "有氧阈值"},
+    "long_run": {"long-run", "marathon-spec", "长距离", "⻓距离"},
+    "easy_run": {"active-rest", "easy run", "recovery run", "跑走", "轻松跑", "恢复跑"},
+    "tempo_run": {"tempo", "threshold", "lactate-threshold", "节奏", "阈值"},
+    "interval_run": {"interval", "intervals", "vo2max", "speed", "间歇"},
+    "vo2max_interval": {"vo2max", "intervals", "hard", "摄氧", "间歇"},
+    "anaerobic_threshold": {"threshold", "lactate-threshold", "cruise", "无氧阈", "阈值"},
+    "marathon_pace": {"marathon-pace", "marathon", "配速"},
+    "progression_run": {"progression", "long-run", "tempo", "节奏", "渐进"},
+    "fartlek": {"fartlek", "法特莱克"},
+    "hill_repeats": {"hills", "strength-endurance", "坡"},
+    "strides": {"strides", "speed", "加速跑", "短冲"},
+}
+
+
+def _action_hit_category_blob(hit: Dict[str, Any]) -> str:
+    tags = hit.get("tags") if isinstance(hit.get("tags"), dict) else {}
+    values = [
+        tags.get("categories", ""),
+        tags.get("workout_name", ""),
+        " ".join(str(item or "") for item in (hit.get("domain_terms") or [])),
+        str(hit.get("text") or "")[:400],
+    ]
+    return " ".join(str(value or "") for value in values).lower()
+
+
+def _action_hit_label_blob(hit: Dict[str, Any]) -> str:
+    tags = hit.get("tags") if isinstance(hit.get("tags"), dict) else {}
+    values = [
+        tags.get("categories", ""),
+        tags.get("workout_name", ""),
+        " ".join(str(item or "") for item in (hit.get("domain_terms") or [])),
+    ]
+    return " ".join(str(value or "") for value in values).lower()
+
+
+def _action_hit_search_blob(hit: Dict[str, Any]) -> str:
+    tags = hit.get("tags") if isinstance(hit.get("tags"), dict) else {}
+    values = [
+        str(hit.get("text") or ""),
+        tags.get("categories", ""),
+        tags.get("workout_name", ""),
+        " ".join(str(item or "") for item in (hit.get("domain_terms") or [])),
+    ]
+    blob = " ".join(str(value or "") for value in values).lower()
+    normalized_blob = blob.replace("⻓", "长").replace("-", " ")
+    return f"{blob} {normalized_blob}"
+
+
+def _is_core_prescription_action_hit(hit: Dict[str, Any]) -> bool:
+    if hit.get("exclude_from_training_generation") is True:
+        return False
+
+    label_blob = _action_hit_label_blob(hit)
+    label_has_core_category = any(token in label_blob for token in _CORE_PRESCRIPTION_CATEGORY_TOKENS)
+    label_has_non_core_category = any(token in label_blob for token in _NON_CORE_ONLY_CATEGORY_TOKENS)
+    if label_has_non_core_category and not label_has_core_category:
+        return False
+
+    category_blob = _action_hit_category_blob(hit)
+    has_core_category = any(token in category_blob for token in _CORE_PRESCRIPTION_CATEGORY_TOKENS)
+    has_non_core_category = any(token in category_blob for token in _NON_CORE_ONLY_CATEGORY_TOKENS)
+
+    # Warm-up, mobility, drill, and activation chunks can supplement execution
+    # details, but they must not become the visible main-set prescription.
+    if has_non_core_category and not has_core_category:
+        return False
+
+    return True
+
+
+def _is_action_hit_aligned_with_workout_type(workout_type: str, hit: Dict[str, Any]) -> bool:
+    required_tokens = _WORKOUT_TYPE_REQUIRED_CATEGORY_TOKENS.get(str(workout_type or "").strip())
+    if not required_tokens:
+        return True
+    category_blob = _action_hit_category_blob(hit)
+    return any(token.lower() in category_blob for token in required_tokens)
 
 EVIDENCE_TIER_LABELS = {
     "action_library": "动作库课表",
@@ -433,6 +656,14 @@ WORKOUT_TYPE_KEYWORD_MAP = {
     "fartlek": ["法特莱克", "速度游戏"],
     "hill_repeats": ["坡道跑", "坡道", "Hill"],
     "strides": ["短冲", "加速跑"],
+    # P9: 7 个新课型关键词
+    "recovery_run_z1": ["恢复跑", "Z1恢复", "主动恢复", "极松跑", "Recovery Run"],
+    "general_aerobic_z2z3": ["一般有氧跑", "GA", "稳定有氧", "基础有氧", "General Aerobic"],
+    "continuous_tempo_z5z6": ["连续节奏跑", "Continuous Tempo", "Tempo Run", "LT跑", "阈值巡航"],
+    "mp_mixed_long_run": ["MP混合长距离", "Long/MP", "配速长距离", "马拉松模拟", "MP长距离"],
+    "strides_z7z9": ["跨步跑", "Strides", "跨步", "跑姿经济性"],
+    "race_simulation": ["比赛模拟", "模拟赛", "Tune-up", "彩排跑", "赛前预演"],
+    "hm_specific_pace_a": ["半马专项配速", "HM Pace A", "HMP巡航", "半马比赛配速"],
 }
 
 WORKOUT_TYPE_KEYWORD_MAP.update({
@@ -446,187 +677,99 @@ WORKOUT_TYPE_KEYWORD_MAP.update({
 })
 
 
-ACTION_LIBRARY_FOUNDATION_HITS = {
-    "aerobic_threshold": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 6,
-            "chunk_id": "动作库_p0006_c0001",
-            "score": 1.0,
-            "text": """
-            【Aerobic Endurance（有氧耐力）】
-            name：有氧阈值训练（最大脂肪氧化训练）
-            content：
-            a. 3-4*3000/2min
-            b. 5-6*2000/2min
-            c. 3*3000+3+2000(配速比3000快10s)
-            d. 上下坡交替跑15km
-            objective：在75–85%HRmax区间提升脂代谢效率与有氧耐力，提升最大脂肪氧化率
-            热身：15分钟慢跑+动态拉伸+马克操+3.2-4.8km加速跑（有氧跑加速到有氧阈值上限）
-            """,
-        },
-        {
-            "source_file": "动作库.pdf",
-            "page": 7,
-            "chunk_id": "动作库_p0007_c0001",
-            "score": 0.98,
-            "text": """
-            name：有氧阈值训练（最大脂肪氧化训练）
-            content：
-            e. 5000+3*2000
-            f. （3min有氧阈+2min慢跑+2min有氧阈+1min慢跑）*6
-            """,
-        },
-    ],
-    "tempo_run": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 8,
-            "chunk_id": "动作库_p0008_c0003",
-            "score": 1.0,
-            "text": """
-            【节奏跑（乳酸阈值训练）】
-            name：节奏跑（Tempo Run）
-            content：
-            a. 20分钟阈值跑（Z4）
-            b. 3×8min/Z4，组间慢跑3min
-            c. 25分钟持续Z4配速
-            objective：在Z4区间提升乳酸阈值附近的持续输出能力
-            热身：15分钟慢跑+动态拉伸
-            """,
-        },
-    ],
-    "interval_run": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 12,
-            "chunk_id": "动作库_p0012_c0004",
-            "score": 1.0,
-            "text": """
-            【间歇训练】
-            name：间歇跑（Interval）
-            content：
-            a. 4×800m/Z5，组间慢跑2min
-            b. 6×400m/Z6，组间慢跑90s
-            c. 3×1000m/200m慢跑
-            objective：在Z5-Z6区间提升速度耐力与最大摄氧量
-            热身：15分钟慢跑+动态拉伸+加速跑
-            """,
-        },
-    ],
-    "vo2max_interval": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 18,
-            "chunk_id": "动作库_p0018_c0001",
-            "score": 1.0,
-            "text": """
-            【摄氧量训练】
-            name：摄氧量训练（VO2max Interval）
-            content：
-            a. 5×3分钟/Z6-Z7，组间慢跑3min
-            b. 6×2分钟最大摄氧量间歇，组间慢跑2min
-            c. 4×4分钟摄氧量训练
-            objective：在Z6-Z7区间提升最大摄氧量与高强度有氧输出能力
-            热身：15分钟慢跑+动态拉伸+加速跑
-            """,
-        },
-    ],
-    "anaerobic_threshold": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 13,
-            "chunk_id": "动作库_p0013_c0002",
-            "score": 1.0,
-            "text": """
-            【无氧阈跑】
-            name：无氧阈跑（巡航间歇训练）
-            content：
-            a. 3×1600m/Z4，组间慢跑2min
-            b. 4×1200m/Z5，组间慢跑2min
-            c. 巡航间歇20分钟
-            objective：在Z4-Z5区间提升无氧阈附近的稳定输出能力
-            热身：15分钟慢跑+动态拉伸
-            """,
-        },
-    ],
-    "long_run": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 10,
-            "chunk_id": "动作库_p0010_c0005",
-            "score": 1.0,
-            "text": """
-            【长距离训练】
-            name：长距离（有氧耐力跑）
-            content：
-            a. 90分钟稳定有氧跑（Z2-Z3）
-            b. 120分钟长距离+补给练习
-            c. 3×20分钟稳定有氧
-            objective：在Z2-Z3区间提升有氧耐力与脂肪代谢能力
-            热身：20分钟慢跑+动态拉伸
-            """,
-        },
-    ],
-    "easy_run": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 15,
-            "chunk_id": "动作库_p0015_c0002",
-            "score": 1.0,
-            "text": """
-            【轻松跑】
-            name：轻松跑（Easy Run）
-            content：
-            a. 30分钟Z1轻松跑
-            b. 45分钟Z2轻松连续跑
-            c. 恢复跑20分钟
-            objective：在Z1-Z2区间促进恢复，保持有氧容量
-            热身：10分钟慢跑+动态拉伸
-            """,
-        },
-    ],
-    "marathon_pace": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 14,
-            "chunk_id": "动作库_p0014_c0001",
-            "score": 1.0,
-            "text": """
-            【马拉松配速跑】
-            name：马拉松配速跑（Marathon Pace）
-            content：
-            a. 2×15分钟Z3-Z4专项配速
-            b. 40分钟马拉松配速跑
-            c. 3×5km配速跑
-            objective：在Z3-Z4区间稳定目标马拉松配速控制能力
-            热身：15分钟慢跑+动态拉伸
-            """,
-        },
-    ],
-    "progression_run": [
-        {
-            "source_file": "动作库.pdf",
-            "page": 16,
-            "chunk_id": "动作库_p0016_c0001",
-            "score": 1.0,
-            "text": """
-            【渐进跑】
-            name：渐进跑（Progression Run）
-            content：
-            a. 45分钟从Z1渐进到Z4
-            b. 60分钟后半程渐加速
-            c. 3×10分钟渐进跑
-            objective：通过渐进加速提升配速控制与后程输出能力
-            热身：10分钟慢跑+动态拉伸
-            """,
-        },
-    ],
-}
+# ── 动作库 JSONL 后备路径（FAISS 不可用时加载） ──
+_ACTION_LIBRARY_JSONL = None  # 延迟解析
+
+
+def _load_action_library_fallback() -> Dict[str, List[Dict[str, Any]]]:
+    """FAISS 不可用时，从 JSONL 文件加载动作库数据。"""
+    global _ACTION_LIBRARY_JSONL
+    if _ACTION_LIBRARY_JSONL is not None:
+        return _ACTION_LIBRARY_JSONL
+
+    from marathon_qa_assistant.core.app_state import DATA_DIR
+    jsonl_path = DATA_DIR / "knowledge" / "curated" / "action_library" / "action_library_chunks.jsonl"
+    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    if not jsonl_path.exists():
+        logger.warning("动作库 JSONL 后备文件不存在: %s", jsonl_path)
+        _ACTION_LIBRARY_JSONL = grouped
+        return grouped
+
+    try:
+        with open(jsonl_path, encoding="utf-8") as f:
+            for line in f:
+                chunk = json.loads(line)
+                source_file = str(chunk.get("source_file") or "动作库.pdf")
+                grouped.setdefault(source_file, []).append({
+                    "source_file": source_file,
+                    "page": chunk.get("page"),
+                    "chunk_id": chunk.get("chunk_id", ""),
+                    "score": 1.0,
+                    "text": chunk.get("text", ""),
+                    "warmup_suggestion": chunk.get("warmup_suggestion"),
+                    "cooldown_suggestion": chunk.get("cooldown_suggestion"),
+                    "source_authority": chunk.get("source_authority", ""),
+                    "tags": chunk.get("tags") or {},
+                    "allowed_use": chunk.get("allowed_use", ""),
+                    "prescription_permission": chunk.get("prescription_permission", ""),
+                    "exclude_from_training_generation": chunk.get("exclude_from_training_generation", False),
+                    "quality_tier": chunk.get("quality_tier", ""),
+                })
+    except Exception as exc:
+        logger.warning("加载动作库 JSONL 失败: %s", exc)
+
+    _ACTION_LIBRARY_JSONL = grouped
+    return grouped
 
 
 def get_action_library_foundation_hits(workout_type: str) -> List[Dict[str, Any]]:
-    return [dict(item) for item in ACTION_LIBRARY_FOUNDATION_HITS.get(str(workout_type or "").strip(), [])]
+    """根据训练类型从 FAISS 向量库检索动作库条目，不可用时回退 JSONL。
+
+    原先硬编码的 ACTION_LIBRARY_FOUNDATION_HITS 已移除，现在通过 FAISS
+    语义检索 动作库.pdf 的真实 chunk，或从提取的 JSONL 后备文件加载。
+    """
+    normalized_type = str(workout_type or "").strip()
+    if not normalized_type:
+        return []
+
+    registry_entry = WORKOUT_TEMPLATE_REGISTRY.get(normalized_type, {})
+    aliases = registry_entry.get("aliases", [normalized_type])
+    search_query = " ".join(aliases[:5])
+
+    # 从 JSONL 动作库检索（FAISS 语义检索作为未来升级路径）
+    fallback = _load_action_library_fallback()
+    matched = []
+    for source_file, chunks in fallback.items():
+        for chunk in chunks:
+            search_blob = _action_hit_search_blob(chunk)
+            if any(str(alias or "").lower() in search_blob for alias in aliases[:7]):
+                matched.append(dict(chunk))
+
+    if not matched:
+        # JSONL 无匹配时尝试 FAISS（懒加载，避免阻塞常规路径）
+        try:
+            selected_vector_dir = None
+            runtime_data = _runtime_retrieval_data()
+            if runtime_data is not None:
+                chunks, vectorizer, matrix, bm25, faiss_retrieve = runtime_data
+                hits = faiss_retrieve(search_query, chunks, vectorizer, matrix, top_k=10, bm25=bm25)
+                matched = [h for h in hits if "动作库" in str(h.get("source_file", ""))]
+            else:
+                candidate_dir = get_preferred_vector_dir()
+                if has_vector_kb_artifacts(candidate_dir):
+                    selected_vector_dir = candidate_dir
+            if not matched and selected_vector_dir:
+                from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve as faiss_retrieve  # noqa: E402
+                chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
+                hits = faiss_retrieve(search_query, chunks, vectorizer, matrix, top_k=10, bm25=bm25)
+                matched = [h for h in hits if "动作库" in str(h.get("source_file", ""))]
+                if matched:
+                    logger.debug("FAISS 检索动作库命中 %d 条", len(matched))
+        except Exception as exc:
+            logger.debug("FAISS 动作库检索跳过: %s", exc)
+
+    logger.debug("动作库匹配 %d 条 (type=%s)", len(matched), normalized_type)
+    return matched
 
 
 def build_workout_template_query(workout_type: str) -> str:
@@ -642,12 +785,19 @@ def retrieve_daily_workout_template_card(
     vector_dir: Optional[Path] = None,
     top_k: int = 20,
 ) -> Dict[str, Any]:
-    selected_vector_dir = vector_dir or get_preferred_vector_dir()
-    if not has_vector_kb_artifacts(selected_vector_dir):
-        return _empty_card(workout_type, day, "知识库产物不可用，未生成课表。")
+    from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve as faiss_retrieve
 
-    chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
-    hits = retrieve(build_workout_template_query(workout_type), chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
+    runtime_data = _runtime_retrieval_data() if vector_dir is None else None
+    if runtime_data is not None:
+        chunks, vectorizer, matrix, bm25, retrieve_fn = runtime_data
+    else:
+        selected_vector_dir = vector_dir or get_preferred_vector_dir()
+        if not has_vector_kb_artifacts(selected_vector_dir):
+            return _empty_card(workout_type, day, "知识库产物不可用，未生成课表。")
+        chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
+        retrieve_fn = faiss_retrieve
+
+    hits = retrieve_fn(build_workout_template_query(workout_type), chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
     return build_daily_workout_template_card_from_hits(workout_type=workout_type, day=day, hits=hits)
 
 
@@ -698,6 +848,8 @@ def build_daily_workout_template_card_from_hits(
     intensity_target = default_intensity if has_any_keyword else ""
 
     source = _build_source_labels(relevant_hits)
+    # 从首个命中的 chunk 读取来源权威等级
+    source_authority = str(relevant_hits[0].get("source_authority") or "") if relevant_hits else ""
     evidence = [
         WorkoutTemplateEvidence(
             source_file=str(hit.get("source_file") or ""),
@@ -714,6 +866,7 @@ def build_daily_workout_template_card_from_hits(
         workout_type=normalized_type,
         training_type=registry_entry.get("training_type_label", ""),
         source=source,
+        source_authority=source_authority,
         main_set_candidates=main_set_candidates,
         intensity_target=intensity_target,
         zone_range=zone_range,
@@ -751,6 +904,7 @@ def _build_protocol_template_card(
         workout_type=workout_type,
         training_type=registry_entry.get("training_type_label", ""),
         source=["docs/half_marathon_hmp_protocol.md", "Sub-70半程马拉松训练_图片OCR整理.md"],
+        source_authority="C",
         main_set_candidates=main_set_candidates,
         intensity_target=registry_entry.get("intensity_target", ""),
         zone_range=registry_entry.get("zone_range", ""),
@@ -802,10 +956,14 @@ def _select_relevant_action_library_hits(workout_type: str, hits: List[Dict[str,
     selected = []
     for hit in hits:
         source_file = str(hit.get("source_file") or hit.get("source") or "")
-        text = str(hit.get("text") or "")
         if source_file not in source_priority:
             continue
-        if any(alias in text for alias in aliases[:7]):
+        if not _is_core_prescription_action_hit(hit):
+            continue
+        if not _is_action_hit_aligned_with_workout_type(workout_type, hit):
+            continue
+        search_blob = _action_hit_search_blob(hit)
+        if any(str(alias or "").lower() in search_blob for alias in aliases[:7]):
             selected.append(hit)
     return selected
 
@@ -944,6 +1102,24 @@ def normalize_workout_type_for_template(training_type: str, main_set: str = "") 
             return "hm_105_specific_speed"
         if any(keyword in combined for keyword in ("107-110% HMP", "110% HMP", "107% HMP", "辅助速度")):
             return "hm_110_support_speed"
+        # P9: 半马专项配速 A 级（需在 HMP 协议条目前优先匹配）
+        if any(keyword in combined for keyword in ("半马专项配速", "HMP巡航")):
+            return "hm_specific_pace_a"
+    # P9: 新课型优先匹配——仅当出现新课型独有的特征词时才路由
+    if any(keyword in combined for keyword in ("Z1恢复", "主动恢复", "极松跑")):
+        return "recovery_run_z1"
+    if any(keyword in combined for keyword in ("一般有氧跑", "General Aerobic", "GA跑")):
+        return "general_aerobic_z2z3"
+    if any(keyword in combined for keyword in ("连续节奏跑", "Continuous Tempo", "LT跑", "LT Run")):
+        return "continuous_tempo_z5z6"
+    if any(keyword in combined for keyword in ("MP混合", "Long/MP", "MP长距离")):
+        return "mp_mixed_long_run"
+    if any(keyword in combined for keyword in ("跨步跑", "跨步", "跑姿经济性")):
+        return "strides_z7z9"
+    if any(keyword in combined for keyword in ("比赛模拟跑", "模拟赛", "彩排跑", "赛前预演")):
+        return "race_simulation"
+    if any(keyword in combined for keyword in ("半马专项配速", "HM Pace A", "HMP巡航", "半马比赛配速")):
+        return "hm_specific_pace_a"
     all_pairs = [
         (keyword, type_key)
         for type_key, keywords in WORKOUT_TYPE_KEYWORD_MAP.items()
@@ -956,14 +1132,21 @@ def normalize_workout_type_for_template(training_type: str, main_set: str = "") 
     return ""
 
 
+_SOURCE_AUTHORITY_BADGES = {"A": "[A级 教材]", "B": "[B级 文献]", "C": "[C级 协议]"}
+
 def _build_source_labels(hits: List[Dict[str, Any]]) -> List[str]:
     labels = []
     for hit in hits:
         source = str(hit.get("source_file") or hit.get("source") or "").strip()
         page = hit.get("page")
+        authority = str(hit.get("source_authority") or "")
         if not source:
             continue
         label = f"{source}，第 {page} 页" if page else source
+        # 追加权威等级标记，便于前端透传
+        badge = _SOURCE_AUTHORITY_BADGES.get(authority, "")
+        if badge:
+            label = f"{label} {badge}"
         if label not in labels:
             labels.append(label)
     return labels[:5]
@@ -980,6 +1163,33 @@ def _format_candidate(text: str) -> str:
     return value
 
 
+def derive_stimulus_type(zone_range: str) -> str:
+    """从 zone_range 推导 stimulus_type（intensity / volume_only / mixed）。
+
+    规则:
+    - Z5+ 且无 Z3-Z4 → intensity（纯高强度刺激，不可替代）
+    - Z1-Z2 only → volume_only（纯低强度累积，可删减）
+    - Z5+ 且有 Z3-Z4 → mixed（高低混合，保留高强度部分砍低强度部分）
+    - 其余（如 Z3-Z4 only）→ volume_only
+
+    >>> derive_stimulus_type("Z5-Z6")
+    'intensity'
+    >>> derive_stimulus_type("Z1-Z2")
+    'volume_only'
+    >>> derive_stimulus_type("Z2-Z5")
+    'mixed'
+    """
+    zones = zone_range.replace(" ", "").split(",")
+    has_high = any(f"Z{z}" in zone_range for z in ["5", "6", "7", "8", "9"])
+    has_mid = any(f"Z{z}" in zone_range for z in ["2", "3"])  # Z4+ = 阈值及以上, 不计入 mid
+
+    if has_high and has_mid:
+        return "mixed"
+    if has_high:
+        return "intensity"
+    return "volume_only"
+
+
 __all__ = [
     "DailyWorkoutTemplateCard",
     "WorkoutTemplateEvidence",
@@ -987,6 +1197,7 @@ __all__ = [
     "WORKOUT_TYPE_KEYWORD_MAP",
     "build_daily_workout_template_card_from_hits",
     "build_workout_template_query",
+    "derive_stimulus_type",
     "get_action_library_foundation_hits",
     "normalize_workout_type_for_template",
     "retrieve_daily_workout_template_card",

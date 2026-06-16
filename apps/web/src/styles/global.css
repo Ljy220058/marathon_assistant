@@ -1,10 +1,1 @@
-@import "./base.css";
-@import "./components.css";
-@import "./plan.css";
-@import "./profile-status.css";
-@import "./modal.css";
-@import "./calendar.css";
-@import "./calendar-actions.css";
-@import "./evidence.css";
-@import "./responsive.css";
-@import "./commercial-light.css";
+@import "./journal.css";

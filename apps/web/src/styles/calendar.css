@@ -28,10 +28,10 @@
   max-width: 100%;
   min-height: 32px;
   margin-top: auto;
-  border: 1px solid rgba(34, 211, 238, 0.3);
+  border: 1px solid #bfdbfe;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.09);
-  color: var(--accent-1);
+  background: #eff6ff;
+  color: var(--accent);
   padding: 0 11px;
   font-size: 12px;
   font-weight: 900;
@@ -39,9 +39,9 @@
 
 .text-action:hover,
 .text-action:focus-visible {
-  border-color: rgba(34, 211, 238, 0.58);
-  background: rgba(34, 211, 238, 0.15);
-  color: var(--text);
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: var(--accent);
 }
 
 .segmented-control-button {
@@ -55,8 +55,8 @@
 }
 
 .segmented-control-button.active {
-  border-color: rgba(96, 165, 250, 0.48);
-  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(37, 99, 235, 0.08);
   color: var(--text);
 }
 
@@ -74,9 +74,9 @@
 .week-navigator {
   display: grid;
   gap: 10px;
-  border: 1px solid rgba(34, 211, 238, 0.24);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(12, 15, 22, 0.68);
+  background: #ffffff;
   padding: 12px;
 }
 
@@ -109,15 +109,15 @@
   min-height: 58px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(21, 24, 33, 0.78);
+  background: #ffffff;
   color: var(--text);
   padding: 9px;
   text-align: left;
 }
 
 .week-nav-button.current {
-  border-color: rgba(34, 211, 238, 0.44);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: #bfdbfe;
+  background: #eff6ff;
 }
 
 .week-nav-button span,
@@ -136,14 +136,12 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background:
-    linear-gradient(140deg, rgba(96, 165, 250, 0.12), transparent 46%),
-    rgba(16, 19, 26, 0.88);
+  background: #ffffff;
   container-type: inline-size;
 }
 
 .week-card.is-expanded {
-  border-color: rgba(96, 165, 250, 0.42);
+  border-color: rgba(37, 99, 235, 0.28);
 }
 
 .week-card-toggle {
@@ -163,11 +161,11 @@
 .week-card-toggle:hover,
 .week-card-toggle:focus-visible {
   outline: none;
-  background: rgba(96, 165, 250, 0.1);
+  background: rgba(37, 99, 235, 0.06);
 }
 
 .week-card-toggle:focus-visible {
-  box-shadow: inset 0 0 0 2px rgba(34, 211, 238, 0.62);
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.38);
 }
 
 .week-card.is-expanded .week-card-toggle {
@@ -207,11 +205,11 @@
 }
 
 .week-card-metrics i {
-  border: 1px solid rgba(167, 139, 250, 0.28);
+  border: 1px solid #e2e8f0;
   border-radius: 999px;
   padding: 4px 8px;
   color: var(--muted);
-  background: rgba(167, 139, 250, 0.08);
+  background: #f8fafc;
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
@@ -367,28 +365,22 @@
   color: var(--text);
   text-align: left;
   box-shadow: none;
-  background:
-    linear-gradient(160deg, rgba(96, 165, 250, 0.09), transparent 55%),
-    var(--panel-muted);
+  background: #ffffff;
 }
 
 .day-card:hover,
 .day-card:focus-visible {
-  border-color: rgba(96, 165, 250, 0.58);
-  background:
-    linear-gradient(160deg, rgba(96, 165, 250, 0.16), transparent 58%),
-    var(--panel-muted);
+  border-color: rgba(37, 99, 235, 0.34);
+  background: #f8fbff;
 }
 
 .day-card.rest {
-  background: rgba(16, 19, 26, 0.88);
+  background: #f8fafc;
 }
 
 .day-card.needs-recheck {
   border-color: rgba(251, 191, 36, 0.48);
-  background:
-    linear-gradient(160deg, rgba(251, 191, 36, 0.13), transparent 58%),
-    var(--panel-muted);
+  background: #ffffff;
 }
 
 .day-card-top {
@@ -404,11 +396,37 @@
 }
 
 .day-card-top span {
-  border: 1px solid rgba(167, 139, 250, 0.34);
+  border: 1px solid #dbeafe;
   border-radius: 999px;
   padding: 3px 7px;
   color: var(--accent);
   font-size: 11px;
+}
+
+/* 证据等级 badge：诚实展示训练课依据强度（A 教材 / B 论文 / C 教练实践）*/
+.day-card-top .day-evidence-badge {
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  cursor: help;
+}
+.day-card-top .day-evidence-badge.grade-a {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.day-card-top .day-evidence-badge.grade-b {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+.day-card-top .day-evidence-badge.grade-c {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
 }
 
 .day-card h3 {
@@ -451,7 +469,7 @@
   min-width: max-content;
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 7px;
-  background: rgba(9, 11, 16, 0.35);
+  background: #f8fafc;
   color: var(--muted);
   padding: 5px 8px;
   white-space: nowrap;
@@ -511,17 +529,15 @@
   display: grid;
   gap: 4px;
   width: min(230px, calc(100% - 20px));
-  border: 1px solid rgba(34, 211, 238, 0.32);
+  border: 1px solid #bfdbfe;
   border-radius: 8px;
   padding: 10px;
   pointer-events: none;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.16s ease, transform 0.16s ease;
-  background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.12), transparent 62%),
-    rgba(9, 11, 16, 0.96);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
 }
 
 .day-card:hover .day-load-tooltip,
@@ -562,19 +578,15 @@
   grid-column: 1 / -1;
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(34, 211, 238, 0.28);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 11px 12px;
-  background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.08), transparent 62%),
-    rgba(16, 19, 26, 0.66);
+  background: #ffffff;
 }
 
 .load-summary-guidance {
   border-color: rgba(251, 191, 36, 0.24);
-  background:
-    linear-gradient(135deg, rgba(251, 191, 36, 0.08), transparent 62%),
-    rgba(16, 19, 26, 0.66);
+  background: #ffffff;
 }
 
 .load-summary-note strong,
@@ -595,9 +607,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px;
-  background:
-    linear-gradient(145deg, rgba(52, 211, 153, 0.08), transparent 58%),
-    var(--panel-muted);
+  background: #ffffff;
 }
 
 .load-summary-card span,
@@ -616,7 +626,7 @@
 }
 
 .load-summary-card.accent-load {
-  border-color: rgba(34, 211, 238, 0.34);
+  border-color: #bfdbfe;
 }
 
 .load-summary-card.weekly-load-card {
@@ -637,7 +647,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px;
-  background: rgba(16, 19, 26, 0.72);
+  background: #ffffff;
 }
 
 .weekly-load-change-row.positive {
@@ -688,9 +698,7 @@
   border-radius: var(--radius);
   padding: 14px;
   overflow: hidden;
-  background:
-    linear-gradient(135deg, rgba(96, 165, 250, 0.08), transparent 50%),
-    var(--panel-muted);
+  background: #ffffff;
 }
 
 .load-chart-heading {
@@ -728,7 +736,7 @@
 }
 
 .legend-bar {
-  background: rgba(96, 165, 250, 0.7);
+  background: rgba(37, 99, 235, 0.68);
 }
 
 .legend-acute {
@@ -757,7 +765,7 @@
 }
 
 .load-bar {
-  fill: rgba(96, 165, 250, 0.52);
+  fill: rgba(37, 99, 235, 0.3);
 }
 
 .load-line {
@@ -822,5 +830,154 @@
 
 .day-card.needs-recheck .day-card-footer span {
   color: var(--warning);
+}
+
+body.ui-calendar-converged .calendar-toolbar {
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+body.ui-calendar-converged .calendar-toolbar .segmented-control {
+  min-width: 0;
+  border-color: #e5e7eb;
+  background: #ffffff;
+}
+
+body.ui-calendar-converged .calendar-toolbar .muted {
+  line-height: 1.4;
+}
+
+body.ui-calendar-converged .week-navigator {
+  border-color: #e5e7eb;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+body.ui-calendar-converged .week-navigator-head strong {
+  font-size: 13px;
+}
+
+body.ui-calendar-converged .week-card {
+  border-color: #e5e7eb;
+  background: #ffffff;
+}
+
+body.ui-calendar-converged .week-card-toggle {
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.8fr) 18px;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+body.ui-calendar-converged .week-card-main strong {
+  font-size: 15px;
+}
+
+body.ui-calendar-converged .week-card-load {
+  align-items: end;
+}
+
+body.ui-calendar-converged .week-card-metrics {
+  gap: 5px;
+}
+
+body.ui-calendar-converged .week-explanation-summary {
+  display: none;
+}
+
+body.ui-calendar-converged .calendar-group-head {
+  border-bottom-color: #e5e7eb;
+  padding-bottom: 6px;
+}
+
+body.ui-calendar-converged .calendar-group-head h3 {
+  font-size: 15px;
+}
+
+body.ui-calendar-converged .calendar-grid {
+  gap: 10px;
+}
+
+body.ui-calendar-converged .day-card {
+  min-height: 136px;
+  border-color: #e5e7eb;
+  background: #ffffff;
+}
+
+body.ui-calendar-converged .day-card:hover,
+body.ui-calendar-converged .day-card:focus-visible {
+  border-color: #bfdbfe;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+body.ui-calendar-converged .day-card.rest {
+  background: #f8fafc;
+}
+
+body.ui-calendar-converged .day-card-top span {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: var(--accent-2);
+}
+
+body.ui-calendar-converged .day-card h3 {
+  font-size: 15px;
+}
+
+body.ui-calendar-converged .day-card-summary {
+  margin-top: -2px;
+}
+
+body.ui-calendar-converged .day-card-essentials {
+  gap: 5px;
+}
+
+body.ui-calendar-converged .day-status-chip {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+body.ui-calendar-converged .day-risk-pill {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: var(--accent-2);
+}
+
+body.ui-calendar-converged .day-card.needs-recheck .day-risk-pill,
+body.ui-calendar-converged .day-card.high-load .day-risk-pill {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: var(--warning);
+}
+
+body.ui-calendar-converged .day-card > .day-product-state,
+body.ui-calendar-converged .day-card > .day-load-ratio-row,
+body.ui-calendar-converged .day-card > .day-load-meter {
+  display: none;
+}
+
+body.ui-calendar-converged .day-card-footer {
+  display: none;
+}
+
+body.ui-calendar-converged .day-load-tooltip {
+  border-color: #bfdbfe;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+body.ui-calendar-converged .load-summary-panel {
+  margin-bottom: 12px;
+}
+
+body.ui-calendar-converged .load-chart-card,
+body.ui-calendar-converged .load-summary-card,
+body.ui-calendar-converged .load-summary-note,
+body.ui-calendar-converged .load-summary-guidance,
+body.ui-calendar-converged .calendar-action-card {
+  border-color: #e5e7eb;
+  background: #ffffff;
 }
 

@@ -1,0 +1,34 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="训练详情" subtitle="训练详情" activeTab="today">
+  <a slot="toolbar" class="journal-pill is-action" href="/feedback">记录今天</a>
+
+  <section class="journal-split" data-day-root>
+    <article class="journal-card journal-card-pad">
+      <p class="journal-section-kicker" data-day-kicker>周二 · 6 月 16 日</p>
+      <h2 data-day-title>轻松跑 35 分钟</h2>
+      <div class="journal-workout-meta" style="margin-top: 14px;" data-day-badges>
+        <span class="journal-badge">心率区间 2</span>
+        <span class="journal-badge">配速 6'48" - 7'10"/km</span>
+      </div>
+      <div class="journal-day-flow" style="margin-top: 16px;" data-day-flow>
+        <div class="journal-flow-step"><strong>热身</strong><div class="journal-caption">5-8 分钟慢跑</div></div>
+        <div class="journal-flow-step is-main"><strong>主课</strong><div class="journal-caption" data-day-main-caption>35 分钟</div></div>
+        <a class="journal-flow-step" href="/feedback"><strong>记录</strong><div class="journal-caption">心率 / 呼吸 / 疲劳</div></a>
+      </div>
+      <div class="journal-inline-note" style="margin-top: 14px;" data-day-meta></div>
+    </article>
+    <article class="journal-card journal-card-pad">
+      <h2>训练详情</h2>
+      <p class="journal-inline-note" style="margin-top: 10px;" data-day-explanation>保持能说话的配速，心率控制在 2 区。</p>
+      <div class="journal-day-structure" style="margin-top:14px;" data-day-structure></div>
+      <div class="journal-action-row" style="margin-top: 18px;">
+        <a class="journal-btn" href="/basis">查看复盘</a>
+        <a class="journal-btn" href="/dialog" data-day-main-link>问 AI 教练</a>
+        <a class="journal-btn primary" href="/feedback">今日反馈</a>
+      </div>
+    </article>
+  </section>
+</JournalLayout>

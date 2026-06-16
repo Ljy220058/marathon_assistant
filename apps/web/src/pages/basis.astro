@@ -1,0 +1,35 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="训练复盘" subtitle="训练复盘" activeTab="profile" showSidebar={true} sidebarActive="basis">
+
+  <!-- 空态：没有反馈数据时显示 -->
+  <article class="journal-card journal-card-pad" data-basis-empty>
+    <div class="journal-empty">
+      <strong>暂无复盘数据</strong>
+      <span>完成训练后提交反馈，这里会自动汇总本周情况。</span>
+      <a class="journal-btn primary" href="/feedback">提交今日反馈</a>
+    </div>
+  </article>
+
+  <!-- 数据卡：有反馈时渲染 -->
+  <article class="journal-card journal-card-pad" data-basis-content hidden>
+    <div class="journal-section-head">
+      <div>
+        <p class="journal-section-kicker" data-basis-date></p>
+        <h2>训练复盘</h2>
+      </div>
+      <span class="journal-badge" data-basis-badge></span>
+    </div>
+    <div class="journal-grid-2">
+      <div class="journal-chart-card">
+        <h3>疲劳趋势</h3>
+        <svg class="journal-chart-svg" viewBox="0 0 420 220" aria-label="疲劳趋势图" data-basis-svg></svg>
+        <div class="journal-stats" style="margin-top:14px;" data-basis-stats></div>
+      </div>
+      <div class="journal-stack" data-basis-notes></div>
+    </div>
+  </article>
+
+</JournalLayout>

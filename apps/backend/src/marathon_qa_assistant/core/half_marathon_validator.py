@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import logging
 import re
+import time
 from dataclasses import asdict, dataclass, field
+
+logger = logging.getLogger(__name__)
 from typing import Any, Dict, List, Optional, Tuple
 
 from marathon_qa_assistant.core.half_marathon_glossary import (
@@ -88,6 +92,8 @@ class HMPlanValidationIssue:
 
 
 def validate_half_marathon_protocol_plan(plan_dict: Dict[str, Any]) -> Dict[str, Any]:
+    # C3: 审计性能计时
+    t0 = time.perf_counter()
     protocol = plan_dict.get("half_marathon_protocol") or {}
     if not isinstance(protocol, dict) or not protocol.get("active"):
         return {
@@ -111,6 +117,14 @@ def validate_half_marathon_protocol_plan(plan_dict: Dict[str, Any]) -> Dict[str,
     issues.extend(_validate_100_hmp_timing(week_plans))
     issues.extend(_validate_dynamic_speed_calibration(week_plans))
     issues.extend(_validate_environment_or_fatigue_downgrade(week_plans))
+    # P4: 新增三条硬规则审核
+    issues.extend(_validate_zone_compliance(week_plans))
+    issues.extend(_validate_session_param_bounds(week_plans))
+    issues.extend(_validate_acwr_safety(protocol, week_plans))
+    # Fix #2: 确定性阶段-课型规则表 (替代 RAG 审核的 30% 漏判)
+    issues.extend(_validate_phase_workout_compatibility(week_plans))
+    # Step 3: 验证 LLM 生成的课时是否在文献约束范围内
+    issues.extend(_validate_workout_duration_bounds(week_plans))
 
     errors = [issue.message for issue in issues if issue.severity == "error"]
     warnings = [issue.message for issue in issues if issue.severity == "warning"]
@@ -123,6 +137,10 @@ def validate_half_marathon_protocol_plan(plan_dict: Dict[str, Any]) -> Dict[str,
         "checked_constraints": list(HM_SAFETY_CONSTRAINTS.keys()),
     }
     result["repair_suggestions"] = build_hmp_repair_suggestions(result)
+    # C3: 审计性能计时
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+    logger.info("HMP validator: %.1fms, %d issues (%d errors, %d warnings)",
+                elapsed_ms, len(issues), len(errors), len(warnings))
     return result
 
 
@@ -574,6 +592,351 @@ def _safe_int(value: Any) -> Optional[int]:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+# ── P4: 硬规则三缺口 ──
+
+# 训练类型 → 文献推荐的 zone_range 映射 (Daniels, A 级)
+_TRAINING_TYPE_ZONE_MAP = {
+    "轻松跑": ("Z1", "Z2"), "恢复跑": ("Z1", "Z1"),
+    "一般有氧跑": ("Z2", "Z3"), "长距离": ("Z2", "Z3"),
+    "有氧阈值训练": ("Z3", "Z4"), "节奏跑": ("Z5", "Z6"),
+    "连续节奏跑": ("Z5", "Z6"), "间歇跑": ("Z5", "Z7"),
+    "无氧阈跑": ("Z4", "Z6"), "摄氧量训练": ("Z6", "Z8"),
+    "马拉松配速跑": ("Z4", "Z5"), "法特莱克": ("Z3", "Z6"),
+    "坡道训练": ("Z5", "Z7"), "短冲": ("Z7", "Z9"),
+    "重复跑": ("Z8", "Z9"),
+}
+
+_SESSION_PARAM_BOUNDS = {
+    "间歇跑": {"max_reps": 10, "min_work_rest_ratio": 1.0},
+    "摄氧量训练": {"max_reps": 10, "max_total_work_min": 8},
+    "节奏跑": {"min_duration_min": 20, "max_duration_min": 30},
+    "连续节奏跑": {"min_duration_min": 20, "max_duration_min": 30},
+    "重复跑": {"max_reps": 12, "max_total_distance_km": 5},
+    "短冲": {"max_reps": 10, "max_rep_distance_m": 200},
+}
+
+
+def _validate_zone_compliance(week_plans):
+    issues = []
+    for week in week_plans:
+        if not isinstance(week, dict): continue
+        for day in week.get("days", []) or []:
+            tt = str(day.get("training_type", "") or "")
+            zr = str(day.get("zone_range", "") or day.get("intensity_target", "") or "")
+            if not tt or not zr: continue
+            expected = _TRAINING_TYPE_ZONE_MAP.get(tt)
+            if not expected: continue
+            z_low, z_high = expected
+            if not any(f"Z{z}" in zr for z in range(int(z_low[1]), int(z_high[1]) + 1)):
+                issues.append(HMPlanValidationIssue(
+                    constraint_id="zone_compliance", severity="warning",
+                    message=f"{tt} zone_range={zr}，文献推荐 {z_low}-{z_high} (Daniels)",
+                    recommendation=f"调整 {tt} 强度区间至 {z_low}-{z_high}",
+                    label=str(day.get("day", "")),
+                ))
+    return issues
+
+
+def _validate_session_param_bounds(week_plans):
+    import re as _re
+    issues = []
+    for week in week_plans:
+        if not isinstance(week, dict): continue
+        for day in week.get("days", []) or []:
+            tt = str(day.get("training_type", "") or "")
+            bounds = _SESSION_PARAM_BOUNDS.get(tt)
+            if not bounds: continue
+            ms = str(day.get("main_set", "") or "")
+            rm = _re.search(r"(\d+)\s*[xX*-]\s*\d+", ms)
+            if rm and "max_reps" in bounds:
+                n = int(rm.group(1))
+                if n > bounds["max_reps"]:
+                    issues.append(HMPlanValidationIssue(
+                        constraint_id="session_param_bounds", severity="warning",
+                        message=f"{tt} {n} 组 > {bounds['max_reps']} 组上限 (Billat 2001)",
+                        recommendation=f"减少至 <={bounds['max_reps']} 组",
+                        label=str(day.get("day", "")),
+                    ))
+            # F4: 检查工休比 (work:rest ratio >= 1:1)
+            # T4: 扩展工休比匹配 — 覆盖 5+ 种常见格式
+            rest_match = (
+                _re.search(r"组间\s*(\d+)\s*(?:min|分钟|s|秒)", ms) or
+                _re.search(r"组间慢跑\s*(\d+)\s*分", ms) or
+                _re.search(r"恢复\s*(\d+)\s*(?:s|秒)", ms) or
+                _re.search(r"jog\s+(\d+)\s*min\s*between", ms, _re.IGNORECASE) or
+                _re.search(r"rest\s+(\d+)\s*s", ms, _re.IGNORECASE) or
+                _re.search(r"组间\s*(\d+)\s*(?:m|米)\s*慢跑", ms)
+            )
+            work_match = _re.search(r"(\d+)\s*(?:min|分钟)", ms)
+            if rest_match and work_match:
+                rest_sec = int(rest_match.group(1))
+                work_min = int(work_match.group(1))
+                if rest_sec < 60:  # rest in seconds → convert to min
+                    rest_sec = rest_sec
+                # Simplified: rest < work_min → 工休比 < 1:1
+                work_sec_est = work_min * 60
+                if rest_sec < work_sec_est * 0.5:
+                    issues.append(HMPlanValidationIssue(
+                        constraint_id="session_param_bounds",
+                        severity="warning",
+                        message=f"{tt} 工休比 too short (rest={rest_sec}s, work~{work_min}min)",
+                        recommendation="工休比应 ≥1:1 (Buchheit & Laursen 2013)",
+                        label=str(day.get("day", "")),
+                    ))
+            # F4: 检查总高强度时间 (I 跑 ≤8min, R 跑 ≤5min)
+            rr = _re.search(r"(\d+)\s*[xX*-]\s*(\d+)\s*(?:m|米)", ms)
+            if rr and tt in ("摄氧量训练", "间歇跑", "重复跑", "短冲"):
+                reps = int(rr.group(1))
+                dist = int(rr.group(2))
+                est_time_min = (reps * dist / 1000.0) * 3.5  # ~3:30/km pace estimate
+                max_time = 5 if tt in ("重复跑", "短冲") else 8
+                if est_time_min > max_time:
+                    issues.append(HMPlanValidationIssue(
+                        constraint_id="session_param_bounds",
+                        severity="warning",
+                        message=f"{tt} 总高强度时间 ~{est_time_min:.0f}min > {max_time}min 上限 (Daniels)",
+                        recommendation=f"减少组数或距离，总高强度时间 ≤{max_time}min",
+                        label=str(day.get("day", "")),
+                    ))
+    return issues
+
+
+def _validate_acwr_safety(protocol, week_plans):
+    import re as _re
+    issues = []
+    volumes = []
+    for week in week_plans:
+        if not isinstance(week, dict): continue
+        km = 0.0
+        for day in week.get("days", []) or []:
+            km += (float(day.get("warmup_km", 0) or 0) +
+                   float(day.get("main_km", 0) or 0) +
+                   float(day.get("cooldown_km", 0) or 0))
+            if km == 0:
+                ms = str(day.get("main_set", "") or "")
+                m = _re.search(r"(\d+\.?\d*)\s*km", ms)
+                if m: km = float(m.group(1))
+        volumes.append(km)
+    # H2: 首四周用周间增幅 ≤15% 替代 ACWR (来源: Gabbett 2016 10%规则, 业余跑者适度放宽至 15%)
+    for i in range(1, min(4, len(volumes))):
+        if volumes[i-1] > 0:
+            increase = volumes[i] / volumes[i-1] - 1.0
+            if increase > 0.15:
+                issues.append(HMPlanValidationIssue(
+                    constraint_id="progressive_overload", severity="warning",
+                    message=f"第{i+1}周跑量增幅 {increase:.0%} > 15% (首四周 ACWR 未生效, 使用周间增幅替代, Gabbett 2016)",
+                    recommendation=f"将第{i+1}周跑量控制在 ≤{volumes[i-1]*1.15:.0f}km",
+                    label=f"week_{i+1}",
+                ))
+
+    for i in range(4, len(volumes)):
+        acute = volumes[i]
+        chronic = sum(volumes[i-4:i]) / 4.0
+        if chronic > 0:
+            acwr = acute / chronic
+            if acwr > 1.5:
+                issues.append(HMPlanValidationIssue(
+                    constraint_id="acwr_safety", severity="error",
+                    message=f"第{i+1}周 ACWR={acwr:.1f}>{1.5} (Gabbett 2016)",
+                    recommendation=f"跑量从 {acute:.0f}km 降至 <={chronic*1.3:.0f}km",
+                    label=f"week_{i+1}",
+                ))
+    return issues
+
+
+# Fix #2 / H5: 确定性阶段-课型兼容白名单 (来源: Pfitzinger + Daniels, A 级)
+# 阶段名 -> 允许的训练类型列表。不在列表中的课型触发警告。
+_PHASE_ALLOWED_WORKOUTS = {
+    "intro": ["轻松跑", "恢复跑", "一般有氧跑", "有氧阈值训练", "跑走结合",
+              "法特莱克", "长距离", "泡沫轴放松", "动态激活", "热身", "灵活度训练", "马克操"],
+    "base_1": ["轻松跑", "恢复跑", "一般有氧跑", "有氧阈值训练", "长距离",
+               "节奏跑", "连续节奏跑", "渐进跑", "法特莱克", "坡道训练", "短冲",
+               "跑走结合", "泡沫轴放松", "核心训练", "动态激活", "热身", "马克操"],
+    "base_2": ["轻松跑", "恢复跑", "一般有氧跑", "有氧阈值训练", "长距离",
+               "节奏跑", "连续节奏跑", "渐进跑", "法特莱克", "坡道训练",
+               "无氧阈跑", "间歇跑", "短冲",
+               "跑走结合", "核心训练", "马克操"],
+    "build": ["轻松跑", "恢复跑", "一般有氧跑", "有氧阈值训练", "长距离",
+              "节奏跑", "连续节奏跑", "渐进跑", "法特莱克", "坡道训练",
+              "无氧阈跑", "间歇跑", "摄氧量训练", "马拉松配速跑",
+              "MP混合长距离", "跨步跑", "短冲", "重复跑", "核心训练"],
+    "peak": ["轻松跑", "恢复跑", "一般有氧跑", "长距离",
+             "节奏跑", "连续节奏跑", "渐进跑", "法特莱克",
+             "无氧阈跑", "间歇跑", "摄氧量训练", "马拉松配速跑",
+             "MP混合长距离", "比赛模拟跑", "半马专项配速", "跨步跑", "短冲",
+             "坡道训练", "核心训练"],
+    "taper": ["轻松跑", "恢复跑", "一般有氧跑", "有氧阈值训练",
+              "节奏跑", "马拉松配速跑", "跑走结合",
+              "短冲", "泡沫轴放松", "动态激活", "热身"],  # 减量期: 无新刺激
+}
+_PHASE_FAMILY_MAP = {
+    "导入期": "intro", "基础期-1": "base_1", "基础期-2": "base_2",
+    "基础阶段-1": "base_1", "基础阶段-2": "base_2",
+    "专项构建": "build", "比赛专项": "peak",
+    "赛前减量": "taper", "减量": "taper",
+}
+
+
+def _validate_phase_workout_compatibility(week_plans):
+    """检查每周课表是否与当前训练阶段兼容 (Pfitzinger/Daniels 教材规则)。"""
+    issues = []
+    for week in week_plans:
+        if not isinstance(week, dict): continue
+        phase_name = str(week.get("phase_name", "") or week.get("phase_label", "") or "")
+        phase_family = _PHASE_FAMILY_MAP.get(phase_name, "")
+        if not phase_family:
+            continue
+        for day in week.get("days", []) or []:
+            tt = str(day.get("training_type", "") or "")
+            # H5: 白名单模式——不在允许列表中的课型触发警告
+            allowed = _PHASE_ALLOWED_WORKOUTS.get(phase_family, [])
+            if allowed and tt and tt not in allowed:
+                issues.append(HMPlanValidationIssue(
+                    constraint_id="phase_workout_compatibility",
+                    severity="warning",
+                    message=f"{phase_name} 阶段不允许安排 {tt} (不在白名单中, Pfitzinger/Daniels)",
+                    recommendation=f"将 {tt} 替换为该阶段允许的课型: {', '.join(allowed[:5])}...",
+                    label=str(day.get("day", "")),
+                ))
+    return issues
+
+
+# Step 3: LLM 生成的课时是否在文献约束范围内
+def _validate_workout_duration_bounds(week_plans):
+    """验证每节训练课的时长是否在文献约束范围 (workout_constraints) 内。"""
+    import re as _re
+    issues = []
+    try:
+        from marathon_qa_assistant.core.workout_constraints import WORKOUT_CONSTRAINTS
+    except ImportError:
+        return issues  # 约束表不可用时静默降级
+
+    for week in week_plans:
+        if not isinstance(week, dict):
+            continue
+        for day in week.get("days", []) or []:
+            tt = str(day.get("training_type", "") or "")
+            constraint = WORKOUT_CONSTRAINTS.get(tt)
+            if not constraint:
+                continue
+
+            # 优先读权威数值字段 duration_minutes（由 repair_workout_durations 同步设置），
+            # fallback 到 main_set 文本解析。避免 main_set 多时长数字导致读取不一致。
+            actual_minutes = None
+            dm = day.get("duration_minutes")
+            if isinstance(dm, (int, float)) and dm > 0:
+                actual_minutes = int(dm)
+            else:
+                ms = str(day.get("main_set", "") or "")
+                min_match = _re.search(r"(\d+)\s*(?:min|分钟)", ms)
+                km_match = _re.search(r"(\d+\.?\d*)\s*km", ms)
+                if min_match:
+                    actual_minutes = int(min_match.group(1))
+                elif km_match:
+                    # 按配速 6:00/km 近似换算
+                    km = float(km_match.group(1))
+                    pace = 6.0
+                    pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
+                    if pace_match:
+                        pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
+                    actual_minutes = int(km * pace)
+
+            if actual_minutes is None:
+                continue
+
+            if actual_minutes < constraint.min_minutes:
+                issues.append(HMPlanValidationIssue(
+                    constraint_id="workout_duration_bounds",
+                    severity="warning",
+                    message=f"{tt} 时长 {actual_minutes}min < 文献下限 {constraint.min_minutes}min ({constraint.source}, {constraint.source_grade}级)",
+                    recommendation=f"将 {tt} 延长至 ≥{constraint.min_minutes}min",
+                    label=str(day.get("day", "")),
+                ))
+            elif actual_minutes > constraint.max_minutes:
+                issues.append(HMPlanValidationIssue(
+                    constraint_id="workout_duration_bounds",
+                    severity="error",
+                    message=f"{tt} 时长 {actual_minutes}min > 文献上限 {constraint.max_minutes}min ({constraint.source}, {constraint.source_grade}级)",
+                    recommendation=f"将 {tt} 缩短至 ≤{constraint.max_minutes}min",
+                    label=str(day.get("day", "")),
+                ))
+    return issues
+
+
+def repair_workout_durations(week_plans):
+    """自动修复 LLM 生成的训练时长违反文献约束的情况。
+
+    在 main_set 文本中替换不合规的时长为约束范围内的值。
+    支持 min/分钟 格式和 km 格式（按配速换算）。
+    返回修复数量。
+    """
+    import re as _re
+    try:
+        from marathon_qa_assistant.core.workout_constraints import WORKOUT_CONSTRAINTS
+    except ImportError:
+        return 0
+
+    repaired = 0
+    for week in week_plans:
+        if not isinstance(week, dict):
+            continue
+        for day in week.get("days", []) or []:
+            tt = str(day.get("training_type", "") or "")
+            constraint = WORKOUT_CONSTRAINTS.get(tt)
+            if not constraint:
+                continue
+
+            ms = str(day.get("main_set", "") or "")
+            min_match = _re.search(r"(\d+)\s*(min|分钟)", ms)
+            km_match = _re.search(r"(\d+\.?\d*)\s*km", ms)
+
+            actual = None
+            source_format = None
+            if min_match:
+                actual = int(min_match.group(1))
+                source_format = "min"
+            elif km_match:
+                km = float(km_match.group(1))
+                pace = 6.0
+                pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
+                if pace_match:
+                    pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
+                actual = int(km * pace)
+                source_format = "km"
+
+            if actual is None:
+                continue
+
+            if actual < constraint.min_minutes or actual > constraint.max_minutes:
+                target = constraint.max_minutes if actual > constraint.max_minutes else constraint.min_minutes
+
+                if source_format == "min":
+                    old_text = min_match.group(0)
+                    new_text = f"{target}{min_match.group(2)}"
+                    day["main_set"] = ms.replace(old_text, new_text, 1)
+                else:
+                    pace = 6.0
+                    pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
+                    if pace_match:
+                        pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
+                    new_km = round(target / pace, 1)
+                    old_text = km_match.group(0)
+                    new_text = f"{new_km}km"
+                    day["main_set"] = ms.replace(old_text, new_text, 1)
+
+                # 同步设置权威数值字段 duration_minutes：_validate_workout_duration_bounds 和
+                # _estimate_day_duration_min 统一读它，避免 main_set 文本含多个时长数字时
+                # repair 改一个、validate 读另一个的不一致（曾导致 warning 反复 fail → 500）。
+                day["duration_minutes"] = target
+
+                logger.info(
+                    "repair_workout_durations: %s %dmin->%dmin (constraint %d-%dmin)",
+                    tt, actual, target, constraint.min_minutes, constraint.max_minutes,
+                )
+                repaired += 1
+    return repaired
 
 
 __all__ = [

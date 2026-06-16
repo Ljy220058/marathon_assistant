@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>今日反馈</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>今日反馈</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <a class="journal-pill is-action" href="./ink-home.html">返回今天</a>
+        </div>
+      </header>
+      <section class="journal-split">
+        <article class="journal-card journal-card-pad">
+          <h2>今日反馈</h2>
+          <p class="journal-inline-note" style="margin-top: 10px;">保存后会决定要不要重排下一版计划。</p>
+          <form id="feedbackForm" class="journal-feedback-grid" style="margin-top: 18px;">
+            <label class="journal-field">
+              <span>完成情况</span>
+              <div class="journal-radio-row">
+                <label class="journal-radio"><input type="radio" name="completion" value="未开始" />未开始</label>
+                <label class="journal-radio journal-status-ok"><input type="radio" name="completion" value="已完成" checked />已完成</label>
+                <label class="journal-radio"><input type="radio" name="completion" value="未完成" />未完成</label>
+              </div>
+            </label>
+            <label class="journal-field">
+              <span>疲劳程度</span>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <input class="journal-range" name="fatigue" type="range" min="1" max="5" value="3" oninput="this.nextElementSibling.textContent=this.value" />
+                <output style="min-width:1.5em;text-align:center;font-weight:600;">3</output>
+              </div>
+            </label>
+            <label class="journal-field">
+              <span>身体不适部位（没有就不勾）</span>
+              <div class="journal-check-grid">
+                <label class="journal-check"><input type="checkbox" name="bodyParts" value="左膝" />左膝</label>
+                <label class="journal-check"><input type="checkbox" name="bodyParts" value="右膝" />右膝</label>
+                <label class="journal-check"><input type="checkbox" name="bodyParts" value="脚踝" />脚踝</label>
+                <label class="journal-check"><input type="checkbox" name="bodyParts" value="腰背" />腰背</label>
+                <label class="journal-check"><input type="checkbox" name="bodyParts" value="足底" />足底</label>
+                <label class="journal-check"><input type="checkbox" name="bodyParts" value="小腿" />小腿</label>
+              </div>
+            </label>
+            <label class="journal-field">
+              <span>备注</span>
+              <textarea class="journal-textarea" name="notes" placeholder="今天实际发生了什么"></textarea>
+            </label>
+            <div class="journal-action-row end">
+              <button class="journal-btn primary" type="submit">保存反馈</button>
+            </div>
+          </form>
+        </article>
+        <article class="journal-card journal-card-pad">
+          <h2>反馈会影响什么</h2>
+          <div class="journal-list" style="margin-top: 16px;">
+            <div class="journal-note-card">
+              <span>已完成 + 疲劳低</span>
+              <strong>保留当前版本</strong>
+            </div>
+            <div class="journal-note-card">
+              <span>未完成 / 疲劳高</span>
+              <strong>生成新版本并下调本周</strong>
+            </div>
+            <div class="journal-note-card">
+              <span>疼痛信号</span>
+              <strong>优先改下次训练，不直接加量</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+      <nav class="journal-bottom-tabs" aria-label="底部导航">
+        <a class="is-active" href="./ink-home.html">今天</a>
+        <a href="./ink-calendar.html">日历</a>
+        <a href="./ink-dialog.html">对话</a>
+        <a href="./ink-profile.html">我的</a>
+      </nav>
+    </main>
+  </body>
+</html>

@@ -16,6 +16,7 @@ from marathon_qa_assistant.services.workout_template_retriever import (
     normalize_workout_type_for_template,
     _select_relevant_action_library_hits,
 )
+from marathon_qa_assistant.core import kb_runtime
 from marathon_qa_assistant.services.vector_store import load_vector_kb, retrieve
 from marathon_qa_assistant.core.app_state import get_preferred_vector_dir, has_vector_kb_artifacts
 from marathon_qa_assistant.core.zone_constants import sanitize_all_pace
@@ -77,6 +78,7 @@ class DailyScheduleItem:
     source: List[str] = field(default_factory=list)
     evidence_ids: List[int] = field(default_factory=list)
     is_rest: bool = False
+    is_key_session: bool = False
     notes: str = ""
     duration_min: int = 0
     training_load: int = 0
@@ -90,6 +92,8 @@ class DailyScheduleItem:
     risk_gate: Dict[str, Any] = field(default_factory=dict)
     trace: Dict[str, Any] = field(default_factory=dict)
     kb_metadata: Dict[str, Any] = field(default_factory=dict)
+    # 备选训练方案列表，每个元素包含 warmup/main_set/cooldown/zone_range/source_chunk_id/reason
+    alternatives: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
@@ -121,20 +125,26 @@ def _extract_kb_evidence_for_workout(
     workout_type: str,
     top_k: int = 20,
 ) -> Tuple[List[Dict[str, Any]], str]:
-    selected_vector_dir = get_preferred_vector_dir()
-    if not has_vector_kb_artifacts(selected_vector_dir):
-        return [], ""
-
-    try:
-        chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
-    except Exception:
-        return [], ""
-
     registry_entry = WORKOUT_TEMPLATE_REGISTRY.get(workout_type, {})
     aliases = registry_entry.get("aliases", [workout_type])
     search_query = " ".join(aliases[:5])
 
-    hits = retrieve(search_query, chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
+    retrieve_fn = kb_runtime.RETRIEVE_FUNC or retrieve
+    if kb_runtime.KB_CHUNKS and retrieve_fn:
+        chunks = kb_runtime.KB_SHARD_CHUNKS if kb_runtime.KB_SHARD_CHUNKS is not None else kb_runtime.KB_CHUNKS
+        vectorizer = kb_runtime.KB_VECTORIZER
+        matrix = kb_runtime.KB_MATRIX
+        bm25 = kb_runtime.KB_BM25
+    else:
+        selected_vector_dir = get_preferred_vector_dir()
+        if not has_vector_kb_artifacts(selected_vector_dir):
+            return [], ""
+        try:
+            chunks, vectorizer, matrix, bm25 = load_vector_kb(selected_vector_dir)
+        except Exception:
+            return [], ""
+
+    hits = retrieve_fn(search_query, chunks, vectorizer, matrix, top_k=top_k, bm25=bm25)
     return hits, search_query
 
 
@@ -321,11 +331,19 @@ def _merge_objective_text(*values: str) -> str:
     return "；".join(parts)
 
 
-def _build_no_evidence_training_card(training_type: str, notes: str = "") -> Dict[str, str]:
+def _build_no_evidence_training_card(
+    training_type: str,
+    notes: str = "",
+    *,
+    skeleton_warmup: str = "",
+    skeleton_cooldown: str = "",
+) -> Dict[str, str]:
+    warmup = skeleton_warmup or "慢跑10分钟 + 动态拉伸"
+    cooldown = skeleton_cooldown or "慢跑10分钟 + 静态拉伸"
     return {
         "main_set": "动作库证据不足，暂不展示具体主课。",
-        "warmup": "动作库证据不足，暂不展示热身建议。",
-        "cooldown": "动作库证据不足，暂不展示冷身建议。",
+        "warmup": warmup,
+        "cooldown": cooldown,
         "alternative_workout": "",
         "training_objective": "当前训练类型缺少可直接绑定的动作库证据，待补全后再显示执行细节。",
         "evidence_tier": "needs_evidence",
@@ -565,6 +583,232 @@ def _normalize_main_set_candidates(raw_candidates: Any) -> List[str]:
             if candidate and candidate not in candidates:
                 candidates.append(candidate)
     return candidates
+
+
+# ---------------------------------------------------------------------------
+# 备选方案构建：从动作库条目中提取 a/b/c 变体，为 LLM 教练节点提供多候选项
+# ---------------------------------------------------------------------------
+
+def _parse_content_variants(text: str) -> List[str]:
+    """从动作库条目的 text 字段中解析 content 部分的 a/b/c 变体列表。
+
+    典型格式：
+        content：
+        a.3-4*3000/2min
+        b.5-6*2000/2min
+        c. 3*3000+3+2000
+
+    返回每个变体的清洗后文本，无 content 块或无变体时返回空列表。
+    """
+    if not text:
+        return []
+    # 定位 content 段落：从 "content：" 开始，到下一个顶层字段（zone_range/objective/warmup/cooldown/name）为止
+    content_match = re.search(
+        r'content[：:]\s*\n?(.*?)(?=\n(?:zone_range|objective|warmup|cooldown|name)[：:]|\Z)',
+        text, re.DOTALL,
+    )
+    if not content_match:
+        return []
+    content_text = content_match.group(1).strip()
+    if not content_text:
+        return []
+
+    # 按换行后紧跟"字母+点"的位置拆分为变体段落（如 \na.xxx → 保留 a. 前缀）
+    parts = re.split(r'\n(?=[a-z]\.)', content_text)
+
+    variants: List[str] = []
+    for part in parts:
+        stripped = part.strip()
+        # 只保留以字母+点开头的变体段落（a.xxx 或 a. xxx 格式均可）
+        if not re.match(r'^[a-z]\.', stripped):
+            continue
+        cleaned = re.sub(r'^[a-z]\.\s*', '', stripped)
+        if cleaned and len(cleaned) >= 3:
+            variants.append(cleaned)
+
+    return variants
+
+
+def _extract_warmup_from_action_text(text: str) -> str:
+    """从动作库条目 text 中提取热身建议（warmup_suggestion 或 warmup 字段）。"""
+    if not text:
+        return ""
+    patterns = [
+        r'(?:warmup_suggestion|warmup|热身)[：:]\s*(.{5,200}?)(?:\n(?:cooldown|zone_range|objective|name|【)[：:]|\Z)',
+        r'(?:热身|warm[-_ ]?up)\s+(.{5,80}?)(?:\n|$)',
+        r'(\d+分[钟]?\s*慢跑\s*[\+＋]\s*动态拉伸.{3,80}?)',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        if match:
+            raw = match.group(1).strip() if match.lastindex else match.group(0).strip()
+            return re.sub(r'\s+', ' ', raw).strip(' ，,。；;')
+    return ""
+
+
+def _extract_cooldown_from_action_text(text: str) -> str:
+    """从动作库条目 text 中提取冷身建议（cooldown_suggestion 或 cooldown 字段）。"""
+    if not text:
+        return ""
+    patterns = [
+        r'(?:cooldown_suggestion|cooldown|cool[-_ ]?down|冷身)[：:]\s*(.{5,200}?)(?:\n(?:warmup|zone_range|objective|name|【)[：:]|\Z)',
+        r'(?:冷身|cooldown|cool[-_ ]?down)\s+(.{5,80}?)(?:\n|$)',
+        r'(\d+分[钟]?\s*慢跑.{3,80}?(?:拉伸|放松).{0,30})',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        if match:
+            raw = match.group(1).strip() if match.lastindex else match.group(0).strip()
+            return re.sub(r'\s+', ' ', raw).strip(' ，,。；;')
+    return ""
+
+
+def _extract_simple_main_set(text: str) -> str:
+    """从无 content 变体的动作库条目中提取简单主课描述。
+
+    用于那些 content 字段不是 a/b/c 列表格式的条目。
+    """
+    if not text:
+        return ""
+    # 尝试 content 字段中的单行内容
+    content_match = re.search(
+        r'content[：:]\s*\n?(.{5,120}?)(?:\n(?:zone_range|objective|warmup|cooldown|name)[：:]|\Z)',
+        text, re.DOTALL,
+    )
+    if content_match:
+        candidate = content_match.group(1).strip()
+        # 如果以字母+点开头，说明是 a/b/c 变体格式，不返回（由变体解析函数处理）
+        if re.match(r'^[a-z]\.', candidate):
+            return ""
+        return re.sub(r'\s+', ' ', candidate).strip(' ，,。；;')
+    return ""
+
+
+def _build_alternatives_from_hits(
+    hits: List[Dict[str, Any]],
+    workout_type: str,
+    selected_main_set: str = "",
+    warmup_text: str = "",
+    cooldown_text: str = "",
+    selected_idx: int = 0,
+) -> List[Dict[str, Any]]:
+    """从动作库 hits 构建备选训练方案列表。
+
+    为每个训练日生成主选方案之外的多候选项，供 LLM 教练节点根据环境上下文
+    做最终选择。每个备选项包含完整的训练内容描述。
+
+    参数：
+        hits: 动作库检索结果列表
+        workout_type: 归一化后的训练类型
+        selected_main_set: 已选为主选的 main_set 文本（用于去重）
+        warmup_text: 当前已确定的 warmup 文本（回退用）
+        cooldown_text: 当前已确定的 cooldown 文本（回退用）
+        selected_idx: 高置信度匹配在 hits 中的索引，该条目优先用于主选
+
+    返回：
+        备选方案列表，每个元素包含 warmup/main_set/cooldown/zone_range/source_chunk_id/reason
+        无变体时返回空列表，不崩，不编造
+    """
+    if not hits:
+        return []
+
+    registry_entry = WORKOUT_TEMPLATE_REGISTRY.get(workout_type, {})
+    zone_range = registry_entry.get("zone_range", "")
+
+    alternatives: List[Dict[str, Any]] = []
+
+    for hit_idx, hit in enumerate(hits):
+        text = str(hit.get("text") or "")
+        chunk_id = str(hit.get("chunk_id") or "")
+
+        # 解析 content 字段中的 a/b/c 变体
+        variants = _parse_content_variants(text)
+
+        # 提取该条目的 warmup / cooldown（动作库条目级 > 传入的默认值）
+        hit_warmup = _extract_warmup_from_action_text(text) or warmup_text
+        hit_cooldown = _extract_cooldown_from_action_text(text) or cooldown_text
+
+        if variants:
+            # 有 a/b/c 变体：跳过主选 idx 对应条目的第一个变体，其余作为备选
+            start = 1 if hit_idx == selected_idx else 0
+            for var_idx in range(start, len(variants)):
+                variant_text = variants[var_idx]
+                # 与已选主课去重
+                if variant_text == selected_main_set:
+                    continue
+                label = chr(ord('a') + var_idx) if var_idx < 26 else str(var_idx)
+                alternatives.append({
+                    "warmup": hit_warmup,
+                    "main_set": variant_text,
+                    "cooldown": hit_cooldown,
+                    "zone_range": zone_range,
+                    "source_chunk_id": chunk_id,
+                    "reason": f"变体 {label}：{variant_text}"[:100],
+                })
+        else:
+            # 无 a/b/c 变体的条目，若非主选条目，整体提取主课作为备选
+            if hit_idx != selected_idx:
+                main_from_hit = _extract_simple_main_set(text)
+                if main_from_hit and main_from_hit != selected_main_set:
+                    alternatives.append({
+                        "warmup": hit_warmup,
+                        "main_set": main_from_hit,
+                        "cooldown": hit_cooldown,
+                        "zone_range": zone_range,
+                        "source_chunk_id": chunk_id,
+                        "reason": f"备选方案：来自动作库 {chunk_id}",
+                    })
+
+    # 按 main_set 去重，保留首次出现的来源信息
+    seen: set = set()
+    unique: List[Dict[str, Any]] = []
+    for alt in alternatives:
+        key = alt["main_set"]
+        if key not in seen:
+            seen.add(key)
+            unique.append(alt)
+
+    return unique[:5]  # 最多返回 5 个备选，避免列表过长
+
+
+def _build_alternatives_for_hmp(
+    card: Dict[str, Any],
+    zone_range: str,
+) -> List[Dict[str, Any]]:
+    """为 HMP 协议类型从 execution_action_card 构建备选方案列表。
+
+    HMP 训练日的主课来自 execution_action_card 中映射后的动作库类型。
+    备选方案同样从该 execution_card 的候选列表中提取。
+    """
+    exec_card = card.get("execution_action_card")
+    if not isinstance(exec_card, dict):
+        return []
+
+    candidates = _normalize_main_set_candidates(exec_card.get("main_set_candidates") or [])
+    if len(candidates) <= 1:
+        return []
+
+    source = _primary_source_from_card(exec_card, exec_card.get("source") or [])
+    exec_warmup = str(exec_card.get("warmup_suggestion") or "")
+    exec_cooldown = str(exec_card.get("cooldown_suggestion") or "")
+    exec_zone = str(exec_card.get("zone_range") or zone_range or "")
+    exec_chunk = str(source.get("chunk_id") or "")
+
+    alternatives: List[Dict[str, Any]] = []
+    for i, candidate in enumerate(candidates):
+        if i == 0:
+            continue  # 第一个是主选
+        label = chr(ord('a') + i) if i < 26 else str(i)
+        alternatives.append({
+            "warmup": exec_warmup,
+            "main_set": candidate,
+            "cooldown": exec_cooldown,
+            "zone_range": exec_zone,
+            "source_chunk_id": exec_chunk,
+            "reason": f"变体 {label}：{candidate}"[:100],
+        })
+
+    return alternatives[:5]
 
 
 def _build_action_match(workout_type: str, card: Dict[str, Any], evidence_tier: str) -> Dict[str, Any]:
@@ -1107,6 +1351,7 @@ def generate_daily_schedule(
                     kb_fallback=kb_trace,
                     risk_gate=risk_gate,
                     trace=trace,
+                    alternatives=[],  # 休息日无备选方案
                 ))
                 continue
 
@@ -1127,6 +1372,8 @@ def generate_daily_schedule(
                 no_evidence = _build_no_evidence_training_card(
                     training_type_raw,
                     str(day.get("notes") or "").strip(),
+                    skeleton_warmup=sanitize_all_pace(str(day.get("warmup") or "").strip()),
+                    skeleton_cooldown=sanitize_all_pace(str(day.get("cooldown") or "").strip()),
                 )
                 kb_trace = _build_kb_fallback_trace(None)
                 if main_set_display:
@@ -1213,6 +1460,7 @@ def generate_daily_schedule(
                     kb_fallback=kb_trace,
                     risk_gate=risk_gate,
                     trace=trace,
+                    alternatives=[],  # 未知训练类型无备选方案
                 ))
                 continue
 
@@ -1221,7 +1469,12 @@ def generate_daily_schedule(
             zone_range = registry_entry.get("zone_range", "")
             intensity_target = registry_entry.get("intensity_target", "")
 
-            foundation_hits = [] if workout_type in HMP_WORKOUT_TYPES else get_action_library_foundation_hits(workout_type)
+            # HMP 类型不再绕过动作库：先映射为动作库类型再统一查询
+            if workout_type in HMP_WORKOUT_TYPES:
+                action_workout_type = _action_library_type_for_hmp_protocol(workout_type, training_type_raw, main_set_display)
+                foundation_hits = get_action_library_foundation_hits(action_workout_type)
+            else:
+                foundation_hits = get_action_library_foundation_hits(workout_type)
             card = build_daily_workout_template_card_from_hits(
                 workout_type=workout_type,
                 day=day_label,
@@ -1301,19 +1554,33 @@ def generate_daily_schedule(
             if evidence_tier in {"action_library", "kb_fallback", "protocol_rule"}:
                 warmup_text = sanitize_all_pace(str(card.get("warmup_suggestion") or "").strip())
                 cooldown_text = sanitize_all_pace(str(card.get("cooldown_suggestion") or "").strip())
+                if warmup_text and warmup_text.startswith("alternative_workout"):
+                    warmup_text = ""
+                if cooldown_text and cooldown_text.startswith("alternative_workout"):
+                    cooldown_text = ""
                 if not warmup_text and evidence_tier == "protocol_rule":
                     warmup_text = sanitize_all_pace(str(day.get("warmup") or "").strip())
                 if not cooldown_text and evidence_tier == "protocol_rule":
                     cooldown_text = sanitize_all_pace(str(day.get("cooldown") or "").strip())
                 if evidence_tier != "protocol_rule":
-                    missing = _build_no_evidence_training_card(training_type_raw, str(day.get("notes") or "").strip())
+                    skeleton_wu = sanitize_all_pace(str(day.get("warmup") or "").strip())
+                    skeleton_cd = sanitize_all_pace(str(day.get("cooldown") or "").strip())
+                    missing = _build_no_evidence_training_card(
+                        training_type_raw, str(day.get("notes") or "").strip(),
+                        skeleton_warmup=skeleton_wu,
+                        skeleton_cooldown=skeleton_cd,
+                    )
                     warmup_text = warmup_text or missing["warmup"]
                     cooldown_text = cooldown_text or missing["cooldown"]
             else:
                 warmup_text = sanitize_all_pace(str(day.get("warmup") or card.get("warmup_suggestion") or "").strip())
                 cooldown_text = sanitize_all_pace(str(day.get("cooldown") or card.get("cooldown_suggestion") or "").strip())
             if evidence_tier == "plan_only" and workout_type not in HMP_WORKOUT_TYPES:
-                no_evidence = _build_no_evidence_training_card(training_type_raw, str(day.get("notes") or "").strip())
+                no_evidence = _build_no_evidence_training_card(
+                    training_type_raw, str(day.get("notes") or "").strip(),
+                    skeleton_warmup=warmup_text,
+                    skeleton_cooldown=cooldown_text,
+                )
                 evidence_tier = no_evidence["evidence_tier"]
                 evidence_tier_label = no_evidence["evidence_tier_label"]
                 card["main_set_candidates"] = []
@@ -1338,7 +1605,11 @@ def generate_daily_schedule(
                 load_bias=_load_bias_for_day(day, raw_week),
             )
             if resolved_evidence_tier != evidence_tier:
-                no_evidence = _build_no_evidence_training_card(training_type_raw, str(day.get("notes") or "").strip())
+                no_evidence = _build_no_evidence_training_card(
+                    training_type_raw, str(day.get("notes") or "").strip(),
+                    skeleton_warmup=warmup_text,
+                    skeleton_cooldown=cooldown_text,
+                )
                 evidence_tier = resolved_evidence_tier
                 evidence_tier_label = EVIDENCE_TIER_LABELS["needs_evidence"]
                 source = []
@@ -1419,6 +1690,25 @@ def generate_daily_schedule(
                 risk_gate=risk_gate,
                 final_card=final_card,
             )
+            # 构建备选训练方案列表，供 LLM 教练节点根据环境上下文做最终选择
+            alternatives: List[Dict[str, Any]] = []
+            if evidence_tier in ("action_library", "protocol_rule") and workout_type:
+                if workout_type in HMP_WORKOUT_TYPES:
+                    # HMP 协议类型：从 execution_action_card 的候选列表中提取备选
+                    alternatives = _build_alternatives_for_hmp(card, zone_range)
+                else:
+                    # 常规训练类型：从动作库 foundation_hits 构建备选方案
+                    alternatives = _build_alternatives_from_hits(
+                        hits=foundation_hits,
+                        workout_type=workout_type,
+                        selected_main_set=main_set_clean,
+                        warmup_text=warmup_text,
+                        cooldown_text=cooldown_text,
+                    )
+            # 无动作库证据或降级方案：alternatives 保持空列表，不崩，不编造
+            _is_key = workout_type in QUALITY_WORKOUT_TYPES or any(
+                kw in training_type_raw for kw in ("长距离", "阈值", "间歇", "专项", "渐进", "VO2")
+            )
             days.append(DailyScheduleItem(
                 date=f"第{week_index}周{day_label}",
                 day_label=day_label,
@@ -1440,6 +1730,7 @@ def generate_daily_schedule(
                 evidence_tier_label=evidence_tier_label,
                 source=source,
                 evidence_ids=[int(i) for i in (card.get("evidence_ids") or []) if str(i).isdigit()],
+                is_key_session=_is_key,
                 notes=str(day.get("notes") or "").strip(),
                 duration_min=load_estimate.duration_min,
                 training_load=load_estimate.training_load,
@@ -1453,6 +1744,7 @@ def generate_daily_schedule(
                 risk_gate=risk_gate,
                 trace=trace,
                 kb_metadata=kb_metadata,
+                alternatives=alternatives,  # 备选训练方案列表，供 LLM 教练节点选择
             ))
 
     total_days = len(days)

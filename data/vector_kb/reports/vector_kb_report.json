@@ -1,0 +1,237 @@
+{
+  "input_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs",
+  "output_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\default",
+  "chunk_size": 500,
+  "chunk_overlap": 50,
+  "total_chunks": 8915,
+  "engine": "FAISS + Nomic Embedding",
+  "files": [
+    {
+      "source_file": "2016+-+Nutrition+for+Marathon+Running.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\2016+-+Nutrition+for+Marathon+Running.pdf",
+      "pages": 21,
+      "chunks": 144
+    },
+    {
+      "source_file": "36b5639a13f6f78e00f1c2ca46b86e854898.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\36b5639a13f6f78e00f1c2ca46b86e854898.pdf",
+      "pages": 22,
+      "chunks": 197
+    },
+    {
+      "source_file": "EWM-Training-Guides-Base-Plan.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\EWM-Training-Guides-Base-Plan.pdf",
+      "pages": 23,
+      "chunks": 106
+    },
+    {
+      "source_file": "Gabbett_2016_ACWR_Paradox.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Gabbett_2016_ACWR_Paradox.pdf",
+      "pages": 10,
+      "chunks": 126
+    },
+    {
+      "source_file": "half_marathon_hmp_protocol.md",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\half_marathon_hmp_protocol.md",
+      "pages": 1,
+      "chunks": 0,
+      "error": ""
+    },
+    {
+      "source_file": "jhse_Vol_8_N_II_350-366.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\jhse_Vol_8_N_II_350-366.pdf",
+      "pages": 17,
+      "chunks": 117
+    },
+    {
+      "source_file": "Kreider_2018_ISSN_Sports_Nutrition.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Kreider_2018_ISSN_Sports_Nutrition.pdf",
+      "pages": 57,
+      "chunks": 880
+    },
+    {
+      "source_file": "Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Level2꞉Chapter4꞉BasicTrainingMethodology_English.pdf",
+      "pages": 29,
+      "chunks": 103
+    },
+    {
+      "source_file": "Martin_2014_Plantar_Fasciitis_CPG.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Martin_2014_Plantar_Fasciitis_CPG.pdf",
+      "pages": 33,
+      "chunks": 362
+    },
+    {
+      "source_file": "Meeusen_2013_Overtraining.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Meeusen_2013_Overtraining.pdf",
+      "pages": 20,
+      "chunks": 271
+    },
+    {
+      "source_file": "Midgley_2007_Marathon_Physiology.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Midgley_2007_Marathon_Physiology.pdf",
+      "pages": 14,
+      "chunks": 132
+    },
+    {
+      "source_file": "nutrition_acsm_position_2016.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\nutrition_acsm_position_2016.pdf",
+      "pages": 48,
+      "chunks": 393
+    },
+    {
+      "source_file": "nutrition_distance_runners_2019.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\nutrition_distance_runners_2019.pdf",
+      "pages": 13,
+      "chunks": 182
+    },
+    {
+      "source_file": "nutrition_issn_nutrient_timing_2017.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\nutrition_issn_nutrient_timing_2017.pdf",
+      "pages": 21,
+      "chunks": 304
+    },
+    {
+      "source_file": "nutrition_issn_review_2018.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\nutrition_issn_review_2018.pdf",
+      "pages": 57,
+      "chunks": 880
+    },
+    {
+      "source_file": "nutrition_ultramarathon_issn_2019.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\nutrition_ultramarathon_issn_2019.pdf",
+      "pages": 23,
+      "chunks": 313
+    },
+    {
+      "source_file": "nutrition_world_athletics_2019.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\nutrition_world_athletics_2019.pdf",
+      "pages": 12,
+      "chunks": 159
+    },
+    {
+      "source_file": "pasted_20260428_193434.txt",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\pasted_20260428_193434.txt",
+      "pages": 1,
+      "chunks": 4
+    },
+    {
+      "source_file": "pasted_20260428_225958.txt",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\pasted_20260428_225958.txt",
+      "pages": 1,
+      "chunks": 5
+    },
+    {
+      "source_file": "safety_injury_continuum_2023.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\safety_injury_continuum_2023.pdf",
+      "pages": 26,
+      "chunks": 212
+    },
+    {
+      "source_file": "safety_running_injuries_state_art_2021.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\safety_running_injuries_state_art_2021.pdf",
+      "pages": 3,
+      "chunks": 20
+    },
+    {
+      "source_file": "safety_running_msk_injuries_2012.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\safety_running_msk_injuries_2012.pdf",
+      "pages": 15,
+      "chunks": 122
+    },
+    {
+      "source_file": "safety_subjective_load_2018.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\safety_subjective_load_2018.pdf",
+      "pages": 10,
+      "chunks": 113
+    },
+    {
+      "source_file": "Seiler_2010_TID_Best_Practice.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Seiler_2010_TID_Best_Practice.pdf",
+      "pages": 16,
+      "chunks": 116
+    },
+    {
+      "source_file": "Silbernagel_2018_Achilles_CPG.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Silbernagel_2018_Achilles_CPG.pdf",
+      "pages": 38,
+      "chunks": 398
+    },
+    {
+      "source_file": "Stoggl_2014_Polarized_vs_Threshold.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Stoggl_2014_Polarized_vs_Threshold.pdf",
+      "pages": 9,
+      "chunks": 114
+    },
+    {
+      "source_file": "Sub-70半程马拉松训练_图片OCR整理.md",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Sub-70半程马拉松训练_图片OCR整理.md",
+      "pages": 1,
+      "chunks": 63
+    },
+    {
+      "source_file": "Taberner_2019_Return_to_Sport.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Taberner_2019_Return_to_Sport.pdf",
+      "pages": 5,
+      "chunks": 43
+    },
+    {
+      "source_file": "Thomas_2016_ACSM_Nutrition.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Thomas_2016_ACSM_Nutrition.pdf",
+      "pages": 26,
+      "chunks": 385
+    },
+    {
+      "source_file": "train_app_data_marathon_2021.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\train_app_data_marathon_2021.pdf",
+      "pages": 13,
+      "chunks": 123
+    },
+    {
+      "source_file": "train_low_intensity_2025.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\train_low_intensity_2025.pdf",
+      "pages": 7,
+      "chunks": 78
+    },
+    {
+      "source_file": "train_marathon_physiology_2025.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\train_marathon_physiology_2025.pdf",
+      "pages": 67,
+      "chunks": 685
+    },
+    {
+      "source_file": "train_tapering_meta_2023.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\train_tapering_meta_2023.pdf",
+      "pages": 20,
+      "chunks": 167
+    },
+    {
+      "source_file": "train_tid_theory_2025.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\train_tid_theory_2025.pdf",
+      "pages": 22,
+      "chunks": 235
+    },
+    {
+      "source_file": "train_world_class_middle_distance_2021.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\train_world_class_middle_distance_2021.pdf",
+      "pages": 20,
+      "chunks": 231
+    },
+    {
+      "source_file": "Willy_2019_PFPS_CPG.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\Willy_2019_PFPS_CPG.pdf",
+      "pages": 95,
+      "chunks": 1132
+    },
+    {
+      "source_file": "动作库.pdf",
+      "source_path": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\domain_docs\\动作库.pdf",
+      "pages": 10,
+      "chunks": 0
+    }
+  ],
+  "artifacts": {
+    "chunks_file": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\default\\chunks.jsonl",
+    "faiss_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\default\\faiss_db"
+  }
+}

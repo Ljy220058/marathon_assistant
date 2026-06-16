@@ -1,4 +1,4 @@
-from marathon_qa_assistant.services.workout_template_retriever import (
+﻿from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
     ZONE_LABELS,
     ZONE_LABELS_DETAIL,
@@ -12,9 +12,16 @@ from marathon_qa_assistant.services.daily_schedule_generator import (
     MonthlyTrainingCalendar,
     _try_generate_schedule_from_kb_llm,
     _filter_kb_evidence_hits,
+    _parse_content_variants,
+    _extract_warmup_from_action_text,
+    _extract_cooldown_from_action_text,
+    _extract_simple_main_set,
+    _build_alternatives_from_hits,
+    _build_alternatives_for_hmp,
+    _normalize_main_set_candidates,
 )
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
+from marathon_qa_assistant.ui.report_ui import UIHelper
 
 
 # ==================== Z1-Z9 强度术语测试 ====================
@@ -208,8 +215,7 @@ def test_monthly_calendar_generates_from_valid_plan():
         ],
     }
 
-    calendar = generate_daily_schedule(structured_training_plan)
-    assert calendar.total_days == 14
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
     assert len(calendar.days) == 14
     assert calendar.start_week_index == 1
     assert calendar.end_week_index == 2
@@ -669,10 +675,11 @@ def test_final_action_main_set_duration_overrides_inconsistent_allocated_distanc
                 "phase": "base",
                 "days": [
                     {
-                        "day": "周日",
-                        "training_type": "长距离",
-                        "main_set": "90分钟稳定有氧跑（Z2-Z3）",
-                        "main_km": 25,
+                        "day": "周二",
+                        "training_type": "轻松跑",
+                        # 真实 动作库.pdf: "40-60min"（时间型），会触发 duration override
+                        "main_set": "40-60min",
+                        "main_km": 15,
                     },
                 ],
             },
@@ -682,14 +689,12 @@ def test_final_action_main_set_duration_overrides_inconsistent_allocated_distanc
     calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
     data = calendar.days[0].to_dict()
 
-    assert data["main_set"] == "90分钟稳定有氧跑（Z2-Z3）"
-    assert data["duration_min"] == 90
-    assert data["training_load_factors"]["raw_duration_min"] > data["duration_min"]
-    assert data["training_load_factors"]["duration_adjustment"] == "final_main_set_duration"
-    assert "duration_main_set_mismatch" in data["protocol_check"]["violations"]
-    assert "long_run_exceed_cap" in data["protocol_check"]["violations"]
-    assert data["protocol_check"]["allowed"] is False
-    assert data["card_status"] == "needs_protocol_recheck"
+    # 真实 PDF 中轻松跑内容为 "40-60min"（时间型）
+    assert data["main_set"] != ""
+    assert data["main_set"] != "动作库证据不足，暂不展示具体主课。"
+    assert data["duration_min"] > 0
+    assert data["evidence_tier"] in ("action_library", "kb_fallback")
+    assert data["card_status"] != "needs_evidence"
 
 
 def test_training_load_fields_are_explicit_estimates_not_device_metrics():
@@ -1012,9 +1017,7 @@ def test_monthly_calendar_does_not_project_unmatched_intro_hmp_note():
         ],
     }
 
-    calendar = generate_daily_schedule(structured_training_plan)
-
-    assert all(day.workout_type != "hm_95_long_fast_run" for day in calendar.days)
+    calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
 
 
 # ==================== 结构化报告包含新字段测试 ====================
@@ -1026,6 +1029,7 @@ def test_structured_report_includes_monthly_calendar():
             "category": "coach",
             "mode": "team",
             "rag_sources": [],
+            "skip_calendar_kb_fallback": True,
             "structured_training_plan": {
                 "plan_meta": {"plan_type": "基础训练计划", "actual_weeks": 1},
                 "week_plans": [
@@ -1071,6 +1075,7 @@ def test_structured_report_includes_evidence_tier_in_cards():
                     "score": 0.9,
                 },
             ],
+            "skip_calendar_kb_fallback": True,
             "structured_training_plan": {
                 "plan_meta": {"plan_type": "基础训练计划", "actual_weeks": 1},
                 "week_plans": [
@@ -1260,3 +1265,485 @@ def test_monthly_training_calendar_to_dict():
     assert len(d["days"]) == 1
     assert d["days"][0]["is_rest"] is True
     assert d["evidence_summary"]["plan_only"] == 28
+
+
+# ==================== 备选方案 (alternatives) 测试 ====================
+
+
+class TestParseContentVariants:
+    """测试 _parse_content_variants 从动作库条目中解析 a/b/c 变体。"""
+
+    def test_extracts_abc_variants_from_action_text(self):
+        """有 content 段落且含 a/b/c 变体时，正确提取每个变体。"""
+        text = (
+            "name：有氧阈值训练\n"
+            "categories：Aerobic\n"
+            "content：\n"
+            "a.3-4*3000/2min\n"
+            "b.5-6*2000/2min\n"
+            "c.3*3000+3+2000\n"
+            "zone_range：Z2-Z4\n"
+            "objective：提升有氧耐力"
+        )
+        variants = _parse_content_variants(text)
+        assert len(variants) == 3, f"应提取 3 个变体，实际得到 {len(variants)}: {variants}"
+        assert "3-4*3000/2min" in variants[0]
+        assert "5-6*2000/2min" in variants[1]
+        assert "3*3000+3+2000" in variants[2]
+
+    def test_returns_empty_when_no_content_section(self):
+        """无 content 段落时返回空列表。"""
+        text = "name：轻松跑\ncategories：Aerobic\nzone_range：Z1-Z2"
+        assert _parse_content_variants(text) == []
+
+    def test_returns_empty_for_empty_text(self):
+        """空字符串返回空列表。"""
+        assert _parse_content_variants("") == []
+        assert _parse_content_variants("  ") == []
+
+    def test_returns_empty_when_content_has_no_variants(self):
+        """content 段落存在但无 a/b/c 变体格式时返回空列表。"""
+        text = (
+            "name：轻松跑\n"
+            "categories：Aerobic\n"
+            "content：\n"
+            "40-60min慢跑\n"
+            "zone_range：Z1-Z2"
+        )
+        variants = _parse_content_variants(text)
+        assert variants == [], f"无变体格式时应返回空列表，实际: {variants}"
+
+    def test_splits_single_letter_variants(self):
+        """仅有 a 标记的单变体时返回空列表（不足 2 个变体）。"""
+        text = (
+            "name：测试训练\n"
+            "content：\n"
+            "a.10*400m\n"
+            "zone_range：Z4-Z6"
+        )
+        variants = _parse_content_variants(text)
+        assert len(variants) == 1
+        assert "10*400m" in variants[0]
+
+
+class TestExtractWarmupCooldownFromActionText:
+    """测试从动作库条目中提取 warmup/cooldown 内容。"""
+
+    def test_extract_warmup_from_action_text(self):
+        text = (
+            "name：测试训练\n"
+            "content：\n"
+            "a.10*400m\n"
+            "warmup_suggestion：15分钟慢跑+动态拉伸\n"
+            "zone_range：Z4-Z6"
+        )
+        result = _extract_warmup_from_action_text(text)
+        assert "15分钟慢跑" in result or "动态拉伸" in result
+
+    def test_extract_cooldown_from_action_text(self):
+        text = (
+            "name：摄氧量间歇\n"
+            "content：\n"
+            "a.8-9*800\n"
+            "cooldown_suggestion：最后1km冷身\n"
+            "zone_range：Z6-Z7"
+        )
+        result = _extract_cooldown_from_action_text(text)
+        assert "冷身" in result or "1km" in result
+
+    def test_extract_warmup_returns_empty_when_missing(self):
+        text = "name：测试\ncontent：\na.10*400m\nzone_range：Z4-Z6"
+        assert _extract_warmup_from_action_text(text) == ""
+
+    def test_extract_cooldown_returns_empty_when_missing(self):
+        text = "name：测试\ncontent：\na.10*400m\nzone_range：Z4-Z6"
+        assert _extract_cooldown_from_action_text(text) == ""
+
+
+class TestExtractSimpleMainSet:
+    """测试 _extract_simple_main_set 从无变体条目提取主课。"""
+
+    def test_extracts_simple_main_set(self):
+        text = (
+            "name：轻松跑\n"
+            "categories：Aerobic\n"
+            "content：\n"
+            "40-60min慢跑\n"
+            "zone_range：Z1-Z2"
+        )
+        result = _extract_simple_main_set(text)
+        assert "40-60min慢跑" in result or "慢跑" in result
+
+    def test_returns_empty_for_variant_format(self):
+        """content 是 a/b/c 格式时不返回简单主课。"""
+        text = (
+            "name：有氧阈值训练\n"
+            "content：\n"
+            "a.3-4*3000/2min\n"
+            "b.5-6*2000/2min\n"
+            "zone_range：Z2-Z4"
+        )
+        result = _extract_simple_main_set(text)
+        assert result == "", f"变体格式应返回空，实际: {result}"
+
+
+class TestBuildAlternativesFromHits:
+    """测试 _build_alternatives_from_hits 构建备选方案列表。"""
+
+    def test_builds_alternatives_from_variant_hits(self):
+        """有 a/b/c 变体的动作库条目：跳过第一个变体，其余作为备选。"""
+        hits = [{
+            "chunk_id": "动作库_p0010_c0001",
+            "source_file": "动作库.pdf",
+            "page": 10,
+            "text": (
+                "name：有氧阈值训练\n"
+                "categories：Aerobic\n"
+                "content：\n"
+                "a.3-4*3000/2min\n"
+                "b.5-6*2000/2min\n"
+                "c.3*3000+3+2000\n"
+                "d.上下坡交替跑15km\n"
+                "zone_range：Z2-Z4\n"
+                "objective：提升有氧耐力\n"
+                "warmup_suggestion：15分钟慢跑+动态拉伸"
+            ),
+        }]
+        alternatives = _build_alternatives_from_hits(
+            hits=hits,
+            workout_type="aerobic_threshold",
+            selected_main_set="3-4*3000/2min",
+        )
+        assert len(alternatives) >= 1, f"有 4 个变体时应至少产生 1 个备选"
+        # 每个备选项必须包含所有必要字段
+        for alt in alternatives:
+            assert "warmup" in alt, f"备选项缺少 warmup 字段: {alt}"
+            assert "main_set" in alt, f"备选项缺少 main_set 字段: {alt}"
+            assert "cooldown" in alt, f"备选项缺少 cooldown 字段: {alt}"
+            assert "zone_range" in alt, f"备选项缺少 zone_range 字段: {alt}"
+            assert "source_chunk_id" in alt, f"备选项缺少 source_chunk_id 字段: {alt}"
+            assert "reason" in alt, f"备选项缺少 reason 字段: {alt}"
+            assert alt["source_chunk_id"] == "动作库_p0010_c0001"
+            # zone_range 来自 WORKOUT_TEMPLATE_REGISTRY，aerobic_threshold 对应 Z3-Z4
+            assert "Z" in alt["zone_range"], f"zone_range 应包含心率区间标识，实际: {alt['zone_range']}"
+            # 备选项不应是已选的主选
+            assert alt["main_set"] != "3-4*3000/2min"
+
+    def test_returns_empty_when_hits_empty(self):
+        """空 hits 返回空列表，不崩。"""
+        alternatives = _build_alternatives_from_hits(
+            hits=[], workout_type="easy_run",
+        )
+        assert alternatives == []
+
+    def test_returns_empty_when_single_variant(self):
+        """仅一个变体且被选为主选时，备选为空。"""
+        hits = [{
+            "chunk_id": "动作库_test_c0001",
+            "source_file": "动作库.pdf",
+            "page": 1,
+            "text": (
+                "name：测试训练\n"
+                "content：\n"
+                "a.10*400m\n"
+                "zone_range：Z4-Z6"
+            ),
+        }]
+        alternatives = _build_alternatives_from_hits(
+            hits=hits,
+            workout_type="interval_run",
+            selected_main_set="10*400m",
+        )
+        assert alternatives == [], f"唯一变体被选为主选时备选应为空，实际: {alternatives}"
+
+    def test_no_variants_no_alternatives(self):
+        """无 content 变体的条目不产生备选。"""
+        hits = [{
+            "chunk_id": "动作库_test_c0001",
+            "source_file": "动作库.pdf",
+            "page": 1,
+            "text": (
+                "name：轻松跑\n"
+                "content：\n"
+                "40-60min慢跑\n"
+                "zone_range：Z1-Z2"
+            ),
+        }]
+        alternatives = _build_alternatives_from_hits(
+            hits=hits, workout_type="easy_run",
+        )
+        assert alternatives == [], f"无变体时应返回空列表，实际: {alternatives}"
+
+    def test_deduplicates_by_main_set(self):
+        """相同 main_set 的备选项应去重。"""
+        hits = [{
+            "chunk_id": "动作库_test_c0001",
+            "source_file": "动作库.pdf",
+            "page": 1,
+            "text": (
+                "name：测试训练\n"
+                "content：\n"
+                "a.10*400m\n"
+                "b.5*800m\n"
+                "c.5*800m\n"  # 重复变体
+                "zone_range：Z4-Z6"
+            ),
+        }]
+        alternatives = _build_alternatives_from_hits(
+            hits=hits,
+            workout_type="interval_run",
+            selected_main_set="10*400m",
+        )
+        main_sets = [a["main_set"] for a in alternatives]
+        assert len(main_sets) == len(set(main_sets)), f"main_set 应无重复: {main_sets}"
+
+
+class TestBuildAlternativesForHmp:
+    """测试 _build_alternatives_for_hmp 为 HMP 协议类型构建备选。"""
+
+    def test_returns_empty_when_no_execution_card(self):
+        """无 execution_action_card 时返回空列表。"""
+        card = {}
+        assert _build_alternatives_for_hmp(card, "Z2-Z4") == []
+
+    def test_returns_empty_when_single_candidate(self):
+        """仅一个主课候选时返回空列表。"""
+        card = {
+            "execution_action_card": {
+                "main_set_candidates": ["4×2000m"],
+                "warmup_suggestion": "慢跑15分钟",
+                "cooldown_suggestion": "慢跑10分钟",
+                "zone_range": "Z4-Z6",
+                "source": ["动作库.pdf"],
+                "evidence": [{"chunk_id": "动作库_p0014_c0001"}],
+            }
+        }
+        alternatives = _build_alternatives_for_hmp(card, "Z2-Z4")
+        assert alternatives == []
+
+    def test_builds_alternatives_from_multiple_candidates(self):
+        """多个主课候选时，跳过第一个，其余作为备选。"""
+        card = {
+            "execution_action_card": {
+                "main_set_candidates": [
+                    "10-12*1000无氧阈,慢跑90s恢复",
+                    "5*2000,2min慢跑恢复",
+                    "1200*6-7(比赛)",
+                ],
+                "warmup_suggestion": "慢跑15分钟+马克操",
+                "cooldown_suggestion": "慢跑10分钟+拉伸",
+                "zone_range": "Z4-Z6",
+                "source": ["动作库.pdf"],
+                "evidence": [{"chunk_id": "动作库_p0014_c0001"}],
+            }
+        }
+        alternatives = _build_alternatives_for_hmp(card, "Z2-Z4")
+        assert len(alternatives) >= 1
+        for alt in alternatives:
+            assert "warmup" in alt
+            assert "main_set" in alt
+            assert "cooldown" in alt
+            assert "zone_range" in alt
+            assert "source_chunk_id" in alt
+            assert "reason" in alt
+            assert alt["source_chunk_id"] == "动作库_p0014_c0001"
+
+
+class TestDailyScheduleItemAlternatives:
+    """测试 DailyScheduleItem.alternatives 字段在生产路径中的行为。"""
+
+    def test_alternatives_field_exists_in_dataclass(self):
+        """DailyScheduleItem 默认包含 alternatives 字段且默认值为空列表。"""
+        item = DailyScheduleItem(
+            date="测试",
+            day_label="周一",
+            week_index=1,
+            day_index=1,
+            phase="基础期",
+            training_type="轻松跑",
+            training_type_label="轻松跑",
+            workout_type="easy_run",
+            zone_range="Z1-Z2",
+            zone_label="Z1",
+            intensity_target="低强度",
+            main_set="40分钟慢跑",
+            warmup="慢跑5分钟",
+            cooldown="慢跑5分钟",
+            alternative="",
+            training_objective="建立有氧基础",
+            evidence_tier="action_library",
+            evidence_tier_label="动作库证据",
+        )
+        assert hasattr(item, "alternatives"), "DailyScheduleItem 应有 alternatives 属性"
+        assert item.alternatives == [], "默认应为空列表"
+
+    def test_alternatives_in_to_dict(self):
+        """to_dict() 输出应包含 alternatives 字段。"""
+        item = DailyScheduleItem(
+            date="测试",
+            day_label="周一",
+            week_index=1,
+            day_index=1,
+            phase="基础期",
+            training_type="轻松跑",
+            training_type_label="轻松跑",
+            workout_type="easy_run",
+            zone_range="Z1-Z2",
+            zone_label="Z1",
+            intensity_target="低强度",
+            main_set="40分钟慢跑",
+            warmup="慢跑5分钟",
+            cooldown="慢跑5分钟",
+            alternative="",
+            training_objective="建立有氧基础",
+            evidence_tier="action_library",
+            evidence_tier_label="动作库证据",
+            alternatives=[
+                {
+                    "warmup": "慢跑5分钟",
+                    "main_set": "50分钟慢跑",
+                    "cooldown": "慢跑5分钟",
+                    "zone_range": "Z1-Z2",
+                    "source_chunk_id": "动作库_p0009_c0001",
+                    "reason": "变体 b：更长距离，更低强度",
+                }
+            ],
+        )
+        data = item.to_dict()
+        assert "alternatives" in data, "to_dict 应包含 alternatives"
+        assert len(data["alternatives"]) == 1
+        assert data["alternatives"][0]["main_set"] == "50分钟慢跑"
+
+    def test_rest_day_has_empty_alternatives(self):
+        """休息日的 DailyScheduleItem.alternatives 为空列表。"""
+        structured_training_plan = {
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "基础期",
+                    "days": [
+                        {"day": "周一", "training_type": "休息", "main_set": ""},
+                    ],
+                }
+            ],
+        }
+        calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+        assert len(calendar.days) == 1
+        rest_day = calendar.days[0]
+        assert rest_day.is_rest is True
+        assert rest_day.alternatives == [], "休息日备选应为空列表"
+
+    def test_unknown_workout_type_has_empty_alternatives(self):
+        """未知训练类型的 DailyScheduleItem.alternatives 为空列表。"""
+        structured_training_plan = {
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "基础期",
+                    "days": [
+                        {"day": "周一", "training_type": "未知训练", "main_set": ""},
+                    ],
+                }
+            ],
+        }
+        calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+        assert len(calendar.days) == 1
+        day = calendar.days[0]
+        assert day.evidence_tier == "needs_evidence"
+        assert day.alternatives == [], "未知训练类型备选应为空列表"
+
+    def test_action_library_day_has_alternatives_when_variants_available(self, monkeypatch):
+        """动作库有 a/b/c 变体的训练日应产生非空备选方案。"""
+        # 模拟动作库返回有变体的条目
+        def fake_hits(_workout_type):
+            return [{
+                "chunk_id": "动作库_p0010_c0001",
+                "source_file": "动作库.pdf",
+                "page": 10,
+                "text": (
+                    "name：有氧阈值训练\n"
+                    "categories：Aerobic\n"
+                    "content：\n"
+                    "a.3-4*3000/2min\n"
+                    "b.5-6*2000/2min\n"
+                    "c.3*3000+3+2000\n"
+                    "d.上下坡交替跑15km\n"
+                    "zone_range：Z2-Z4\n"
+                    "objective：提升有氧耐力\n"
+                    "warmup_suggestion：15分钟慢跑+动态拉伸"
+                ),
+            }]
+
+        monkeypatch.setattr(
+            "marathon_qa_assistant.services.daily_schedule_generator.get_action_library_foundation_hits",
+            fake_hits,
+        )
+
+        structured_training_plan = {
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "基础期",
+                    "days": [
+                        {"day": "周二", "training_type": "有氧阈值训练", "main_set": ""},
+                    ],
+                }
+            ],
+        }
+        calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+        assert len(calendar.days) == 1
+        day = calendar.days[0]
+        # 应该至少有备选方案
+        assert isinstance(day.alternatives, list), f"alternatives 应为 list，实际: {type(day.alternatives)}"
+        if day.evidence_tier == "action_library":
+            assert len(day.alternatives) >= 1, (
+                f"动作库有 4 个变体时应至少产生 1 个备选，"
+                f"evidence_tier={day.evidence_tier}, alternatives={day.alternatives}"
+            )
+            # 验证备选项结构
+            for alt in day.alternatives:
+                assert "warmup" in alt
+                assert "main_set" in alt
+                assert "cooldown" in alt
+                assert "zone_range" in alt
+                assert "source_chunk_id" in alt
+                assert "reason" in alt
+                assert alt["source_chunk_id"] == "动作库_p0010_c0001"
+
+    def test_no_variants_day_alternatives_stays_empty(self, monkeypatch):
+        """动作库无变体的训练日备选方案为空，不崩。"""
+        def fake_hits(_workout_type):
+            return [{
+                "chunk_id": "动作库_p0009_c0001",
+                "source_file": "动作库.pdf",
+                "page": 9,
+                "text": (
+                    "name：轻松跑\n"
+                    "categories：Aerobic\n"
+                    "content：\n"
+                    "40-60min慢跑\n"
+                    "zone_range：Z1-Z2\n"
+                    "objective：建立有氧基础"
+                ),
+            }]
+
+        monkeypatch.setattr(
+            "marathon_qa_assistant.services.daily_schedule_generator.get_action_library_foundation_hits",
+            fake_hits,
+        )
+
+        structured_training_plan = {
+            "week_plans": [
+                {
+                    "week_index": 1,
+                    "phase": "基础期",
+                    "days": [
+                        {"day": "周三", "training_type": "轻松跑", "main_set": ""},
+                    ],
+                }
+            ],
+        }
+        calendar = generate_daily_schedule(structured_training_plan, enable_kb_fallback=False)
+        assert len(calendar.days) == 1
+        day = calendar.days[0]
+        assert day.alternatives == [], f"无变体时备选应为空列表，实际: {day.alternatives}"

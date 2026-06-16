@@ -13,6 +13,21 @@ from marathon_qa_assistant.services.kb.prescription_permissions import permissio
 from marathon_qa_assistant.services.kb.source_registry import build_source_registry_id
 
 
+def graph_relation_strength(edge: Dict[str, Any]) -> str:
+    relation = str(edge.get("canonical_relation") or edge.get("relation") or "").strip().lower()
+    evidence_raw = edge.get("evidence") if isinstance(edge.get("evidence"), dict) else {}
+    explicit = str(edge.get("graph_relation_strength") or evidence_raw.get("graph_relation_strength") or "").strip()
+    if explicit in {"hard_constraint", "strong_support", "weak_support", "conflict"}:
+        return explicit
+    if any(term in relation for term in ("contraindicat", "forbid", "avoid", "stop", "risk_gate", "medical", "red_flag", "禁忌", "停止", "转诊")):
+        return "hard_constraint"
+    if any(term in relation for term in ("conflict", "contradict", "disagree", "冲突", "矛盾")):
+        return "conflict"
+    if any(term in relation for term in ("support", "requires", "improves", "prevents", "guides", "支持", "需要", "预防")):
+        return "strong_support"
+    return "weak_support"
+
+
 def _domain(value: Any) -> EvidenceDomain:
     try:
         return EvidenceDomain(str(value or EvidenceDomain.SPORTS_SCIENCE_REFERENCE.value))
@@ -29,6 +44,7 @@ def evidence_from_graph_edge(edge: Dict[str, Any], retrieval_mode: RetrievalMode
     source_key = source_path or source_file or "unknown_graph_source"
     domain = _domain(evidence_raw.get("evidence_domain"))
     confidence = float(evidence_raw.get("confidence") or 0.0)
+    strength = graph_relation_strength(edge)
     evidence_id_seed = chunk_id or hashlib.md5(text_span.encode("utf-8")).hexdigest()[:8]
 
     return EvidenceBinding(
@@ -48,6 +64,8 @@ def evidence_from_graph_edge(edge: Dict[str, Any], retrieval_mode: RetrievalMode
             "source": "graph_edge",
             "relation": str(edge.get("relation") or ""),
             "canonical_relation": str(edge.get("canonical_relation") or edge.get("relation") or ""),
+            "graph_relation_strength": strength,
+            "conflict_detected": strength == "conflict",
             "source_node": str(edge.get("source") or ""),
             "target_node": str(edge.get("target") or ""),
         },
@@ -72,6 +90,10 @@ def graph_binding_to_legacy_evidence(binding: EvidenceBinding) -> Dict[str, Any]
         "vector_score": 0.0,
         "retrieval_score": 0.0,
         "graph_confidence": binding.score,
+        "graph_relation_strength": binding.trace.get("graph_relation_strength", "weak_support"),
+        "conflict_detected": bool(binding.trace.get("conflict_detected")),
+        "conflict_reason": "Knowledge graph relation is marked as conflict." if binding.trace.get("conflict_detected") else "",
+        "conflicting_sources": [],
         "entity_overlap": 0.0,
         "fusion_bonus": 0.0,
         "hybrid_score": 0.0,

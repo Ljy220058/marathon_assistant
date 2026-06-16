@@ -1,0 +1,20 @@
+{
+  "can_enter_runtime_index": 2,
+  "status_counts": {
+    "approved": 27,
+    "candidate": 68,
+    "seed_only": 707
+  },
+  "top_blocking_reasons": {
+    "duplicate_doi": 4,
+    "duplicate_title": 12,
+    "local_file_missing": 728,
+    "needs_review": 775,
+    "not_approved": 775,
+    "pdf_text_quality_not_verified": 26,
+    "seed_only_not_runtime_source": 707,
+    "url_reachability_not_verified": 93,
+    "web_canonical_not_verified": 67
+  },
+  "total": 802
+}

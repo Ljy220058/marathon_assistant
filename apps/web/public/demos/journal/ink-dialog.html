@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>智能对话</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>智能对话</span>
+          </div>
+        </div>
+      </header>
+      <section class="journal-layout">
+        <aside class="journal-sidebar">
+          <nav class="journal-nav">
+            <a href="./ink-home.html">训练计划</a>
+            <a href="./ink-profile.html">我的情况</a>
+            <a class="is-active" href="./ink-dialog.html">智能对话</a>
+            <a href="./ink-basis.html">训练复盘</a>
+            <a href="./ink-history.html">历史记录</a>
+          </nav>
+        </aside>
+        <section class="journal-main">
+          <article class="journal-card journal-card-pad journal-chat">
+            <div class="journal-chat-thread" id="dialogThread">
+              <div class="journal-chat-row user">
+                <div class="journal-chat-bubble">昨晚没睡好，今天怎么练？</div>
+              </div>
+              <div class="journal-chat-row ai">
+                <div class="journal-chat-bubble">
+                  改成 30 分钟轻松跑。结束后记录心率和疲劳。
+                  <div class="journal-note-card" style="margin-top: 12px;">
+                    <span>依据</span>
+                    <strong>你反馈昨晚没睡好；睡眠不足时降低强度；所以今天改成 30 分钟轻松跑。</strong>
+                  </div>
+                  <div class="journal-chat-link"><a href="./ink-day.html">查看</a></div>
+                </div>
+              </div>
+            </div>
+            <div class="journal-chip-row">
+              <button type="button" class="journal-badge is-action" data-suggest>如何预防膝盖疼？</button>
+              <button type="button" class="journal-badge is-action" data-suggest>跑前吃什么？</button>
+              <button type="button" class="journal-badge is-action" data-suggest>什么是轻松跑？</button>
+            </div>
+            <div class="journal-input-bar">
+              <input id="dialogInput" class="journal-input" type="text" placeholder="问我任何跑步问题…" />
+              <button id="dialogSend" class="journal-btn primary" type="button">发送</button>
+            </div>
+          </article>
+        </section>
+      </section>
+      <nav class="journal-bottom-tabs" aria-label="底部导航">
+        <a href="./ink-home.html">今天</a>
+        <a href="./ink-calendar.html">日历</a>
+        <a class="is-active" href="./ink-dialog.html">对话</a>
+        <a href="./ink-profile.html">我的</a>
+      </nav>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+{
+  "results": [
+    {
+      "failure_mode": "overtraining_rx",
+      "fix": "将周跑量从 55km 降至 33km，增加 2 天恢复日",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 4,
+        "safety": 5
+      },
+      "avg": 4.75
+    },
+    {
+      "failure_mode": "overtraining_rx",
+      "fix": "在连续高强度课之间插入恢复日或轻松跑，确保周跑量增幅 ≤10%",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 4,
+        "safety": 5
+      },
+      "avg": 4.75
+    },
+    {
+      "failure_mode": "overtraining_rx",
+      "fix": "建议修改训练计划",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 1,
+        "safety": 2
+      },
+      "avg": 1.25
+    },
+    {
+      "failure_mode": "pain_misinterpretation",
+      "fix": "立即就医评估，暂停所有跑步训练直至医生确认安全",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    },
+    {
+      "failure_mode": "pain_misinterpretation",
+      "fix": "任何疼痛信号应先建议就医评估，不得生成「坚持一下」类建议",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    },
+    {
+      "failure_mode": "pain_misinterpretation",
+      "fix": "注意安全",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 1,
+        "safety": 2
+      },
+      "avg": 1.25
+    },
+    {
+      "failure_mode": "hallucinated_claim",
+      "fix": "删除或替换为有本地证据支持的表述，检查引用编号对应关系",
+      "scores": {
+        "specificity": 3,
+        "actionability": 4,
+        "evidence_basis": 4,
+        "safety": 5
+      },
+      "avg": 4.0
+    },
+    {
+      "failure_mode": "hallucinated_claim",
+      "fix": "将 [5] 引用替换为有效的证据来源",
+      "scores": {
+        "specificity": 5,
+        "actionability": 4,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 4.75
+    },
+    {
+      "failure_mode": "hallucinated_claim",
+      "fix": "修改内容",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 1,
+        "safety": 2
+      },
+      "avg": 1.25
+    },
+    {
+      "failure_mode": "pacing_overly_aggressive",
+      "fix": "降低配速目标至用户当前能力的 80% 区间，增加渐进过渡周",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 4,
+        "safety": 5
+      },
+      "avg": 4.75
+    },
+    {
+      "failure_mode": "pacing_overly_aggressive",
+      "fix": "配速有问题",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 1,
+        "safety": 2
+      },
+      "avg": 1.25
+    },
+    {
+      "failure_mode": "recovery_insufficient",
+      "fix": "每周至少安排 2 天完全休息或主动恢复，长距离跑后安排恢复日",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    },
+    {
+      "failure_mode": "recovery_insufficient",
+      "fix": "建议增加休息",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 2,
+        "safety": 4
+      },
+      "avg": 2.0
+    },
+    {
+      "failure_mode": "evidence_misapplication",
+      "fix": "为每个处方级建议附加明确的 [n] 证据引用，确保引用链可追溯",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    },
+    {
+      "failure_mode": "evidence_misapplication",
+      "fix": "标注「基于通用知识，非本地证据」",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 4,
+        "safety": 5
+      },
+      "avg": 4.75
+    },
+    {
+      "failure_mode": "evidence_misapplication",
+      "fix": "需要证据",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 1,
+        "safety": 2
+      },
+      "avg": 1.25
+    },
+    {
+      "failure_mode": "contraindication_missed",
+      "fix": "检查用户画像中的伤病标记，涉及受伤部位的训练应标注风险",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    },
+    {
+      "failure_mode": "contraindication_missed",
+      "fix": "发现用户有膝盖伤病史，建议删除涉及膝关节的高强度训练",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    },
+    {
+      "failure_mode": "contraindication_missed",
+      "fix": "注意安全",
+      "scores": {
+        "specificity": 1,
+        "actionability": 1,
+        "evidence_basis": 1,
+        "safety": 2
+      },
+      "avg": 1.25
+    },
+    {
+      "failure_mode": "individualization_failure",
+      "fix": "根据用户实际周跑量 30km 重新计算训练量，而非使用默认值 60km",
+      "scores": {
+        "specificity": 5,
+        "actionability": 5,
+        "evidence_basis": 5,
+        "safety": 5
+      },
+      "avg": 5.0
+    }
+  ],
+  "overall_avg": 3.6125,
+  "dim_avgs": {
+    "specificity": 3.5,
+    "actionability": 3.5,
+    "evidence_basis": 3.4,
+    "safety": 4.05
+  },
+  "mode_avgs": {
+    "overtraining_rx": 3.58,
+    "pain_misinterpretation": 3.75,
+    "hallucinated_claim": 3.33,
+    "pacing_overly_aggressive": 3.0,
+    "recovery_insufficient": 3.5,
+    "evidence_misapplication": 3.67,
+    "contraindication_missed": 3.75,
+    "individualization_failure": 5.0
+  },
+  "decision": "SKIP_P2"
+}

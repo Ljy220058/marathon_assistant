@@ -10,6 +10,7 @@ _REQUEST_COUNTS = Counter()
 _GENERATION_STATUS_COUNTS = Counter()
 _FEEDBACK_RISK_REASON_COUNTS = Counter()
 _PLAN_DURATION_BUCKETS = Counter()
+_PLAN_PERSIST_STATUS_COUNTS = Counter()
 _LLM_PROVIDER_ERROR_COUNTS = Counter()
 _MEDICAL_REFERRAL_TOTAL = 0
 
@@ -85,6 +86,12 @@ def record_llm_provider_error(provider: str, error_code: str) -> None:
         _LLM_PROVIDER_ERROR_COUNTS[f"{safe_provider}.{safe_code}"] += 1
 
 
+def record_plan_persist_status(status: str) -> None:
+    normalized = str(status or "unknown").strip().lower() or "unknown"
+    with _LOCK:
+        _PLAN_PERSIST_STATUS_COUNTS[normalized] += 1
+
+
 def metrics_snapshot() -> Dict[str, Any]:
     with _LOCK:
         return {
@@ -97,6 +104,7 @@ def metrics_snapshot() -> Dict[str, Any]:
             },
             "generation_status_counts": dict(_GENERATION_STATUS_COUNTS),
             "feedback_risk_reason_counts": dict(_FEEDBACK_RISK_REASON_COUNTS),
+            "plan_persist_status_counts": dict(_PLAN_PERSIST_STATUS_COUNTS),
             "llm_provider_error_counts": dict(_LLM_PROVIDER_ERROR_COUNTS),
             "plan_generation_duration_buckets": dict(_PLAN_DURATION_BUCKETS),
             "medical_referral_total": int(_MEDICAL_REFERRAL_TOTAL),

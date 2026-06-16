@@ -1,0 +1,3084 @@
+{
+  "blocked_sources": {
+    "src_ai_factscore_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_ai_generate_citations_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_ai_healthcare_rag_review_2025": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_ai_rag_foundation_2020": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_ai_rag_survey_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_ai_ragas_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_acsm_exercise_testing_prescription_2021": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_commercial_acsm_nutrition_athletic_performance": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_bwh_strength_training_runners": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_c_cdc_adult_strength_guidelines": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_cdc_heart_attack_symptoms": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_c_cdc_niosh_sleep_tips": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_c_cdc_travel_heat_illnesses": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_ioc_load_injury_consensus_2016": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_ioc_sports_nutrition_consensus_2010": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_jospt_achilles_tendinopathy_cpg": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_c_mgh_marathon_recovery": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_c_nsca_runner_strength": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_sports_medicine_training_errors_2012": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_ukathletics_endurance_resources": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_c_world_athletics_training_distance": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_cdc_heat_health_athletes": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_commercial_mayoclinic_runners_knee": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_medlineplus_chest_pain": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_commercial_rrca_running_coach_manual": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_external_acsm_fitt_vp": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_bwh_return_to_running_program": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_bwh_strength_training_runners": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_adult_activity_strength_guidelines": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_heart_attack_symptoms": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_heat_athletes": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_heat_illnesses": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_heat_treatment": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_cdc_niosh_sleep_tips": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_sleep_about": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_cdc_travel_heat_illnesses": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_garmin_daily_suggested_workouts": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_ioc_load_injury_2016": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_mass_general_return_to_running_program": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_medlineplus_heart_warning_signs": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_mgh_marathon_recovery": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_mgh_rehab_protocols_return_running": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_mgh_running_injury_prevention": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_external_runna_personalized_plans": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_strava_instant_workouts": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_strava_training_log": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_strava_uploads_api": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_trainingpeaks_structured_workout": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_external_who_ai_health_ethics": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_hci_ai_physical_activity_2024": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_hci_cognitive_forcing_2021": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_hci_health_recommender_review_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_hci_health_xai_2020": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_hci_human_ai_guidelines_2019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_hci_user_models_physical_activity_2019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_action_cross_training_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_cross_training_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_easy_run_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_hill_fartlek_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_interval_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_library_pilot": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_long_run_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_mobility_recovery_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_recovery_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_strength_support_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_tempo_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_base_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_base_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_base_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_base_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_base_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_base_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_build_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_build_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_build_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_build_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_build_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_build_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_specific_advanced_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_specific_advanced_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_specific_beginner_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_specific_beginner_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_specific_intermediate_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_action_threshold_specific_intermediate_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_competitor_task_001": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_002": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_003": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_004": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_005": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_006": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_007": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_008": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_009": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_010": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_011": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_012": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_013": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_014": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_015": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_016": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_017": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_018": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_020": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_021": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_022": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_024": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_025": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_026": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_027": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_028": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_029": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_030": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_031": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_032": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_033": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_034": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_035": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_036": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_037": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_038": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_039": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_competitor_task_040": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_altitude_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_altitude_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_altitude_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_altitude_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_cold_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_cold_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_cold_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_cold_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hard_surface_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hard_surface_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hard_surface_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hard_surface_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_heat_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_heat_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_heat_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_heat_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hilly_route_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hilly_route_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hilly_route_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_hilly_route_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_humidity_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_humidity_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_humidity_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_humidity_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_race_week_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_race_week_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_race_week_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_race_week_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_time_zone_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_time_zone_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_time_zone_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_time_zone_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_travel_fatigue_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_travel_fatigue_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_travel_fatigue_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_environment_travel_fatigue_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_hmp_protocol_pilot": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_load_proxy_rule_00": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_01": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_02": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_03": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_04": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_05": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_06": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_07": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_08": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_09": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_10": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_11": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_12": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_13": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_14": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_15": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_16": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_17": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_18": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_19": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_20": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_21": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_22": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_23": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_24": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_25": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_26": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_27": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_28": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_29": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_30": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_31": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_32": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_33": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_34": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_load_proxy_rule_35": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_medical_acute_sharp_pain_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_acute_sharp_pain_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_acute_sharp_pain_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_acute_sharp_pain_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_acute_sharp_pain_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_acute_sharp_pain_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_chest_pain_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_chest_pain_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_chest_pain_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_chest_pain_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_chest_pain_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_chest_pain_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_dizziness_or_fainting_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_dizziness_or_fainting_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_dizziness_or_fainting_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_dizziness_or_fainting_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_dizziness_or_fainting_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_dizziness_or_fainting_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_heat_illness_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_heat_illness_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_heat_illness_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_heat_illness_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_heat_illness_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_heat_illness_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_pain_worsening_during_run_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_pain_worsening_during_run_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_pain_worsening_during_run_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_pain_worsening_during_run_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_pain_worsening_during_run_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_pain_worsening_during_run_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_severe_fatigue_with_poor_sleep_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_severe_fatigue_with_poor_sleep_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_severe_fatigue_with_poor_sleep_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_severe_fatigue_with_poor_sleep_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_severe_fatigue_with_poor_sleep_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_severe_fatigue_with_poor_sleep_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_swelling_or_unable_to_bear_weight_1": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_swelling_or_unable_to_bear_weight_2": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_swelling_or_unable_to_bear_weight_3": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_swelling_or_unable_to_bear_weight_4": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_swelling_or_unable_to_bear_weight_5": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_medical_swelling_or_unable_to_bear_weight_6": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_001": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_002": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_003": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_004": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_005": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_006": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_007": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_008": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_009": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_010": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_011": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_012": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_013": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_014": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_015": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_016": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_017": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_018": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_019": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_020": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_021": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_022": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_023": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_024": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_025": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_026": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_027": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_028": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_029": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_030": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_031": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_032": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_033": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_034": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_035": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_036": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_037": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_038": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_039": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_040": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_041": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_042": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_043": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_044": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_045": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_046": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_047": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_mobility_recovery_048": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_nutrition_during_race_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_5": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_6": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_7": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_during_race_8": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_5": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_6": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_7": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_electrolyte_8": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_5": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_6": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_7": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_hydration_8": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_5": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_6": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_7": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_post_run_8": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_5": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_6": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_7": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_pre_race_8": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_1": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_2": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_3": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_4": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_5": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_6": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_7": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_nutrition_supplement_caution_8": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_protocol_10K_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_10K_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_5K_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_half_marathon_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_low_mileage_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_marathon_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_return_to_training_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_advanced_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_advanced_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_advanced_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_beginner_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_beginner_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_beginner_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_intermediate_base": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_intermediate_build": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_protocol_taper_intermediate_specific": [
+      "fewer_than_two_independent_ai_review_passes",
+      "sports_science_review_required_for_core",
+      "release_audit_required_for_core"
+    ],
+    "src_internal_rehab_return_to_run_001": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_002": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_003": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_004": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_005": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_006": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_007": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_008": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_009": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_010": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_011": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_012": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_013": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_014": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_015": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_016": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_017": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_018": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_019": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_020": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_021": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_022": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_023": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_024": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_025": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_026": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_027": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_028": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_029": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_030": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_031": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_032": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_033": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_034": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_035": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_036": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_037": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_038": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_039": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_040": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_041": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_rehab_return_to_run_042": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_001": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_002": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_003": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_004": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_005": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_006": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_007": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_008": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_009": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_010": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_011": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_012": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_013": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_014": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_015": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_016": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_017": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_018": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_019": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_020": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_021": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_022": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_023": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_024": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_025": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_026": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_027": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_028": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_029": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_030": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_031": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_032": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_033": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_034": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_035": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_036": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_037": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_038": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_039": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_040": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_041": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_042": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_043": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_044": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_045": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_046": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_047": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_048": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_049": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_050": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_051": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_052": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_053": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_054": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_055": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_056": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_057": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_058": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_059": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_060": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_061": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_062": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_063": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_064": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_065": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_066": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_067": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_068": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_069": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_070": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_071": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_strength_conditioning_072": [
+      "fewer_than_two_independent_ai_review_passes",
+      "medical_safety_review_required"
+    ],
+    "src_internal_user_case_placeholder_001": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_002": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_003": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_004": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_005": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_006": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_007": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_008": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_009": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_010": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_011": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_012": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_013": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_014": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_015": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_016": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_017": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_018": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_020": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_021": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_022": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_024": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_025": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_026": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_027": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_028": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_029": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_030": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_031": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_032": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_033": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_034": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_035": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_036": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_037": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_038": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_039": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_040": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_041": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_042": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_043": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_044": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_045": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_046": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_047": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_048": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_049": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_050": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_051": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_052": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_053": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_054": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_055": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_056": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_057": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_058": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_059": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_060": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_061": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_062": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_063": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_064": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_065": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_066": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_067": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_068": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_069": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_070": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_071": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_072": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_073": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_074": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_075": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_076": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_077": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_078": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_079": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_080": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_081": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_082": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_083": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_084": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_085": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_086": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_087": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_088": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_089": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_090": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_091": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_092": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_093": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_094": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_095": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_096": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_097": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_098": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_099": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_internal_user_case_placeholder_100": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_acsm_position_2016": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_carb_during_exercise_2014": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_distance_runners_2019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_issn_nutrient_timing_2017": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_issn_review_2018": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_ultramarathon_issn_2019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_nutrition_world_athletics_2019": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_fatigue_recreational_runners_2024": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_injury_continuum_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_ioc_load_injury_2016": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_running_injuries_state_art_2021": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_running_msk_injuries_2012": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_subjective_load_2018": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_safety_training_errors_2012": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_app_data_marathon_2021": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_low_intensity_2025": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_marathon_physiology_2025": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_recreational_endurance_2020": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_tapering_meta_2023": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_tid_theory_2025": [
+      "fewer_than_two_independent_ai_review_passes"
+    ],
+    "src_train_world_class_middle_distance_2021": [
+      "fewer_than_two_independent_ai_review_passes"
+    ]
+  },
+  "commercial_staging_eligible_count": 17,
+  "commercial_status_counts": {
+    "candidate": 785,
+    "commercial_staging_eligible": 17
+  },
+  "review_report_count": 39,
+  "source_count": 802
+}

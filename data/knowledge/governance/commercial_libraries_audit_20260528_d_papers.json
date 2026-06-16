@@ -1,0 +1,21 @@
+{
+  "blocked_evidence": {},
+  "commercial_staging_evidence_count": 13,
+  "domain_counts": {
+    "environment_race_context": 1,
+    "medical_safety": 2,
+    "nutrition_race_fueling": 3,
+    "protocol": 1,
+    "rehab_strength_mobility": 3,
+    "sports_science_reference": 3
+  },
+  "evidence_count": 13,
+  "library_counts": {
+    "commercial_core_prescription_library": 1,
+    "commercial_explanation_library": 3,
+    "commercial_nutrition_library": 3,
+    "commercial_rehab_return_to_run_library": 3,
+    "commercial_risk_gate_library": 3
+  },
+  "staging_chunks_out": "data\\knowledge\\governance\\commercial_staging_chunks_20260528_d_papers.jsonl"
+}

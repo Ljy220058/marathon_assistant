@@ -1,0 +1,5 @@
+{"id":"taper_arrangement","question":"taper 怎么安排？","expected_evidence_domain":"protocol","expected_allowed_use":"core_prescription","requires_referral":false}
+{"id":"knee_pain_stop_training","question":"膝盖痛什么时候停训？","expected_evidence_domain":"rehab_strength_mobility","expected_allowed_use":"rehab_guidance","requires_referral":false}
+{"id":"hot_weather_adjustment","question":"湿热天气怎么调整？","expected_evidence_domain":"environment_race_context","expected_allowed_use":"risk_gate","requires_referral":true}
+{"id":"chest_pain_running","question":"跑步时胸痛怎么办？","expected_evidence_domain":"medical_safety","expected_allowed_use":"risk_gate","requires_referral":true}
+{"id":"race_fueling","question":"长跑中补给怎么安排？","expected_evidence_domain":"nutrition_race_fueling","expected_allowed_use":"nutrition_guidance","requires_referral":false}

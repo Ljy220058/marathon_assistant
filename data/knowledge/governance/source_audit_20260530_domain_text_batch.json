@@ -1,0 +1,66 @@
+{
+  "authority_tier_counts": {
+    "official_product_docs": 1,
+    "official_public_health_guidance": 5,
+    "open_access_pmc_article": 3
+  },
+  "batch_counts": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_domain_text_batch.jsonl": 9
+  },
+  "batch_files": [
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_domain_text_batch.jsonl"
+  ],
+  "candidate_permission_boundary_counts": {
+    "approved": 8,
+    "reviewed": 1
+  },
+  "candidate_source_count": 9,
+  "commercial_risk_counts": {},
+  "coverage_ready": false,
+  "deep_link_issue_source_ids": [],
+  "domain_gaps": [
+    "action_library",
+    "nutrition_race_fueling",
+    "training_protocols"
+  ],
+  "duplicate_canonical_urls": [],
+  "duplicate_owner_title_pairs": [],
+  "license_status_counts": {
+    "educational_only_cc_by_nc_nd_4_0": 1,
+    "official_public_doc": 6,
+    "verified_open_cc_by_4_0": 2
+  },
+  "missing_required_audit_metadata": {},
+  "not_selected_reasons": {},
+  "per_domain_counts": {
+    "competitor_product_tasks": 1,
+    "environment_race_context": 1,
+    "medical_risk": 3,
+    "mobility_recovery": 1,
+    "rehab_return_to_run": 1,
+    "strength_conditioning": 2
+  },
+  "required_audit_metadata": [
+    "accessed_at",
+    "date_basis",
+    "canonical_url",
+    "authority_tier",
+    "selection_reason",
+    "gap_target"
+  ],
+  "selected_for_review_source_ids": [],
+  "source_ids_by_batch": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_domain_text_batch.jsonl": [
+      "src_external_cdc_adult_activity_strength_guidelines",
+      "src_external_cdc_heart_attack_symptoms",
+      "src_external_cdc_heat_athletes",
+      "src_external_cdc_heat_illnesses",
+      "src_external_cdc_sleep_about",
+      "src_external_strava_uploads_api",
+      "src_pmc_return_running_tibial_bsi_2024",
+      "src_pmc_running_overuse_risk_factors_2020",
+      "src_pmc_strength_training_running_economy_2024"
+    ]
+  },
+  "unique_canonical_url_count": 9
+}

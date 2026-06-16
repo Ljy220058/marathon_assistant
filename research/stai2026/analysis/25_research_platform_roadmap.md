@@ -1,4 +1,4 @@
-# Evidence-Gated Agentic RAG 研究平台路线图
+﻿# Evidence-Gated Agentic RAG 研究平台路线图
 
 ## 0. 升级后的目标
 
@@ -189,7 +189,7 @@
 
 输出：
 
-- 可选：Streamlit/Gradio/local HTML form。
+- 可选：Streamlit/local HTML form。
 
 ## 5. Phase D：Benchmark Expansion
 
@@ -263,3 +263,4 @@
 3. 从现有 `08_v0.1证据段落抽取表.md` 迁移 verified evidence 到 evidence_items JSONL。
 4. 为 P001-P015 建立 qid_to_gold_evidence 初版。
 5. 修改 S3 runner，使其支持 `retrieval_only`、`gold_evidence_bundle` 和 `retrieval+gold` 三种证据输入模式。
+

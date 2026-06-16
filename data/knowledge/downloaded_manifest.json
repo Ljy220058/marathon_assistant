@@ -1,0 +1,176 @@
+{
+  "downloaded": [],
+  "failed": [
+    {
+      "label": "injury_risk_factors",
+      "query": "running injury risk factors",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "injury_prevention",
+      "query": "running injury prevention",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "pfps_knee",
+      "query": "patellofemoral pain runners",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "itb_syndrome",
+      "query": "iliotibial band syndrome runners",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "achilles_tendon",
+      "query": "achilles tendinopathy runners",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "plantar_fasciitis",
+      "query": "plantar fasciitis runners",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "shin_splints",
+      "query": "medial tibial stress syndrome",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "return_to_run",
+      "query": "return to running rehabilitation",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "acwr_gabbett",
+      "query": "training load injury Gabbett",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "overtraining",
+      "query": "overtraining syndrome endurance",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "injury_rehab_exercise",
+      "query": "running injury rehabilitation exercise",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "running_epidemiology",
+      "query": "running epidemiology injury",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "stress_fracture",
+      "query": "stress fracture runners",
+      "domain": "injury_rehab"
+    },
+    {
+      "label": "tid_distribution",
+      "query": "training intensity distribution endurance",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "polarized",
+      "query": "polarized training endurance performance",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "tapering",
+      "query": "tapering performance marathon",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "periodization",
+      "query": "periodization training endurance sport",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "marathon_perf",
+      "query": "marathon performance predictors",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "running_economy",
+      "query": "running economy meta-analysis",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "strength_running",
+      "query": "strength training running performance",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "hiit_running",
+      "query": "high intensity interval running economy",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "elite_marathon",
+      "query": "elite marathon training characteristics",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "vo2max_lactate",
+      "query": "VO2max lactate threshold running",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "hr_zones",
+      "query": "training zone heart rate marathon",
+      "domain": "training_methodology"
+    },
+    {
+      "label": "nutrition_guidelines",
+      "query": "exercise nutrition position stand",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "carb_loading",
+      "query": "carbohydrate loading endurance performance",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "caffeine_ergo",
+      "query": "caffeine ergogenic endurance",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "hydration_sport",
+      "query": "hydration exercise performance endurance",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "protein_endurance",
+      "query": "protein requirements endurance athletes",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "iron_female",
+      "query": "iron deficiency female athlete runner",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "gi_endurance",
+      "query": "gastrointestinal symptoms endurance",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "electrolyte",
+      "query": "sodium electrolyte endurance exercise",
+      "domain": "nutrition_hydration"
+    },
+    {
+      "label": "nitrate_beetroot",
+      "query": "nitrate beetroot endurance performance",
+      "domain": "nutrition_hydration",
+      "error": "<urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)>"
+    },
+    {
+      "label": "sports_drink",
+      "query": "sports drink carbohydrate mouth rinse",
+      "domain": "nutrition_hydration"
+    }
+  ]
+}

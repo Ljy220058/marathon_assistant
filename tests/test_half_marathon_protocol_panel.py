@@ -1,6 +1,4 @@
-from marathon_qa_assistant.ui.plan_ui import render_minimal_plan_summary_md
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
 
 
 def _day(day, training_type="半马专项", main_set="16km @90% HMP 稳定跑"):
@@ -40,7 +38,7 @@ def _hmp_structured_plan(validation=None):
             {
                 "week_index": 1,
                 "phase": "专项能力构建阶段",
-                "week_goal": "HMP协议：专项能力构建阶段；候选课表=半马辅助耐力跑",
+                "week_goal": "HMP协议：专项能力构建阶段；候选课表：半马辅助耐力跑",
                 "load_level": "medium",
                 "load_progression_note": "本周稳步进入半马专项支撑。",
                 "execution_reminder": "疲劳明显时下调。",
@@ -62,7 +60,7 @@ def _hmp_structured_plan(validation=None):
                 {
                     "field": "current_10k_time",
                     "label": "当前10K成绩",
-                    "reason": "105% HMP中长间歇更适合用当前8K/10K能力校准。",
+                    "reason": "105% HMP 中长间歇更适合用当前 5K/10K 能力校准。",
                     "severity": "warning",
                 }
             ],
@@ -88,7 +86,7 @@ def _hmp_structured_plan(validation=None):
                         "purpose": "目标配速巡航能力",
                     },
                 ],
-                "notes": ["目标HMP快于当前能力估计，专项课应优先使用当前能力配速并保守推进。"],
+                "notes": ["目标 HMP 快于当前能力估计，专项课应优先使用当前能力配速并保守推进。"],
             },
             "capacity_budget": {
                 "quality_sessions_max": 1,
@@ -96,7 +94,7 @@ def _hmp_structured_plan(validation=None):
                 "hmp_100_total_max_km": 4,
                 "hmp_105_total_max_km": 4,
                 "hmp_110_total_max_km": 2,
-                "notes": ["周跑量低于45km，HMP关键课容量按低跑量保守缩放。"],
+                "notes": ["周跑量低于 65km，HMP 关键课容量按低跑量保守缩放。"],
             },
             "selected_archetype": {
                 "archetype_id": "short_build_after_marathon",
@@ -112,7 +110,7 @@ def _hmp_structured_plan(validation=None):
                     "label": "半马专项耐力长距离快速跑",
                     "primary_zone": "specific_endurance_95",
                     "objective": "建立半马后程抗疲劳能力。",
-                    "caution": "刚比完全马时不应直接安排上限课表。",
+                    "caution": "刚比完完全马时不应直接安排上限课表。",
                 },
                 {
                     "id": "hm_100_float_intervals",
@@ -162,7 +160,7 @@ def test_structured_report_exposes_half_marathon_protocol_panel_and_context():
     assert report["training_explanation_panel"]["protocol_context"]["status"] == "passed"
 
 
-def test_half_marathon_protocol_panel_renders_validation_issues_in_shared_report():
+def test_half_marathon_protocol_panel_keeps_validation_issues():
     validation = {
         "active": True,
         "passed": False,
@@ -193,25 +191,17 @@ def test_half_marathon_protocol_panel_renders_validation_issues_in_shared_report
         "已生成半马计划。",
     )
 
-    rendered = UIHelper.render_structured_report(report, "已生成半马计划。", include_sources=False)
-    summary_md = render_minimal_plan_summary_md({"structured_report": report})
+    panel = report["half_marathon_protocol_panel"]
 
-    assert "#### 🧬 半马 HMP 协议面板" in rendered
-    assert "**HMP 配速校准**" in rendered
-    assert "目标 HMP" in rendered
-    assert "当前能力 HMP" in rendered
-    assert "**HMP 容量预算**" in rendered
-    assert "**画像缺口**" in rendered
-    assert "C 型：备战期短且刚比完全马" in rendered
-    assert "100% HMP 核心课需靠近比赛专项期" in rendered
-    assert "100% HMP 核心课应主要放在比赛专项阶段" in rendered
-    assert "**HMP 术语解释**" in rendered
-    assert "依据：" in rendered
-    assert "docs/half_marathon_hmp_protocol.md" in rendered
-    assert "**HMP 协议**：C 型：备战期短且刚比完全马 · 验证有错误 · 1 错误 / 0 提醒" in summary_md
+    assert panel["status"] == "error"
+    assert panel["validation_summary"]["error_count"] == 1
+    assert panel["validation_summary"]["warning_count"] == 0
+    assert panel["issues"][0]["constraint_id"] == "race_specific_timing"
+    assert panel["issues"][0]["recommendation"] == "100% HMP 核心课应主要放在比赛专项阶段。"
+    assert panel["source_docs"]
 
 
-def test_half_marathon_protocol_panel_renders_repair_log():
+def test_half_marathon_protocol_panel_keeps_repair_log():
     validation = {
         "active": True,
         "passed": True,
@@ -241,11 +231,11 @@ def test_half_marathon_protocol_panel_renders_repair_log():
         "已生成半马计划。",
     )
 
-    rendered = UIHelper.render_structured_report(report, "已生成半马计划。", include_sources=False)
+    panel = report["half_marathon_protocol_panel"]
 
-    assert report["half_marathon_protocol_panel"]["repair_applied"] is True
-    assert "**自动修复记录**" in rendered
-    assert "过早100% HMP核心课已替换为90% HMP支撑跑" in rendered
+    assert panel["repair_applied"] is True
+    assert panel["repair_log"][0]["constraint_id"] == "race_specific_timing"
+    assert "90% HMP" in panel["repair_log"][0]["action"]
 
 
 def test_non_half_marathon_report_omits_hmp_panel():
@@ -262,7 +252,4 @@ def test_non_half_marathon_report_omits_hmp_panel():
         "已生成全马计划。",
     )
 
-    rendered = UIHelper.render_structured_report(report, "已生成全马计划。", include_sources=False)
-
     assert report["half_marathon_protocol_panel"] == {}
-    assert "半马 HMP 协议面板" not in rendered

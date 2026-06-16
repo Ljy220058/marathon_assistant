@@ -1,0 +1,102 @@
+{
+  "authority_tier_counts": {
+    "consensus_statement": 1,
+    "hospital_university": 7,
+    "official_guideline": 4,
+    "peer_reviewed": 1,
+    "peer_reviewed_consensus": 3,
+    "professional_association": 8,
+    "public_health_agency": 12
+  },
+  "batch_counts": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl": 6,
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_c.jsonl": 30
+  },
+  "batch_files": [
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl",
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_c.jsonl"
+  ],
+  "candidate_permission_boundary_counts": {
+    "candidate": 36
+  },
+  "candidate_source_count": 36,
+  "commercial_risk_counts": {
+    "copyright_risk": 23,
+    "geographic_applicability_risk": 11,
+    "medical_advice_risk": 25,
+    "stale_evidence_risk": 6
+  },
+  "coverage_ready": true,
+  "deep_link_issue_source_ids": [],
+  "domain_gaps": [],
+  "duplicate_canonical_urls": [],
+  "duplicate_owner_title_pairs": [],
+  "license_status_counts": {
+    "link_only": 35,
+    "summary_allowed": 1
+  },
+  "missing_required_audit_metadata": {},
+  "not_selected_reasons": {},
+  "per_domain_counts": {
+    "action_library": 2,
+    "environment_race_context": 5,
+    "medical_risk": 6,
+    "mobility_recovery": 2,
+    "nutrition_race_fueling": 4,
+    "rehab_return_to_run": 7,
+    "strength_conditioning": 3,
+    "training_protocols": 7
+  },
+  "required_audit_metadata": [
+    "accessed_at",
+    "date_basis",
+    "canonical_url",
+    "authority_tier",
+    "selection_reason",
+    "gap_target"
+  ],
+  "selected_for_review_source_ids": [],
+  "source_ids_by_batch": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl": [
+      "src_commercial_acsm_exercise_testing_prescription_2021",
+      "src_commercial_acsm_nutrition_athletic_performance",
+      "src_commercial_cdc_heat_health_athletes",
+      "src_commercial_mayoclinic_runners_knee",
+      "src_commercial_medlineplus_chest_pain",
+      "src_commercial_rrca_running_coach_manual"
+    ],
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_c.jsonl": [
+      "src_commercial_c_aaos_stress_fractures",
+      "src_commercial_c_acsm_fitt_vp_prescription",
+      "src_commercial_c_airnow_aqi_activity",
+      "src_commercial_c_bwh_return_to_running_program",
+      "src_commercial_c_bwh_strength_training_runners",
+      "src_commercial_c_cdc_adult_strength_guidelines",
+      "src_commercial_c_cdc_heart_attack_symptoms",
+      "src_commercial_c_cdc_heat_athletes_deeplink",
+      "src_commercial_c_cdc_heat_illness_symptoms",
+      "src_commercial_c_cdc_niosh_sleep_tips",
+      "src_commercial_c_cdc_sleep_recovery",
+      "src_commercial_c_cdc_travel_heat_illnesses",
+      "src_commercial_c_epa_air_quality_activity",
+      "src_commercial_c_ioc_load_injury_consensus_2016",
+      "src_commercial_c_ioc_sports_nutrition_consensus_2010",
+      "src_commercial_c_issn_ultramarathon_nutrition_2019",
+      "src_commercial_c_jospt_achilles_tendinopathy_cpg",
+      "src_commercial_c_jospt_patellofemoral_pain_cpg",
+      "src_commercial_c_mass_general_return_to_running",
+      "src_commercial_c_mayoclinic_stress_fractures",
+      "src_commercial_c_medlineplus_heart_attack",
+      "src_commercial_c_mgh_marathon_recovery",
+      "src_commercial_c_mgh_running_injury_prevention",
+      "src_commercial_c_nsca_runner_strength",
+      "src_commercial_c_rrca_training_tips",
+      "src_commercial_c_rrca_workout_vocabulary",
+      "src_commercial_c_sports_medicine_training_errors_2012",
+      "src_commercial_c_ukathletics_endurance_resources",
+      "src_commercial_c_world_athletics_nutrition_runners",
+      "src_commercial_c_world_athletics_training_distance"
+    ]
+  },
+  "unique_canonical_url_count": 36
+}

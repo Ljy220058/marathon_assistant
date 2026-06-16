@@ -36,7 +36,7 @@ This is a **marathon training AI coach** built on LangGraph. The system ingests 
 17 nodes connected in a StateGraph with conditional routing. The full path:
 
 ```
-START → security_gate → router → [profile_update] → profiler → entity_extraction
+START → security_gate → router → [profile_sync] → profiler → entity_extraction
   → wiki_search → [planner → executor → auditor] | [coach → therapist → nutritionist → auditor] | [missing_info_handler]
   → formatter → guided_questions → END
 ```
@@ -46,12 +46,12 @@ START → security_gate → router → [profile_update] → profiler → entity_
 - `subagent` — training plan generation (planner → executor → auditor), with iteration loop
 - `research` — cross-document analysis via `research_analyst_node`
 - `adaptive` — adaptive plan adjustment via `adaptive_coach_node`
-- `intercepted` — security gate blocked, routes directly to formatter
+- `intercepted` — security gate blocked, terminates immediately
 
 **Key routing decisions** (in `nodes/routing/__init__.py`):
-- `gate_decision` — after security: intercepted→formatter, research→research_analyst, adaptive→adaptive_coach, else→router
-- `entity_route_decision` — after retrieval: missing fields→missing_info_handler, plan evidence gate fails→missing_info_handler, subagent→planner, else→coach
-- `after_auditor_route` — approved→formatter, >3 iterations→missing_info_handler, else loops back to executor/coach/research/adaptive
+- `gate_decision` — after security: intercepted→blocked, else→router
+- `after_supervisor_route` — missing fields→missing_info_handler, adaptive→adaptive_coach, plan→planner, else→coach
+- `after_critic_auditor_route` — approved→safety_out, retry→supervisor, retry budget exhausted→workflow_error
 
 ### RAG Pipeline
 

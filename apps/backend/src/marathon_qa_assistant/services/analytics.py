@@ -1,12 +1,12 @@
 import hashlib
 import json
-import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
 from marathon_qa_assistant.core.app_state import RUNTIME_DATA_DIR
+from marathon_qa_assistant.core.settings import get_settings
 
 CORE_EVENTS = {
     "app_opened",
@@ -64,7 +64,7 @@ def build_event_payload(
         "event_name": event_name,
         "user_id_hash": _hash_user_id(user_id),
         "session_id": str(session_id or uuid.uuid4().hex),
-        "version": os.environ.get("APP_VERSION", "dev"),
+        "version": get_settings().app_version,
         "timestamp": _now_iso(),
         "properties": dict(properties or {}),
     }

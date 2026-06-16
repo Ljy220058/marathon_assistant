@@ -1,0 +1,60 @@
+export default [
+  {
+    ignores: ["dist/**", "node_modules/**"],
+  },
+  {
+    files: ["src/scripts/**/*.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        localStorage: "readonly",
+        fetch: "readonly",
+        AbortController: "readonly",
+        HTMLElement: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        state: "readonly",
+        renderHealth: "readonly",
+        submitFeedbackApi: "readonly",
+        buildFeedbackContext: "readonly",
+        collectFeedbackPayload: "readonly",
+        loadSavedPlan: "readonly",
+        restorePlanResponse: "readonly",
+        evaluateSingleFeedbackRisk: "readonly",
+        riskLevelLabel: "readonly",
+      },
+    },
+    rules: {
+      "no-undef": "error",
+      "no-unreachable": "error",
+      "no-constant-binary-expression": "error",
+      "no-unused-vars": "off",
+    },
+  },
+  {
+    files: ["scripts/**/*.mjs", "tests/**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        AbortController: "readonly",
+        window: "readonly",
+        document: "readonly",
+      },
+    },
+    rules: {
+      "no-undef": "error",
+      "no-unreachable": "error",
+      "no-constant-binary-expression": "error",
+      "no-unused-vars": "off",
+    },
+  },
+];

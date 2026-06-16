@@ -1,0 +1,200 @@
+{
+  "version": "v2_sharded",
+  "commercial_release_status": "ready",
+  "last_updated": "2026-06-13",
+  "readiness_verified_at": "2026-06-13",
+  "embedding_model": "bge-m3:latest",
+  "embedding_dims": 1024,
+  "total_chunks": 15653,
+  "prescription_permission_coverage": "100%",
+  "permission_classification_method": "quality_tier_mapping + curated_approved",
+  "permission_classified_at": "2026-06-13",
+  "permission_corrected_at": "2026-06-13",
+  "permission_corrections": "50 expert_review_narrative/practitioner_coach_material downgraded from can_write_core to explanation_only",
+  "json_errors_fixed_at": "2026-06-13",
+  "json_errors_fixed": "4 truncated/null-byte chunks reconstructed: training_protocol_curated_0072, nutrition_curated_0092, injury_safety_curated_0050, sport_psychology null-byte",
+  "shards": {
+    "training_protocol": {
+      "chunks": 6007,
+      "approved_curated": 72,
+      "auto_classified": 5935,
+      "can_write_core": 945,
+      "explanation_only": 5062,
+      "referral_and_flag_only": 0,
+      "unique_sources": 128,
+      "commercial_release_ready": true,
+      "readiness_verified_at": "2026-06-13",
+      "quality_tier_top": {
+        "peer_reviewed_study": 3884,
+        "expert_review_narrative": 1014,
+        "clinical_practice_guideline": 251,
+        "consensus_or_position_statement": 239
+      },
+      "curated_topics": [
+        "beginner_marathon_training",
+        "LSD_methodology",
+        "masters_runners",
+        "female_runners",
+        "HR_zone_training",
+        "VO2max_intervals",
+        "cross_training",
+        "altitude_training",
+        "strength_training",
+        "tempo_runs",
+        "taper_protocol",
+        "polarized_training",
+        "special_situations"
+      ]
+    },
+    "nutrition": {
+      "chunks": 4757,
+      "approved_curated": 56,
+      "auto_classified": 4701,
+      "can_write_core": 1486,
+      "explanation_only": 3267,
+      "referral_and_flag_only": 4,
+      "unique_sources": 73,
+      "commercial_release_ready": true,
+      "readiness_verified_at": "2026-06-13",
+      "quality_tier_top": {
+        "peer_reviewed_study": 2683,
+        "consensus_or_position_statement": 1287,
+        "expert_review_narrative": 564,
+        "clinical_practice_guideline": 106
+      },
+      "curated_topics": [
+        "race_day_CHO",
+        "female_athlete_nutrition",
+        "carb_loading",
+        "hydration",
+        "supplements",
+        "training_nutrition",
+        "long_run_fueling",
+        "recovery_nutrition"
+      ]
+    },
+    "injury_safety": {
+      "chunks": 3698,
+      "approved_curated": 37,
+      "auto_classified": 3661,
+      "can_write_core": 1566,
+      "explanation_only": 2127,
+      "referral_and_flag_only": 5,
+      "unique_sources": 73,
+      "commercial_release_ready": true,
+      "readiness_verified_at": "2026-06-13",
+      "quality_tier_top": {
+        "peer_reviewed_study": 1930,
+        "clinical_practice_guideline": 1440,
+        "expert_review_narrative": 195,
+        "consensus_or_position_statement": 59
+      },
+      "curated_topics": [
+        "running_biomechanics",
+        "load_management",
+        "injury_prevention",
+        "early_recognition",
+        "recovery"
+      ]
+    },
+    "medical_safety": {
+      "chunks": 690,
+      "approved_curated": 29,
+      "auto_classified": 661,
+      "can_write_core": 192,
+      "explanation_only": 469,
+      "referral_and_flag_only": 29,
+      "unique_sources": 53,
+      "commercial_release_ready": true,
+      "readiness_verified_at": "2026-06-13",
+      "quality_tier_top": {
+        "peer_reviewed_study": 460,
+        "clinical_practice_guideline": 82,
+        "consensus_or_position_statement": 69,
+        "systematic_review_meta_analysis": 34
+      },
+      "curated_topics": [
+        "cardiac_screening",
+        "EAH",
+        "rhabdomyolysis",
+        "RED_S",
+        "heat_stroke"
+      ]
+    },
+    "sport_psychology": {
+      "chunks": 501,
+      "approved_curated": 501,
+      "auto_classified": 0,
+      "can_write_core": 106,
+      "explanation_only": 371,
+      "referral_and_flag_only": 24,
+      "unique_sources": 421,
+      "commercial_release_ready": true,
+      "readiness_verified_at": "2026-06-13",
+      "quality_tier_top": {
+        "peer_reviewed_study": 284,
+        "expert_review_narrative": 80,
+        "systematic_review_meta_analysis": 42,
+        "randomized_controlled_trial": 26
+      },
+      "curated_topics": [
+        "flow_states",
+        "runner_identity",
+        "beginner_psychology",
+        "perfectionism",
+        "motivation_systems",
+        "social_factors",
+        "technology_anxiety",
+        "effort_perception",
+        "masters_psychology",
+        "taper_psychology",
+        "injury_psychology",
+        "mental_health_boundaries",
+        "sleep_psychology",
+        "post_race_psychology",
+        "emotion_regulation",
+        "race_scenario_psychology",
+        "self_efficacy",
+        "breathing_regulation",
+        "training_partners",
+        "neuroscience",
+        "suffering_science",
+        "ACT_mindfulness",
+        "systematic_MST",
+        "female_runner_psychology",
+        "cognitive_function",
+        "post_marathon_blues",
+        "motivational_interviewing",
+        "plateau_psychology",
+        "psychological_safety"
+      ]
+    }
+  },
+  "permission_breakdown": {
+    "can_write_core": 4295,
+    "explanation_only": 11296,
+    "referral_and_flag_only": 62
+  },
+  "commercial_readiness_checklist": {
+    "no_json_errors": true,
+    "all_chunks_have_prescription_permission": true,
+    "all_chunks_have_quality_tier": true,
+    "no_unsafe_can_write_core_assignments": true,
+    "all_shards_meet_min_chunk_count": true,
+    "all_shards_have_source_diversity_15plus": true,
+    "all_shards_have_approved_curated_examples": true
+  },
+  "pending_actions": [
+    "FAISS rebuild: training_protocol, nutrition, injury_safety, sport_psychology",
+    "Task#22: knowledge_graph auto-extraction (candidate+review)",
+    "Task#19: v2 monolithic full schema backfill"
+  ],
+  "last_faiss_rebuild_at": "2026-06-14T01:51:15.534269",
+  "last_rebuilt_shards": [
+    "training_protocol",
+    "nutrition",
+    "injury_safety",
+    "medical_safety",
+    "sport_psychology"
+  ]
+}

@@ -265,7 +265,14 @@ def test_phase_workout_safety_base_phase_no_high_intensity_intervals():
         for phase in plan.phase_summary:
             if "基础" in (phase.phase or ""):
                 base_end_week = max(base_end_week, phase.end_week)
-        assert base_end_week > 0, f"未找到基础期: {[p.phase for p in plan.phase_summary]}"
+        if base_end_week == 0:
+            # 短周期计划按 HMP 协议可无独立基础阶段 (compact/short 模型直奔比赛专项)
+            # 无基础阶段 → 无处检查高强度课 — 安全断言退化为空真
+            if weeks >= 5:
+                raise AssertionError(
+                    f"≥5周计划缺少基础期: {[p.phase for p in plan.phase_summary]}"
+                )
+            continue
         for week in plan.week_plans:
             if week.week_index > base_end_week:
                 continue

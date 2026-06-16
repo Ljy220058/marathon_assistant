@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>罗锦源简历模板预览</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #eef2f7;
+      color: #111827;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+    }
+    .page {
+      width: 794px;
+      min-height: 1123px;
+      margin: 0 auto;
+      background: #fff;
+      overflow: hidden;
+      position: relative;
+    }
+    .photo {
+      object-fit: cover;
+      border: 1px solid #d1d5db;
+      background: #e5e7eb;
+    }
+    h1, h2, h3, p, ul { margin: 0; }
+    ul { padding-left: 16px; }
+    li { margin: 2px 0; }
+    .muted { color: #4b5563; }
+    .small { font-size: 11px; line-height: 1.38; }
+    .tiny { font-size: 10px; line-height: 1.36; }
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      margin: 0 3px 3px 0;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      font-size: 10px;
+      color: #374151;
+    }
+    .template-label {
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      color: #9ca3af;
+      font-size: 10px;
+    }
+
+    /* Template 1: ATS compact */
+    .t1 { padding: 30px 42px; font-size: 12px; line-height: 1.38; }
+    .t1 .head { display: grid; grid-template-columns: 1fr 82px; gap: 22px; align-items: start; border-bottom: 2px solid #111827; padding-bottom: 10px; }
+    .t1 h1 { font-size: 28px; letter-spacing: 2px; }
+    .t1 .role { margin-top: 4px; font-weight: 700; color: #1f2937; }
+    .t1 .photo { width: 78px; height: 96px; }
+    .t1 h2 { margin-top: 12px; padding-bottom: 3px; border-bottom: 1px solid #111827; font-size: 15px; }
+    .t1 h3 { margin-top: 8px; font-size: 13px; display: flex; justify-content: space-between; }
+    .t1 .meta { margin: 2px 0 3px; color: #4b5563; font-size: 11px; }
+
+    /* Template 2: Tencent blue */
+    .t2 { padding: 0; font-size: 12px; line-height: 1.35; }
+    .t2 .top { height: 128px; padding: 24px 42px; background: linear-gradient(90deg, #0f5ea8, #2186d7); color: #fff; display: grid; grid-template-columns: 1fr 92px; gap: 20px; }
+    .t2 h1 { font-size: 30px; letter-spacing: 2px; }
+    .t2 .top p { margin-top: 6px; color: #e8f3ff; }
+    .t2 .photo { width: 84px; height: 102px; border-color: rgba(255,255,255,.75); }
+    .t2 .body { padding: 18px 40px 28px; }
+    .t2 h2 { margin-top: 10px; color: #0f5ea8; font-size: 15px; border-left: 4px solid #0f5ea8; padding-left: 8px; }
+    .t2 h3 { margin-top: 8px; color: #111827; font-size: 13px; }
+    .t2 .meta { color: #2563eb; font-size: 11px; margin: 2px 0; }
+
+    /* Template 3: left rail */
+    .t3 { display: grid; grid-template-columns: 188px 1fr; font-size: 11.8px; line-height: 1.34; }
+    .t3 aside { background: #f3f4f6; padding: 28px 20px; min-height: 1123px; border-right: 1px solid #d1d5db; }
+    .t3 main { padding: 28px 34px 28px 28px; }
+    .t3 .photo { width: 100px; height: 122px; display: block; margin: 0 auto 14px; }
+    .t3 h1 { text-align: center; font-size: 24px; margin-bottom: 6px; }
+    .t3 aside h2 { margin-top: 18px; font-size: 13px; border-bottom: 1px solid #9ca3af; padding-bottom: 4px; }
+    .t3 main h2 { margin-top: 10px; font-size: 15px; border-bottom: 1px solid #111827; padding-bottom: 3px; }
+    .t3 h3 { margin-top: 8px; font-size: 13px; }
+    .t3 .meta { font-size: 10.5px; color: #4b5563; margin: 2px 0; }
+
+    /* Template 4: project evidence */
+    .t4 { padding: 30px 38px; font-size: 11.7px; line-height: 1.34; }
+    .t4 .head { display: grid; grid-template-columns: 1fr 90px; gap: 20px; padding-bottom: 12px; border-bottom: 1px solid #d4af37; }
+    .t4 h1 { font-size: 30px; }
+    .t4 .headline { margin-top: 6px; color: #92400e; font-weight: 700; }
+    .t4 .photo { width: 86px; height: 104px; border-color: #d4af37; }
+    .t4 h2 { margin-top: 12px; font-size: 15px; color: #78350f; }
+    .t4 h2::after { content: ""; display: block; height: 1px; background: #d4af37; margin-top: 3px; }
+    .t4 h3 { margin-top: 8px; font-size: 13px; }
+    .t4 .meta { color: #6b7280; font-size: 10.8px; margin: 2px 0; }
+    .t4 .evidence { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+    .t4 .evidence div { border: 1px solid #e5e7eb; padding: 6px; border-radius: 4px; background: #fffdf7; }
+
+    /* Template 5: no-photo ATS */
+    .t5 { padding: 32px 44px; font-size: 12px; line-height: 1.38; }
+    .t5 .head { text-align: center; border-bottom: 1px solid #111827; padding-bottom: 10px; }
+    .t5 h1 { font-size: 30px; letter-spacing: 3px; }
+    .t5 .summary { margin: 10px 0; padding: 8px 10px; background: #f9fafb; border: 1px solid #e5e7eb; }
+    .t5 h2 { margin-top: 12px; font-size: 15px; text-transform: none; }
+    .t5 h2 span { border-bottom: 2px solid #111827; padding-bottom: 2px; }
+    .t5 h3 { margin-top: 8px; font-size: 13px; display: flex; justify-content: space-between; }
+    .t5 .meta { font-size: 11px; color: #4b5563; margin: 2px 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const photo = "luo_jinyuan_photo.jpg";
+    const contact = "手机：13823526486 ｜ 邮箱：2631874487@qq.com ｜ 深圳";
+    const edu = [
+      "深圳技术大学 ｜ 数据科学与大数据技术 ｜ 本科 ｜ 2023.09 - 2027.06",
+      "大三学年 GPA 3.71；大三下 GPA 4.25 ｜ CET-4 500+，IELTS 6.5",
+      "数据结构、数据库系统、计算机网络、操作系统、软件工程、算法设计与分析"
+    ];
+    const skills = [
+      "后端与全栈交付：FastAPI / Pydantic 接口契约，Astro / JavaScript 页面联调，Docker 可复现部署",
+      "AI Agent / RAG 工程：FAISS、RAG 知识库、证据链、检索融合、LangGraph 多阶段工作流",
+      "评测与工程质量：AI Agent 评测、规则约束、证据门控、审计轨迹、contract tests、runtime contract",
+      "AI Native 开发：Codex / Claude / MCP / Skills 辅助需求拆解、代码生成、测试补齐和规则沉淀"
+    ];
+    const projects = [
+      {
+        title: "马拉松智能问答与训练计划助手",
+        meta: "2026.04 - 2026.05 ｜ 个人主导项目 ｜ FastAPI、Astro、FAISS、RAG、LangGraph、Docker、contract tests",
+        link: "GitHub：https://github.com/Ljy220058/marathon_assistant",
+        bullets: [
+          "面向训练计划泛化、长期反馈难继承、AI 建议缺少证据来源和安全边界等问题，搭建问答咨询、个性化训练计划、证据追溯和反馈闭环。",
+          "设计 17 节点 LangGraph 流程，覆盖安全检查、意图路由、用户画像、RAG 检索、多专家协作审核和格式化输出。",
+          "维护 750 条 v2 chunks、runtime index、source registry、coverage matrix 和 expert coverage report，支撑来源追踪和上线前检查。"
+        ]
+      },
+      {
+        title: "运动处方智能体评测与审计系统（M-EXRxBench）",
+        meta: "2026.05 - 至今 ｜ 个人主导开源科研工程项目 ｜ AI Agent 评测、Rule-Governed AI、RiskGate、EvidenceGate、Rule Auditor、Trace-based Evaluation",
+        link: "GitHub：https://github.com/Ljy220058/m-exrxbench ｜ RuleML+RR 2026 Rule Challenge 在投",
+        bullets: [
+          "设计运动处方智能体评测基准，覆盖安全拒答、证据边界、规则优先级、prompt / retrieval injection 等场景。",
+          "构建 RiskGate、EvidenceGate、Rule Auditor 和 trace-based evaluation，把智能体输出改造为可审计、可追踪、可复现的决策过程。",
+          "沉淀 benchmark、baseline、independent evaluator、static trace viewer 和可复现实验包，支撑开源 artifact 复核。"
+        ]
+      },
+      {
+        title: "FinXplore 金融强化学习复现与 AI 实验工程实践",
+        meta: "2026.05 ｜ AI 辅助复现、实验流水线、新闻事件特征、负控验证",
+        link: "",
+        bullets: [
+          "将论文复现从单次跑通模型升级为可审计实验工程流程，围绕数据覆盖、新闻-股票对齐、训练配置和负控验证建立闭环。",
+          "调用 DeepSeek 生成事件分数、置信度和股票相关性，构建 news_impact_score、confidence、ticker_relevance、no_news_mask 等特征。",
+          "full structured LLM state 相比 no-LLM baseline 累计收益从 -1.77% 提升至 24.52%，最大回撤从 -44.55% 收窄至 -25.53%。"
+        ]
+      }
+    ];
+    const research = [
+      "论文录用：Personalized Training Plan Generation Framework and Implementation Based on LLM Multi-Agent Collaboration，ICHSSR 2026 接收并获邀作会议报告。",
+      "发明专利申请（已受理）：一种基于大语言模型多智能体协作的训练计划生成方法、系统、终端及介质；申请号：202610438142.9。"
+    ];
+    const honors = "文体二等奖；广东省大学生运动会 5000 米亚军；校运会 5000 米 / 10000 米纪录保持者";
+
+    function list(items) {
+      return `<ul>${items.map(item => `<li>${item}</li>`).join("")}</ul>`;
+    }
+    function projectHtml(project, useStrong = false) {
+      return `<h3>${project.title}</h3><p class="meta">${project.meta}</p>${project.link ? `<p class="meta">${project.link}</p>` : ""}${list(project.bullets.map((b, i) => useStrong && i === 0 ? `<strong>${b}</strong>` : b))}`;
+    }
+    function tags(items) {
+      return items.map(item => `<span class="tag">${item}</span>`).join("");
+    }
+
+    const templates = {
+      "1": () => `<section class="page t1">
+        <div class="head"><div><h1>罗锦源</h1><p>${contact}</p><p class="role">软件开发实习 ｜ AI Agent / RAG 工程 ｜ 后端与全栈交付</p></div><img class="photo" src="${photo}"></div>
+        <h2>教育背景</h2>${list(edu.concat([honors]))}
+        <h2>专业能力</h2>${list(skills)}
+        <h2>项目经历</h2>${projects.map(p => projectHtml(p)).join("")}
+        <h2>科研与知识产权</h2>${list(research)}
+        <div class="template-label">模板 1｜极简 ATS 技术岗</div>
+      </section>`,
+      "2": () => `<section class="page t2">
+        <div class="top"><div><h1>罗锦源</h1><p>${contact}</p><p>AI Agent 工程 / RAG 应用 / 后端接口 / 实验评测</p></div><img class="photo" src="${photo}"></div>
+        <div class="body">
+          <h2>教育背景</h2>${list(edu.concat([honors]))}
+          <h2>专业能力</h2>${list(skills)}
+          <h2>项目经历</h2>${projects.map(p => projectHtml(p, true)).join("")}
+          <h2>科研与知识产权</h2>${list(research)}
+        </div>
+        <div class="template-label">模板 2｜腾讯蓝项目优先</div>
+      </section>`,
+      "3": () => `<section class="page t3">
+        <aside><img class="photo" src="${photo}"><h1>罗锦源</h1><p class="small">${contact}</p>
+          <h2>核心标签</h2>${tags(["AI Agent", "RAG", "LangGraph", "Rule Auditor", "EvidenceGate", "FastAPI", "Astro", "Contract Tests"])}
+          <h2>教育</h2><p class="small">${edu.join("<br>")}</p>
+          <h2>荣誉</h2><p class="small">${honors}</p>
+        </aside>
+        <main>
+          <h2>专业能力</h2>${list(skills)}
+          <h2>项目经历</h2>${projects.map(p => projectHtml(p)).join("")}
+          <h2>科研与知识产权</h2>${list(research)}
+        </main>
+        <div class="template-label">模板 3｜左栏信息密集型</div>
+      </section>`,
+      "4": () => `<section class="page t4">
+        <div class="head"><div><h1>罗锦源</h1><p>${contact}</p><p class="headline">AI Agent 安全评测 / 证据约束 RAG / 开源科研 Artifact</p></div><img class="photo" src="${photo}"></div>
+        <div class="evidence"><div><strong>2 个 AI Agent 项目</strong><br><span class="tiny">训练计划助手 + M-EXRxBench</span></div><div><strong>1 篇已录用论文</strong><br><span class="tiny">ICHSSR 2026</span></div><div><strong>1 项发明专利受理</strong><br><span class="tiny">202610438142.9</span></div></div>
+        <h2>项目经历</h2>${projects.map(p => projectHtml(p)).join("")}
+        <h2>专业能力</h2>${list(skills)}
+        <h2>教育与成果</h2>${list(edu.concat(research, [honors]))}
+        <div class="template-label">模板 4｜科研开源成果型</div>
+      </section>`,
+      "5": () => `<section class="page t5">
+        <div class="head"><h1>罗锦源</h1><p>${contact}</p></div>
+        <p class="summary">数据科学与大数据技术本科。项目侧重点为 AI Agent / RAG 应用、规则约束评测、后端接口与可复现实验工程；适合投递国内互联网软件开发与 AI 应用工程实习。</p>
+        <h2><span>教育背景</span></h2>${list(edu.concat([honors]))}
+        <h2><span>专业能力</span></h2>${list(skills)}
+        <h2><span>项目经历</span></h2>${projects.map(p => projectHtml(p)).join("")}
+        <h2><span>科研与知识产权</span></h2>${list(research)}
+        <div class="template-label">模板 5｜无照片 ATS 稳妥型</div>
+      </section>`
+    };
+
+    const id = new URLSearchParams(location.search).get("template") || "1";
+    document.getElementById("root").innerHTML = templates[id] ? templates[id]() : templates["1"]();
+  </script>
+</body>
+</html>

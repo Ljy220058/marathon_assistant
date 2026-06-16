@@ -28,6 +28,12 @@ class DayPlan:
     main_km: float = 0.0
     cooldown_km: float = 0.0
     workout_type: str = ""
+    stimulus_type: str = ""  # intensity / volume_only / mixed，由 zone_range 推导
+    completion_status: str = "planned"  # H7: planned / completed / partial / missed
+    # 证据来源与等级（A=同行评审教材/B=论文/C=教练实践），从 WORKOUT_CONSTRAINTS 填充，
+    # 前端诚实展示每节训练课的依据强度。
+    evidence_source: str = ""
+    evidence_grade: str = ""
 
     @property
     def total_km(self) -> float:

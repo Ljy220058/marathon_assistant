@@ -5,18 +5,19 @@ from typing import Any
 logger = logging.getLogger("workflow_engine")
 
 KB_CHUNKS: list[dict[str, Any]] = []
+KB_SHARD_CHUNKS: dict[str, list[dict[str, Any]]] | None = None
 KB_VECTORIZER = None
 KB_MATRIX = None
 KB_BM25 = None
 RETRIEVE_FUNC = None
-RERANKER = None
 
 
-def set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
+def set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None, shard_chunks=None):
     """设置知识库运行时状态。"""
-    global KB_VECTORIZER, KB_MATRIX, RETRIEVE_FUNC, KB_BM25
+    global KB_VECTORIZER, KB_MATRIX, RETRIEVE_FUNC, KB_BM25, KB_SHARD_CHUNKS
     KB_CHUNKS.clear()
     KB_CHUNKS.extend(chunks or [])
+    KB_SHARD_CHUNKS = shard_chunks if isinstance(shard_chunks, dict) else None
     KB_VECTORIZER = vectorizer
     KB_MATRIX = matrix
     KB_BM25 = bm25
@@ -25,7 +26,7 @@ def set_kb_data(chunks, vectorizer, matrix, retrieve_fn, bm25=None):
 
 def clear_kb_data():
     """清除知识库状态并释放可能残留的文件句柄。"""
-    global KB_VECTORIZER, KB_MATRIX, RETRIEVE_FUNC, KB_BM25
+    global KB_VECTORIZER, KB_MATRIX, RETRIEVE_FUNC, KB_BM25, KB_SHARD_CHUNKS
     if KB_MATRIX is not None:
         try:
             if hasattr(KB_MATRIX, "_client"):
@@ -37,8 +38,16 @@ def clear_kb_data():
             logger.warning(f"释放 Chroma 客户端失败: {exc}")
 
     KB_CHUNKS.clear()
+    KB_SHARD_CHUNKS = None
     KB_VECTORIZER = None
     KB_MATRIX = None
     KB_BM25 = None
     RETRIEVE_FUNC = None
+    # 无效化 KG 实体标签缓存，避免 KG 重建后使用过期标签
+    try:
+        from marathon_qa_assistant.nodes.common import _KG_ENTITY_LABELS_CACHE
+        import marathon_qa_assistant.nodes.common as common_module
+        common_module._KG_ENTITY_LABELS_CACHE = None
+    except Exception:
+        pass
     gc.collect()

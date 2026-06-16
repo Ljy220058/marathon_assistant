@@ -8,7 +8,8 @@ ROOT_MARKERS = (".git", "apps", "data", "marathon_qa_assistant", "vector_kb")
 
 
 def _looks_like_repo_root(path: Path) -> bool:
-    return any((path / marker).exists() for marker in ROOT_MARKERS)
+    # 优先识别马拉松助手项目根，避免父级 git 仓库把 data 路径带偏。
+    return (path / "apps").exists() and (path / "data").exists()
 
 
 def _walk_for_repo_root(start: Path) -> Path | None:
@@ -46,15 +47,11 @@ STAI_RUNS_DIR = ARTIFACTS_DIR / "research_runs" / "stai2026"
 
 MEXRXBENCH_DIR = RESEARCH_DIR / "mexrxbench"
 
-DEFAULT_VECTOR_DIR = DATA_DIR / "vector_kb" / "default"
 V2_VECTOR_DIR = DATA_DIR / "vector_kb" / "v2"
-USER_PROFILE_PATH = DEFAULT_VECTOR_DIR / "user_profile.json"
 USER_VECTOR_DIR = DATA_DIR / "vector_kb" / "user"
 UPLOAD_DOCS_DIR = DATA_DIR / "uploads" / "seed"
 
-LEGACY_DEFAULT_VECTOR_DIR = BASE_DIR / "vector_kb"
 LEGACY_UPLOAD_DOCS_DIR = BASE_DIR / "uploaded_docs"
-LEGACY_USER_VECTOR_DIR = BASE_DIR / "vector_kb_user"
 LEGACY_STAI_DIR = BASE_DIR / "docs" / "paper_project"
 
 RUNTIME_DATA_DIR = Path(
@@ -62,6 +59,7 @@ RUNTIME_DATA_DIR = Path(
 ).absolute()
 RUNTIME_UPLOAD_DOCS_DIR = RUNTIME_DATA_DIR / "uploaded_docs"
 RUNTIME_USER_VECTOR_DIR = RUNTIME_DATA_DIR / "vector_kb_user"
+USER_PROFILE_PATH = RUNTIME_DATA_DIR / "profiles" / "default_user.json"
 GOOGLE_CREDENTIALS_PATH = RUNTIME_DATA_DIR / "google_credentials.json"
 
 def has_vector_kb_artifacts(vector_dir: Path) -> bool:
@@ -75,20 +73,10 @@ def has_vector_kb_artifacts(vector_dir: Path) -> bool:
 
 def get_preferred_vector_dir() -> Path:
     """
-    返回当前应优先加载的向量库目录。
-    Monorepo 新路径优先，旧根目录路径保留一轮兼容。
+    返回运行时唯一允许加载的 v2 向量库目录。
+    v2-only runtime 不参与 user/default/legacy fallback，避免旧索引进入生产问答链路。
     """
-    for candidate in (
-        V2_VECTOR_DIR,
-        USER_VECTOR_DIR,
-        RUNTIME_USER_VECTOR_DIR,
-        LEGACY_USER_VECTOR_DIR,
-        DEFAULT_VECTOR_DIR,
-        LEGACY_DEFAULT_VECTOR_DIR,
-    ):
-        if has_vector_kb_artifacts(candidate):
-            return candidate
-    return DEFAULT_VECTOR_DIR
+    return V2_VECTOR_DIR
 
 # 全局知识图谱高亮词
 DEFAULT_HIGHLIGHTS = [
@@ -109,7 +97,9 @@ global_state = GlobalState()
 
 async def check_ollama_status():
     """检查 Ollama 服务是否在线"""
-    ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    from marathon_qa_assistant.core.settings import get_settings
+
+    ollama_url = get_settings().ollama_base_url
     host = ollama_url.split("//")[-1].split(":")[0]
     port = int(ollama_url.split(":")[-1])
     try:
@@ -117,7 +107,8 @@ async def check_ollama_status():
         writer.close()
         await writer.wait_closed()
         return True
-    except:
+    # 端口探测：连接/超时异常均视为不可用；不吞 KeyboardInterrupt/SystemExit
+    except Exception:
         return False
 
 def pick_free_port(host: str, preferred_port: int | None, max_tries: int = 50) -> int:

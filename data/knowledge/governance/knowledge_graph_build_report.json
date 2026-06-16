@@ -1,0 +1,56 @@
+{
+  "build_at": "2026-06-14T02:31:34",
+  "source_shards": [
+    "training_protocol",
+    "nutrition",
+    "injury_safety",
+    "medical_safety",
+    "sport_psychology"
+  ],
+  "candidates_total": 577,
+  "candidates_auto_approved": 521,
+  "candidates_merged_this_run": 210,
+  "candidates_quarantined": 101,
+  "nodes_before": 458,
+  "nodes_total": 764,
+  "edges_before": 348,
+  "edges_total": 545,
+  "domain_breakdown": {
+    "nutrition": {
+      "candidates": 85,
+      "merged": 74,
+      "rejected": 11
+    },
+    "injury_safety": {
+      "candidates": 99,
+      "merged": 95,
+      "rejected": 4
+    },
+    "training_protocol": {
+      "candidates": 200,
+      "merged": 175,
+      "rejected": 25
+    },
+    "injury_prevention_and_rehab": {
+      "candidates": 36,
+      "merged": 36,
+      "rejected": 0
+    },
+    "medical_safety": {
+      "candidates": 50,
+      "merged": 41,
+      "rejected": 9
+    },
+    "nutrition_and_fueling": {
+      "candidates": 51,
+      "merged": 47,
+      "rejected": 4
+    },
+    "psychological_skills": {
+      "candidates": 56,
+      "merged": 53,
+      "rejected": 3
+    }
+  },
+  "quality_issues": []
+}

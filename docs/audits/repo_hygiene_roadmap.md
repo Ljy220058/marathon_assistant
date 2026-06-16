@@ -4,14 +4,13 @@
 
 ## P0：根目录与忽略规则
 
-- [ ] [repo-hygiene][P0] 保持根目录只承载一级功能目录和少量入口文件。完成定义：根目录不出现 `frontend/`、`marathon_qa_assistant/`、`vector_kb/`、`uploaded_docs/`、`knowledge_base/`、`.chainlit/`、`node_modules/`。
+- [ ] [repo-hygiene][P0] 保持根目录只承载一级功能目录和少量入口文件。完成定义：根目录不出现 `frontend/`、`marathon_qa_assistant/`、`vector_kb/`、`uploaded_docs/`、`knowledge_base/`、`node_modules/`。
 - [ ] [repo-hygiene][P0] 定期清理本地缓存。完成定义：`.pytest_cache/`、`__pycache__/`、`apps/web/dist/`、`apps/web/node_modules/` 不进入 Git 变更。
 - [ ] [repo-hygiene][P0] 保持 `.gitignore` 覆盖可再生成产物。完成定义：测试、前端 build、LaTeX build 后 `git status --short` 不出现缓存或构建目录。
 - [ ] [search-noise][P0] 保持 `.rgignore` 覆盖默认检索噪声。完成定义：`rg --files | rg "node_modules|\.npm-cache|\.pytest_cache|__pycache__|archive/local_caches|apps/web/dist"` 无输出；正式 `archive/`、`artifacts/`、`research/` 不被整体排除。
 
 ## P1：归档治理
 
-- [ ] [archive][P1] 明确 `archive/legacy_chainlit/` 是否长期版本化。完成定义：保留理由、移除条件和引用入口写入本文件或审计文档。
 - [ ] [archive][P1] 合并历史批次命名规则。完成定义：`archive/history_batches/` 和日期批次目录有统一命名和索引。
 - [ ] [archive][P2] 将本地缓存归档与真实历史资产分离。完成定义：`archive/local_caches/` 始终忽略，历史资产目录保留 manifest。
 

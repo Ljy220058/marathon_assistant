@@ -1,0 +1,93 @@
+<h2>智能文档：整合进「依据」页的 3 个 UI 方向</h2>
+<p class="subtitle">基于普通使用者、干净输入框、按主题折叠引用、证据不足明显提示。请打开页面查看三种布局方向。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A｜答案优先 · 折叠证据抽屉</div>
+        <div class="mockup-body" style="display:grid;gap:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <strong>依据</strong><span style="font-size:12px;color:#64748b;">知识库问答</span>
+          </div>
+          <input class="mock-input" placeholder="问知识库：例如 膝盖疼还能继续跑吗？" />
+          <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#fff;">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">AI 回答</div>
+            <div style="height:12px;background:#111827;border-radius:6px;width:72%;margin-bottom:8px;"></div>
+            <div style="height:8px;background:#cbd5e1;border-radius:4px;width:92%;margin-bottom:6px;"></div>
+            <div style="height:8px;background:#cbd5e1;border-radius:4px;width:78%;"></div>
+          </div>
+          <div style="display:grid;gap:6px;">
+            <button class="mock-button" style="background:#f8fafc;color:#111827;border:1px solid #dbe3ef;">训练强度依据 · 3 条 ▾</button>
+            <button class="mock-button" style="background:#f8fafc;color:#111827;border:1px solid #dbe3ef;">伤病风险依据 · 2 条 ▾</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 答案优先</h3>
+      <p>页面最轻，用户先读结论，再按主题展开引用。最符合普通用户的问答路径。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B｜左右分栏 · 回答与证据并排</div>
+        <div class="mockup-body" style="display:grid;grid-template-columns:1.2fr .8fr;gap:10px;">
+          <div style="display:grid;gap:10px;">
+            <input class="mock-input" placeholder="问知识库…" />
+            <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#fff;min-height:130px;">
+              <div style="height:12px;background:#111827;border-radius:6px;width:68%;margin-bottom:8px;"></div>
+              <div style="height:8px;background:#cbd5e1;border-radius:4px;width:95%;margin-bottom:6px;"></div>
+              <div style="height:8px;background:#cbd5e1;border-radius:4px;width:70%;"></div>
+            </div>
+          </div>
+          <div style="display:grid;gap:8px;">
+            <div style="font-size:12px;color:#64748b;">引用依据</div>
+            <div style="border:1px solid #dbe3ef;border-radius:12px;padding:8px;background:#f8fafc;">训练强度 ▾</div>
+            <div style="border:1px solid #dbe3ef;border-radius:12px;padding:8px;background:#f8fafc;">恢复建议 ▾</div>
+            <div style="border:1px solid #dbe3ef;border-radius:12px;padding:8px;background:#f8fafc;">论文来源 ▾</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 并排核对</h3>
+      <p>可信度强，适合桌面端；但移动端会更拥挤，普通用户可能感觉像后台审计。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C｜文档阅读器 · 先找文档再问</div>
+        <div class="mockup-body" style="display:grid;grid-template-columns:.85fr 1.15fr;gap:10px;">
+          <div style="border:1px solid #dbe3ef;border-radius:14px;padding:10px;background:#f8fafc;">
+            <strong style="font-size:12px;">知识库目录</strong>
+            <div style="height:10px;background:#94a3b8;border-radius:5px;width:70%;margin:12px 0 8px;"></div>
+            <div style="height:8px;background:#cbd5e1;border-radius:4px;width:88%;margin-bottom:8px;"></div>
+            <div style="height:8px;background:#cbd5e1;border-radius:4px;width:62%;"></div>
+          </div>
+          <div style="display:grid;gap:10px;">
+            <input class="mock-input" placeholder="在当前知识库中提问…" />
+            <div style="border:1px solid #dbe3ef;border-radius:14px;padding:12px;background:#fff;">
+              <div style="height:12px;background:#111827;border-radius:6px;width:58%;margin-bottom:8px;"></div>
+              <div style="height:8px;background:#cbd5e1;border-radius:4px;width:90%;margin-bottom:6px;"></div>
+              <div style="height:8px;background:#cbd5e1;border-radius:4px;width:76%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 文档阅读器</h3>
+      <p>适合知识维护和深度阅读；但对“普通使用者提问”来说入口偏重。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>推荐</h3>
+  <p>我建议选择 <strong>A. 答案优先 · 折叠证据抽屉</strong> 作为主方案，并在桌面宽屏下允许引用区变成右侧辅助栏；移动端保持纵向折叠。</p>
+</div>

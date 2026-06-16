@@ -1,518 +1,58 @@
 ---
-import "../styles/global.css";
-
-const PLAN_GENERATION_PROMPT =
-  "请基于我的跑者画像、上个月月跑量、可训练日和目标比赛日期，生成一份结构化训练日历。请优先快速返回可点击日历，并标注每日强度区间、训练负荷、关键训练原因和基石依据。";
-
-const quickActions = [
-  {
-    label: "生成训练日历",
-    meta: "画像 + 比赛日",
-    prompt: PLAN_GENERATION_PROMPT,
-  },
-];
-
-const planningCards = [
-  ["先拿到日历", "不用等完整解释，就能先查看可执行安排"],
-  ["再看当天卡片", "点击任意训练日，查看主课、强度、风险调整和依据"],
-  ["最后反馈调整", "完成、疲劳和疼痛反馈直接进入当天卡片"],
-];
-
-const profileFields = [
-  ["goal", "目标", "半马完赛 / 全马 PB / 健康跑"],
-  ["experience", "经验", "新手 / 进阶 / 有比赛经验"],
-  ["lastMonthMileage", "上个月月跑量", "例如 300 km"],
-  ["currentHalfTime", "当前半马 PB", "例如 1:25"],
-  ["raceDate", "比赛日期", "例如 2026-10-18"],
-  ["availableDays", "可训练日", "例如 周二、周四、周六、周日"],
-  ["longRun", "最长训练", "例如 90 分钟或 16 km"],
-  ["targetPace", "目标配速/成绩", "例如 半马 1:45 或 5:00/km"],
-  ["limitations", "伤病/疲劳限制", "例如 膝盖不适，近期疲劳偏高"],
-];
+import JournalLayout from "../layouts/JournalLayout.astro";
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>马拉松训练助手</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23090b10'/%3E%3Cpath d='M14 42c11-18 20-24 36-24M20 44h27' stroke='%2322d3ee' stroke-width='6' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='20' cy='22' r='5' fill='%23f6f7fb'/%3E%3C/svg%3E" />
-    <meta
-      name="description"
-      content="基于跑者画像、基石文档和训练负荷规则生成可点击训练日历。"
-    />
-  </head>
-  <body>
-    <div class="grid-background" aria-hidden="true"></div>
-    <header class="top-nav">
-      <a class="brand" href="#workspace" aria-label="马拉松助手首页">
-        <span class="brand-mark">M</span>
-        <span>马拉松助手</span>
-      </a>
-      <label class="top-nav-search" for="topNavSearch">
-        <span aria-hidden="true">⌕</span>
-        <input id="topNavSearch" type="search" placeholder="搜索训练、计划、依据" autocomplete="off" />
-      </label>
-      <nav aria-label="主导航">
-        <a href="#plan">今日</a>
-        <a href="#calendar-section" data-open-drawer-section="calendar">计划</a>
-        <a href="#profile" data-open-drawer-section="profile">我的情况</a>
-        <a href="#evidence" data-open-drawer-section="basis">依据</a>
-      </nav>
-      <div id="navHealth" class="nav-health" hidden>连接中</div>
-    </header>
-    <nav class="mobile-quick-nav" aria-label="移动端快捷导航">
-      <a href="#plan">今日</a>
-      <a href="#calendar-section" data-open-drawer-section="calendar">计划</a>
-      <a href="#profile" data-open-drawer-section="profile">我的情况</a>
-      <a href="#evidence" data-open-drawer-section="basis">依据</a>
-    </nav>
+<JournalLayout title="训练计划" subtitle="训练计划" activeTab="today" showSidebar={true} sidebarActive="plan">
 
-    <main id="workspace" class="workspace">
-      <h1 class="sr-only">马拉松训练助手</h1>
-      <section class="hero-panel" hidden>
-        <p class="eyebrow">训练计划</p>
-        <h1>输入目标赛事和当前能力，快速生成可点击的训练日历。</h1>
-        <p class="hero-copy">
-          先看到可执行日历，再按需查看解释、依据和反馈调整。日历一旦生成，就可以逐天查看训练内容、风险降级和基石依据。
-        </p>
-        <div class="migration-grid" aria-label="计划生成路径">
-          {
-            planningCards.map(([title, body]) => (
-              <article class="migration-card">
-                <strong>{title}</strong>
-                <span>{body}</span>
-              </article>
-            ))
-          }
-        </div>
-      </section>
-
-      <div class="app-layout focused-workspace">
-        <details class="side-rail side-drawer" data-side-drawer>
-          <summary class="side-drawer-toggle" aria-label="打开训练导航">
-            <span class="drawer-toggle-mark" aria-hidden="true">≡</span>
-            <span class="drawer-toggle-copy">
-              <strong>训练导航</strong>
-              <small>今日 / 计划 / 依据</small>
-            </span>
-            <span class="drawer-toggle-affordance" aria-hidden="true">打开</span>
-          </summary>
-          <button class="side-drawer-backdrop" type="button" data-side-drawer-close aria-label="关闭训练导航"></button>
-          <aside class="side-drawer-content" aria-label="训练导航" aria-hidden="true" inert>
-          <button class="side-drawer-close" type="button" data-side-drawer-close>关闭</button>
-          <section class="drawer-guide" data-drawer-guide aria-label="侧边栏引导">
-            <label class="drawer-search" for="drawerSearch">
-              <span>快速查找</span>
-              <input id="drawerSearch" type="search" placeholder="我的情况、训练、依据、历史" autocomplete="off" />
-            </label>
-            <div class="drawer-guide-block" data-drawer-stage="1">
-              <span class="section-kicker drawer-stage-label">1 准备</span>
-              <button class="drawer-action primary" type="button" data-drawer-action="profile" data-drawer-query="profile runner 画像 跑者资料 目标 能力 可训练日" aria-controls="profile">
-                <strong>完善跑者资料</strong>
-                <small>目标、能力、可训练日</small>
-              </button>
-              <button class="drawer-action" type="button" data-drawer-action="templates" data-drawer-query="templates prompt 模板 快捷 prompt 计划入口" aria-controls="drawerTemplatesPanel">
-                <strong>快捷模板</strong>
-                <small>一键填入常用训练请求</small>
-              </button>
-            </div>
-            <div class="drawer-guide-block" data-drawer-stage="2">
-              <span class="section-kicker drawer-stage-label">2 查看</span>
-              <button class="drawer-action" type="button" data-drawer-action="calendar" data-drawer-query="calendar training 日历 训练 周计划 单日训练" aria-controls="calendar-section">
-                <strong>查看训练日历</strong>
-                <small>生成后查看周计划和单日训练</small>
-              </button>
-              <button class="drawer-action" type="button" data-drawer-action="basis" data-drawer-query="basis evidence source 依据 解释 强度 来源 训练依据" aria-controls="evidence">
-                <strong>训练依据</strong>
-                <small>查看强度区间和安排来源</small>
-              </button>
-            </div>
-            <div class="drawer-guide-block" data-drawer-stage="3">
-              <span class="section-kicker drawer-stage-label">3 调整</span>
-              <button class="drawer-action" type="button" data-drawer-action="history" data-drawer-query="history saved 历史 保存 恢复 计划" aria-controls="drawerHistoryPanel">
-                <strong>历史计划</strong>
-                <small>保存或恢复已有计划</small>
-              </button>
-              <button class="drawer-action" type="button" data-drawer-action="settings" data-drawer-query="settings api model 设置 服务 接口 模型 高级" aria-controls="drawerSettingsPanel" hidden data-expert-only>
-                <strong>高级设置</strong>
-                <small>服务、模型与调试入口</small>
-              </button>
-            </div>
-            <p class="drawer-empty-state" data-drawer-empty hidden>没有匹配入口</p>
-          </section>
-          <section id="runnerIdentityCard" class="panel runner-identity-card" aria-label="跑者画像摘要" data-drawer-section="profile-summary" hidden>
-            <div class="identity-card-empty">正在载入跑者身份卡...</div>
-          </section>
-
-          <section id="drawerTemplatesPanel" class="panel rail-panel" data-drawer-section="templates" hidden>
-            <div class="panel-heading">
-              <p class="section-kicker">快捷入口</p>
-              <h2>计划快捷入口</h2>
-            </div>
-            <div class="quick-list">
-              {
-                quickActions.map((item) => (
-                  <button class="quick-button" data-prompt={PLAN_GENERATION_PROMPT}>
-                    <span>
-                      <strong>{item.label}</strong>
-                      <small>{item.meta}</small>
-                    </span>
-                    <span class="quick-arrow">填入</span>
-                  </button>
-                ))
-              }
-            </div>
-          </section>
-
-          <section id="drawerSettingsPanel" class="panel rail-panel" data-drawer-section="settings" hidden data-expert-only>
-            <div class="panel-heading">
-              <p class="section-kicker">服务连接</p>
-              <h2>服务设置</h2>
-            </div>
-            <label class="field-label" for="apiBase">接口地址</label>
-            <input id="apiBase" value="http://127.0.0.1:8010" />
-            <label class="field-label" for="apiToken">访问令牌</label>
-            <input id="apiToken" type="password" placeholder="仅本页会话使用" autocomplete="off" />
-            <span class="muted">需要访问令牌时填写；不写入 localStorage。</span>
-            <div id="health" class="status-note">等待连接</div>
-          </section>
-
-          <section id="drawerHistoryPanel" class="panel rail-panel" data-drawer-section="history" hidden>
-            <div class="panel-heading">
-              <p class="section-kicker">计划历史</p>
-              <h2>历史计划</h2>
-            </div>
-            <div class="feedback-stack">
-              <button id="savePlanDraft" class="ghost-button">保存当前计划</button>
-              <button id="loadPlanDrafts" class="ghost-button">刷新历史</button>
-              <button id="toggleHistoryList" class="ghost-button" type="button" aria-expanded="false" hidden>查看全部历史</button>
-            </div>
-            <div id="historyList" class="compact-list">
-              <div class="empty-state">暂无本地历史。</div>
-            </div>
-          </section>
-          <div id="drawerWorkspaceSections" class="drawer-workspace-sections" aria-label="我的情况与日历"></div>
-          </aside>
-        </details>
-
-        <section class="main-stack">
-          <section id="plan" class="panel composer-panel workspace-card" data-primary-workspace-card>
-            <div class="panel-heading split">
-              <div>
-                <p class="section-kicker">计划入口</p>
-                <h2>训练日历</h2>
-              </div>
-              <span class="pill muted-pill">跑者视图</span>
-            </div>
-            <div id="workspaceFlow" class="workspace-flow" data-workspace-state="profile" aria-label="训练计划主流程">
-              <button class="workspace-flow-step is-current" type="button" data-open-drawer-section="profile">
-                <span>1</span>
-                <strong>完善画像</strong>
-              </button>
-              <button class="workspace-flow-step" type="button" data-workspace-generate>
-                <span>2</span>
-                <strong>生成计划</strong>
-              </button>
-              <button class="workspace-flow-step" type="button" data-open-drawer-section="calendar">
-                <span>3</span>
-                <strong>查看日历</strong>
-              </button>
-              <button class="workspace-flow-step" type="button" data-open-drawer-section="history">
-                <span>4</span>
-                <strong>反馈调整</strong>
-              </button>
-            </div>
-            <p id="workspaceNextAction" class="workspace-next-action">先完善画像，或直接补充目标赛事后生成训练日历。</p>
-            <textarea
-              id="queryInput"
-              placeholder="补充说明，例如：我想生成 12 周半马计划，周末适合长跑，近期小腿容易紧。也可以留空，直接使用侧栏画像生成。"
-            ></textarea>
-            <div class="model-controls" hidden data-expert-only>
-              <div class="model-switch">
-                <span class="field-label">模型来源</span>
-                <div class="model-toggle" role="group" aria-label="选择模型来源">
-                  <button type="button" class="model-provider-button active" data-provider-choice="ollama">Ollama</button>
-                  <button type="button" class="model-provider-button" data-provider-choice="ds">DeepSeek</button>
-                  <button type="button" class="model-provider-button" data-provider-choice="openai">OpenAI</button>
-                </div>
-              </div>
-              <label>
-                <span class="field-label">模型来源</span>
-                <select id="llmProvider">
-                  <option value="ollama">Ollama</option>
-                  <option value="ds">DS API</option>
-                </select>
-              </label>
-              <label>
-                <span class="field-label">模型</span>
-                <select id="llmModel">
-                  <option value="qwen2.5:latest">qwen2.5:latest</option>
-                </select>
-              </label>
-            </div>
-            <div class="api-key-controls" hidden data-expert-only>
-              <label>
-                <span class="field-label">DeepSeek API Key</span>
-                <input id="dsApiKey" type="password" placeholder="sk-..." autocomplete="off" />
-              </label>
-              <div class="api-key-actions">
-                <button id="saveDsApiKey" type="button" class="secondary-button">本次会话使用</button>
-                <button id="clearDsApiKey" type="button" class="secondary-button">清除</button>
-              </div>
-              <span id="dsApiKeyStatus" class="muted">仅在当前会话内使用，刷新后不保留。</span>
-            </div>
-            <div class="toolbar">
-              <div class="button-row">
-                <button id="runQuery" class="primary-button" data-plan-generation-entry>生成训练日历</button>
-                <button id="cancelQuery" class="secondary-button" disabled>取消</button>
-                <button id="loadMeta" class="secondary-button" hidden data-expert-only>刷新区间与依据</button>
-                <button id="clearResult" class="secondary-button">清空</button>
-              </div>
-              <span id="queryHint" class="muted">准备好后生成训练日历</span>
-            </div>
-            <div id="planProgress" class="plan-progress" data-status="idle" aria-live="polite">
-              <div class="plan-progress-head">
-                <div>
-                  <p class="section-kicker">计划状态</p>
-                  <h2>下一步</h2>
-                </div>
-                <span id="planProgressPercent" class="pill muted-pill">等待</span>
-              </div>
-              <div class="progress-track" aria-hidden="true">
-                <span id="planProgressFill" class="progress-track-fill"></span>
-                <span id="planProgressRunner" class="progress-runner"></span>
-              </div>
-              <div id="planProgressSteps" class="progress-steps" hidden data-expert-only></div>
-              <div class="progress-insight">
-                <span id="planProgressPhase">等待生成</span>
-                <strong id="planProgressSignal">日历尚未开始生成</strong>
-              </div>
-            </div>
-          </section>
-
-          <section class="dashboard-grid" data-secondary-reading-layer>
-            <details class="panel report-panel compact-report-panel" data-reading-fatigue-guard>
-              <summary class="report-panel-summary">
-              <div class="panel-heading split">
-                <div>
-                  <p class="section-kicker">教练摘要</p>
-                  <h2>为什么这样安排</h2>
-                </div>
-                <span id="resultBadge" class="pill muted-pill">待生成</span>
-              </div>
-              <span class="report-panel-affordance">按需查看</span>
-              </summary>
-              <div id="report" class="empty-state">还没有结果。填写我的情况或补充说明后，可以生成训练日历。</div>
-            </details>
-
-            <aside class="panel metrics-panel" hidden data-expert-only>
-              <div class="panel-heading">
-                <p class="section-kicker">Structured Signals</p>
-                <h2>结构化信息</h2>
-              </div>
-              <div class="metric-grid">
-                <div class="metric-card">
-                  <span>生成用量</span>
-                  <strong id="tokenUsage">-</strong>
-                </div>
-                <div class="metric-card">
-                  <span>计划检查</span>
-                  <strong id="auditScores">-</strong>
-                </div>
-                <div class="metric-card wide">
-                  <span>引导问题</span>
-                  <strong id="guidedQuestions">-</strong>
-                </div>
-              </div>
-            </aside>
-          </section>
-
-          <section id="profile" class="panel" data-drawer-section="profile" hidden>
-            <div class="panel-heading split">
-              <div>
-                <p class="section-kicker">跑者画像</p>
-                <h2>我的情况</h2>
-              </div>
-              <span id="profileStatus" class="pill muted-pill">用户画像</span>
-            </div>
-            <div class="profile-grid">
-              {
-                profileFields.map(([id, label, placeholder]) => (
-                  <label class="profile-field" for={`profile-${id}`}>
-                    <span>{label}</span>
-                    <input id={`profile-${id}`} data-profile-field={id} placeholder={placeholder} />
-                  </label>
-                ))
-              }
-            </div>
-            <div id="profileDerivedMetrics" class="profile-derived-metrics" aria-live="polite">
-              <div>
-                <span>估算周跑量</span>
-                <strong data-derived-weekly-mileage>-</strong>
-              </div>
-              <div>
-                <span>建议周期</span>
-                <strong data-derived-plan-weeks>-</strong>
-              </div>
-            </div>
-            <div class="toolbar profile-toolbar">
-              <div class="button-row">
-                <button id="saveProfileDraft" class="secondary-button">保存画像草稿</button>
-                <button id="buildProfilePrompt" class="secondary-button">写入补充说明</button>
-                <button id="runProfilePlan" class="primary-button" data-plan-generation-entry>生成训练日历</button>
-              </div>
-              <span class="muted">画像会用于生成训练计划、强度区间和训练安排解释。</span>
-            </div>
-          </section>
-
-          <section id="calendar-section" class="panel" data-drawer-section="calendar" hidden>
-            <div class="panel-heading split">
-              <div>
-                <p class="section-kicker">训练日历</p>
-                <h2>训练日历</h2>
-              </div>
-              <span id="calendarCount" class="pill muted-pill">0 天</span>
-            </div>
-            <div class="calendar-stat-strip" aria-label="训练日历统计" hidden data-expert-only>
-              <div class="calendar-stat">
-                <span>总天数</span>
-                <strong data-calendar-stat="total-days">0</strong>
-              </div>
-              <div class="calendar-stat">
-                <span>周数</span>
-                <strong data-calendar-stat="total-weeks">0</strong>
-              </div>
-              <div class="calendar-stat">
-                <span>休息日数</span>
-                <strong data-calendar-stat="rest-days">0</strong>
-              </div>
-              <div class="calendar-stat">
-                <span>关键训练次数</span>
-                <strong data-calendar-stat="key-sessions">0</strong>
-              </div>
-            </div>
-            <div id="loadSummary" class="load-summary-panel empty-state" hidden data-expert-only>
-              训练负荷会在生成计划后显示。
-            </div>
-            <section id="calendarActionPanel" class="calendar-action-panel empty-state" aria-live="polite">
-              生成后优先显示下一次训练、本周重点、安全提醒和反馈入口。
-            </section>
-            <details class="calendar-settings" aria-label="日历训练时间设置">
-              <summary>时间设置</summary>
-              <label>
-                <span class="field-label">训练开始日期</span>
-                <input id="trainingStartDate" type="date" />
-              </label>
-              <label>
-                <span class="field-label">默认训练时间</span>
-                <input id="defaultStartTime" type="time" value="07:00" />
-              </label>
-            </details>
-            <div id="statusPanel" class="status-panel empty-state" data-status-panel data-status-risk-level="unknown" aria-live="polite" hidden>
-              执行状态会在计划加载后显示。
-            </div>
-            <div id="adjustmentHistory" class="adjustment-history empty-state" data-adjustment-history hidden>
-              调整历史会在反馈保存后显示。
-            </div>
-            <div class="calendar-toolbar" aria-label="日历视图切换">
-              <div class="segmented-control" role="tablist" aria-label="训练日历视图">
-                <button type="button" class="segmented-control-button active" role="tab" aria-selected="true" data-calendar-view="week">按周</button>
-                <button type="button" class="segmented-control-button" role="tab" aria-selected="false" data-calendar-view="month">按月</button>
-                <button type="button" class="segmented-control-button" role="tab" aria-selected="false" data-calendar-view="phase">按阶段</button>
-                <button type="button" class="segmented-control-button" role="tab" aria-selected="false" data-calendar-view="all">全部</button>
-              </div>
-              <div class="segmented-control calendar-filter" role="tablist" aria-label="日历筛选">
-                <button type="button" class="segmented-control-button active" role="tab" aria-selected="true" data-calendar-filter="all">全部</button>
-                <button type="button" class="segmented-control-button" role="tab" aria-selected="false" data-calendar-filter="recheck">只看待复核</button>
-                <button type="button" class="segmented-control-button" role="tab" aria-selected="false" data-calendar-filter="key">只看关键课</button>
-              </div>
-              <span id="calendarScopeHint" class="muted">生成后可按周、按月或按阶段浏览完整计划</span>
-            </div>
-            <div id="calendar" class="calendar-grid">
-              <div class="empty-state">计划生成后会在这里展示日历卡片。</div>
-            </div>
-          </section>
-
-          <details id="evidence" class="panel training-basis" data-training-basis data-drawer-section="basis" hidden>
-            <summary>
-              <span class="section-kicker">训练依据</span>
-              <h2>训练依据</h2>
-              <span id="evidenceCount" class="pill muted-pill">0 条</span>
-            </summary>
-            <div class="training-basis-grid">
-            <section>
-              <div class="panel-heading">
-                <p class="section-kicker">强度区间</p>
-                <h2>强度区间</h2>
-              </div>
-              <div id="zones" class="chip-grid">
-                <div class="empty-state">未加载</div>
-              </div>
-            </section>
-            <section>
-              <div class="panel-heading">
-                <p class="section-kicker">依据来源</p>
-                <h2>训练依据来源</h2>
-              </div>
-              <div id="tiers" class="chip-grid">
-                <div class="empty-state">未加载</div>
-              </div>
-            </section>
-            </div>
-
-            <div id="evidencePreview" class="evidence-list">
-              <div class="empty-state">生成计划后，这里会按需展示训练依据来源。</div>
-            </div>
-          </details>
-        </section>
+  <article class="journal-card journal-card-pad journal-today-card" data-home-today>
+    <div class="journal-today-top">
+      <div class="journal-today-title">
+        <p class="journal-section-kicker" data-today-kicker>周二 · 6 月 16 日</p>
+        <a data-today-day-link href="/day" style="text-decoration:none;color:inherit;"><h2 data-today-title>轻松跑 40 分钟</h2></a>
+        <div class="journal-inline-note" data-home-version></div>
       </div>
-    </main>
-
-    <div id="dayModal" class="day-modal" aria-hidden="true">
-      <span class="sr-only" data-ui-contract="day-card-essentials">day-card-essentials</span>
-      <div id="dayModalBackdrop" class="day-modal-backdrop"></div>
-      <article class="day-modal-card" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
-        <button id="dayModalClose" class="modal-close-button" type="button" aria-label="关闭当天训练卡">×</button>
-        <div id="dayModalContent"></div>
-      </article>
+      <a class="journal-btn primary" href="/feedback">✓ 标记完成</a>
     </div>
-
-    <div id="evidenceDrawer" class="evidence-drawer" data-evidence-drawer aria-hidden="true">
-      <div id="evidenceDrawerBackdrop" class="evidence-drawer-backdrop"></div>
-      <aside class="evidence-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="evidenceDrawerTitle">
-        <button id="evidenceDrawerClose" class="modal-close-button" type="button" aria-label="关闭依据面板">×</button>
-        <header class="evidence-drawer-head">
-          <div>
-            <p class="section-kicker">为什么这样练</p>
-            <h2 id="evidenceDrawerTitle">依据详情</h2>
-          </div>
-          <span id="evidenceDrawerCount" class="pill muted-pill">0 条</span>
-        </header>
-        <div id="evidenceDrawerContent" class="evidence-drawer-content">
-          <div class="empty-state">点击训练依据或引用编号后，这里会显示来源、页码、摘录和建议关系。</div>
-        </div>
-      </aside>
+    <div class="journal-workout-meta" data-today-badges>
+      <span class="journal-badge">心率区间 2</span>
+      <span class="journal-badge">配速 6'48" - 7'10"/km</span>
     </div>
+    <div class="journal-callout" data-today-reason>
+      本周第 2 个轻松日，巩固有氧基础。
+    </div>
+    <a class="journal-risk-line" href="/profile" data-today-risk hidden></a>
+    <div class="journal-action-row">
+      <a class="journal-btn" data-today-day-link href="/day">查看详细课表</a>
+      <a class="journal-btn" href="/calendar">查看完整日历</a>
+      <a class="journal-btn" href="/dialog">问 AI 教练</a>
+    </div>
+  </article>
 
-    <dialog id="profileEditorDialog" class="profile-editor-dialog" aria-labelledby="profileEditorTitle">
-      <form method="dialog" class="profile-editor-card">
-        <div class="profile-editor-head">
-          <div>
-            <p class="section-kicker">画像编辑</p>
-            <h2 id="profileEditorTitle">编辑我的情况</h2>
-          </div>
-          <button id="closeProfilePanel" class="modal-close-button" type="button" aria-label="关闭画像编辑器">×</button>
-        </div>
-        <div id="profileEditorGroups" class="profile-editor-groups"></div>
-        <div class="profile-editor-actions">
-          <button id="cancelProfilePanel" class="secondary-button" type="button">取消</button>
-          <button id="saveProfilePanel" class="primary-button" type="button">保存画像</button>
-        </div>
-      </form>
-    </dialog>
+  <article class="journal-card journal-card-pad" data-home-progress>
+    <div class="journal-section-head">
+      <div>
+        <p class="journal-section-kicker">本周进度</p>
+        <h2 data-progress-text>再练一次就满了</h2>
+      </div>
+      <div class="journal-progress-dots" data-progress-dots aria-label="本周进度">
+        <span class="journal-progress-dot is-done"></span>
+        <span class="journal-progress-dot is-done"></span>
+        <span class="journal-progress-dot is-current"></span>
+      </div>
+    </div>
+    <span class="journal-badge" data-progress-badge style="margin-bottom:12px;display:inline-block;">2 / 3 次训练</span>
+    <div class="journal-session-list" data-home-session-list></div>
+    <div class="journal-action-row" style="margin-top:12px;">
+      <a class="journal-btn" href="/calendar">完整日历 →</a>
+      <a class="journal-btn" href="/week-setup">重新生成计划</a>
+    </div>
+  </article>
 
-    <script src="../scripts/app.js"></script>
-  </body>
-</html>
+  <article class="journal-card journal-card-pad" data-home-empty hidden>
+    <div class="journal-empty">
+      <strong>还没有训练计划</strong>
+      <span>填写我的情况后生成。</span>
+      <a class="journal-btn primary" href="/week-setup">生成训练计划</a>
+    </div>
+  </article>
+</JournalLayout>

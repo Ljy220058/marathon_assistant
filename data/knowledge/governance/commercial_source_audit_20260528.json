@@ -1,0 +1,40 @@
+{
+  "batch_counts": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl": 6
+  },
+  "batch_files": [
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl"
+  ],
+  "candidate_permission_boundary_counts": {
+    "candidate": 6
+  },
+  "duplicate_canonical_urls": [],
+  "duplicate_owner_title_pairs": [],
+  "missing_required_audit_metadata": {},
+  "per_domain_counts": {
+    "action_library": 1,
+    "environment_race_context": 1,
+    "medical_risk": 1,
+    "nutrition_race_fueling": 1,
+    "rehab_return_to_run": 1,
+    "training_protocols": 1
+  },
+  "required_audit_metadata": [
+    "accessed_at",
+    "date_basis",
+    "canonical_url",
+    "authority_tier",
+    "selection_reason",
+    "gap_target"
+  ],
+  "source_ids_by_batch": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260528_b.jsonl": [
+      "src_commercial_acsm_exercise_testing_prescription_2021",
+      "src_commercial_acsm_nutrition_athletic_performance",
+      "src_commercial_cdc_heat_health_athletes",
+      "src_commercial_mayoclinic_runners_knee",
+      "src_commercial_medlineplus_chest_pain",
+      "src_commercial_rrca_running_coach_manual"
+    ]
+  }
+}

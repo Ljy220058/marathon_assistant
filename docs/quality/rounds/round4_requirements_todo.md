@@ -219,7 +219,7 @@
 - [x] 原则：中文优先记录结论，技术标识保持原文。
 - [x] 原则：只处理当前 TODO 相关文件，不回滚其他 agent 或用户改动。
 - [x] 原则：所有行为以测试或可复查证据闭环，不靠口头完成。
-- [x] 原则：前端真实入口是 apps/web 的 Astro 页面，不修改 Chainlit 当作主入口。
+- [x] 原则：前端真实入口是 apps/web 的 Astro 页面，不修改 旧前端 当作主入口。
 - [x] 原则：无本地证据时允许 llm_general_knowledge 一般说明，但不能进入核心处方字段。
 - [x] 原则：医疗红旗和疼痛风险必须 fail-closed。
 - [x] 原则：数据库演进必须兼容旧库、空库和重复启动。
@@ -268,8 +268,8 @@
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -300,8 +300,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -332,8 +332,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -364,8 +364,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -396,8 +396,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -428,8 +428,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -460,8 +460,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -492,8 +492,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -524,8 +524,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -556,8 +556,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -588,8 +588,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -620,8 +620,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -652,8 +652,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -684,8 +684,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -716,8 +716,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -748,8 +748,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -780,8 +780,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -812,8 +812,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -844,8 +844,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。
@@ -876,8 +876,8 @@ pm run smoke:workspace。
 - [ ] 验收标准 3：不写入密钥、缓存、个人 profile 或大体积生成产物。
 - [ ] 验收标准 4：输出可由后续 agent 复查，不依赖聊天上下文。
 - [ ] 验收命令：$env:PYTHONUTF8='1'; $env:PYTHONPATH='apps/backend/src'; python -m pytest <target> -q。
-- [ ] 前端验收：在 pps/web 运行 
-pm run build，必要时运行 
+- [ ] 前端验收：在 pps/web 运行
+pm run build，必要时运行
 pm run smoke:workspace。
 - [ ] 仓库验收：运行 python tools/dev/check_repo.py --scope hygiene 与 git diff --check。
 - [ ] 记录字段：日期、执行人、代码范围、命令、结果、遗留风险。

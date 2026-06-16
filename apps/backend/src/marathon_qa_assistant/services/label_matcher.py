@@ -1,6 +1,5 @@
 """label_matcher.py — KG 标签语义匹配：向量缓存 + cosine 检索"""
 import logging
-import os
 from typing import Dict, List
 
 import numpy as np
@@ -10,9 +9,9 @@ try:
 except ImportError:
     OllamaEmbeddings = None  # type: ignore[assignment]
 
-logger = logging.getLogger("label_matcher")
+from marathon_qa_assistant.core.settings import get_settings
 
-_OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+logger = logging.getLogger("label_matcher")
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
@@ -30,7 +29,7 @@ class LabelMatcher:
     def __init__(self, embedding_model: str = "bge-m3"):
         if OllamaEmbeddings is None:
             raise RuntimeError("langchain_ollama 不可用，无法初始化 LabelMatcher")
-        self._embeddings = OllamaEmbeddings(model=embedding_model, base_url=_OLLAMA_BASE_URL)
+        self._embeddings = OllamaEmbeddings(model=embedding_model, base_url=get_settings().ollama_base_url)
         self._label_vectors: Dict[str, np.ndarray] = {}
         self._labels: List[str] = []
         self._threshold: float = 0.6
@@ -39,6 +38,9 @@ class LabelMatcher:
     def warm_up(self, labels: List[str], threshold: float = 0.6) -> None:
         """启动时调用。batch embed 所有 KG 标签，缓存向量"""
         self._threshold = threshold
+        self._label_vectors = {}
+        self._labels = []
+        self._warmed = False
         if not labels:
             self._warmed = True
             return

@@ -1,0 +1,1604 @@
+{
+  "nodes": {
+    "622c28f2e495": {
+      "label": "每周质量课最多 2 次",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_quality_sessions_weekly_cap",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "quality_sessions_per_week <= 2",
+      "description": "限制节奏跑、无氧阈、摄氧量、重复跑等高质量训练的周频次。"
+    },
+    "b78c6990a839": {
+      "label": "高质量课间隔至少 48 小时",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_quality_gap_48h",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "hours_between_quality_sessions >= 48",
+      "description": "避免连续高强度刺激，保留恢复窗口。"
+    },
+    "3f920d191613": {
+      "label": "每周长距离最多 1 次",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_long_run_weekly_cap",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "long_run_sessions_per_week <= 1",
+      "description": "防止长距离课过量堆叠。"
+    },
+    "349978cd99e7": {
+      "label": "长距离时长不得超过单次上限",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_long_run_duration_cap",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "long_run_duration_min <= athlete.max_session_minutes",
+      "description": "长距离模板必须受用户单次最长训练时长约束。"
+    },
+    "1fea7b1e836b": {
+      "label": "高质量课后优先恢复或轻松跑",
+      "type": "constraint",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "c_easy_after_quality",
+      "registry_kind": "constraint",
+      "node_origin": "registry",
+      "rule": "day_after_quality in {'easy_run','recovery','rest'}",
+      "description": "控制高强度训练后的次日安排。"
+    },
+    "9afde815a2d3": {
+      "label": "轻松跑模板 30-60min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_easy_run_duration_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "30-60",
+        "intensity": "Z1",
+        "rest": "无",
+        "surface": "公园|公路"
+      },
+      "workout_labels": [
+        "轻松跑",
+        "恢复跑"
+      ],
+      "constraint_ids": [
+        "c_easy_after_quality"
+      ]
+    },
+    "9c41243c6647": {
+      "label": "轻松跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "3b770ebe9b04": {
+      "label": "Z1",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c107898b38de": {
+      "label": "有氧基础",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c16a0f05a917": {
+      "label": "恢复能力",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "4609562a769d": {
+      "label": "基础耐力",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "1e46f49d866c": {
+      "label": "恢复跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "11abcc540863": {
+      "label": "长距离模板 80-120min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_long_run_base_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "80-120",
+        "intensity": "Z2",
+        "progression": "optional_last_20min",
+        "surface": "公路|公园"
+      },
+      "workout_labels": [
+        "长距离",
+        "长距离有氧"
+      ],
+      "constraint_ids": [
+        "c_long_run_weekly_cap",
+        "c_long_run_duration_cap"
+      ]
+    },
+    "e88515ef1ebd": {
+      "label": "长距离",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "5cb7e380d019": {
+      "label": "Z2",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "8b58c7712c5f": {
+      "label": "脂代谢",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "456948bd9aae": {
+      "label": "耐力提升",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "bee4a93050d9": {
+      "label": "长距离有氧",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c333911c7c20": {
+      "label": "有氧阈模板 30-50min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_aerobic_threshold_continuous_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "30-50",
+        "intensity": "Z3",
+        "rest": "无",
+        "surface": "公路|跑道"
+      },
+      "workout_labels": [
+        "有氧阈"
+      ],
+      "constraint_ids": [
+        "c_quality_gap_48h"
+      ]
+    },
+    "6d18c7cfc4b8": {
+      "label": "有氧阈",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "a61d1457beb4": {
+      "label": "Z3",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "be23814a2875": {
+      "label": "稳态耐力",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "cddc27121683": {
+      "label": "节奏跑模板 20-40min",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_tempo_continuous_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "duration_min": "20-40",
+        "intensity": "Z4",
+        "rest": "无",
+        "surface": "公路|跑道"
+      },
+      "workout_labels": [
+        "节奏跑",
+        "阈值节奏跑"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "4ed8e16481e9": {
+      "label": "节奏跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1",
+        "src_b451d1338190"
+      ]
+    },
+    "8ed54f04419f": {
+      "label": "Z4",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c5e2c38af141": {
+      "label": "乳酸阈",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "0c7f73061a61": {
+      "label": "阈值提升",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "bafcac0dd6d6": {
+      "label": "阈值节奏跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "48c975526bcb": {
+      "label": "无氧阈模板 4x1600m",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_threshold_cruise_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "reps": "4",
+        "distance": "1600m",
+        "intensity": "Z5",
+        "rest": "2min jog"
+      },
+      "workout_labels": [
+        "无氧阈"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "3a5b9cd61b9b": {
+      "label": "无氧阈",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "4afbd36dfbe0": {
+      "label": "Z5",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "fe79aea8b868": {
+      "label": "高阈值耐受",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "c5f29fd38c73": {
+      "label": "摄氧量模板 6x1km",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_vo2_1k_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "reps": "5-6",
+        "distance": "1km",
+        "intensity": "Z8",
+        "rest": "90s jog"
+      },
+      "workout_labels": [
+        "摄氧量",
+        "高强度间歇"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "ba10f3a62475": {
+      "label": "摄氧量",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "298a60807e4f": {
+      "label": "Z8",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "5fb3e0d2372d": {
+      "label": "vo2max",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "bf3ce3ba1d45": {
+      "label": "最大摄氧量提升",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "07b02d9c5087": {
+      "label": "高强度间歇",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "67af6064d1a9": {
+      "label": "重复跑模板 8x400m",
+      "type": "template",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ],
+      "registry_id": "tpl_repetition_400_v1",
+      "registry_kind": "template",
+      "node_origin": "registry",
+      "fields": {
+        "reps": "8",
+        "distance": "400m",
+        "intensity": "Z9",
+        "rest": "200m walk"
+      },
+      "workout_labels": [
+        "重复跑",
+        "极限间歇"
+      ],
+      "constraint_ids": [
+        "c_quality_sessions_weekly_cap",
+        "c_quality_gap_48h"
+      ]
+    },
+    "19ed4a54cb28": {
+      "label": "重复跑",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "1fde6c364c9c": {
+      "label": "Z9",
+      "type": "zone",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "4ee9e31ef0f5": {
+      "label": "跑步经济性",
+      "type": "physiology",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "6b1810a7901b": {
+      "label": "神经肌肉刺激",
+      "type": "adaptation",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "317219044935": {
+      "label": "极限间歇",
+      "type": "workout",
+      "source_chunks": [
+        "decision_graph_registry_v1"
+      ]
+    },
+    "8b840cd53f3f": {
+      "label": "sport psychology skills",
+      "type": "concept",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "eaea9b315e8b": {
+      "label": "marathon mental preparation",
+      "type": "concept",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "ab9144938fd6": {
+      "label": "self-talk and imagery",
+      "type": "concept",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "143eaadff4d9": {
+      "label": "race preparation prompts",
+      "type": "strategy",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "d2e91eeeb6a1": {
+      "label": "sport psychology role",
+      "type": "role",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "0d137d9c116e": {
+      "label": "training prescription modification",
+      "type": "constraint",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "990b6bff3a43": {
+      "label": "persistent clinical distress",
+      "type": "risk",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "82faa4ad65b1": {
+      "label": "professional mental-health support",
+      "type": "constraint",
+      "source_chunks": [
+        "sport_psychology_subgraph_v1"
+      ]
+    },
+    "693a8669edbe": {
+      "label": "higher daily protein intake",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "109f7317e24f": {
+      "label": "increases in fat-free mass",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "65c3533e9d9c": {
+      "label": "older individuals (53–71 years)",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "0f3f8900d0de": {
+      "label": "1.0-1.2 g/kg/day of protein",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "c1a6ac0fe30b": {
+      "label": "40 g doses",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "99fff0200c90": {
+      "label": "muscle protein synthesis",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "e323ecaff750": {
+      "label": "vitamin C",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "f807169341a7": {
+      "label": "immunity",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "e8f430ac8475": {
+      "label": "incidence of upper respiratory tract infections",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "4876a4334ad6": {
+      "label": "Training Load",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b",
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "6a765053b02d": {
+      "label": "Likelihood of Injury",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "12f20c9d1784": {
+      "label": "training and competition",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "b68db4aaf922": {
+      "label": "dependence on carbohydrates for athletes",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "c185ddac8b5a": {
+      "label": "training",
+      "type": "concept",
+      "source_chunks": [
+        "src_945e7b3e32e9"
+      ]
+    },
+    "85003e0731e2": {
+      "label": "athletes' dependence on carbohydrates",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_945e7b3e32e9"
+      ]
+    },
+    "aee5cead3b55": {
+      "label": "PA supplementation",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d",
+        "src_945e7b3e32e9"
+      ]
+    },
+    "12f6f7ad61ef": {
+      "label": "whole-body lean body mass (LBM)",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "71dbfca4cf79": {
+      "label": "resistance training",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d",
+        "src_945e7b3e32e9"
+      ]
+    },
+    "4c992731cc4c": {
+      "label": "risk of no relative change in LBM",
+      "type": "concept",
+      "source_chunks": [
+        "src_945e7b3e32e9"
+      ]
+    },
+    "59190a2e27b0": {
+      "label": "carbohydrate delivery",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "3ad25e7d4c4b": {
+      "label": "precedence over other strategies",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "cf8d530e3550": {
+      "label": "carbohydrate type",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "81f17c4cc185": {
+      "label": "glycemic index",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "d0e5011b3b0c": {
+      "label": "creatine monohydrate supplementation",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "4a5ce66371ac": {
+      "label": "muscle mass",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "ea900a52a90c": {
+      "label": "incidence of injury during training",
+      "type": "injury",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "b56b68a9e68f": {
+      "label": "running mechanics",
+      "type": "workout",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "87a429872c7f": {
+      "label": "pain",
+      "type": "injury",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "c1c425268e68": {
+      "label": "function",
+      "type": "concept",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "71730a64b90f": {
+      "label": "HIIT",
+      "type": "concept",
+      "source_chunks": [
+        "src_547f1419e9ba"
+      ]
+    },
+    "12eccbdd9b32": {
+      "label": "RE",
+      "type": "concept",
+      "source_chunks": [
+        "src_547f1419e9ba",
+        "src_875d3f5b6fef",
+        "src_9e3c2a6c0ad2"
+      ]
+    },
+    "2619fe9ab133": {
+      "label": "I² value",
+      "type": "concept",
+      "source_chunks": [
+        "src_547f1419e9ba"
+      ]
+    },
+    "0626716c6ac1": {
+      "label": "heterogeneity model choice",
+      "type": "concept",
+      "source_chunks": [
+        "src_547f1419e9ba"
+      ]
+    },
+    "360da2152867": {
+      "label": "training status",
+      "type": "concept",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "37148dd606dd": {
+      "label": "performance standards",
+      "type": "concept",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "bdddc64529b0": {
+      "label": "responsiveness to training",
+      "type": "concept",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "7814b33d3842": {
+      "label": "coaching quality",
+      "type": "concept",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "472fc2b41311": {
+      "label": "energy system contributions",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "c05f6c233521": {
+      "label": "performance",
+      "type": "concept",
+      "source_chunks": [
+        "src_13b96c46afc6",
+        "src_f95b062d735b",
+        "src_87c6ca7e6cb5",
+        "src_da12131b8c41",
+        "src_6922229c7b09",
+        "src_df9ead131193"
+      ]
+    },
+    "05f8e33b48d5": {
+      "label": "mechanics",
+      "type": "concept",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "0d71fbc9b4b7": {
+      "label": "sprint speed",
+      "type": "workout",
+      "source_chunks": [
+        "src_13b96c46afc6"
+      ]
+    },
+    "4a5172cde4bf": {
+      "label": "taper duration",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "8272cc55f5df": {
+      "label": "training load reduction range and speed",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "a7f4f071de23": {
+      "label": "fast-decay pattern",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "6b64a71bd7cd": {
+      "label": "training load reduction",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "ecf4a314f8f1": {
+      "label": "slow-decay pattern",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "217758197a42": {
+      "label": "accumulated fatigue",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "0d7aeb3ec418": {
+      "label": "maximal performance in competition",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "5b121d94ef6c": {
+      "label": "setting HIT intensity to match race pace",
+      "type": "physiology",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "453583c4e946": {
+      "label": "athletes' adaptation to the rhythm of the sport",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "8ebc9fcc8c05": {
+      "label": "step taper",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "accc9105df53": {
+      "label": "TT",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "93416a45336a": {
+      "label": "taper",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "28a4e11b4c85": {
+      "label": "negative (fatigue)",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "ebb8c6aa363b": {
+      "label": "positive training-induced adaptations",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "63d67cbe91f6": {
+      "label": "accumulated fatigue and training-induced adaptations",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "d7db6b89738a": {
+      "label": "pre-competition tapering",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "ac55579ede7c": {
+      "label": "sports performance",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "61f5744585f2": {
+      "label": "41–60%",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "82e660e7655b": {
+      "label": "training intensity",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5",
+        "src_f95b062d735b"
+      ]
+    },
+    "581e748cb48a": {
+      "label": "TT risk",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "a5ed4856fe74": {
+      "label": "exercise fatigue",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "78c60d3e0061": {
+      "label": "TT performance improvement",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "fc2430700a7a": {
+      "label": "physiological changes",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "6b2fe217fcfb": {
+      "label": "training frequency",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "77079ca529fb": {
+      "label": "TT (SMD, −0.32; 95% CI, −0.76 to 0.13; P > 0.05)",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "0d00d0ce233a": {
+      "label": "motor sensation and technical proficiency",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "0399c2b8c716": {
+      "label": "training frequency reduction",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "ae3886f8ad0c": {
+      "label": "TT decrease",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "b186b8319fb5": {
+      "label": "decrease in TT",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "17f4734dbcb0": {
+      "label": "Injury risk",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b",
+        "curated_injury_safety_2026"
+      ]
+    },
+    "ad1f174c342b": {
+      "label": "PFP IMPAIRMENT/FUNCTION-BASED CLASSIFICATION",
+      "type": "concept",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "7180d76e2923": {
+      "label": "overuse/overload without other impairment",
+      "type": "concept",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "89e0a3a5b4c5": {
+      "label": "history of increased PFJ loading",
+      "type": "concept",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "519e2a264827": {
+      "label": "classification into overuse/overload subcategory",
+      "type": "concept",
+      "source_chunks": [
+        "src_c91b8bca258c"
+      ]
+    },
+    "df38b70c7056": {
+      "label": "high absolute training loads",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "0a731b985f81": {
+      "label": "greater injury risk",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "ad5946d631d9": {
+      "label": "rapid change (>10%) in weekly training load",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "8f6c5ce42830": {
+      "label": "injuries",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "4eec843f3035": {
+      "label": "large week-to-week changes in training load",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "cfb34369097f": {
+      "label": "greater risk of injury",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "cdf39865e067": {
+      "label": "accurate measurement",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "e5b3de1343b5": {
+      "label": "acute:chronic workload ratio",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "86003390d22d": {
+      "label": "predictor of training-related injuries",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "c2b1dae8111c": {
+      "label": "players risk of time-loss injuries",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "73956998d7b4": {
+      "label": "high training loads",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "18ddff7e19fc": {
+      "label": "players’ fitness",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "5e528b615788": {
+      "label": "inadequate and excessive training loads",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "0daee4b58e3c": {
+      "label": "increased injuries",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "a3c2a6009c9f": {
+      "label": "athletic performance",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b",
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "7ff983fb58f7": {
+      "label": "injury",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b",
+        "curated_injury_safety_2026"
+      ]
+    },
+    "327453db77cb": {
+      "label": "preseason training load range",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "72d819a68328": {
+      "label": "preseason injury risk",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "112bfca42ca7": {
+      "label": "competitive phase training load threshold",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "d9f41c2129af": {
+      "label": "training load range of 3000–5000 arbitrary units",
+      "type": "concept",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "dd1e619d0d25": {
+      "label": "preseason injury likelihood",
+      "type": "injury",
+      "source_chunks": [
+        "src_f95b062d735b"
+      ]
+    },
+    "8f28a790e074": {
+      "label": "race pace",
+      "type": "physiology",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "4ac980bd9c14": {
+      "label": "HIT intensity",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "85df17a3843e": {
+      "label": "TT improvement",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "5cb649c6b0f9": {
+      "label": "taper subtype",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "d823b36df4fd": {
+      "label": "training effects for athletic competitions",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "c445a7ebe887": {
+      "label": "progressive taper",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "fdb1e6f51765": {
+      "label": "performance of endurance athletes",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "c641f61539d2": {
+      "label": "middle-distance running events",
+      "type": "workout",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "f4fa53bdb588": {
+      "label": "training intensity during tapering",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "0dfbd016d7e5": {
+      "label": "significant physiological changes",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "0f987dddf981": {
+      "label": "TT performance",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "6a0086c49e66": {
+      "label": "pre-competition motor sensation",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "b5f36fb4d27e": {
+      "label": "tapering",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "d0421991eb06": {
+      "label": "fatigue recovery balance",
+      "type": "workout",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "2527816157b1": {
+      "label": "endurance athletes performance",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "77155b9147aa": {
+      "label": "aper duration",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "b4c460a68479": {
+      "label": "taper pattern type",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "8a9684a7e9fa": {
+      "label": "TT (SMD, −0.51)",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "585226199391": {
+      "label": "TT test",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "4078ad12af4e": {
+      "label": "endurance performance",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5",
+        "src_875d3f5b6fef"
+      ]
+    },
+    "491daf3c4a02": {
+      "label": "anti-fatigue ability",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "b1efe63e5adb": {
+      "label": "pre-taper overload training",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "3f47a2b24bb4": {
+      "label": "tapering strategies",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "1d2d76ab0657": {
+      "label": "long-distance runners’ performance",
+      "type": "workout",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "3b6445d294fa": {
+      "label": "pre-competition taper",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "ca9d5668037b": {
+      "label": "_VO2max",
+      "type": "physiology",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "47e2e8c3fdb7": {
+      "label": "EM",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "31ac492fbf80": {
+      "label": "long-term high-intensity sports training",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "d5b44b09e474": {
+      "label": "endurance athletes’ training-induced adaptability",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "d3fc8a82a4b2": {
+      "label": "aerobic power",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "ae001a53044d": {
+      "label": "polarized training",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "7147cd43c058": {
+      "label": "VO2peak improvement",
+      "type": "physiology",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "5bf53ef161eb": {
+      "label": "baseline endurance performance level",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "6aa9fdfdaca8": {
+      "label": "effect of polarized training on VO2peak improvement",
+      "type": "physiology",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "97beaa21d481": {
+      "label": "TID",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "064aa39c9ba7": {
+      "label": "physiologically tolerable limit",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "a9689fb97fb0": {
+      "label": "performance optimization",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "0e3efaaad6de": {
+      "label": "TTE",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "352a930cb990": {
+      "label": "exercise capacity or tolerance",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "ad4bd75bda53": {
+      "label": "replenish lost muscle and liver glycogen",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_945e7b3e32e9"
+      ]
+    },
+    "c4c942a0f682": {
+      "label": "ingesting adequate protein",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "76c368ae63e3": {
+      "label": "stimulate resistance training adaptations",
+      "type": "concept",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "f75e13dc5f10": {
+      "label": "optimal carbohydrate delivery",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "5bdeabdc45fa": {
+      "label": "glycogen recovery",
+      "type": "nutrition",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "a70ec32dd775": {
+      "label": "soreness and inflammation",
+      "type": "injury",
+      "source_chunks": [
+        "src_1668a67fe73d"
+      ]
+    },
+    "627a1f8f3e1f": {
+      "label": "POL",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "572211580002": {
+      "label": "VO2peak",
+      "type": "physiology",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "884699be66f3": {
+      "label": "interventions lasting less than 12 weeks",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "57279053ef90": {
+      "label": "adequate manipulation",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "928303d9b5b3": {
+      "label": "T ventilatory or lactate threshold",
+      "type": "physiology",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "fee3d4a9bb4e": {
+      "label": "Endurance training interventions",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "2f4bd6f2efdb": {
+      "label": "POL intensity distribution principle",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "fb93f4185aea": {
+      "label": "Intervention",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "7e526c176e63": {
+      "label": "frequency of sessions/week",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "4f42c20f4bb7": {
+      "label": "≥4 weeks of intervention",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "f69da257e553": {
+      "label": "TT duration",
+      "type": "concept",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "1574987e4c2e": {
+      "label": "VO2max test duration",
+      "type": "physiology",
+      "source_chunks": [
+        "src_875d3f5b6fef"
+      ]
+    },
+    "e083b7d4d066": {
+      "label": "14-day tapering",
+      "type": "concept",
+      "source_chunks": [
+        "src_87c6ca7e6cb5"
+      ]
+    },
+    "68f57a30ca2b": {
+      "label": "by 41–60%",
+      "type": "concept",
+      "source

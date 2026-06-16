@@ -1,0 +1,1074 @@
+{
+  "vector_dir": "C:\\Users\\26318\\Documents\\trae_projects\\ollama_pro\\马拉松助手\\data\\vector_kb\\v2",
+  "top_k": 5,
+  "question_count": 5,
+  "results": [
+    {
+      "question": "如何定义并安排周期化训练以支持长期跑步表现提升？",
+      "answer": "Half Marathon HMP Protocol Internal Pilot. Page 1. ## 7. 安全约束 The Norway Method / 挪威训练法的应用. Page 101. 受伤需稳定负荷者。该模式也利于安全适应阈值训练并掌握正确配速。 The Norway Method / 挪威训练法的应用. Page 189. • 注意安排时机：对多数跑者而言，将力量训练直接安排在阈值训",
+      "citations": [
+        {
+          "source_file": "half_marathon_hmp_protocol.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_internal_hmp_protocol_pilot_0105",
+          "score": 0.740182
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 101,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0882",
+          "score": 0.728876
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 189,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_1678",
+          "score": 0.701712
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 262,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_2316",
+          "score": 0.700278
+        },
+        {
+          "source_file": "half_marathon_hmp_protocol.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_internal_hmp_protocol_pilot_0011",
+          "score": 0.699362
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.740182,
+          "chunk_id": "chunkv2_src_internal_hmp_protocol_pilot_0105",
+          "source_file": "half_marathon_hmp_protocol.md",
+          "source_path": "docs/product/half_marathon_hmp_protocol.md",
+          "page": 1,
+          "text": "Half Marathon HMP Protocol Internal Pilot. Page 1. ## 7. 安全约束",
+          "distance": 0.35101860761642456,
+          "source_registry_id": "src_internal_hmp_protocol_pilot",
+          "source_url": "internal://src_internal_hmp_protocol_pilot",
+          "local_path": "docs/product/half_marathon_hmp_protocol.md",
+          "section": "document_paragraph",
+          "paragraph_index": 103,
+          "char_start": 3234,
+          "char_end": 3244,
+          "language": "zh",
+          "evidence_domain": "protocol",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_protocols",
+          "allowed_use": "core_prescription",
+          "prescription_permission": "can_write_core",
+          "quality_tier": "reviewed_internal_pilot",
+          "review_status": "approved",
+          "exclude_from_training_generation": false,
+          "needs_review": false,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.740182,
+            "distance": 0.35101860761642456,
+            "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "query_variants": [
+            "如何定义并安排周期化训练以支持长期跑步表现提升?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.728876,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0882",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 101,
+          "text": "The Norway Method / 挪威训练法的应用. Page 101. 受伤需稳定负荷者。该模式也利于安全适应阈值训练并掌握正确配速。",
+          "distance": 0.3719761371612549,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 3,
+          "char_start": 47,
+          "char_end": 78,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.728876,
+            "distance": 0.3719761371612549,
+            "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "query_variants": [
+            "如何定义并安排周期化训练以支持长期跑步表现提升?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.701712,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_1678",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 189,
+          "text": "The Norway Method / 挪威训练法的应用. Page 189. • 注意安排时机：对多数跑者而言，将力量训练直接安排在阈值训",
+          "distance": 0.4250866174697876,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 10,
+          "char_start": 330,
+          "char_end": 360,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.701712,
+            "distance": 0.4250866174697876,
+            "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "query_variants": [
+            "如何定义并安排周期化训练以支持长期跑步表现提升?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.700278,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_2316",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 262,
+          "text": "The Norway Method / 挪威训练法的应用. Page 262. 但由于双阈值训练高度可控，且次日完全安排低强度训练，身体会进入“可控应激→特定适应→充分休息使系统平复”的循环。根据我的经验，这类双重训练并不会增加太多额外恢复时间。",
+          "distance": 0.4280052185058594,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 4,
+          "char_start": 149,
+          "char_end": 232,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.700278,
+            "distance": 0.4280052185058594,
+            "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "query_variants": [
+            "如何定义并安排周期化训练以支持长期跑步表现提升?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.699362,
+          "chunk_id": "chunkv2_src_internal_hmp_protocol_pilot_0011",
+          "source_file": "half_marathon_hmp_protocol.md",
+          "source_path": "docs/product/half_marathon_hmp_protocol.md",
+          "page": 1,
+          "text": "Half Marathon HMP Protocol Internal Pilot. Page 1. - 用安全约束防止计划超出跑者当前承受能力。",
+          "distance": 0.4298750162124634,
+          "source_registry_id": "src_internal_hmp_protocol_pilot",
+          "source_url": "internal://src_internal_hmp_protocol_pilot",
+          "local_path": "docs/product/half_marathon_hmp_protocol.md",
+          "section": "document_paragraph",
+          "paragraph_index": 10,
+          "char_start": 309,
+          "char_end": 331,
+          "language": "zh",
+          "evidence_domain": "protocol",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_protocols",
+          "allowed_use": "core_prescription",
+          "prescription_permission": "can_write_core",
+          "quality_tier": "reviewed_internal_pilot",
+          "review_status": "approved",
+          "exclude_from_training_generation": false,
+          "needs_review": false,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.699362,
+            "distance": 0.4298750162124634,
+            "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "query_variants": [
+            "如何定义并安排周期化训练以支持长期跑步表现提升?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "如何定义并安排周期化训练以支持长期跑步表现提升?",
+          "bilingual_match": false
+        }
+      ]
+    },
+    {
+      "question": "马拉松训练期如何进行营养与补给规划？",
+      "answer": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 1. Table 1 summarizes the characteristics of key distance running and race walking events, noting the duration and inte A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Page 1. There have been significant changes in the understanding of the role of carbohydrates during endurance exercise in recent years,  Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 1. Race nutrition strategies include CHO-rich eating in the hours per days prior to the event to store glycogen in amou",
+      "citations": [
+        {
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0005",
+          "score": 0.734195
+        },
+        {
+          "source_file": "nutrition_carb_during_exercise_2014.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0009",
+          "score": 0.729086
+        },
+        {
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0003",
+          "score": 0.727782
+        },
+        {
+          "source_file": "nutrition_carb_during_exercise_2014.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0089",
+          "score": 0.72736
+        },
+        {
+          "source_file": "nutrition_issn_review_2018.pdf",
+          "page": 14,
+          "chunk_id": "chunkv2_src_nutrition_issn_review_2018_0147",
+          "score": 0.680314
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.734195,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0005",
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "source_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "text": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 1. Table 1 summarizes the characteristics of key distance running and race walking events, noting the duration and intensity of races for top competitors and elements that contribute to the physiological and nutrition challenges of these events. Meanwhile, opportunities to address these challenges via within-event nutrition strategies are summarized in Table 2. As in middle-distance events, there are tactical, technical, and physiological components to successful outcomes. This paper focuses on knowledge that has emerged over the past decade on nutrition strategies to support the training and competition goals of distance runners and race walkers, translating race nutrition principles into practical recommendations.",
+          "distance": 0.362035870552063,
+          "source_registry_id": "src_nutrition_distance_runners_2019",
+          "source_url": "https://worldathletics.org/download/download?filename=6babe10a-9969-407e-b0cd-f7d96df50f51.pdf&urlslug=Contemporary+Nutrition+Strategies+to+Optimize+Performance+in+Distance+Runners+and+Race+Walkers",
+          "local_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 4,
+          "char_start": 2752,
+          "char_end": 3474,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "review",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "nutrition"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.734195,
+            "distance": 0.362035870552063,
+            "query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "query_variants": [
+            "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.729086,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0009",
+          "source_file": "nutrition_carb_during_exercise_2014.md",
+          "source_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_carb_during_exercise_2014.md",
+          "page": 1,
+          "text": "A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Page 1. There have been significant changes in the understanding of the role of carbohydrates during endurance exercise in recent years, which allows for more specific and more personalized advice with regard to carbohydrate ingestion during exercise. The new proposed guidelines take into account the duration (and intensity) of exercise and advice is not restricted to the amount of carbohydrate; it also gives direction with respect to the type of carbohydrate. Studies have shown that during exercise lasting approximately 1 h in duration, a mouth rinse or small amounts of carbohydrate can result in a performance benefit. A single carbohydrate source can be oxidized at rates up to approximately 60 g/h and this is the recommendation for exercise that is more prolonged (2–3 h). For ultra-endurance events, the recommendation is higher at approximately 90 g/h. Carbohydrate ingested at such high ingestion rates must be a multiple transportable carbohydrates to allow high oxidation rates and prevent the accumulation of carbohydrate in the intestine.",
+          "distance": 0.371579647064209,
+          "source_registry_id": "src_nutrition_carb_during_exercise_2014",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4008807/",
+          "local_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_carb_during_exercise_2014.md",
+          "section": "document_paragraph",
+          "paragraph_index": 8,
+          "char_start": 376,
+          "char_end": 1425,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "review",
+          "review_status": "approved",
+          "exclude_from_training_generation": true,
+          "needs_review": false,
+          "domain_terms": [
+            "nutrition"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.663471,
+            "distance": 0.507225751876831,
+            "query_variant": "马拉松训练期如何进行营养与补给(fueling hydration carbohydrate electrolyte intake)规划?",
+            "variant_count": 4,
+            "consensus_count": 2,
+            "query_variant_count": 2,
+            "bilingual_match": false
+          },
+          "query_variant": "马拉松训练期如何进行营养与补给(fueling hydration carbohydrate electrolyte intake)规划?",
+          "query_variants": [
+            "马拉松训练期如何进行营养与补给(fueling hydration carbohydrate electrolyte intake)规划?",
+            "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance"
+          ],
+          "query_variant_count": 2,
+          "consensus_count": 2,
+          "best_query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.727782,
+          "chunk_id": "chunkv2_src_nutrition_distance_runners_2019_0003",
+          "source_file": "nutrition_distance_runners_2019.pdf",
+          "source_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "page": 1,
+          "text": "Contemporary Nutrition Strategies to Optimize Performance in Distance Runners and Race Walkers. Page 1. Race nutrition strategies include CHO-rich eating in the hours per days prior to the event to store glycogen in amounts sufﬁcient for event fuel needs, and in some cases, in-race consumption of CHO and ﬂuid to offset event losses. Bene ﬁcial CHO intakes range from small amounts,including mouth rinsing, in the case of shorter events to high rates of intake (75 –90 g/hr) in the longest races. A personalized and practiced race nutrition plan should balance the bene ﬁts of ﬂuid and CHO consumed within practical opportunities, against the time, cost, and risk of gut discomfort. In hot environments, prerace hyperhydration or cooling strategies may provide a small but useful offset to the accrued thermal challenge and ﬂuid deﬁcit. Sports foods (drinks, gels, etc.) may assist in meeting training/race nutrition plans, with caffeine, and, perhaps nitrate being used as evidence-based performance supplements.",
+          "distance": 0.3740370273590088,
+          "source_registry_id": "src_nutrition_distance_runners_2019",
+          "source_url": "https://worldathletics.org/download/download?filename=6babe10a-9969-407e-b0cd-f7d96df50f51.pdf&urlslug=Contemporary+Nutrition+Strategies+to+Optimize+Performance+in+Distance+Runners+and+Race+Walkers",
+          "local_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_distance_runners_2019.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 2,
+          "char_start": 0,
+          "char_end": 910,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "review",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "nutrition"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.727782,
+            "distance": 0.3740370273590088,
+            "query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "query_variants": [
+            "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.72736,
+          "chunk_id": "chunkv2_src_nutrition_carb_during_exercise_2014_0089",
+          "source_file": "nutrition_carb_during_exercise_2014.md",
+          "source_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_carb_during_exercise_2014.md",
+          "page": 1,
+          "text": "A Step Towards Personalized Sports Nutrition: Carbohydrate Intake During Exercise. Page 1. We recently suggested that this may be highly relevant to the endurance athlete and may be a prerequisite for the first person to break the 2-h marathon barrier. Although more research is needed, it is recommended to practise the carbohydrate intake strategy in training, and dedicate at least some time to training with a relatively high carbohydrate intake.",
+          "distance": 0.37483543157577515,
+          "source_registry_id": "src_nutrition_carb_during_exercise_2014",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4008807/",
+          "local_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_carb_during_exercise_2014.md",
+          "section": "document_paragraph",
+          "paragraph_index": 87,
+          "char_start": 24216,
+          "char_end": 24575,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "review",
+          "review_status": "approved",
+          "exclude_from_training_generation": true,
+          "needs_review": false,
+          "domain_terms": [
+            "nutrition"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.72736,
+            "distance": 0.37483543157577515,
+            "query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "query_variants": [
+            "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "马拉松训练期如何进行营养与补给规划? nutrition marathon hydration carbohydrate fueling diet protein fueling hydration carbohydrate electrolyte intake marathon running training plan race long distance",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.680314,
+          "chunk_id": "chunkv2_src_nutrition_issn_review_2018_0147",
+          "source_file": "nutrition_issn_review_2018.pdf",
+          "source_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_issn_review_2018.pdf",
+          "page": 14,
+          "text": "ISSN Exercise & Sports Nutrition Review Update: Research & Recommendations. Page 14. extend beyond 90 min challenge fuel supply and fluid regulation. In these situations, it is advisable to consume carbohydrate at a rate of 30–60 g of carbohydrate/hour in a 6–8% carbohydrate-electrolyte solution (6–12 fluid ounces) every 10–15 min t h r o u g h o u tt h ee n t i r ee x e r c i s eb o u t .T h ei m p o r t a n c e of this strategy is increased when poor feeding or recovery strategies were employed prior to exercise commencement. Consequently, when carbohydrate delivery is inadequate, adding protein may help increase performance, mitigate muscle damage,promote euglycemia, and facilitate glycogen re-synthesis.",
+          "distance": 0.46990951895713806,
+          "source_registry_id": "src_nutrition_issn_review_2018",
+          "source_url": "https://link.springer.com/article/10.1186/s12970-018-0242-y",
+          "local_path": "data\\knowledge\\raw_sources\\academic_literature\\nutrition_hydration_race_fueling\\nutrition_issn_review_2018.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 8,
+          "char_start": 3458,
+          "char_end": 4089,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "nutrition_hydration_race_fueling",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "review",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "nutrition"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.680314,
+            "distance": 0.46990951895713806,
+            "query_variant": "fueling hydration carbohydrate electrolyte intake",
+            "variant_count": 4,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "fueling hydration carbohydrate electrolyte intake",
+          "query_variants": [
+            "fueling hydration carbohydrate electrolyte intake"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "fueling hydration carbohydrate electrolyte intake",
+          "bilingual_match": false
+        }
+      ]
+    },
+    {
+      "question": "过度训练常见风险信号有哪些，如何识别？",
+      "answer": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review. Page 1. Modeling overuse injuries in sport as a mechanical fatigue phenomenon",
+      "citations": [
+        {
+          "source_file": "src_pmc_return_running_tibial_bsi_2024.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0244",
+          "score": 0.702439
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.702439,
+          "chunk_id": "chunkv2_src_pmc_return_running_tibial_bsi_2024_0244",
+          "source_file": "src_pmc_return_running_tibial_bsi_2024.md",
+          "source_path": "data/knowledge/raw_sources/academic_literature/rehab_return_to_run/src_pmc_return_running_tibial_bsi_2024.md",
+          "page": 1,
+          "text": "Criteria and Guidelines for Returning to Running Following a Tibial Bone Stress Injury: A Scoping Review. Page 1. Modeling overuse injuries in sport as a mechanical fatigue phenomenon",
+          "distance": 0.42361021041870117,
+          "source_registry_id": "src_pmc_return_running_tibial_bsi_2024",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11393297/",
+          "local_path": "data/knowledge/raw_sources/academic_literature/rehab_return_to_run/src_pmc_return_running_tibial_bsi_2024.md",
+          "section": "document_paragraph",
+          "paragraph_index": 243,
+          "char_start": 65097,
+          "char_end": 65166,
+          "language": "zh",
+          "evidence_domain": "rehab_strength_mobility",
+          "knowledge_layer": "document_index",
+          "domain_pack": "rehab_return_to_run",
+          "allowed_use": "rehab_guidance",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "scoping_review",
+          "review_status": "approved",
+          "exclude_from_training_generation": true,
+          "needs_review": false,
+          "domain_terms": [
+            "injury_safety"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.702439,
+            "distance": 0.42361021041870117,
+            "query_variant": "过度训练常见风险信号有哪些,如何识别? overtraining overreaching excessive loading fatigue injury risk danger safety hazard warning",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "过度训练常见风险信号有哪些,如何识别? overtraining overreaching excessive loading fatigue injury risk danger safety hazard warning",
+          "query_variants": [
+            "过度训练常见风险信号有哪些,如何识别? overtraining overreaching excessive loading fatigue injury risk danger safety hazard warning"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "过度训练常见风险信号有哪些,如何识别? overtraining overreaching excessive loading fatigue injury risk danger safety hazard warning",
+          "bilingual_match": false
+        }
+      ]
+    },
+    {
+      "question": "高温环境下训练有哪些安全建议？",
+      "answer": "CDC Heat-Related Illnesses. Page 1. - Workers exposed to extreme heat or work in hot environments may be at risk for experiencing heat-related illnesses. CDC Heat-Related Illnesses. Page 1. Outdoor and indoor workers exposed to extreme heat or work in hot environments may be at risk for experiencing heat related illnesses. Heat-related illnesses include heat stroke, heat  CDC Heat-Related Illnesses. Page 1. Source URL: https://www.cdc.gov/niosh/heat-stress/about/illnesses.html Accessed at: 2026-05-30",
+      "citations": [
+        {
+          "source_file": "cdc_heat_related_illnesses.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0005",
+          "score": 0.726938
+        },
+        {
+          "source_file": "cdc_heat_related_illnesses.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0007",
+          "score": 0.695447
+        },
+        {
+          "source_file": "cdc_heat_related_illnesses.md",
+          "page": 1,
+          "chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0003",
+          "score": 0.6919
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.726938,
+          "chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0005",
+          "source_file": "cdc_heat_related_illnesses.md",
+          "source_path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+          "page": 1,
+          "text": "CDC Heat-Related Illnesses. Page 1. - Workers exposed to extreme heat or work in hot environments may be at risk for experiencing heat-related illnesses.",
+          "distance": 0.37563374638557434,
+          "source_registry_id": "src_external_cdc_heat_illnesses",
+          "source_url": "https://www.cdc.gov/niosh/heat-stress/about/illnesses.html",
+          "local_path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+          "section": "document_paragraph",
+          "paragraph_index": 4,
+          "char_start": 153,
+          "char_end": 270,
+          "language": "zh",
+          "evidence_domain": "medical_safety",
+          "knowledge_layer": "document_index",
+          "domain_pack": "medical_risk",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "official_public_health_guidance",
+          "review_status": "approved",
+          "exclude_from_training_generation": true,
+          "needs_review": false,
+          "domain_terms": [
+            "medical_safety"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.726938,
+            "distance": 0.37563374638557434,
+            "query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+          "query_variants": [
+            "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.695447,
+          "chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0007",
+          "source_file": "cdc_heat_related_illnesses.md",
+          "source_path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+          "page": 1,
+          "text": "CDC Heat-Related Illnesses. Page 1. Outdoor and indoor workers exposed to extreme heat or work in hot environments may be at risk for experiencing heat related illnesses. Heat-related illnesses include heat stroke, heat exhaustion, rhabdomyolysis, heat syncope, heat cramps, and heat rash.",
+          "distance": 0.43792474269866943,
+          "source_registry_id": "src_external_cdc_heat_illnesses",
+          "source_url": "https://www.cdc.gov/niosh/heat-stress/about/illnesses.html",
+          "local_path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+          "section": "document_paragraph",
+          "paragraph_index": 6,
+          "char_start": 370,
+          "char_end": 623,
+          "language": "zh",
+          "evidence_domain": "medical_safety",
+          "knowledge_layer": "document_index",
+          "domain_pack": "medical_risk",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "official_public_health_guidance",
+          "review_status": "approved",
+          "exclude_from_training_generation": true,
+          "needs_review": false,
+          "domain_terms": [
+            "medical_safety"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.695447,
+            "distance": 0.43792474269866943,
+            "query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+          "query_variants": [
+            "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.6919,
+          "chunk_id": "chunkv2_src_external_cdc_heat_illnesses_0003",
+          "source_file": "cdc_heat_related_illnesses.md",
+          "source_path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+          "page": 1,
+          "text": "CDC Heat-Related Illnesses. Page 1. Source URL: https://www.cdc.gov/niosh/heat-stress/about/illnesses.html Accessed at: 2026-05-30",
+          "distance": 0.445295512676239,
+          "source_registry_id": "src_external_cdc_heat_illnesses",
+          "source_url": "https://www.cdc.gov/niosh/heat-stress/about/illnesses.html",
+          "local_path": "data/knowledge/raw_sources/official_public_health/medical_risk/cdc_heat_related_illnesses.md",
+          "section": "document_paragraph",
+          "paragraph_index": 2,
+          "char_start": 30,
+          "char_end": 124,
+          "language": "zh",
+          "evidence_domain": "medical_safety",
+          "knowledge_layer": "document_index",
+          "domain_pack": "medical_risk",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "official_public_health_guidance",
+          "review_status": "approved",
+          "exclude_from_training_generation": true,
+          "needs_review": false,
+          "domain_terms": [
+            "medical_safety"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.6919,
+            "distance": 0.445295512676239,
+            "query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+          "query_variants": [
+            "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "高温环境下训练有哪些安全建议? heat stress hot environment hydration safety thermal safety risk warning caution advice health emergency",
+          "bilingual_match": false
+        }
+      ]
+    },
+    {
+      "question": "力量训练与耐力训练如何在同一训练计划中平衡？",
+      "answer": "The Norway Method / 挪威训练法的应用. Page 24. 你不是在训练量与强度之间做选择，而是在寻找两者协同作用的平衡点。在可重复的负荷下，你能获得更高的有氧能力。 The Norway Method / 挪威训练法的应用. Page 24. 实际效果是：曾经感觉困难的配速开始变得适中，同样的努力能让你跑得更远。这种转变在数周数月间逐渐发生，但到来时却清晰可辨。你在相同乳酸水平下跑得更快，或在更低乳酸水平下保持相同配速。 The Norway Method / 挪威训练法的应用. Page 143. 但其中某些特质令我难以忘怀。晨间训练感觉平常，晚间训练却截然不同——并非预期中的更艰难，而是反应更敏锐，仿佛先前的努力为某些变化铺平了道路。我不断回味着这种体验。",
+      "citations": [
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 24,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0176",
+          "score": 0.731899
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 24,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0179",
+          "score": 0.729966
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 143,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_1258",
+          "score": 0.724166
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 283,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_2489",
+          "score": 0.717035
+        },
+        {
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "page": 105,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0928",
+          "score": 0.716024
+        }
+      ],
+      "retrieved_chunks": [
+        {
+          "score": 0.731899,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0176",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 24,
+          "text": "The Norway Method / 挪威训练法的应用. Page 24. 你不是在训练量与强度之间做选择，而是在寻找两者协同作用的平衡点。在可重复的负荷下，你能获得更高的有氧能力。",
+          "distance": 0.3663085401058197,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 3,
+          "char_start": 215,
+          "char_end": 268,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.731899,
+            "distance": 0.3663085401058197,
+            "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "query_variants": [
+            "力量训练与耐力训练如何在同一训练计划中平衡?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.729966,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0179",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 24,
+          "text": "The Norway Method / 挪威训练法的应用. Page 24. 实际效果是：曾经感觉困难的配速开始变得适中，同样的努力能让你跑得更远。这种转变在数周数月间逐渐发生，但到来时却清晰可辨。你在相同乳酸水平下跑得更快，或在更低乳酸水平下保持相同配速。",
+          "distance": 0.36992770433425903,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 6,
+          "char_start": 431,
+          "char_end": 521,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.729966,
+            "distance": 0.36992770433425903,
+            "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "query_variants": [
+            "力量训练与耐力训练如何在同一训练计划中平衡?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.724166,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_1258",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 143,
+          "text": "The Norway Method / 挪威训练法的应用. Page 143. 但其中某些特质令我难以忘怀。晨间训练感觉平常，晚间训练却截然不同——并非预期中的更艰难，而是反应更敏锐，仿佛先前的努力为某些变化铺平了道路。我不断回味着这种体验。",
+          "distance": 0.38089942932128906,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 3,
+          "char_start": 137,
+          "char_end": 218,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.724166,
+            "distance": 0.38089942932128906,
+            "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "query_variants": [
+            "力量训练与耐力训练如何在同一训练计划中平衡?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.717035,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_2489",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 283,
+          "text": "The Norway Method / 挪威训练法的应用. Page 283. 但你必须同时考虑整体负荷平衡。",
+          "distance": 0.3946329951286316,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 6,
+          "char_start": 417,
+          "char_end": 432,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.717035,
+            "distance": 0.3946329951286316,
+            "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "query_variants": [
+            "力量训练与耐力训练如何在同一训练计划中平衡?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "bilingual_match": false
+        },
+        {
+          "score": 0.716024,
+          "chunk_id": "chunkv2_src_local_norway_method_book_2026_0928",
+          "source_file": "the-norway-method-compressed-left-to-right.pdf",
+          "source_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "page": 105,
+          "text": "The Norway Method / 挪威训练法的应用. Page 105. • 间歇时长影响配速。较短间歇允许相同努力下跑得更快。若",
+          "distance": 0.39660125970840454,
+          "source_registry_id": "src_local_norway_method_book_2026",
+          "source_url": "internal://src_local_norway_method_book_2026",
+          "local_path": "data/knowledge/external_candidates/the-norway-method-compressed-left-to-right.pdf",
+          "section": "pdf_paragraph_candidate",
+          "paragraph_index": 7,
+          "char_start": 215,
+          "char_end": 243,
+          "language": "zh",
+          "evidence_domain": "sports_science_reference",
+          "knowledge_layer": "document_index",
+          "domain_pack": "training_load",
+          "allowed_use": "explanation",
+          "prescription_permission": "explanation_only",
+          "quality_tier": "candidate_book",
+          "review_status": "candidate",
+          "exclude_from_training_generation": true,
+          "needs_review": true,
+          "domain_terms": [
+            "training_protocol"
+          ],
+          "retrieval_mode": "vector_fusion",
+          "why_retrieved": "FAISS similarity search matched one query variant in bilingual retrieval fusion.",
+          "score_breakdown": {
+            "vector_score": 0.716024,
+            "distance": 0.39660125970840454,
+            "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+            "variant_count": 2,
+            "consensus_count": 1,
+            "query_variant_count": 1,
+            "bilingual_match": false
+          },
+          "query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "query_variants": [
+            "力量训练与耐力训练如何在同一训练计划中平衡?"
+          ],
+          "query_variant_count": 1,
+          "consensus_count": 1,
+          "best_query_variant": "力量训练与耐力训练如何在同一训练计划中平衡?",
+          "bilingual_match": false
+        }
+      ]
+    }
+  ]
+}

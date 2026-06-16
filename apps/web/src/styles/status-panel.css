@@ -1,0 +1,177 @@
+/* status-panel.css — StatusPanel and risk level visualization [product-status][P1] */
+
+/* --- StatusPanel --- */
+.status-panel {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.status-panel[hidden] {
+  display: none;
+}
+
+.status-panel-normal {
+  border-color: var(--border-default);
+  background: #ffffff;
+}
+
+.status-panel-attention {
+  border-color: var(--border-default);
+  background: #ffffff;
+}
+
+.status-panel-deescalate {
+  border-color: var(--border-default);
+  background: #ffffff;
+}
+
+.status-panel-medical_referral {
+  border-color: var(--border-default);
+  background: #ffffff;
+}
+
+.status-panel-unknown {
+  border-color: var(--border-default);
+  background: #ffffff;
+}
+
+.status-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.status-panel-head h3 {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.status-panel-head > span {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: #ffffff;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.status-panel-head > span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--success);
+}
+
+.status-panel-medical_referral .status-panel-head > span {
+  color: var(--text-secondary);
+}
+
+.status-panel-medical_referral .status-panel-head > span::before {
+  background: var(--danger);
+}
+
+.status-panel-deescalate .status-panel-head > span {
+  color: var(--text-secondary);
+}
+
+.status-panel-deescalate .status-panel-head > span::before {
+  background: var(--warning);
+}
+
+.status-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.status-panel-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  padding: var(--space-3);
+}
+
+.status-panel-grid > div span {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-panel-grid > div strong {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.status-panel-foot {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.status-panel-foot .compact-button {
+  font-size: var(--text-xs);
+}
+
+/* --- Risk level badges --- */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #ffffff;
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.risk-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.risk-normal::before { background: var(--success); }
+.risk-attention::before { background: var(--warning); }
+.risk-deescalate::before { background: var(--danger); }
+.risk-medical_referral::before { background: var(--danger); }
+.risk-unknown::before { background: var(--faint); }
+
+/* --- Recovery status --- */
+.recovery-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid var(--border-default);
+}
+
+.recovery-safe { color: var(--success); }
+.recovery-caution { color: var(--warning); }
+.recovery-risk { color: var(--danger); }
+.recovery-medical_referral { color: var(--danger); }
+.recovery-unknown { color: var(--text-muted); }

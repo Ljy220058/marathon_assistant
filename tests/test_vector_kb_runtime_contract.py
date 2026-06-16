@@ -1,7 +1,92 @@
 import json
+import pickle
 from pathlib import Path
 
+import faiss
+
+from marathon_qa_assistant.apps import response_builders
+from marathon_qa_assistant.services import knowledge_graph
 from marathon_qa_assistant.services import vector_store
+
+
+def test_save_outputs_rejects_chunks_without_non_empty_text(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_from_documents(docs, embeddings):
+        calls.append((docs, embeddings))
+        raise AssertionError("FAISS.from_documents must not run without valid documents")
+
+    monkeypatch.setattr(vector_store, "get_embeddings", lambda: object())
+    monkeypatch.setattr(vector_store.FAISS, "from_documents", fake_from_documents)
+
+    chunks = [
+        {
+            "chunk_id": "blank-1",
+            "source_file": "blank.md",
+            "page": 1,
+            "text": "   ",
+        }
+    ]
+
+    try:
+        vector_store.save_outputs(tmp_path, chunks, None, None, None)
+    except ValueError as exc:
+        assert "no non-empty documents" in str(exc)
+        assert "blank-1" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for chunks without non-empty text")
+
+    assert calls == []
+
+
+def test_save_outputs_writes_index_meta_matching_chunks_and_faiss_docs(monkeypatch, tmp_path):
+    class FakeIndex:
+        ntotal = 2
+        d = 1024
+
+    class FakeFaissStore:
+        index = FakeIndex()
+
+        def save_local(self, path):
+            faiss_dir = Path(path)
+            faiss_dir.mkdir(parents=True, exist_ok=True)
+            (faiss_dir / "index.faiss").write_bytes(b"fake-index")
+            (faiss_dir / "index.pkl").write_bytes(b"fake-pkl")
+
+    chunks = [
+        {**_v2_chunk(), "chunk_id": "chunk-1", "text": "first"},
+        {**_v2_chunk(), "chunk_id": "chunk-2", "text": "second"},
+        {**_v2_chunk(), "chunk_id": "chunk-blank", "text": "   "},
+    ]
+
+    monkeypatch.setattr(vector_store, "get_embeddings", lambda: object())
+    monkeypatch.setattr(
+        vector_store,
+        "_validate_embedding_model_on_sample",
+        lambda embeddings, docs: {
+            "embedding_model": "fake-embedding",
+            "embedding_validation_sample_size": len(docs[:3]),
+            "embedding_validation_errors": [],
+        },
+    )
+    monkeypatch.setattr(vector_store, "_build_faiss", lambda docs, embeddings: FakeFaissStore())
+
+    outputs = vector_store.save_outputs(tmp_path, chunks, None, None, None)
+
+    meta_path = Path(outputs["index_meta_file"])
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    chunk_lines = [line for line in (tmp_path / "chunks.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+
+    assert len(chunk_lines) == 3
+    assert meta["chunks_count"] == 3
+    assert meta["total_chunks"] == 3
+    assert meta["runtime_chunk_count"] == 3
+    assert meta["faiss_document_count"] == 2
+    assert meta["faiss_vector_count"] == 2
+    assert meta["embedding_dim"] == 1024
+    assert meta["skipped_empty_text_chunk_count"] == 1
+    assert meta["skipped_empty_text_chunk_ids"] == ["chunk-blank"]
+    assert outputs["index_meta"]["total_chunks"] == 3
 
 
 def _write_vector_dir(path: Path, chunks: list[dict]) -> None:
@@ -77,9 +162,73 @@ def test_probe_vector_kb_health_labels_v2_runtime_source(monkeypatch, tmp_path):
 
 
 def test_kb_source_label_resolves_repo_v2_directory():
-    from marathon_qa_assistant.core.app_state import V2_VECTOR_DIR
+    # Use vector_store's own V2_VECTOR_DIR (imported at module load) to avoid
+    # mismatch when test_monorepo_paths reloads app_state with temp paths.
+    assert vector_store._kb_source_label(vector_store.V2_VECTOR_DIR) == "v2"
 
-    assert vector_store._kb_source_label(V2_VECTOR_DIR) == "v2"
+
+def test_graph_engine_runtime_path_defaults_to_v2_directory():
+    from marathon_qa_assistant.core import app_state
+
+    assert knowledge_graph.GRAPH_DATA_PATH == app_state.V2_VECTOR_DIR / "knowledge_graph.json"
+
+
+def test_graph_runtime_health_disables_graph_fusion_when_graph_source_mismatches_vector_runtime(tmp_path):
+    vector_dir = tmp_path / "v2"
+    graph_dir = tmp_path / "default"
+    fake_engine = knowledge_graph.GraphEngine.__new__(knowledge_graph.GraphEngine)
+    fake_engine.GRAPH_DATA_PATH = graph_dir / "knowledge_graph.json"
+    fake_engine.nodes = {"node-1": {"label": "tempo"}}
+
+    health = knowledge_graph.graph_runtime_health(
+        {
+            "source": "v2",
+            "vector_dir": str(vector_dir),
+            "ready": True,
+            "faiss_ready": True,
+            "index_schema_version": "chunk_schema_v2",
+            "runtime_core_prescription_enabled": True,
+        },
+        graph_engine_instance=fake_engine,
+    )
+
+    assert health["graph_source"] == str(graph_dir.resolve())
+    assert health["vector_source"] == "v2"
+    assert health["graph_vector_source_aligned"] is False
+    assert health["graph_fusion_enabled"] is False
+    assert "graph_source_mismatch" in health["reason"]
+
+
+def test_public_rag_health_exposes_graph_alignment_and_disables_graph_fusion_when_mismatched(monkeypatch):
+    monkeypatch.setattr(
+        response_builders,
+        "graph_runtime_health",
+        lambda _health=None: {
+            "graph_path": "C:/graph/default/knowledge_graph.json",
+            "graph_source": "default",
+            "vector_source": "v2",
+            "graph_ready": True,
+            "graph_vector_source_aligned": False,
+            "graph_fusion_enabled": False,
+            "reason": "graph_source_mismatch:default!=v2",
+        },
+    )
+
+    payload = response_builders._public_rag_health(
+        {
+            "source": "v2",
+            "vector_dir": "C:/vector/v2",
+            "index_schema_version": "chunk_schema_v2",
+            "runtime_core_prescription_enabled": True,
+            "chunks_count": 12,
+            "faiss_ready": True,
+            "ready": True,
+        }
+    )
+
+    assert payload["graph_source"] == "default"
+    assert payload["graph_vector_source_aligned"] is False
+    assert payload["graph_fusion_enabled"] is False
 
 
 def test_load_faiss_store_rejects_untrusted_external_dir(monkeypatch, tmp_path):
@@ -114,3 +263,56 @@ def test_load_faiss_store_allows_configured_vector_dir(monkeypatch, tmp_path):
     assert vector_store._load_faiss_store(vector_dir / "faiss_db", object()) == "faiss-store"
     assert calls
     assert calls[0][1] is True
+
+
+def test_load_faiss_store_falls_back_to_memory_deserialization_for_trusted_dir(monkeypatch, tmp_path):
+    vector_dir = tmp_path / "v2"
+    _write_vector_dir(vector_dir, [])
+    monkeypatch.setattr(vector_store, "V2_VECTOR_DIR", vector_dir)
+    (vector_dir / "faiss_db" / "index.faiss").write_bytes(b"index-bytes")
+    with (vector_dir / "faiss_db" / "index.pkl").open("wb") as handle:
+        pickle.dump(("docstore", {0: "doc-0"}), handle)
+
+    def fake_load_local(path, embeddings, allow_dangerous_deserialization=False):
+        raise RuntimeError("simulated Windows unicode path failure")
+
+    def fake_deserialize_index(index_bytes):
+        return f"index:{bytes(index_bytes).decode()}"
+
+    class FakeFaissStore:
+        def __init__(self, embedding_function, index, docstore, index_to_docstore_id):
+            self.embedding_function = embedding_function
+            self.index = index
+            self.docstore = docstore
+            self.index_to_docstore_id = index_to_docstore_id
+
+    monkeypatch.setattr(vector_store.FAISS, "load_local", fake_load_local)
+    monkeypatch.setattr(vector_store.FAISS, "__init__", FakeFaissStore.__init__)
+    monkeypatch.setattr(faiss, "deserialize_index", fake_deserialize_index)
+
+    store = vector_store._load_faiss_store(vector_dir / "faiss_db", type("Emb", (), {"embed_query": lambda self, text: []})())
+
+    assert store.index == "index:index-bytes"
+    assert store.docstore == "docstore"
+    assert store.index_to_docstore_id == {0: "doc-0"}
+
+
+def test_load_vector_kb_does_not_deserialize_untrusted_external_dir(monkeypatch, tmp_path):
+    vector_dir = tmp_path / "external"
+    _write_vector_dir(vector_dir, [{"chunk_id": "legacy-1", "source_file": "legacy.pdf", "page": 1, "text": "legacy"}])
+    calls = []
+
+    def fake_load_local(*args, **kwargs):
+        calls.append((args, kwargs))
+        return "should-not-load"
+
+    monkeypatch.setattr(vector_store, "get_embeddings", lambda: object())
+    monkeypatch.setattr(vector_store.FAISS, "load_local", fake_load_local)
+
+    chunks, vectorizer, matrix, bm25 = vector_store.load_vector_kb(vector_dir)
+
+    assert chunks
+    assert vectorizer == "faiss_vectorizer"
+    assert matrix is None
+    assert bm25["doc_count"] == 1
+    assert calls == []

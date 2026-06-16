@@ -1,0 +1,86 @@
+{
+  "authority_tier_counts": {
+    "peer_reviewed_open_literature_or_existing_local_file": 25
+  },
+  "batch_counts": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_domain_text_batch_b.jsonl": 25
+  },
+  "batch_files": [
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_domain_text_batch_b.jsonl"
+  ],
+  "candidate_permission_boundary_counts": {
+    "approved": 8,
+    "candidate": 15,
+    "reviewed": 2
+  },
+  "candidate_source_count": 25,
+  "commercial_risk_counts": {
+    "license_not_verified_for_commercial_reuse": 3
+  },
+  "coverage_ready": false,
+  "deep_link_issue_source_ids": [],
+  "domain_gaps": [
+    "action_library",
+    "environment_race_context",
+    "medical_risk",
+    "nutrition_race_fueling",
+    "rehab_return_to_run",
+    "training_protocols"
+  ],
+  "duplicate_canonical_urls": [],
+  "duplicate_owner_title_pairs": [],
+  "license_status_counts": {
+    "Open access or official source URL recorded; verify venue-specific license before redistribution.": 14,
+    "educational_only": 2,
+    "unverified": 1,
+    "verified_open": 8
+  },
+  "missing_required_audit_metadata": {},
+  "not_selected_reasons": {},
+  "per_domain_counts": {
+    "ai_rag_evidence_explanation": 6,
+    "endurance_training_protocols": 6,
+    "hci_health_recommender_systems": 6,
+    "load_injury_safety": 3,
+    "nutrition_hydration_race_fueling": 4
+  },
+  "required_audit_metadata": [
+    "accessed_at",
+    "date_basis",
+    "canonical_url",
+    "authority_tier",
+    "selection_reason",
+    "gap_target"
+  ],
+  "selected_for_review_source_ids": [],
+  "source_ids_by_batch": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_domain_text_batch_b.jsonl": [
+      "src_ai_factscore_2023",
+      "src_ai_generate_citations_2023",
+      "src_ai_healthcare_rag_review_2025",
+      "src_ai_rag_foundation_2020",
+      "src_ai_rag_survey_2023",
+      "src_ai_ragas_2023",
+      "src_hci_ai_physical_activity_2024",
+      "src_hci_cognitive_forcing_2021",
+      "src_hci_health_recommender_review_2023",
+      "src_hci_health_xai_2020",
+      "src_hci_human_ai_guidelines_2019",
+      "src_hci_user_models_physical_activity_2019",
+      "src_nutrition_acsm_position_2016",
+      "src_nutrition_carb_during_exercise_2014",
+      "src_nutrition_distance_runners_2019",
+      "src_nutrition_issn_review_2018",
+      "src_safety_injury_continuum_2023",
+      "src_safety_running_injuries_state_art_2021",
+      "src_safety_running_msk_injuries_2012",
+      "src_train_app_data_marathon_2021",
+      "src_train_low_intensity_2025",
+      "src_train_marathon_physiology_2025",
+      "src_train_tapering_meta_2023",
+      "src_train_tid_theory_2025",
+      "src_train_world_class_middle_distance_2021"
+    ]
+  },
+  "unique_canonical_url_count": 25
+}

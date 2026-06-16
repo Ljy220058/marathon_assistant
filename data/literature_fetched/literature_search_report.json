@@ -1,0 +1,71 @@
+{
+  "omega3": {
+    "query": "omega-3 fatty acid DHA EPA supplementation athletes endurance performance review",
+    "papers": []
+  },
+  "reds": {
+    "query": "IOC consensus statement RED-S relative energy deficiency in sport 2018 Mountjoy",
+    "papers": []
+  },
+  "itbs_cpg": {
+    "query": "iliotibial band syndrome runners treatment clinical practice guideline review",
+    "papers": []
+  },
+  "achilles_cpg": {
+    "query": "Achilles tendinopathy management runners clinical practice guideline Malliaras",
+    "papers": []
+  },
+  "stress_fx": {
+    "query": "stress fracture management athletes runners bone stress injury review",
+    "papers": []
+  },
+  "heat_consensus": {
+    "query": "exertional heat stroke heat acclimation athletes consensus recommendations Racinais",
+    "papers": []
+  },
+  "precooling": {
+    "query": "precooling cooling strategies endurance performance athletes review Bongers",
+    "papers": []
+  },
+  "cadence": {
+    "query": "running cadence step rate injury biomechanics Heiderscheit review",
+    "papers": []
+  },
+  "running_form": {
+    "query": "running biomechanics gait foot strike technique performance review",
+    "papers": [
+      {
+        "title": "A Biomechanical Study on the Use of Curved Drilling Technique for Treatment of Osteonecrosis of Femoral Head",
+        "arxiv_id": "/arxiv.org/abs/1901.07461v1",
+        "abstract": "Osteonecrosis occurs due to the loss of blood supply to the bone, leading to spontaneous death of the trabecular bone. Delayed treatment of the involved patients results in collapse of the femoral head, which leads to a need for total hip arthroplasty surgery. Core decompression, as the most popular technique for treatment of the osteonecrosis, includes removal of the lesion area by drilling a straight tunnel to the lesion, debriding the dead bone and replacing it with bone substitutes. However,",
+        "url": "https://arxiv.org/pdf//arxiv.org/abs/1901.07461v1"
+      },
+      {
+        "title": "Deep 1D-Convnet for accurate Parkinson disease detection and severity prediction from gait",
+        "arxiv_id": "/arxiv.org/abs/1910.11509v4",
+        "abstract": "Diagnosing Parkinson's disease is a complex task that requires the evaluation of several motor and non-motor symptoms. During diagnosis, gait abnormalities are among the important symptoms that physicians should consider. However, gait evaluation is challenging and relies on the expertise and subjectivity of clinicians. In this context, the use of an intelligent gait analysis algorithm may assist physicians in order to facilitate the diagnosis process. This paper proposes a novel intelligent Par",
+        "url": "https://arxiv.org/pdf//arxiv.org/abs/1910.11509v4"
+      }
+    ]
+  },
+  "hydration": {
+    "query": "ACSM position stand hydration fluid replacement exercise athletes Sawka",
+    "papers": []
+  },
+  "hyponatremia": {
+    "query": "exercise-associated hyponatremia consensus guidelines Hew-Butler",
+    "papers": []
+  },
+  "caffeine": {
+    "query": "caffeine supplementation endurance exercise performance meta-analysis systematic review Guest",
+    "papers": []
+  },
+  "supplements_evidence": {
+    "query": "evidence-based dietary supplements athletes IOC consensus review Peeling",
+    "papers": []
+  },
+  "running_economy_strength": {
+    "query": "strength training heavy resistance running economy endurance runners review",
+    "papers": []
+  }
+}

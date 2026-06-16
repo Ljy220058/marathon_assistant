@@ -66,3 +66,59 @@ def test_source_gap_report_groups_readiness_candidates_and_domain_needs_without_
     assert report["domain_pack_external_source_needs"][0]["needed_source_count"] == 12
     assert "C:/Users" not in str(report)
     assert "local_path" not in str(report)
+
+
+def test_source_gap_report_ranks_actionable_release_work_without_private_paths():
+    source_review_queue = [
+        {
+            "source_registry_id": "src_case_candidate",
+            "title": "Private Case Candidate",
+            "domain_pack": "user_profile_cases",
+            "evidence_domain": "user_profile_cases",
+            "prescription_permission": "explanation_only",
+            "review_status": "candidate",
+            "can_enter_runtime_index": False,
+            "blocking_reasons": ["privacy_review_missing"],
+            "registry_snapshot": {"local_path": "C:/Users/private/case.json"},
+        }
+    ]
+    release_report = {
+        "actionable_domain_gaps": [
+            {
+                "domain_pack": "user_profile_cases",
+                "subdomain": "anonymized feedback cases",
+                "gap_status": "gap",
+                "can_write_core": False,
+                "minimum_quality_tier": "privacy_reviewed",
+                "needed_source_count": 100,
+                "needed_rule_count": 100,
+                "release_gate_impact": "full_commercial_release",
+                "next_action": "collect_privacy_reviewed_user_profile_cases",
+            },
+            {
+                "domain_pack": "action_library",
+                "subdomain": "warmup/main/cooldown",
+                "gap_status": "partial",
+                "can_write_core": True,
+                "minimum_quality_tier": "reviewed",
+                "needed_source_count": 15,
+                "needed_rule_count": 0,
+                "release_gate_impact": "full_commercial_release",
+                "next_action": "add_reviewed_core_sources_and_rules",
+            },
+        ],
+        "coverage_matrix_delta": [],
+    }
+
+    report = build_source_gap_report(
+        source_review_queue=source_review_queue,
+        release_report=release_report,
+    )
+
+    assert report["release_work_queue"][0]["domain_pack"] == "user_profile_cases"
+    assert report["release_work_queue"][0]["needed_source_count"] == 100
+    assert report["release_work_queue"][0]["required_quality_tier"] == "privacy_reviewed"
+    assert report["release_work_queue"][0]["next_action"] == "collect_privacy_reviewed_user_profile_cases"
+    assert report["release_work_queue"][1]["domain_pack"] == "action_library"
+    assert "C:/Users" not in str(report)
+    assert "local_path" not in str(report)

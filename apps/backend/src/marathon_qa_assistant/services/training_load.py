@@ -319,6 +319,35 @@ def classify_weekly_load_change(delta_percent: float) -> str:
     return "stable"
 
 
+def classify_tsb(tsb: float) -> str:
+    """TSB (Training Stress Balance = CTL − ATL) 分级，即 Banister Form 指标。
+
+    来源（TrainingPeaks 官方 + Joe Friel）：
+    - TrainingPeaks Help Center, "Form (TSB)",
+      https://help.trainingpeaks.com/hc/en-us/articles/204071764
+    - TrainingPeaks Coach Blog, "A Coach's Guide to ATL, CTL & TSB"
+    - Joe Friel, "Training Stress Balance—So What?", joefrieltraining.com
+
+    区间语义（对齐 TrainingPeaks 官方）：
+      TSB ≥ 25         : very_fresh（比赛就绪/peaked）
+      10 ≤ TSB < 25    : fresh（减量期）
+      -10 ≤ TSB < 10   : neutral（维持期）
+      -30 ≤ TSB < -10  : productive_training（高效 fitness building 区，非疲劳）
+      TSB < -30        : overreaching_risk（极端负荷，过度训练风险）
+
+    注意：-10~-30 是 TrainingPeaks 定义的"最佳训练区"，是健康加量区间，不是疲劳。
+    """
+    if tsb >= 25:
+        return "very_fresh"
+    if tsb >= 10:
+        return "fresh"
+    if tsb >= -10:
+        return "neutral"
+    if tsb >= -30:
+        return "productive_training"
+    return "overreaching_risk"
+
+
 def build_training_load_summary(days: Iterable[Any]) -> Dict[str, Any]:
     day_dicts = [d.to_dict() if hasattr(d, "to_dict") else dict(d) for d in days]
     loads = [int(round(_safe_float(day.get("training_load")) or 0)) for day in day_dicts]
@@ -369,8 +398,141 @@ def build_training_load_summary(days: Iterable[Any]) -> Dict[str, Any]:
         "total_planned_load": sum(loads),
         "load_impact_7d": load_impact,
         "base_fitness_42d_weekly_equivalent": base_fitness,
+        # L2 Fitness-Fatigue 标准化指标：CTL(慢性42d) / ATL(急性7d) / TSB(Form=CTL−ATL)
+        "ctl_42d_weekly_equivalent": base_fitness,
+        "atl_7d": load_impact,
+        "tsb": base_fitness - load_impact,
+        "tsb_label": classify_tsb(base_fitness - load_impact),
         "intensity_trend": intensity_trend,
         "intensity_trend_zone": classify_intensity_trend(intensity_trend),
         "weekly_loads": weekly_loads,
         "weekly_load_changes": weekly_loads,
+    }
+
+
+# ---------------------------------------------------------------------------
+# ACWR (Acute:Chronic Workload Ratio) — Gabbett 2016
+# ---------------------------------------------------------------------------
+
+def acute_load(daily_loads_7d: Iterable[float]) -> float:
+    """最近 7 天总训练负荷（急性负荷窗口）。
+
+    Returns:
+        7 天内训练负荷总和（等同于 1 周总负荷）。
+    """
+    values = [float(v) for v in daily_loads_7d if v is not None]
+    return round(sum(values), 1)
+
+
+def chronic_load(daily_loads_28d: Iterable[float]) -> float:
+    """最近 28 天滚动平均训练负荷（慢性负荷窗口），以周总负荷为单位。
+
+    按 Gabbett 2016 方法，慢性负荷为过去 4 周急性负荷的滚动平均。
+    从每日数据计算时：chronic = (28 天总和) / 4，即平均每周总负荷。
+
+    Returns:
+        平均每周总负荷（与 acute_load 同单位，方便 ACWR 计算）。
+    """
+    values = [float(v) for v in daily_loads_28d if v is not None]
+    if not values:
+        return 0.0
+    # 按 Gabbett 惯例：28 天 / 4 = 7 天窗口等效值
+    # 等价于：avg_daily * 7
+    return round(sum(values) / 4, 1)
+
+
+def calculate_acwr(acute_load: float, chronic_load: float) -> float:
+    """急性:慢性工作负荷比值 (ACWR)。
+
+    ACWR = acute / chronic。两者均以周总负荷为单位。
+    当 chronic_load 为 0 时返回 0（无法计算）。
+    """
+    if chronic_load <= 0:
+        return 0.0
+    return round(acute_load / chronic_load, 2)
+
+
+def classify_risk(acwr: float) -> str:
+    """按 Gabbett 2016 安全阈值对 ACWR 分类。
+
+    参考：Gabbett TJ. The training-injury prevention paradox:
+    should athletes be training smarter and harder?
+    Br J Sports Med. 2016;50(5):273-280.
+
+    阈值：
+      - < 0.8  → undertraining（训练不足）
+      - 0.8-1.3 → safe（安全区间）
+      - 1.3-1.5 → elevated（升高风险）
+      - > 1.5  → high_risk（高风险）
+    """
+    if acwr == 0.0:
+        return "insufficient_data"
+    if acwr < 0.8:
+        return "undertraining"
+    if acwr < 1.3:
+        return "safe"
+    if acwr < 1.5:
+        return "elevated"
+    return "high_risk"
+
+
+def compute_acwr_summary(
+    daily_loads: List[float],
+    *,
+    acute_window: int = 7,
+    chronic_window: int = 28,
+) -> Dict[str, Any]:
+    """从每日负荷列表计算完整的 ACWR 摘要。
+
+    Args:
+        daily_loads: 每日训练负荷值列表（最近的在末尾）。
+        acute_window: 急性窗口天数（默认 7）。
+        chronic_window: 慢性窗口天数（默认 28）。
+
+    Returns:
+        ACWR 摘要字典，包含指标、分类和建议。
+    """
+    if not daily_loads:
+        return {
+            "acute_load": 0.0,
+            "chronic_load": 0.0,
+            "acwr": 0.0,
+            "risk_level": "insufficient_data",
+            "method": "acwr_gabbett_2016",
+            "windows": {"acute_days": acute_window, "chronic_days": chronic_window},
+            "note": "无可用训练负荷数据。",
+        }
+
+    acute = acute_load(daily_loads[-acute_window:])
+    chr_load = chronic_load(daily_loads[-chronic_window:])
+    acwr = calculate_acwr(acute, chr_load)
+    risk = classify_risk(acwr)
+
+    note = ""
+    if risk == "high_risk":
+        note = "ACWR > 1.5 伤bing风险显著升高，建议减量至安全区间 (0.8-1.3)。"
+    elif risk == "elevated":
+        note = "ACWR 处于升高区间，注意恢复并避免进一步增加负荷。"
+    elif risk == "safe":
+        note = "负荷递进在安全范围内，可继续按计划训练。"
+    elif risk == "undertraining":
+        note = "当前训练负荷偏低，可逐步增加以达到训练刺激。"
+    else:
+        note = "数据不足，无法评估负荷风险。"
+
+    return {
+        "acute_load": acute,
+        "chronic_load": chr_load,
+        "acwr": acwr,
+        "risk_level": risk,
+        "note": note,
+        "method": "acwr_gabbett_2016",
+        "reference": "Gabbett TJ. Br J Sports Med. 2016;50(5):273-280.",
+        "windows": {"acute_days": acute_window, "chronic_days": chronic_window},
+        "risk_thresholds": {
+            "undertraining": "< 0.8",
+            "safe": "0.8 - 1.3",
+            "elevated": "1.3 - 1.5",
+            "high_risk": "> 1.5",
+        },
     }

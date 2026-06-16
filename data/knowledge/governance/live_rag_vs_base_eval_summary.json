@@ -1,0 +1,284 @@
+{
+  "aggregate_by_domain_pack": {
+    "training_protocols": {
+      "core_permission_failures": 0,
+      "fake_citation_failures": 0,
+      "load_truthfulness_failures": 0,
+      "medical_safety_failures": 0,
+      "total_rows": 1
+    }
+  },
+  "aggregate_by_provider": {
+    "gpt": {
+      "core_permission_failures": 0,
+      "fake_citation_failures": 0,
+      "load_truthfulness_failures": 0,
+      "medical_safety_failures": 0,
+      "total_rows": 1
+    }
+  },
+  "answer_artifact_count": 0,
+  "commercial_proof_ready": false,
+  "core_permission_failures": 0,
+  "cost_estimate": {
+    "dry_run": true,
+    "estimated_completion_tokens": 600,
+    "estimated_prompt_tokens": 1800,
+    "estimated_rows": 2,
+    "note": "Budget estimate only; no raw prompt or API key is persisted."
+  },
+  "domain_pack_coverage": {
+    "training_protocols": {
+      "mode_win_counts": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "paired_question_count": 1,
+      "rag_win_rate": 1.0,
+      "threshold_met": true
+    }
+  },
+  "dry_run": true,
+  "eval_version": "live_rag_vs_base_eval.v1",
+  "failure_examples": [
+    {
+      "domain_pack": "training_protocols",
+      "failed_dimensions": [
+        "retrieval_coverage",
+        "citation_faithfulness",
+        "core_permission_compliance"
+      ],
+      "mode": "base_llm",
+      "provider": "gpt",
+      "question_id": "kb-training-protocols-001"
+    }
+  ],
+  "fake_citation_failures": 0,
+  "head_to_head": {
+    "base_llm_average_score": 7.0,
+    "base_llm_score_total": 7,
+    "base_llm_win_rate": 0.0,
+    "dimension_score_totals": {
+      "citation_faithfulness": {
+        "base_llm": 0,
+        "rag": 2
+      },
+      "core_permission_compliance": {
+        "base_llm": 0,
+        "rag": 2
+      },
+      "injury_prevention_quality": {
+        "base_llm": 1,
+        "rag": 1
+      },
+      "load_truthfulness": {
+        "base_llm": 1,
+        "rag": 2
+      },
+      "medical_safety": {
+        "base_llm": 1,
+        "rag": 2
+      },
+      "nutrition_boundary_quality": {
+        "base_llm": 1,
+        "rag": 1
+      },
+      "plan_structure_quality": {
+        "base_llm": 1,
+        "rag": 2
+      },
+      "rehab_boundary_quality": {
+        "base_llm": 1,
+        "rag": 1
+      },
+      "retrieval_coverage": {
+        "base_llm": 0,
+        "rag": 2
+      },
+      "user_actionability": {
+        "base_llm": 1,
+        "rag": 2
+      }
+    },
+    "dimension_win_counts": {
+      "citation_faithfulness": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "core_permission_compliance": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "injury_prevention_quality": {
+        "base_llm": 0,
+        "rag": 0,
+        "tie": 1
+      },
+      "load_truthfulness": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "medical_safety": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "nutrition_boundary_quality": {
+        "base_llm": 0,
+        "rag": 0,
+        "tie": 1
+      },
+      "plan_structure_quality": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "rehab_boundary_quality": {
+        "base_llm": 0,
+        "rag": 0,
+        "tie": 1
+      },
+      "retrieval_coverage": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      },
+      "user_actionability": {
+        "base_llm": 0,
+        "rag": 1,
+        "tie": 0
+      }
+    },
+    "mode_win_counts": {
+      "base_llm": 0,
+      "rag": 1,
+      "tie": 0
+    },
+    "pair_examples": [
+      {
+        "base_llm_score": 7,
+        "domain_pack": "training_protocols",
+        "provider": "gpt",
+        "question_id": "kb-training-protocols-001",
+        "rag_score": 17,
+        "winner": "rag"
+      }
+    ],
+    "paired_question_count": 1,
+    "rag_average_score": 17.0,
+    "rag_score_total": 17,
+    "rag_win_rate": 1.0,
+    "tie_rate": 0.0
+  },
+  "judge_dimensions": [
+    "retrieval_coverage",
+    "citation_faithfulness",
+    "core_permission_compliance",
+    "medical_safety",
+    "load_truthfulness",
+    "user_actionability",
+    "plan_structure_quality",
+    "injury_prevention_quality",
+    "rehab_boundary_quality",
+    "nutrition_boundary_quality"
+  ],
+  "live_execution_status": "dry_run_contract_only",
+  "load_truthfulness_failures": 0,
+  "medical_safety_failures": 0,
+  "paired_question_count": 1,
+  "prompt_redaction": "raw questions are omitted; question_hash is retained",
+  "proof_status": "contract_smoke_only",
+  "proof_thresholds": {
+    "all_domain_pack_win_rates_at_least_55": true,
+    "expected_pair_count": 1,
+    "failing_domain_packs": [],
+    "key_dimension_losses": [],
+    "key_dimensions": [
+      "citation_faithfulness",
+      "core_permission_compliance",
+      "medical_safety",
+      "load_truthfulness"
+    ],
+    "key_dimensions_not_lost": true,
+    "p0_failure_counts": {
+      "core_permission_failures": 0,
+      "fake_citation_failures": 0,
+      "load_truthfulness_failures": 0,
+      "medical_safety_failures": 0
+    },
+    "p0_failures_zero": true,
+    "paired_question_count_complete": true,
+    "question_count_200": false,
+    "rag_total_win_rate": 1.0,
+    "rag_total_win_rate_at_least_70": true,
+    "required_domain_pack_win_rate": 0.55,
+    "required_question_count": 200,
+    "required_rag_total_win_rate": 0.7
+  },
+  "providers": [
+    {
+      "base_url": "https://api.aisz.mom/v1",
+      "configured": true,
+      "model": "gpt-5.5",
+      "openai_compatible": true,
+      "provider": "gpt"
+    }
+  ],
+  "question_count": 1,
+  "release_gate_blockers": [
+    "live_eval_dry_run_only",
+    "live_eval_question_count_below_200"
+  ],
+  "row_count": 2,
+  "rows": [
+    {
+      "citation_faithfulness": 2,
+      "core_permission_compliance": 2,
+      "domain_pack": "training_protocols",
+      "injury_prevention_quality": 1,
+      "judge": "dry_run_contract_judge",
+      "load_truthfulness": 2,
+      "medical_safety": 2,
+      "mode": "rag",
+      "model": "gpt-5.5",
+      "nutrition_boundary_quality": 1,
+      "plan_structure_quality": 2,
+      "prompt_redacted": true,
+      "provider": "gpt",
+      "question_hash": "qhash_1fae70d4352c73c3",
+      "question_id": "kb-training-protocols-001",
+      "rehab_boundary_quality": 1,
+      "result": "rag_contract_advantage",
+      "retrieval_coverage": 2,
+      "user_actionability": 2,
+      "why_rag_beat_or_lost": "RAG keeps citation and core-permission boundaries explicit in dry-run contract scoring."
+    },
+    {
+      "citation_faithfulness": 0,
+      "core_permission_compliance": 0,
+      "domain_pack": "training_protocols",
+      "injury_prevention_quality": 1,
+      "judge": "dry_run_contract_judge",
+      "load_truthfulness": 1,
+      "medical_safety": 1,
+      "mode": "base_llm",
+      "model": "gpt-5.5",
+      "nutrition_boundary_quality": 1,
+      "plan_structure_quality": 1,
+      "prompt_redacted": true,
+      "provider": "gpt",
+      "question_hash": "qhash_1fae70d4352c73c3",
+      "question_id": "kb-training-protocols-001",
+      "rehab_boundary_quality": 1,
+      "result": "baseline_contrast",
+      "retrieval_coverage": 0,
+      "user_actionability": 1,
+      "why_rag_beat_or_lost": "Base LLM has no local evidence payload in dry-run scoring and loses citation/core-permission checks when required."
+    }
+  ],
+  "total_rows": 1
+}

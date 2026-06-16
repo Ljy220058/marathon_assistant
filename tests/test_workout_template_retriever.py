@@ -1,13 +1,14 @@
-from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
+﻿from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
 from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
     WORKOUT_TYPE_KEYWORD_MAP,
     build_daily_workout_template_card_from_hits,
     build_workout_template_query,
+    get_action_library_foundation_hits,
     normalize_workout_type_for_template,
 )
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
+from marathon_qa_assistant.ui.report_ui import UIHelper
 
 
 def test_build_workout_template_query_expands_aerobic_threshold_aliases():
@@ -72,6 +73,73 @@ def test_build_daily_workout_template_card_from_action_library_hits():
     assert "15分钟慢跑" in card["warmup_suggestion"]
     assert card["evidence_status"]["main_set_candidates"] == "direct"
     assert card["evidence_status"]["cooldown"] == "missing"
+
+
+def test_action_library_card_rejects_warmup_drill_hit_as_core_main_set():
+    hits = [
+        {
+            "source_file": "动作库.pdf",
+            "page": 2,
+            "chunk_id": "warmup_drill",
+            "score": 0.95,
+            "text": """
+            Long Run support drill
+            categories: Technique, Drills, Warm-up
+            content:
+            a. A Skip running drill
+            b. High knees running drill
+            """,
+            "tags": {"categories": "Technique, Drills, Warm-up"},
+            "source_authority": "C",
+        },
+        {
+            "source_file": "动作库.pdf",
+            "page": 12,
+            "chunk_id": "long_run_prescription",
+            "score": 0.9,
+            "text": """
+            Long Run
+            categories: Long-Run, Endurance, Marathon-Spec
+            content:
+            a. 21-25km
+            b. 21-25km last 3-4km at marathon pace
+            objective: aerobic endurance and marathon-specific fatigue resistance
+            """,
+            "tags": {"categories": "Long-Run, Endurance, Marathon-Spec"},
+            "source_authority": "A",
+        },
+        {
+            "source_file": "动作库.pdf",
+            "page": 10,
+            "chunk_id": "aerobic_threshold_not_long_run",
+            "score": 0.88,
+            "text": """
+            Long Run adjacent aerobic threshold
+            categories: Aerobic, Steady-State, Endurance
+            content:
+            a. 3-4*3000/2min
+            """,
+            "tags": {"categories": "Aerobic, Steady-State, Endurance"},
+            "source_authority": "B",
+        },
+    ]
+
+    card = build_daily_workout_template_card_from_hits("long_run", day="Sun", hits=hits)
+
+    assert card["evidence_tier"] == "action_library"
+    assert card["evidence"][0]["chunk_id"] == "long_run_prescription"
+    assert any("21-25km" in item for item in card["main_set_candidates"])
+    assert not any("Skip" in item for item in card["main_set_candidates"])
+
+
+def test_long_run_jsonl_foundation_prefers_long_run_prescription_chunk():
+    hits = get_action_library_foundation_hits("long_run")
+
+    card = build_daily_workout_template_card_from_hits("long_run", day="Sun", hits=hits)
+
+    assert card["evidence_tier"] == "action_library"
+    assert card["evidence"][0]["chunk_id"] == "动作库_p0012_c0001"
+    assert card["main_set_candidates"][0].startswith("21")
 
 
 def test_workout_template_card_exposes_layered_kb_metadata():
@@ -190,6 +258,7 @@ def test_structured_report_exposes_and_renders_daily_workout_cards():
     assert len(cards) == 1
     assert cards[0]["title"] == "周二｜有氧阈值训练课"
     assert cards[0]["week_index"] == 1
+    assert cards[0]["evidence_tier"] == "action_library"
     assert cards[0]["evidence_status"]["main_set_candidates"] == "direct"
 
     rendered = UIHelper.render_structured_report(report, "已生成训练计划。")
@@ -387,9 +456,9 @@ def test_single_day_daily_workout_card_matrix_for_all_training_types():
             "main_set": "专项配速",
             "expected_key": "marathon_pace",
             "day": "周六",
-            "expected_title": "周六｜配速训练课",
+            "expected_title": "周六｜马拉松配速训练课",
             "expected_label": "马拉松配速跑（专项配速训练）",
-            "expected_intensity": "Z3-Z4 稳态有氧区至有氧阈值区",
+            "expected_intensity": "Z4-Z5 比赛配速区（100% HMP），配合 85-90% HMP 巡航恢复",
             "expected_objective_keyword": "配速",
             "hit": {
                 "source_file": "动作库.pdf",
@@ -792,7 +861,7 @@ def test_structured_report_renders_daily_cards_for_all_training_types():
             "training_type": "马拉松配速跑",
             "main_set": "专项配速",
             "expected_key": "marathon_pace",
-            "expected_title": "周六｜配速训练课",
+            "expected_title": "周六｜马拉松配速训练课",
             "text": """
             【马拉松配速跑】
             name：马拉松配速跑（Marathon Pace）

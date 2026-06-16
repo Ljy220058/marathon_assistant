@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>训练日历</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>训练日历</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <span class="journal-pill" data-calendar-version>第 1 版</span>
+        </div>
+      </header>
+      <section class="journal-hero">
+        <h1>训练日历</h1>
+        <p>按周切换，不用滚着找。</p>
+      </section>
+      <section class="journal-layout">
+        <aside class="journal-sidebar">
+          <nav class="journal-nav">
+            <a class="is-active" href="./ink-home.html">训练计划</a>
+            <a href="./ink-profile.html">我的情况</a>
+            <a href="./ink-dialog.html">智能对话</a>
+            <a href="./ink-basis.html">训练复盘</a>
+            <a href="./ink-history.html">历史记录</a>
+          </nav>
+        </aside>
+        <section class="journal-main" data-calendar-root>
+          <article class="journal-card journal-card-pad">
+            <div class="journal-section-head">
+              <div>
+                <p class="journal-section-kicker">周切换</p>
+                <h2>本周视图</h2>
+              </div>
+              <div class="journal-segmented">
+                <button type="button" data-week-nav="previous">上一周</button>
+                <button type="button" data-week-nav="current" class="is-active">本周</button>
+                <button type="button" data-week-nav="next">下一周</button>
+              </div>
+            </div>
+            <div class="journal-page-actions" style="margin-bottom: 12px;">
+              <a class="journal-btn" href="./ink-week-setup.html">本周设置</a>
+              <a class="journal-btn" href="./ink-event.html">插入临时比赛</a>
+              <a class="journal-btn" href="./ink-history.html">版本历史</a>
+            </div>
+            <div class="journal-inline-note" data-calendar-event-count></div>
+
+            <div class="journal-week-stack">
+              <div class="journal-week-panel journal-week-card" data-week-panel="previous" hidden>
+                <div class="journal-week-head">
+                  <strong>上一周</strong>
+                  <span>6 月 9 日 - 6 月 15 日</span>
+                </div>
+                <div class="journal-week-summary" data-week-goal>把恢复和节奏重新接上。</div>
+                <div class="journal-session-list">
+                  <a class="journal-session-card is-complete" href="./ink-day.html"><span>6 月 10 日 周三</span><strong>节奏跑 25 分钟</strong><div class="journal-meta">✓ 已完成</div></a>
+                  <a class="journal-session-card is-complete" href="./ink-day.html"><span>6 月 12 日 周五</span><strong>恢复跑 30 分钟</strong><div class="journal-meta">✓ 已完成</div></a>
+                  <a class="journal-session-card is-complete" href="./ink-day.html"><span>6 月 15 日 周一</span><strong>恢复跑 30 分钟</strong><div class="journal-meta">✓ 已完成</div></a>
+                </div>
+                <div class="journal-week-summary" data-week-summary></div>
+              </div>
+
+              <div class="journal-week-panel journal-week-card" data-week-panel="current">
+                <div class="journal-week-head">
+                  <strong>本周</strong>
+                  <span>6 月 16 日 - 6 月 22 日</span>
+                </div>
+                <div class="journal-week-summary" data-week-goal>稳定完成 3 次训练，保留恢复余量。</div>
+                <div class="journal-session-list">
+                  <a class="journal-session-card is-current" href="./ink-day.html"><span>6 月 16 日 周二</span><strong>轻松跑 40 分钟</strong><div class="journal-meta">今天 · 06:30</div></a>
+                  <a class="journal-session-card" href="./ink-day.html"><span>6 月 19 日 周四</span><strong>间歇跑 6 x 400m</strong><div class="journal-meta">19:30</div></a>
+                  <a class="journal-session-card" href="./ink-day.html"><span>6 月 21 日 周六</span><strong>长跑 55 分钟</strong><div class="journal-meta">07:00</div></a>
+                </div>
+                <div class="journal-week-summary" data-week-summary></div>
+              </div>
+
+              <div class="journal-week-panel journal-week-card" data-week-panel="next" hidden>
+                <div class="journal-week-head">
+                  <strong>下一周</strong>
+                  <span>6 月 23 日 - 6 月 28 日</span>
+                </div>
+                <div class="journal-week-summary" data-week-goal>在保持周频率的前提下抬一点负荷。</div>
+                <div class="journal-session-list">
+                  <a class="journal-session-card" href="./ink-day.html"><span>6 月 24 日 周二</span><strong>轻松跑 40 分钟</strong><div class="journal-meta">06:30</div></a>
+                  <a class="journal-session-card" href="./ink-day.html"><span>6 月 26 日 周四</span><strong>间歇跑 8 x 400m</strong><div class="journal-meta">19:30</div></a>
+                  <a class="journal-session-card" href="./ink-day.html"><span>6 月 28 日 周六</span><strong>长跑 60 分钟</strong><div class="journal-meta">07:00</div></a>
+                </div>
+                <div class="journal-week-summary" data-week-summary></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="journal-card journal-card-pad">
+            <p class="journal-section-kicker">当前版本</p>
+            <div class="journal-empty">
+              <strong>本周版本会随着事件和反馈变化</strong>
+              <span>去临时事件页插入比赛，或去今日反馈页重排。</span>
+              <div class="journal-page-actions">
+                <a class="journal-btn primary" href="./ink-week-setup.html">重新生成本周</a>
+                <a class="journal-btn" href="./ink-event.html">插入比赛</a>
+                <a class="journal-btn" href="./ink-feedback.html">今日反馈</a>
+              </div>
+            </div>
+          </article>
+        </section>
+      </section>
+      <nav class="journal-bottom-tabs" aria-label="底部导航">
+        <a href="./ink-home.html">今天</a>
+        <a class="is-active" href="./ink-calendar.html">日历</a>
+        <a href="./ink-dialog.html">对话</a>
+        <a href="./ink-profile.html">我的</a>
+      </nav>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>方案 B / 左侧导航工作区</title>
+    <link rel="stylesheet" href="./demos.css" />
+  </head>
+  <body>
+    <div class="demo-layout">
+      <main class="shell">
+        <header class="topbar">
+          <div class="brand">
+            <span class="brand-mark">M</span>
+            <span>马拉松助手</span>
+          </div>
+          <div class="status">本地服务离线</div>
+        </header>
+
+        <section class="sidebar-shell">
+          <aside class="panel sidebar">
+            <strong>工作区</strong>
+            <nav>
+              <a href="#">训练计划</a>
+              <a href="#">我的情况</a>
+              <a href="#">智能对话</a>
+              <a href="#">训练依据</a>
+              <a href="#">历史记录</a>
+            </nav>
+          </aside>
+
+          <section class="content-stack">
+            <article class="panel panel-pad">
+              <h3>训练计划</h3>
+              <p class="meta">不做顶部跳转，所有主内容都在这个单工作区切换。</p>
+              <div class="feature-strip" style="margin-top: 16px;">
+                <div class="feature">
+                  <span>目标</span>
+                  <strong>半马完赛</strong>
+                </div>
+                <div class="feature">
+                  <span>水平</span>
+                  <strong>新手</strong>
+                </div>
+                <div class="feature">
+                  <span>训练日</span>
+                  <strong>周二 周四 周六</strong>
+                </div>
+                <div class="feature">
+                  <span>单次上限</span>
+                  <strong>40 分钟</strong>
+                </div>
+              </div>
+              <div class="button-row" style="margin-top: 20px;">
+                <a class="btn primary" href="#">生成训练日历</a>
+                <a class="btn" href="#">编辑画像</a>
+              </div>
+            </article>
+
+            <article class="panel panel-pad">
+              <h3>说明</h3>
+              <div class="list">
+                <div class="item">
+                  <strong>优点</strong>
+                  <span class="meta">最适合产品化落地，能替代你现在顶部菜单点击往下跳的方式。</span>
+                </div>
+                <div class="item">
+                  <strong>风格</strong>
+                  <span class="meta">比 MUJI 官网更偏工具，但仍保持安静、克制和低噪音。</span>
+                </div>
+              </div>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

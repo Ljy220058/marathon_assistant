@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>我的情况</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>我的情况</span>
+          </div>
+        </div>
+      </header>
+      <section class="journal-layout">
+        <aside class="journal-sidebar">
+          <nav class="journal-nav">
+            <a href="./ink-home.html">训练计划</a>
+            <a class="is-active" href="./ink-profile.html">我的情况</a>
+            <a href="./ink-dialog.html">智能对话</a>
+            <a href="./ink-basis.html">训练复盘</a>
+            <a href="./ink-history.html">历史记录</a>
+          </nav>
+        </aside>
+        <section class="journal-main">
+          <article class="journal-card journal-card-pad">
+            <div class="journal-profile-head">
+              <h2>我的情况</h2>
+              <a class="journal-btn" href="./ink-profile-edit.html">编辑</a>
+            </div>
+            <div class="journal-grid-3" style="margin-top: 18px;">
+              <div class="journal-tile"><span>目标</span><strong data-profile-value="goal">半马完赛</strong></div>
+              <div class="journal-tile"><span>比赛日期</span><strong data-profile-value="raceDate">2026-09-21</strong></div>
+              <div class="journal-tile"><span>水平</span><strong data-profile-value="level">新手</strong></div>
+              <div class="journal-tile"><span>训练日</span><strong data-profile-value="trainingDays">周二 / 周四 / 周六</strong></div>
+              <div class="journal-tile"><span>最长训练</span><strong data-profile-value="longestRun">12 km</strong></div>
+              <div class="journal-tile"><span>最近配速</span><strong data-profile-value="recentPace">6'48"/km</strong><div class="journal-footnote">最近一次</div></div>
+              <div class="journal-tile journal-status-warn"><span>膝部</span><strong data-profile-value="kneeStatus">轻度紧张</strong><div class="journal-footnote">当前状态</div></div>
+            </div>
+          </article>
+
+          <article class="journal-card journal-card-pad">
+            <div class="journal-section-head">
+              <div>
+                <p class="journal-section-kicker">计划边界</p>
+                <h2>当前建模方式</h2>
+              </div>
+              <a class="journal-btn" href="./ink-week-setup.html">改本周设置</a>
+            </div>
+            <div class="journal-stateline">
+              <div class="journal-tile">
+                <span>长期画像</span>
+                <strong>决定长期方向</strong>
+              </div>
+              <div class="journal-tile">
+                <span>本周设置</span>
+                <strong>决定这一周怎么排</strong>
+              </div>
+              <div class="journal-tile">
+                <span>临时事件</span>
+                <strong>决定何时重排版本</strong>
+              </div>
+            </div>
+            <div class="journal-inline-note" style="margin-top: 12px;" data-profile-note></div>
+          </article>
+        </section>
+      </section>
+
+      <nav class="journal-bottom-tabs" aria-label="底部导航">
+        <a href="./ink-home.html">今天</a>
+        <a href="./ink-calendar.html">日历</a>
+        <a href="./ink-dialog.html">对话</a>
+        <a class="is-active" href="./ink-profile.html">我的</a>
+      </nav>
+    </main>
+  </body>
+</html>

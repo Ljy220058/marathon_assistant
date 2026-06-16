@@ -1,0 +1,57 @@
+{
+  "authority_tier_counts": {
+    "local_candidate_book": 1
+  },
+  "batch_counts": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_norway_method.jsonl": 1
+  },
+  "batch_files": [
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_norway_method.jsonl"
+  ],
+  "candidate_permission_boundary_counts": {
+    "candidate": 1
+  },
+  "candidate_source_count": 1,
+  "commercial_risk_counts": {
+    "copyright_risk": 1,
+    "license_unverified": 1,
+    "medical_advice_risk": 1,
+    "source_provenance_unverified": 1,
+    "translation_rights_unverified": 1
+  },
+  "coverage_ready": false,
+  "deep_link_issue_source_ids": [],
+  "domain_gaps": [
+    "action_library",
+    "environment_race_context",
+    "medical_risk",
+    "nutrition_race_fueling",
+    "rehab_return_to_run",
+    "training_protocols"
+  ],
+  "duplicate_canonical_urls": [],
+  "duplicate_owner_title_pairs": [],
+  "license_status_counts": {
+    "unverified_local_pdf": 1
+  },
+  "missing_required_audit_metadata": {},
+  "not_selected_reasons": {},
+  "per_domain_counts": {
+    "training_load": 1
+  },
+  "required_audit_metadata": [
+    "accessed_at",
+    "date_basis",
+    "canonical_url",
+    "authority_tier",
+    "selection_reason",
+    "gap_target"
+  ],
+  "selected_for_review_source_ids": [],
+  "source_ids_by_batch": {
+    "data\\knowledge\\external_candidates\\expert_sources_20260530_norway_method.jsonl": [
+      "src_local_norway_method_book_2026"
+    ]
+  },
+  "unique_canonical_url_count": 1
+}

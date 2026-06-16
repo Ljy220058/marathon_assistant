@@ -54,6 +54,7 @@ class AdaptiveFeedback(TypedDict, total=False):
 
 class AdaptiveAdjustment(TypedDict, total=False):
     adjustment_required: bool
+    adaptation_type: str
     primary_reason_code: str
     reason_codes: List[str]
     reasons: List[AdaptiveReason]
@@ -94,6 +95,15 @@ class ExecutionStatusSummary(TypedDict, total=False):
     cycle_completion_rate: int
     completed_weeks: List[Dict[str, Any]]
     phase_progress: List[Dict[str, Any]]
+
+
+class TraceStep(TypedDict, total=False):
+    """AgentDoG P0: 单个节点的执行轨迹记录。"""
+    node: str                          # 节点名 (entity_extraction, planner, executor, coach, auditor, ...)
+    timestamp: str                     # ISO 时间戳
+    input_snapshot: Dict[str, Any]     # 入口关键字段快照 (query, category, entity_count, ...)
+    output_snapshot: Dict[str, Any]    # 出口关键字段快照 (evidence_count, plan_weeks, is_approved, ...)
+    decision: str                      # 本节点关键决策摘要
 
 
 class WorkflowTrace(TypedDict, total=False):
@@ -196,10 +206,19 @@ def build_feedback_risk_gate(feedback: Optional[Dict[str, Any]] = None, raw_text
     combined_text = f"{raw_text} {normalized.get('notes', '')}".lower()
     triggers: List[str] = []
 
+    # P1-6: \u6269\u5c55\u4e25\u91cd\u7ea2\u65d7\u5173\u952e\u8bcd\u5e93\uff0c\u8986\u76d6\u8dd1\u6b65\u4e13\u9879\u4f24\u75c5
     severe_keywords = {
-        "chest_pain": ["\u80f8\u75db", "\u80f8\u95f7", "chest pain", "chest tightness"],
+        "chest_pain": ["\u80f8\u75db", "\u80f8\u75db", "\u80f8\u95f7", "chest pain", "chest tightness"],
         "dizziness_or_syncope": ["\u5934\u6655", "\u7729\u6655", "\u6655\u53a5", "\u6655\u5012", "dizzy", "faint"],
         "heat_illness": ["\u4e2d\u6691", "\u70ed\u75c5", "\u70ed\u5c04\u75c5", "\u9ad8\u6e29\u5f02\u5e38", "heat illness", "heatstroke"],
+        "difculty_breathing": ["\u547c\u5438\u56f0\u96be", "\u5598\u4e0d\u4e0a\u6c14", "\u6c14\u77ed", "\u77ed\u6c14"],
+        "fracture": ["\u9aa8\u6298", "bone break", "fracture"],
+        # P1-6 \u65b0\u589e\u8dd1\u6b65\u4e13\u9879\u4f24\u75c5
+        "achilles_rupture": ["\u8ddf\u8171\u65ad\u88c2", "\u8ddf\u8171\u6495\u88c2", "\u5f39\u54cd", "achilles rupture", "achilles tear"],
+        "stress_fracture": ["\u5e94\u529b\u6027\u9aa8\u6298", "\u70b9\u538b\u75db", "\u8d1f\u91cd\u75db", "stress fracture", "\u9aa8\u88c2"],
+        "plantar_fasciitis": ["\u8db3\u5e95\u7b4b\u819c\u708e", "\u8db3\u8ddf\u75db", "plantar fasciitis"],
+        "severe_swelling": ["\u4e25\u91cd\u80bf\u80c0", "\u65e0\u6cd5\u627f\u91cd", "\u5173\u8282\u79ef\u6db2"],
+        "rhabdomyolysis": ["\u6a2a\u7eb9\u808c\u6eb6\u89e3", "\u9171\u6cb9\u5c3f", "\u8336\u8272\u5c3f", "rhabdomyolysis"],
     }
     for code, keywords in severe_keywords.items():
         if _contains_any(combined_text, keywords):
@@ -213,7 +232,14 @@ def build_feedback_risk_gate(feedback: Optional[Dict[str, Any]] = None, raw_text
         triggers.append("poor_sleep")
 
     triggers = list(dict.fromkeys(triggers))
-    severe = any(code in triggers for code in {"chest_pain", "dizziness_or_syncope", "heat_illness"})
+    # P1-6: 扩展严重红旗集合
+    _SEVERE_CODES = {
+        "chest_pain", "dizziness_or_syncope", "heat_illness",
+        "difculty_breathing", "fracture",
+        "achilles_rupture", "stress_fracture", "plantar_fasciitis",
+        "severe_swelling", "rhabdomyolysis",
+    }
+    severe = any(code in triggers for code in _SEVERE_CODES)
     if severe:
         return {
             "status": "blocked",
@@ -736,9 +762,20 @@ def normalize_workout_feedback(payload: Optional[Dict[str, Any]] = None, raw_tex
 
     pain_status = _normalize_text(payload.get("pain_status")).lower()
     if pain_status not in {"none", "watch", "risk"}:
-        if _contains_any(combined_text, ["疼痛", "痛感明显", "刺痛", "膝盖疼", "脚踝疼", "pain", "injury"]):
+        # P1-6: 扩展疼痛关键词库，覆盖跑步专项伤病
+        if _contains_any(combined_text, [
+            "疼痛", "痛感明显", "刺痛", "膝盖疼", "膝盖痛", "脚踝疼",
+            "跟腱疼", "跟腱痛", "跟腱不适",  # P1-6 新增
+            "足底筋膜炎", "足跟痛", "plantar fasciitis",  # P1-6 新增
+            "应力性骨折", "点压痛", "负重痛", "stress fracture", "骨裂",  # P1-6 新增
+            "严重肿胀", "无法承重", "关节积液",  # P1-6 新增
+            "pain", "injury",
+        ]):
             pain_status = "risk"
-        elif _contains_any(combined_text, ["有点不适", "轻微不适", "酸痛", "发紧"]):
+        elif _contains_any(combined_text, [
+            "有点不适", "轻微不适", "酸痛", "发紧",
+            "跟腱酸", "膝盖酸",  # P1-6 新增：轻微的跟腱/膝盖不适
+        ]):
             pain_status = "watch"
         else:
             pain_status = "none"
@@ -764,9 +801,10 @@ def normalize_workout_feedback(payload: Optional[Dict[str, Any]] = None, raw_tex
 
 def derive_adaptive_reasons(feedback: Optional[Dict[str, Any]] = None, raw_text: str = "") -> List[AdaptiveReason]:
     normalized = normalize_workout_feedback(feedback, raw_text=raw_text)
+    combined_text = f"{raw_text} {normalized.get('notes', '')}".lower()
     reasons: List[AdaptiveReason] = []
 
-    if normalized.get("pain_status") == "risk":
+    if normalized.get("pain_status") == "risk" or _contains_any(combined_text, ["疼", "痛", "伤", "injury", "pain", "膝", "跟腱", "足底"]):
         reasons.append(
             {
                 "code": "pain_risk",
@@ -775,7 +813,7 @@ def derive_adaptive_reasons(feedback: Optional[Dict[str, Any]] = None, raw_text:
                 "why": "反馈中出现疼痛或明显不适，当前更需要先控风险而不是继续堆训练量。",
             }
         )
-    if normalized.get("subjective_fatigue") == "high":
+    if normalized.get("subjective_fatigue") == "high" or _contains_any(combined_text, ["明显疲劳", "很累", "好累", "乏力", "fatigue", "exhausted"]):
         reasons.append(
             {
                 "code": "high_fatigue",
@@ -799,7 +837,7 @@ def derive_adaptive_reasons(feedback: Optional[Dict[str, Any]] = None, raw_text:
                 "why": "反馈显示训练完成度或恢复质量开始下降，适合先做轻量微调而不是硬顶。",
             }
         )
-    if normalized.get("completion_status") == "missed":
+    if normalized.get("completion_status") == "missed" or _contains_any(combined_text, ["漏练", "漏训", "没练", "缺课", "未完成", "missed workout"]):
         reasons.append(
             {
                 "code": "missed_workout",
@@ -824,11 +862,14 @@ def build_adaptive_adjustment_contract(feedback: Optional[Dict[str, Any]] = None
     reasons = derive_adaptive_reasons(feedback, raw_text=raw_text)
     reason_codes = [reason["code"] for reason in reasons]
     if not reason_codes:
-        return _build_no_adjustment_contract()
+        contract = _build_no_adjustment_contract()
+        contract["adaptation_type"] = infer_adaptation_type(reason_codes=reason_codes, raw_text=raw_text)
+        return contract
 
     primary_reason_code = reason_codes[0] if reason_codes else ""
     return {
         "adjustment_required": bool(reason_codes),
+        "adaptation_type": infer_adaptation_type(reason_codes=reason_codes, raw_text=raw_text),
         "primary_reason_code": primary_reason_code,
         "reason_codes": reason_codes,
         "reasons": reasons,
@@ -838,6 +879,36 @@ def build_adaptive_adjustment_contract(feedback: Optional[Dict[str, Any]] = None
         "risk_alert": _compose_adaptive_field(reason_codes, "risk_alert"),
         "rationale": _build_adaptive_rationale(reason_codes, reasons),
     }
+
+
+def infer_adaptation_type(*, reason_codes: Optional[List[str]] = None, raw_text: str = "") -> str:
+    """Map adaptive feedback signals to the graph-level routing category."""
+
+    codes = set(reason_codes or [])
+    normalized = str(raw_text or "").lower()
+    if "pain_risk" in codes or _contains_any(normalized, ["疼", "痛", "伤", "injury", "pain", "膝", "跟腱", "足底"]):
+        return "INJURY"
+    if {"high_fatigue", "mild_fatigue"} & codes or _contains_any(normalized, ["疲劳", "累", "乏力", "睡眠差", "fatigue", "tired"]):
+        return "FATIGUE"
+    if "missed_workout" in codes or _contains_any(normalized, ["漏练", "漏训", "没练", "未完成", "缺课", "missed"]):
+        return "MISSED"
+    if _contains_any(normalized, ["出差", "没空", "日程", "时间", "改到", "调整训练日", "schedule", "travel"]):
+        return "SCHEDULE"
+    if _contains_any(normalized, ["成绩", "表现", "配速", "达不到", "退步", "进步", "performance", "pace"]):
+        return "PERFORMANCE"
+    return "UNKNOWN"
+
+
+class NutritionProfile(TypedDict):
+    weight_kg: float
+    sex: str                      # P1-8: "男" / "女" / "未提供"
+    diet_preference: str          # "无偏好" / "素食" / "低碳水" / "高蛋白" / etc.
+    allergies: List[str]          # 过敏食物列表
+    daily_calories: int           # 日均目标摄入 (kcal)
+    hydration_strategy: str       # 补水策略偏好
+    sweat_rate: str               # P1-8: 出汗率 "少" / "中等" / "多"
+    gi_sensitivity: str           # P1-8: 胃肠敏感度 "低" / "中等" / "高"
+    diet_type: str                # P1-8: 饮食类型 "均衡" / "素食" / "生酮" / etc.
 
 
 class UserProfile(TypedDict):
@@ -858,7 +929,10 @@ class UserProfile(TypedDict):
     pace_zones: Optional[Dict[str, str]]
     target_race_date: Optional[str]
     plan_duration_weeks: Optional[int]
-    long_term_memory: Optional[List[str]]
+    sex: Optional[str]            # P1-8: 性别 "男" / "女"
+    weight_kg: Optional[float]    # P1-8: 体重 (kg)
+    nutrition_profile: Optional[NutritionProfile]
+    long_term_memory: Optional[List[Dict[str, Any]]]
     verified_facts: Optional[Dict[str, Any]]
 
 
@@ -900,12 +974,16 @@ class Evidence(TypedDict):
     hybrid_score: float
     citation_label: str  # [1], [2] 等
     trace: Dict[str, Any]
+    # CRAG 纠正字段（crag_corrector 节点写入；旧证据缺这两键，读取方用 .get() 兜底）
+    refined_text: str
+    refinement_meta: Dict[str, Any]
 
 
 class EvidenceBundleItem(TypedDict, total=False):
     evidence_id: str
     citation_label: str
     tier: str
+    display_mode: str
     source_file: str
     source_path: str
     page: Optional[int]
@@ -934,9 +1012,60 @@ class EntityList(BaseModel):
     entities: List[str] = Field(description="核心实体名词列表")
 
 
+# -------- DailyExpertPack: mode=team 专属结构化专家当日输出 --------------------
+
+class NutritionistDay(TypedDict, total=False):
+    """营养师当日输出：强度后补充建议、运动前能量、补水、时机。"""
+    post_workout_recovery: str        # 强度后蛋白质+碳水补充（蛋白质窗口、碳水比例、恢复餐）
+    pre_workout_fuel: str             # 运动前能量准备（碳水时机、食物选择）
+    hydration_plan: str               # 补水计划（量、时机、电解质策略）
+    supplement_timing: str            # 营养补充时机（运动中 / 运动后 30 分钟内）
+    daily_nutrition_notes: str        # 当日营养要点摘要
+
+
+class RehabDay(TypedDict, total=False):
+    """康复师当日输出：伤病评估、康复动作列表、恢复建议。"""
+    injury_status: str                # 伤病状态 none / watch / active
+    risk_level: str                   # 风险级别 low / medium / high
+    rehab_movements: List[str]        # 康复动作列表（具体动作名称）
+    recovery_advice: str              # 恢复建议（冰敷/热敷、拉伸、睡眠）
+    should_modify_training: bool      # 是否需要调整今日训练
+    modification_suggestion: str      # 具体调整建议（如：降速、缩短距离）
+
+
+class ConditioningDay(TypedDict, total=False):
+    """体能师当日输出：具体课表、力量补充、负荷建议。"""
+    session_design: str               # 具体课表（热身 + 主课 + 整理，含时长和强度）
+    strength_work: str                # 力量补充训练（核心、髋稳定、单腿力量等）
+    load_recommendation: str          # 负荷建议（目标配速 / 心率区间 / RPE）
+    periodization_note: str           # 周期化备注（当前阶段目标和下周过渡）
+    training_emphasis: str            # 今日训练重点
+
+
+class PsychologistDay(TypedDict, total=False):
+    """心理师当日输出：状态评估、心理调节建议。"""
+    motivation_state: str             # 当前状态评估
+    mental_challenge: str             # 今日潜在心理挑战
+    mental_tips: str                  # 具体可操作的心理调节技巧
+    goal_alignment: str               # 与长期目标的连接提示
+    coping_strategy: str              # 遇到困难时的应对策略
+
+
+class DailyExpertPack(TypedDict, total=False):
+    """mode=team 专属：四位专家的当日结构化输出聚合。仅在 mode=team 时填充。"""
+    nutritionist: NutritionistDay
+    rehab: RehabDay
+    conditioning: ConditioningDay
+    psychologist: PsychologistDay
+    generated_at: str                 # ISO 时间戳
+    session_context: str              # 当日运动上下文摘要（运动类型、强度、持续时间）
+
+
 class IntegratedState(TypedDict):
     query: str
     mode: str
+    intent_labels: List[str]
+    intent_priority: str
     intent_type: str
     workflow_kind: str
     selected_entities: List[str]
@@ -946,18 +1075,30 @@ class IntegratedState(TypedDict):
     review_feedback: str
     is_approved: bool
     iteration_count: int
+    hard_rule_retry_count: int  # P6: 硬规则打回上限 1
+    rag_audit_retry_count: int  # P6: RAG 审核打回上限 2
+    node_visit_count: Dict[str, int]
     final_report: str
     structured_training_plan: Optional[Dict[str, Any]]
     structured_report: Optional[Dict[str, Any]]
     reasoning_log: Annotated[List[str], operator.add]
+    execution_trace: Annotated[List[TraceStep], operator.add]  # AgentDoG P0: 结构化节点执行轨迹
+    audit_diagnosis: Optional[Dict[str, Any]]  # AgentDoG P0: 三元组诊断 {risk_source, failure_mode, real_world_harm, targeted_fix}
+    safety_constraints: List[Dict[str, Any]]  # P1: KG constrains/risks 边
+    training_capacity_envelope: Dict[str, Any]
+    s_and_c_constraints: Dict[str, Any]
+    s_and_c_done: bool
+    needs_therapist_review: bool
     gate_hits: List[Dict[str, Any]]
     rag_sources: List[Dict[str, Any]]
     ranked_evidence: List[Evidence]
     evidence_bundle: EvidenceBundle
+    expert_evidence_trace: Dict[str, Any]
     graph_context: str
     wiki_context: str
     mermaid_graph: str
     token_usage: TokenUsage
+    rule_check_result: Dict[str, Any]
     audit_scores: AuditScores
     roi_history: List[float]
     risk_alert: str
@@ -966,11 +1107,16 @@ class IntegratedState(TypedDict):
     user_profile: UserProfile
     adaptive_feedback: AdaptiveFeedback
     adaptive_adjustment: AdaptiveAdjustment
+    adaptation_type: str
+    adaptation_context: Dict[str, Any]
     workflow_trace: WorkflowTrace
+    supervisor_decision: str
     requested_weeks: Optional[int]
     missing_fields: List[str]
     enhancement_missing_fields: List[str]
     missing_info_status: str
+    workflow_pause: Dict[str, Any]
+    workflow_error: Dict[str, Any]
     history: List[Dict[str, str]]
     used_fallback: bool
     fallback_reason: str
@@ -978,6 +1124,12 @@ class IntegratedState(TypedDict):
     validation_result: Dict[str, Any]
     repair_suggestions: List[Dict[str, Any]]
     repair_attempts: int
+    nutritionist_done: bool
+    needs_nutrition_review: bool
+    psychologist_done: bool
+    needs_psychology_review: bool
+    framework: Optional[str]  # 预留：教练/训练框架选择（如 "Daniels"/"Hansen"/"80_20"），多框架对比功能的扩展点，None=现有默认逻辑
+    daily_expert_pack: Optional[DailyExpertPack]  # mode=team 专属：四专家当日结构化输出
 
 
 WorkingState = IntegratedState

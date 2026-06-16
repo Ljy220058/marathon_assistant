@@ -190,6 +190,50 @@ def test_api_token_protects_non_public_endpoints_when_configured(monkeypatch):
     assert preflight.status_code != 401
 
 
+def test_ops_metrics_not_public_when_dev_binds_public_host_without_auth(monkeypatch):
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_ENV", raising=False)
+    monkeypatch.setenv("MARATHON_DEV_ALLOW_PUBLIC_NO_AUTH", "1")
+    monkeypatch.setenv("MARATHON_HOST", "0.0.0.0")
+
+    response = TestClient(api_app.app).get("/ops/metrics")
+
+    assert response.status_code == 403
+    assert "requires auth" in response.json()["detail"]
+
+
+def test_expert_role_fails_closed_without_token(monkeypatch):
+    monkeypatch.delenv("MARATHON_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_EXPERT_API_TOKEN", raising=False)
+    monkeypatch.delenv("MARATHON_DEV_ALLOW_EXPERT_RESPONSE", raising=False)
+    request = type(
+        "Req",
+        (),
+        {"headers": {"X-Marathon-Response-Role": "expert"}, "state": type("State", (), {})()},
+    )()
+
+    assert api_app._response_role(request) == "runner"
+
+
+def test_expert_role_requires_token_or_dev_override(monkeypatch):
+    request = type(
+        "Req",
+        (),
+        {"headers": {"X-Marathon-Response-Role": "expert", "X-Marathon-Expert-Key": "expert-test-token"}, "state": type("State", (), {})()},
+    )()
+
+    monkeypatch.setenv("MARATHON_EXPERT_API_TOKEN", "expert-test-token")
+    monkeypatch.delenv("MARATHON_DEV_ALLOW_EXPERT_RESPONSE", raising=False)
+    assert api_app._response_role(request) == "expert"
+
+    monkeypatch.delenv("MARATHON_EXPERT_API_TOKEN", raising=False)
+    monkeypatch.setenv("MARATHON_DEV_ALLOW_EXPERT_RESPONSE", "1")
+    assert api_app._response_role(request) == "expert"
+
+    monkeypatch.setenv("MARATHON_ENV", "production")
+    assert api_app._response_role(request) == "runner"
+
+
 def test_frontend_does_not_persist_deepseek_api_key():
     root_path = root / "apps" / "web" / "src" / "scripts" / "app.js"
     app_script = root_path.read_text(encoding="utf-8")
