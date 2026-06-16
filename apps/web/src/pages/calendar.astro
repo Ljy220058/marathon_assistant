@@ -1,0 +1,39 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="训练日历" subtitle="训练日历" activeTab="calendar" showSidebar={true} sidebarActive="plan">
+  <span slot="toolbar" class="journal-pill" data-calendar-version>第 1 版</span>
+  <Fragment slot="hero">
+    <section class="journal-hero">
+      <h1>训练日历</h1>
+      <p>按周切换，不用滚着找。</p>
+    </section>
+  </Fragment>
+
+  <article class="journal-card journal-card-pad" data-calendar-root>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <button type="button" class="journal-btn" data-week-prev>← 上一周</button>
+      <div style="flex:1;min-width:0;text-align:center;">
+        <div class="journal-inline-note" data-week-phase style="margin-bottom:2px;"></div>
+        <strong data-week-label></strong>
+        <div class="journal-footnote" data-week-range></div>
+      </div>
+      <button type="button" class="journal-btn" data-week-next>下一周 →</button>
+    </div>
+    <div class="journal-inline-note" data-calendar-event-count hidden style="margin-bottom:10px;"></div>
+
+    <div class="journal-week-card">
+      <div class="journal-week-summary" data-week-goal></div>
+      <div class="journal-session-list" data-session-list></div>
+      <div class="journal-week-summary" data-week-summary style="margin-top:8px;"></div>
+      <div class="journal-inline-note" data-week-load style="margin-top:4px;" hidden></div>
+    </div>
+
+    <div class="journal-page-actions" style="margin-top:12px;">
+      <a class="journal-btn" href="/week-setup">修改本周训练计划</a>
+      <a class="journal-btn" href="/event">插入临时比赛</a>
+      <a class="journal-btn" href="/history">版本历史</a>
+    </div>
+  </article>
+</JournalLayout>

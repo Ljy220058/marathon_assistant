@@ -1,4 +1,4 @@
-# 模块边界审计 V1
+﻿# 模块边界审计 V1
 
 > 快照日期：2026-05-21
 >
@@ -22,7 +22,7 @@
 | [global.css](../../apps/web/src/styles/global.css) | 3156 | 全局变量、布局、组件样式、日历样式、弹窗样式 | P0 | 按 base/layout/components/calendar/modal 分域 |
 | [training_plan_skeleton.py](../../apps/backend/src/marathon_qa_assistant/core/training_plan_skeleton.py) | 1623 | 周计划骨架、周期阶段、跑量分配、HMP 协议接入、结构化输出 | P1 | 保留 `build_structured_training_plan_skeleton()` 外观，内部拆规则域 |
 | [knowledge_graph.py](../../apps/backend/src/marathon_qa_assistant/services/knowledge_graph.py) | 1585 | 图谱存储、schema 迁移、实体/关系抽取、模板注册、周级训练决策、Mermaid 输出 | P1 | 先拆 workout decision / registry / graph IO |
-| [legacy_ui.py](../../apps/backend/src/marathon_qa_assistant/ui/legacy_ui.py) | 1591 | 共享 Markdown 渲染、证据预览、协议面板、每日课表卡 | P1 | 保留 `UIHelper`，把渲染片段移到子模块 |
+| [report_ui.py](../../apps/backend/src/marathon_qa_assistant/ui/report_ui.py) | 1591 | 共享 Markdown 渲染、证据预览、协议面板、每日课表卡 | P1 | 保留 `UIHelper`，把渲染片段移到子模块 |
 | [plan_ui.py](../../apps/backend/src/marathon_qa_assistant/ui/plan_ui.py) | 1551 | 前端展示 props、反馈卡、解释卡、日历 props、DB 到 UI 映射 | P2 | 待前端拆分后再评估是否继续保留 |
 | [daily_schedule_generator.py](../../apps/backend/src/marathon_qa_assistant/services/daily_schedule_generator.py) | 1472 | 月历编排、动作库映射、KB fallback、风险门、证据来源字段 | P1 | 保留 `generate_daily_schedule()` 外观，拆 composer / evidence / guards |
 | [api_app.py](../../apps/backend/src/marathon_qa_assistant/apps/api_app.py) | 919 | FastAPI app、请求/响应模型、画像、计划、日历、LLM 选项、持久化编排 | P1 | 先抽 schema 和 response builders，再抽 routers |
@@ -34,7 +34,7 @@
 | `training_plan_skeleton.py` | `_allocate_weekly_volume` 175 行、`build_structured_training_plan_skeleton` 135 行、`_build_quality_session` 117 行 | 跑量、周期、HMP 和展示字段互相牵连 |
 | `daily_schedule_generator.py` | `generate_daily_schedule` 481 行、`_build_field_sources` 112 行 | 编排主流程过长，难以局部验证证据和风险门 |
 | `knowledge_graph.py` | `GraphEngine` 45 个方法，`generate_mermaid` 110 行、`plan_week_drafts` 102 行 | 图谱能力和训练决策能力共享一个类 |
-| `legacy_ui.py` | `_render_structured_training_plan_md` 204 行、`_render_half_marathon_protocol_panel_md` 176 行 | Markdown 展示细节会阻碍结构化 API 演进 |
+| `report_ui.py` | `_render_structured_training_plan_md` 204 行、`_render_half_marathon_protocol_panel_md` 176 行 | Markdown 展示细节会阻碍结构化 API 演进 |
 | `api_app.py` | `_build_skeleton_plan_response` 65 行、`_query_response_from_state` 59 行、`execute_query` 50 行 | API 层承担过多响应装配和领域补丁 |
 
 ## 依赖方向
@@ -53,7 +53,7 @@
 - API 层只做 HTTP 契约、认证/用户限制、响应装配，不新增训练规则。
 - `core/` 负责领域规则和结构化计划，不直接处理 FastAPI、DOM 或 Markdown。
 - `services/` 负责检索、图谱、日历、持久化等可复用服务，不反向依赖 API。
-- `ui/` 只做展示转换；长期目标是减少 `legacy_ui.py` 的业务判断。
+- `ui/` 只做展示转换；长期目标是减少 `report_ui.py` 的业务判断。
 
 ## 测试耦合矩阵
 

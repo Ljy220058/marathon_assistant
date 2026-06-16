@@ -270,7 +270,10 @@ class _Database:
                     age_gate_passed_at    TEXT,
                     privacy_consent_at    TEXT,
                     health_data_consent_at TEXT,
-                    terms_accepted_at     TEXT
+                    terms_accepted_at     TEXT,
+                    email                 TEXT,
+                    email_verified        INTEGER NOT NULL DEFAULT 0,
+                    last_login_at         TEXT
                 )
                 """
             )
@@ -290,6 +293,11 @@ class _Database:
                     "privacy_consent_at": "TEXT",
                     "health_data_consent_at": "TEXT",
                     "terms_accepted_at": "TEXT",
+                    # 登录功能：邮箱（账号）+ 验证状态 + 最后登录时间
+                    "email": "TEXT",
+                    "email_verified": "INTEGER NOT NULL DEFAULT 0",
+                    "last_login_at": "TEXT",
+                    "password_hash": "TEXT",
                 },
             )
             # Ensure unique constraint on api_token_hash via index
@@ -302,6 +310,35 @@ class _Database:
                     conn.execute("CREATE UNIQUE INDEX idx_users_token_hash ON users(api_token_hash)")
                 except Exception:
                     pass
+        # email 唯一索引：部分索引（仅对非空 email 生效），default_user 等无 email 账号不冲突。
+        # 邮箱即账号，必须唯一。
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL"
+        )
+        # 验证码表：邮箱/手机 OTP 注册登录。code_hash 存 sha256（不存明文），purpose 区分
+        # register/login/bind，expires_at 控制有效期，used 防重放，attempts 防爆破（超限作废）。
+        if not self._table_exists(conn, "verification_codes"):
+            conn.execute(
+                """
+                CREATE TABLE verification_codes (
+                    id           TEXT PRIMARY KEY,
+                    target       TEXT NOT NULL,
+                    channel      TEXT NOT NULL,
+                    code_hash    TEXT NOT NULL,
+                    purpose      TEXT NOT NULL,
+                    expires_at   TEXT NOT NULL,
+                    used         INTEGER NOT NULL DEFAULT 0,
+                    attempts     INTEGER NOT NULL DEFAULT 0,
+                    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_verification_codes_target ON verification_codes(target, channel, used)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_verification_codes_expires ON verification_codes(expires_at)"
+            )
         # users 表已就绪后再跑 migrations：0007_consent_version 需要 ALTER TABLE users。
         # 原顺序 _apply_migrations 在建 users 之前，导致全新 DB 初始化时 0007 报 no such table: users。
         self._apply_migrations(conn)
@@ -535,6 +572,157 @@ class _Database:
             return "existing_users_found"
         result = self.create_user("默认用户")
         return result["user_id"]
+
+    # ---- 邮箱验证码登录（OTP）----
+
+    @staticmethod
+    def _hash_code(code: str) -> str:
+        """验证码 hash（不存明文）。固定盐避免彩虹表。"""
+        return hashlib.sha256(f"otp::{code}".encode("utf-8")).hexdigest()
+
+    def create_verification_code(
+        self, target: str, channel: str, purpose: str, code: str, expires_at: str
+    ) -> str:
+        """存储一条验证码记录（hash 存储）。返回记录 id。"""
+        code_id = f"vc-{uuid.uuid4().hex[:12]}"
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT INTO verification_codes
+               (id, target, channel, code_hash, purpose, expires_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (code_id, target, channel, self._hash_code(code), purpose, expires_at),
+        )
+        conn.commit()
+        return code_id
+
+    def consume_verification_code(
+        self, target: str, channel: str, purpose: str, code: str, *, max_attempts: int = 5
+    ) -> tuple[bool, str]:
+        """校验并消费验证码。返回 (是否成功, 原因)。
+
+        成功条件：target+channel+purpose 匹配、code_hash 一致、未过期、未使用、attempts 未超限。
+        失败时递增 attempts；超限/过期则作废该码。
+        """
+        from datetime import datetime as _dt
+        conn = self._get_conn()
+        row = conn.execute(
+            """SELECT id, code_hash, expires_at, used, attempts FROM verification_codes
+               WHERE target = ? AND channel = ? AND purpose = ? AND used = 0
+               ORDER BY created_at DESC LIMIT 1""",
+            (target, channel, purpose),
+        ).fetchone()
+        if not row:
+            return False, "验证码不存在或已使用，请重新获取"
+        now_iso = _dt.utcnow().isoformat(timespec="seconds")
+        if now_iso > str(row["expires_at"]):
+            conn.execute("UPDATE verification_codes SET used = 1 WHERE id = ?", (row["id"],))
+            conn.commit()
+            return False, "验证码已过期，请重新获取"
+        if int(row["attempts"]) >= max_attempts:
+            conn.execute("UPDATE verification_codes SET used = 1 WHERE id = ?", (row["id"],))
+            conn.commit()
+            return False, "尝试次数过多，验证码已作废，请重新获取"
+        if self._hash_code(code) != row["code_hash"]:
+            conn.execute(
+                "UPDATE verification_codes SET attempts = attempts + 1 WHERE id = ?",
+                (row["id"],),
+            )
+            conn.commit()
+            return False, "验证码错误"
+        conn.execute(
+            "UPDATE verification_codes SET used = 1, attempts = attempts + 1 WHERE id = ?",
+            (row["id"],),
+        )
+        conn.commit()
+        return True, "ok"
+
+    def count_recent_codes(self, target: str, channel: str, window_seconds: int) -> int:
+        """统计 window_seconds 内对同一 target+channel 发送的验证码数（限流用）。"""
+        from datetime import datetime as _dt, timedelta as _td
+        since = (_dt.utcnow() - _td(seconds=window_seconds)).isoformat(timespec="seconds")
+        row = self._get_conn().execute(
+            """SELECT COUNT(*) as cnt FROM verification_codes
+               WHERE target = ? AND channel = ? AND created_at > ?""",
+            (target, channel, since),
+        ).fetchone()
+        return int(row["cnt"] if row else 0)
+
+    def cleanup_expired_codes(self) -> int:
+        """清理已过期或已使用的验证码（定期维护）。"""
+        from datetime import datetime as _dt
+        now = _dt.utcnow().isoformat(timespec="seconds")
+        conn = self._get_conn()
+        cur = conn.execute(
+            "DELETE FROM verification_codes WHERE used = 1 OR expires_at < ?",
+            (now,),
+        )
+        conn.commit()
+        return cur.rowcount
+
+    # ---- 邮箱账号 ----
+
+    def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """按邮箱查活跃用户（邮箱即账号）。"""
+        if not email:
+            return None
+        row = self._get_conn().execute(
+            "SELECT * FROM users WHERE email = ? AND is_active = 1", (email,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def find_or_create_user_by_email(self, email: str, display_name: Optional[str] = None) -> Dict[str, Any]:
+        """注册/登录合一：邮箱存在返回现有用户，不存在则创建。
+
+        各账号画像从零开始（不迁移 default_user 数据）。返回 {user_id, display_name, is_new}。
+        注意：此处不发 token（token 由 verify 端点在验证通过后用 issue_new_api_token 签发）。
+        """
+        existing = self.get_user_by_email(email)
+        if existing:
+            return {
+                "user_id": existing["id"],
+                "display_name": existing["display_name"],
+                "is_new": False,
+            }
+        user_id = f"user-{uuid.uuid4().hex[:12]}"
+        name = display_name or email.split("@")[0]  # 默认用邮箱前缀做显示名
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT INTO users (id, display_name, api_token_hash, email, email_verified)
+               VALUES (?, ?, ?, ?, 1)""",
+            # 新用户先占位一个 token_hash（NOT NULL 约束），verify 时 issue_new_api_token 覆盖
+            (user_id, name, "pending_" + uuid.uuid4().hex, email),
+        )
+        conn.commit()
+        return {"user_id": user_id, "display_name": name, "is_new": True}
+
+    def touch_last_login(self, user_id: str) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            "UPDATE users SET last_login_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+            (user_id,),
+        )
+        conn.commit()
+
+    def set_user_password(self, user_id: str, password_hash: str) -> bool:
+        """设置账号密码（注册时调用）。"""
+        conn = self._get_conn()
+        cur = conn.execute(
+            "UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ? AND is_active = 1",
+            (password_hash, user_id),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+
+    def issue_new_api_token(self, user_id: str) -> Optional[str]:
+        """为已有用户签发新 token（登录成功时调用，覆盖旧 token）。返回新 token 或 None。"""
+        token = self.generate_api_token()
+        conn = self._get_conn()
+        cur = conn.execute(
+            "UPDATE users SET api_token_hash = ?, email_verified = 1, updated_at = datetime('now') WHERE id = ? AND is_active = 1",
+            (self._hash_api_token(token), user_id),
+        )
+        conn.commit()
+        return token if cur.rowcount > 0 else None
 
     # ---- sync_state 表操作 ----
 

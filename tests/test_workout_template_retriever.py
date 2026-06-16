@@ -1,4 +1,4 @@
-from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
+﻿from marathon_qa_assistant.core.training_plan_skeleton import build_structured_training_plan_skeleton
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
 from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
@@ -8,7 +8,7 @@ from marathon_qa_assistant.services.workout_template_retriever import (
     get_action_library_foundation_hits,
     normalize_workout_type_for_template,
 )
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
+from marathon_qa_assistant.ui.report_ui import UIHelper
 
 
 def test_build_workout_template_query_expands_aerobic_threshold_aliases():

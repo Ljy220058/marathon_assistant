@@ -76,6 +76,23 @@ class Settings:
     log_client_ip: bool
     app_version: str
     sync_key: str
+    # 邮箱验证码登录（QQ 邮箱 SMTP 发件）
+    smtp_host: str
+    smtp_port: int
+    smtp_user: str          # 发件 QQ 邮箱地址
+    smtp_password: str      # QQ 邮箱 SMTP 授权码（非登录密码）
+    smtp_from_name: str
+    smtp_use_tls: bool
+    mail_code_ttl_minutes: int      # 验证码有效期（分钟）
+    mail_code_length: int           # 验证码位数
+    mail_rate_limit_window_sec: int # 限流窗口（秒）
+    mail_rate_limit_max: int        # 窗口内同一 target 最大发送次数
+    mail_dev_print_code: bool       # dev 模式：验证码打印到日志（不真发邮件，便于本地开发）
+
+    @property
+    def smtp_configured(self) -> bool:
+        """SMTP 是否已配置（user+授权码齐全）。未配置时降级为打印码到日志。"""
+        return bool(self.smtp_user and self.smtp_password)
 
     @property
     def llm_max_concurrency_per_worker(self) -> int:
@@ -179,6 +196,17 @@ def build_settings(env: Optional[Mapping[str, Any]] = None) -> Settings:
         log_client_ip=(_env_str(values, "MARATHON_LOG_CLIENT_IP", "1") != "0"),
         app_version=_env_str(values, "APP_VERSION", "dev") or "dev",
         sync_key=_env_str(values, "MARATHON_SYNC_KEY"),
+        smtp_host=_env_str(values, "MARATHON_SMTP_HOST", "smtp.qq.com") or "smtp.qq.com",
+        smtp_port=_env_int(values, "MARATHON_SMTP_PORT", 465, minimum=1),
+        smtp_user=_env_str(values, "MARATHON_SMTP_USER"),
+        smtp_password=_env_str(values, "MARATHON_SMTP_PASSWORD"),
+        smtp_from_name=_env_str(values, "MARATHON_SMTP_FROM_NAME", "马拉松助手") or "马拉松助手",
+        smtp_use_tls=(_env_str(values, "MARATHON_SMTP_USE_TLS", "1") != "0"),
+        mail_code_ttl_minutes=_env_int(values, "MARATHON_MAIL_CODE_TTL_MINUTES", 5, minimum=1),
+        mail_code_length=_env_int(values, "MARATHON_MAIL_CODE_LENGTH", 6, minimum=4),
+        mail_rate_limit_window_sec=_env_int(values, "MARATHON_MAIL_RATE_LIMIT_WINDOW_SEC", 600, minimum=60),
+        mail_rate_limit_max=_env_int(values, "MARATHON_MAIL_RATE_LIMIT_MAX", 5, minimum=1),
+        mail_dev_print_code=_env_flag(values, "MARATHON_MAIL_DEV_PRINT_CODE"),
     )
 
 

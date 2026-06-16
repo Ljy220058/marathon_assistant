@@ -1,0 +1,68 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>本周设置</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>本周设置</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <a class="journal-pill is-action" href="./ink-calendar.html">返回日历</a>
+        </div>
+      </header>
+
+      <section class="journal-hero">
+        <h1>本周设置</h1>
+        <p>这一周可以单独改，不影响长期画像。</p>
+      </section>
+
+      <section class="journal-card journal-card-pad">
+        <form id="weekSetupForm" class="journal-form-grid">
+          <label class="journal-field is-full">
+            <span>本周目标</span>
+            <input class="journal-input" name="weekGoal" type="text" />
+          </label>
+          <label class="journal-field">
+            <span>计划次数</span>
+            <input class="journal-input" name="sessionCount" type="number" min="1" max="7" />
+          </label>
+          <label class="journal-field">
+            <span>强度</span>
+            <input class="journal-input" name="intensity" type="text" />
+          </label>
+          <label class="journal-field is-full">
+            <span>可训练日</span>
+            <div class="journal-check-grid">
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周一" />周一</label>
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周二" />周二</label>
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周三" />周三</label>
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周四" />周四</label>
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周五" />周五</label>
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周六" />周六</label>
+              <label class="journal-check"><input type="checkbox" name="availableDays" value="周日" />周日</label>
+            </div>
+          </label>
+          <label class="journal-field is-full">
+            <span>备注</span>
+            <textarea class="journal-textarea" name="note"></textarea>
+          </label>
+          <div class="journal-action-row end is-full">
+            <a class="journal-btn" href="./ink-calendar.html">取消</a>
+            <button class="journal-btn primary" type="submit">生成本周计划</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

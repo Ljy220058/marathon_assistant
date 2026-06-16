@@ -822,22 +822,26 @@ def _validate_workout_duration_bounds(week_plans):
             if not constraint:
                 continue
 
-            # 从 main_set 文本中提取时长
-            ms = str(day.get("main_set", "") or "")
-            min_match = _re.search(r"(\d+)\s*(?:min|分钟)", ms)
-            km_match = _re.search(r"(\d+\.?\d*)\s*km", ms)
-
+            # 优先读权威数值字段 duration_minutes（由 repair_workout_durations 同步设置），
+            # fallback 到 main_set 文本解析。避免 main_set 多时长数字导致读取不一致。
             actual_minutes = None
-            if min_match:
-                actual_minutes = int(min_match.group(1))
-            elif km_match:
-                # 按配速 6:00/km 近似换算
-                km = float(km_match.group(1))
-                pace = 6.0
-                pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
-                if pace_match:
-                    pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
-                actual_minutes = int(km * pace)
+            dm = day.get("duration_minutes")
+            if isinstance(dm, (int, float)) and dm > 0:
+                actual_minutes = int(dm)
+            else:
+                ms = str(day.get("main_set", "") or "")
+                min_match = _re.search(r"(\d+)\s*(?:min|分钟)", ms)
+                km_match = _re.search(r"(\d+\.?\d*)\s*km", ms)
+                if min_match:
+                    actual_minutes = int(min_match.group(1))
+                elif km_match:
+                    # 按配速 6:00/km 近似换算
+                    km = float(km_match.group(1))
+                    pace = 6.0
+                    pace_match = _re.search(r"配速\s*(\d+):(\d+)", ms)
+                    if pace_match:
+                        pace = int(pace_match.group(1)) + int(pace_match.group(2)) / 60.0
+                    actual_minutes = int(km * pace)
 
             if actual_minutes is None:
                 continue
@@ -921,6 +925,11 @@ def repair_workout_durations(week_plans):
                     old_text = km_match.group(0)
                     new_text = f"{new_km}km"
                     day["main_set"] = ms.replace(old_text, new_text, 1)
+
+                # 同步设置权威数值字段 duration_minutes：_validate_workout_duration_bounds 和
+                # _estimate_day_duration_min 统一读它，避免 main_set 文本含多个时长数字时
+                # repair 改一个、validate 读另一个的不一致（曾导致 warning 反复 fail → 500）。
+                day["duration_minutes"] = target
 
                 logger.info(
                     "repair_workout_durations: %s %dmin->%dmin (constraint %d-%dmin)",

@@ -1,4 +1,4 @@
-# Artifacts Manifest
+﻿# Artifacts Manifest
 
 > 目的：为研究运行、发布包、UI 审计和历史产物提供检索入口。这里记录产物归属和归档规则，不移动现有文件。
 
@@ -12,7 +12,7 @@
 | `release_packages` | [release_packages/](release_packages/) | release artifacts | paper/release packaging | 发布 PDF、zip、匿名包 | generated | 每个项目列生成命令或提交记录 |
 | `stai2026_release` | [release_packages/stai2026/](release_packages/stai2026/) | STAI 2026 release | paper packaging | STAI 投稿和 Overleaf/source 包 | generated | 补 package 生成方式和版本说明 |
 | `ui_audits` | [ui_audits/](ui_audits/) | UI audit | Playwright/manual audit | 新 UI 审计产物目标入口 | active | 后续新审计放入项目/日期子目录 |
-| `legacy_ui_audit_hm72` | [ui_audit_hm72/](ui_audit_hm72/) | UI audit legacy | prior audit run | 旧半马 UI 审计产物 | legacy | 后续迁入 `ui_audits/` 或保留索引 |
+| `ui_audit_hm72` | [ui_audit_hm72/](ui_audit_hm72/) | UI audit history | prior audit run | 旧半马 UI 审计产物 | historical | 后续迁入 `ui_audits/` 或保留索引 |
 | `legacy_ux_audit_hm72_sub70` | [ux_audit_hm72_sub70/](ux_audit_hm72_sub70/) | UX audit legacy | prior audit run | 旧 sub-70 UX 审计产物 | legacy | 后续迁入 `ui_audits/` 或保留索引 |
 | `dev_logs` | [dev_logs/](dev_logs/) | local logs | local development | 开发日志缓存 | ignored | 不纳入长期发布入口 |
 
@@ -34,3 +34,5 @@
 - 新 UI 审计使用 `artifacts/ui_audits/<project>/<yyyymmdd>_<purpose>/`。
 - `dev_logs/`、临时目录、缓存目录不作为长期证据入口。
 - 旧 UI/UX 审计目录暂不移动，后续迁移时先更新本 manifest。
+
+

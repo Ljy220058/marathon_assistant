@@ -51,7 +51,6 @@ behaviour, and component display props.
 | File | What it protects |
 |---|---|
 | `test_astro_frontend_contract.py` | Key DOM ids, data attributes, script entry points |
-| `test_plan_ui_display_props.py` | Plan display properties on the UI |
 | `test_coach_ui_state_contract.py` | Coach panel UI state transitions |
 
 Run command:

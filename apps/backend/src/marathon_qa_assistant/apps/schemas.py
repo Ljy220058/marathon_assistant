@@ -45,6 +45,54 @@ class QueryResponse(BaseModel):
     workflow_trace: Dict[str, Any] = Field(default_factory=dict)
     workflow_pause: Dict[str, Any] = Field(default_factory=dict)
     evidence_chain: Dict[str, Any] = Field(default_factory=dict)
+    daily_expert_pack: Optional["DailyExpertResponse"] = None
+
+
+# -------- DailyExpertPack response models (mode=team only) --------------------
+
+class NutritionistDayCard(BaseModel):
+    post_workout_recovery: str = ""
+    pre_workout_fuel: str = ""
+    hydration_plan: str = ""
+    supplement_timing: str = ""
+    daily_nutrition_notes: str = ""
+
+
+class RehabDayCard(BaseModel):
+    injury_status: str = "none"
+    risk_level: str = "low"
+    rehab_movements: List[str] = Field(default_factory=list)
+    recovery_advice: str = ""
+    should_modify_training: bool = False
+    modification_suggestion: str = ""
+
+
+class ConditioningDayCard(BaseModel):
+    session_design: str = ""
+    strength_work: str = ""
+    load_recommendation: str = ""
+    periodization_note: str = ""
+    training_emphasis: str = ""
+
+
+class PsychologistDayCard(BaseModel):
+    motivation_state: str = ""
+    mental_challenge: str = ""
+    mental_tips: str = ""
+    goal_alignment: str = ""
+    coping_strategy: str = ""
+
+
+class DailyExpertResponse(BaseModel):
+    nutritionist: Optional[NutritionistDayCard] = None
+    rehab: Optional[RehabDayCard] = None
+    conditioning: Optional[ConditioningDayCard] = None
+    psychologist: Optional[PsychologistDayCard] = None
+    generated_at: str = ""
+    session_context: str = ""
+
+
+QueryResponse.model_rebuild()
 
 
 class ProfileRequest(BaseModel):

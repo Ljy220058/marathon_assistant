@@ -642,6 +642,10 @@ def _detect_missing_fields(state: IntegratedState, profile: Dict[str, Any]) -> L
 
     if missing and query_has_goal and query_has_pace:
         missing = []
+    elif missing and intent == "plan" and query_has_goal and "可训练日" in query:
+        # 计划模式：查询中已明确目标和可训练日，可训练日由前端 query builder 注入，
+        # 视为信息充足，放行 planner。lthr/vo2max/t_pace 等高级指标 planner 会用默认值。
+        missing = []
 
     return missing
 

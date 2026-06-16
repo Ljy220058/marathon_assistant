@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>历史记录</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>历史记录</span>
+          </div>
+        </div>
+      </header>
+      <section class="journal-layout">
+        <aside class="journal-sidebar">
+          <nav class="journal-nav">
+            <a href="./ink-home.html">训练计划</a>
+            <a href="./ink-profile.html">我的情况</a>
+            <a href="./ink-dialog.html">智能对话</a>
+            <a href="./ink-basis.html">训练复盘</a>
+            <a class="is-active" href="./ink-history.html">历史记录</a>
+          </nav>
+        </aside>
+        <section class="journal-main">
+          <article class="journal-card journal-card-pad">
+            <div class="journal-section-head">
+              <div>
+                <p class="journal-section-kicker">版本历史</p>
+                <h2>计划版本</h2>
+              </div>
+              <a class="journal-btn" href="./ink-week-setup.html">重新生成</a>
+            </div>
+            <div class="journal-list" data-version-list style="margin-top: 16px;">
+              <article class="journal-tile journal-version-card is-active">
+                <span>2026-06-16 08:00</span>
+                <strong>第 1 版</strong>
+                <div class="journal-footnote">基础生成</div>
+              </article>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <nav class="journal-bottom-tabs" aria-label="底部导航">
+        <a href="./ink-home.html">今天</a>
+        <a href="./ink-calendar.html">日历</a>
+        <a href="./ink-dialog.html">对话</a>
+        <a class="is-active" href="./ink-profile.html">我的</a>
+      </nav>
+    </main>
+  </body>
+</html>

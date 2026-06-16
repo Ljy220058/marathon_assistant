@@ -1,4 +1,4 @@
-"""Repository hygiene checks for the marathon assistant monorepo."""
+﻿"""Repository hygiene checks for the marathon assistant monorepo."""
 
 from __future__ import annotations
 
@@ -41,8 +41,6 @@ OLD_PATH_PATTERNS = (
     "frontend/node_modules",
     # Old upload/docs root dirs (migrated to data/uploads/, data/domain_docs/).
     "uploaded_docs",
-    # Old Chainlit runtime dir (migrated to archive/legacy_chainlit/).
-    ".chainlit",
 )
 
 ROOT_ALLOWLIST = {

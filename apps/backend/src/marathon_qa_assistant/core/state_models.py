@@ -1012,6 +1012,55 @@ class EntityList(BaseModel):
     entities: List[str] = Field(description="核心实体名词列表")
 
 
+# -------- DailyExpertPack: mode=team 专属结构化专家当日输出 --------------------
+
+class NutritionistDay(TypedDict, total=False):
+    """营养师当日输出：强度后补充建议、运动前能量、补水、时机。"""
+    post_workout_recovery: str        # 强度后蛋白质+碳水补充（蛋白质窗口、碳水比例、恢复餐）
+    pre_workout_fuel: str             # 运动前能量准备（碳水时机、食物选择）
+    hydration_plan: str               # 补水计划（量、时机、电解质策略）
+    supplement_timing: str            # 营养补充时机（运动中 / 运动后 30 分钟内）
+    daily_nutrition_notes: str        # 当日营养要点摘要
+
+
+class RehabDay(TypedDict, total=False):
+    """康复师当日输出：伤病评估、康复动作列表、恢复建议。"""
+    injury_status: str                # 伤病状态 none / watch / active
+    risk_level: str                   # 风险级别 low / medium / high
+    rehab_movements: List[str]        # 康复动作列表（具体动作名称）
+    recovery_advice: str              # 恢复建议（冰敷/热敷、拉伸、睡眠）
+    should_modify_training: bool      # 是否需要调整今日训练
+    modification_suggestion: str      # 具体调整建议（如：降速、缩短距离）
+
+
+class ConditioningDay(TypedDict, total=False):
+    """体能师当日输出：具体课表、力量补充、负荷建议。"""
+    session_design: str               # 具体课表（热身 + 主课 + 整理，含时长和强度）
+    strength_work: str                # 力量补充训练（核心、髋稳定、单腿力量等）
+    load_recommendation: str          # 负荷建议（目标配速 / 心率区间 / RPE）
+    periodization_note: str           # 周期化备注（当前阶段目标和下周过渡）
+    training_emphasis: str            # 今日训练重点
+
+
+class PsychologistDay(TypedDict, total=False):
+    """心理师当日输出：状态评估、心理调节建议。"""
+    motivation_state: str             # 当前状态评估
+    mental_challenge: str             # 今日潜在心理挑战
+    mental_tips: str                  # 具体可操作的心理调节技巧
+    goal_alignment: str               # 与长期目标的连接提示
+    coping_strategy: str              # 遇到困难时的应对策略
+
+
+class DailyExpertPack(TypedDict, total=False):
+    """mode=team 专属：四位专家的当日结构化输出聚合。仅在 mode=team 时填充。"""
+    nutritionist: NutritionistDay
+    rehab: RehabDay
+    conditioning: ConditioningDay
+    psychologist: PsychologistDay
+    generated_at: str                 # ISO 时间戳
+    session_context: str              # 当日运动上下文摘要（运动类型、强度、持续时间）
+
+
 class IntegratedState(TypedDict):
     query: str
     mode: str
@@ -1080,6 +1129,7 @@ class IntegratedState(TypedDict):
     psychologist_done: bool
     needs_psychology_review: bool
     framework: Optional[str]  # 预留：教练/训练框架选择（如 "Daniels"/"Hansen"/"80_20"），多框架对比功能的扩展点，None=现有默认逻辑
+    daily_expert_pack: Optional[DailyExpertPack]  # mode=team 专属：四专家当日结构化输出
 
 
 WorkingState = IntegratedState

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>训练计划</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>训练计划</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <a class="journal-pill is-success" href="./ink-feedback.html">✓ 今日反馈</a>
+        </div>
+      </header>
+
+      <section class="journal-hero">
+        <h1>今天训练</h1>
+      </section>
+
+      <section class="journal-layout">
+        <aside class="journal-sidebar">
+          <nav class="journal-nav">
+            <a class="is-active" href="./ink-home.html">训练计划</a>
+            <a href="./ink-profile.html">我的情况</a>
+            <a href="./ink-dialog.html">智能对话</a>
+            <a href="./ink-basis.html">训练复盘</a>
+            <a href="./ink-history.html">历史记录</a>
+          </nav>
+        </aside>
+
+        <section class="journal-main">
+          <article class="journal-card journal-card-pad journal-today-card" data-home-today>
+            <div class="journal-today-top">
+              <div class="journal-today-title">
+                <p class="journal-section-kicker">周二 · 6 月 16 日</p>
+                <h2>轻松跑 40 分钟</h2>
+                <div class="journal-inline-note" data-home-version></div>
+              </div>
+              <a class="journal-btn primary" href="./ink-feedback.html">✓ 标记完成</a>
+            </div>
+            <div class="journal-workout-meta">
+              <span class="journal-badge">心率区间 2</span>
+              <span class="journal-badge">配速 6'48" - 7'10"/km</span>
+            </div>
+            <a class="journal-callout" href="./ink-day.html">
+              <strong>为什么</strong>
+              本周第 2 个轻松日，巩固有氧基础。
+            </a>
+            <a class="journal-risk-line" href="./ink-profile.html">
+              膝部轻度紧张，强度已下调。
+            </a>
+            <div class="journal-action-row">
+              <a class="journal-btn" href="./ink-calendar.html">查看完整日历</a>
+              <a class="journal-btn" href="./ink-dialog.html">问 AI 教练</a>
+            </div>
+          </article>
+
+          <article class="journal-card journal-card-pad" data-home-progress>
+            <div class="journal-section-head">
+              <div>
+                <p class="journal-section-kicker">本周进度</p>
+                <h2>再练一次就满了</h2>
+              </div>
+              <div class="journal-progress-dots" aria-label="本周进度 2 / 3 次训练">
+                <span class="journal-progress-dot is-done"></span>
+                <span class="journal-progress-dot is-done"></span>
+                <span class="journal-progress-dot is-current"></span>
+              </div>
+            </div>
+            <div class="journal-action-row">
+              <span class="journal-badge">2 / 3 次训练</span>
+              <a class="journal-btn" href="./ink-feedback.html">今日反馈</a>
+            </div>
+          </article>
+
+          <article class="journal-card journal-card-pad" data-home-empty hidden>
+            <div class="journal-empty">
+              <strong>还没有训练计划</strong>
+              <span>填写我的情况后生成。</span>
+              <a class="journal-btn primary" href="./ink-week-setup.html">生成训练计划</a>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <nav class="journal-bottom-tabs" aria-label="底部导航">
+        <a class="is-active" href="./ink-home.html">今天</a>
+        <a href="./ink-calendar.html">日历</a>
+        <a href="./ink-dialog.html">对话</a>
+        <a href="./ink-profile.html">我的</a>
+      </nav>
+    </main>
+  </body>
+</html>

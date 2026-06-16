@@ -1,0 +1,47 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="本周设置" subtitle="本周设置" activeTab="calendar">
+  <a slot="toolbar" class="journal-pill is-action" href="/calendar">返回日历</a>
+  <Fragment slot="hero">
+    <section class="journal-hero">
+      <h1>本周设置</h1>
+      <p>这一周可以单独改，不影响长期画像。</p>
+    </section>
+  </Fragment>
+
+  <section class="journal-card journal-card-pad">
+    <form id="weekSetupForm" class="journal-form-grid">
+      <label class="journal-field is-full">
+        <span>本周目标</span>
+        <input class="journal-input" name="weekGoal" type="text" placeholder="如：稳定完成三次训练" />
+      </label>
+      <label class="journal-field is-full">
+        <span>可训练日</span>
+        <div class="journal-check-grid">
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周一" />周一</label>
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周二" />周二</label>
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周三" />周三</label>
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周四" />周四</label>
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周五" />周五</label>
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周六" />周六</label>
+          <label class="journal-check"><input type="checkbox" name="availableDays" value="周日" />周日</label>
+        </div>
+      </label>
+      <label class="journal-field is-full">
+        <span>备注</span>
+        <textarea class="journal-textarea" name="note"></textarea>
+      </label>
+      <div class="journal-action-row end is-full">
+        <a class="journal-btn" href="/calendar">取消</a>
+        <button class="journal-btn primary" type="submit">生成本周计划</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="journal-card journal-card-pad" data-plan-node-progress hidden style="margin-top:12px;">
+    <p class="journal-section-kicker" style="margin-bottom:10px;">AI 正在生成训练计划</p>
+    <div class="journal-node-track" data-plan-node-track></div>
+  </section>
+</JournalLayout>

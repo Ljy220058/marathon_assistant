@@ -4,8 +4,8 @@
 
 (function () {
   const LOCAL_API_BASE = "http://127.0.0.1:8000";
-  const FULL_QUERY_TIMEOUT_SEC = 120;
-  const FULL_QUERY_TIMEOUT_MS = 120000;
+  const FULL_QUERY_TIMEOUT_SEC = 180;
+  const FULL_QUERY_TIMEOUT_MS = 180000;
   const CONFIGURED_API_BASE = String(
     window.MARATHON_API_BASE || document.body?.dataset?.apiBase || ""
   ).trim().replace(/\/$/, "");
@@ -19,10 +19,17 @@
   }
 
   function _getApiAuthHeaders() {
-    const tokenInput = document.getElementById("apiToken");
-    const token = String(
-      (typeof state !== "undefined" && state.apiToken) || tokenInput?.value || ""
-    ).trim();
+    // 优先读登录后存储的 token（journal-ink-auth-v1）
+    let token = "";
+    try {
+      const stored = JSON.parse(localStorage.getItem("journal-ink-auth-v1") || "null");
+      token = (stored && stored.token) ? String(stored.token).trim() : "";
+    } catch {}
+    // 向后兼容：从 state 或页面 input 读取
+    if (!token) {
+      const tokenInput = document.getElementById("apiToken");
+      token = String((typeof state !== "undefined" && state.apiToken) || tokenInput?.value || "").trim();
+    }
     return token ? { "X-Marathon-API-Key": token } : {};
   }
 
@@ -218,13 +225,14 @@
 
   // 流式查询：fetch + ReadableStream 解析 SSE，边推节点进度边等最终结果。
   // 返回值与 requestQueryPayload 兼容（完整 response payload），供 renderQueryPayload 直接消费。
-  async function streamQueryPayload(query, { responseMode = "full", controller, onNode } = {}) {
+  async function streamQueryPayload(query, { responseMode = "full", controller, onNode, mode } = {}) {
     const base = _getApiBase().replace(/\/$/, "");
     const timeoutSec = resolveQueryTimeout(responseMode, false);
+    const body = { ...buildQueryPayload(query, responseMode, timeoutSec), ...(mode ? { mode } : {}) };
     const response = await fetch(`${base}/query/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ..._getApiAuthHeaders() },
-      body: JSON.stringify(buildQueryPayload(query, responseMode, timeoutSec)),
+      body: JSON.stringify(body),
       signal: controller ? controller.signal : undefined,
     });
     if (!response.ok || !response.body) {

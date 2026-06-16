@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>方案 A / 单任务首屏</title>
+    <link rel="stylesheet" href="./demos.css" />
+  </head>
+  <body>
+    <div class="demo-layout">
+      <main class="shell">
+        <header class="topbar">
+          <div class="brand">
+            <span class="brand-mark">M</span>
+            <span>马拉松助手</span>
+          </div>
+          <div class="status">当前无法连接训练服务</div>
+        </header>
+
+        <section class="hero">
+          <h1>先得到训练日历，再决定今天怎么练。</h1>
+          <p>页面只保留一个主任务。先填写你的训练目标、可训练日和单次上限，然后生成计划。</p>
+        </section>
+
+        <section class="grid-two">
+          <article class="panel panel-pad">
+            <h3>生成训练日历</h3>
+            <p class="meta">默认只显示生成计划所需的必填信息，高级训练指标后置。</p>
+            <div class="badge-row" style="margin: 14px 0 18px;">
+              <span class="badge">目标</span>
+              <span class="badge">训练水平</span>
+              <span class="badge">比赛日期</span>
+              <span class="badge">可训练日</span>
+              <span class="badge">单次上限</span>
+              <span class="badge">伤病限制</span>
+            </div>
+            <div class="button-row">
+              <a class="btn primary" href="#">生成训练日历</a>
+              <a class="btn" href="#">编辑我的情况</a>
+            </div>
+          </article>
+
+          <aside class="panel panel-pad">
+            <h3>当前状态</h3>
+            <div class="list">
+              <div class="item">
+                <strong>还没有计划</strong>
+                <span class="meta">先补全画像，再点击生成。</span>
+              </div>
+              <div class="item">
+                <strong>服务未连接</strong>
+                <span class="meta">可以先填写信息，连接恢复后再生成。</span>
+              </div>
+              <div class="item">
+                <strong>智能对话</strong>
+                <span class="meta">下沉到次级入口，不与主任务同权。</span>
+              </div>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

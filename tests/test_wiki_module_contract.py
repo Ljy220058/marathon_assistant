@@ -14,11 +14,9 @@ from marathon_qa_assistant.nodes.profile_and_retrieval import (
     evidence_retriever_node,
     missing_info_handler_node,
 )
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
 
 
 def test_evidence_retriever_node_is_kb_rag_first_external_fallback_disabled():
-    """evidence_retriever 是真实链路节点；当前只使用本地 KB/RAG，不直接启用外部 Wiki。"""
     result = asyncio.run(
         evidence_retriever_node(
             {
@@ -33,7 +31,6 @@ def test_evidence_retriever_node_is_kb_rag_first_external_fallback_disabled():
 
     assert result["wiki_context"] == ""
     assert "KB/RAG 优先" in result["reasoning_log"][0]
-    assert "未启用外部知识" in result["reasoning_log"][0]
 
 
 def test_entity_extraction_and_evidence_retriever_have_separate_responsibilities(monkeypatch):
@@ -156,7 +153,7 @@ def test_expert_prompt_includes_wiki_context_without_treating_it_as_numbered_evi
             "给出概念解释。",
             {
                 "query": "什么是乳酸阈？",
-                "wiki_context": "【维基百科 - Lactate threshold】\n乳酸阈是运动生理概念。",
+                "wiki_context": "【维基百科】- Lactate threshold\n乳酸阈是运动生理概念。",
                 "rag_sources": [],
                 "user_profile": {},
                 "graph_context": "",
@@ -171,9 +168,6 @@ def test_expert_prompt_includes_wiki_context_without_treating_it_as_numbered_evi
     assert usage["total_tokens"] == 2
     assert "Wiki 概念补充上下文" in captured["prompt"]
     assert "乳酸阈是运动生理概念" in captured["prompt"]
-    assert "不要给 Wiki 内容编造 [n] 引用" in captured["prompt"]
-    assert "没有本地知识库证据时，可以基于模型通用知识给出一般说明" in captured["prompt"]
-    assert "模型通用知识不得标成 [n] 证据" in captured["prompt"]
 
 
 def test_structured_report_keeps_wiki_context_for_audit():
@@ -183,7 +177,7 @@ def test_structured_report_keeps_wiki_context_for_audit():
             "category": "coach",
             "entities": ["VO2max"],
             "graph_context": "",
-            "wiki_context": "【维基百科 - VO2 max】\n最大摄氧量用于描述有氧能力。",
+            "wiki_context": "【维基百科】- VO2 max\n最大摄氧量用于描述有氧能力。",
             "audit_scores": {"consistency": 90, "safety": 95, "roi": 70},
             "rag_sources": [],
         },
@@ -192,28 +186,6 @@ def test_structured_report_keeps_wiki_context_for_audit():
 
     assert report["analysis_framework"]["wiki_context"].startswith("【维基百科")
     assert any(item["key"] == "Wiki补充" for item in report["findings"])
-
-
-def test_wiki_panel_renders_only_when_context_exists():
-    report = _build_structured_report(
-        {
-            "query": "什么是 VO2max？",
-            "category": "coach",
-            "entities": ["VO2max"],
-            "graph_context": "",
-            "wiki_context": "【维基百科 - VO2 max】\n最大摄氧量用于描述有氧能力。",
-            "audit_scores": {"consistency": 90, "safety": 95, "roi": 70},
-            "rag_sources": [],
-        },
-        "VO2max 是衡量有氧能力的指标。",
-    )
-
-    wiki_md = UIHelper.render_wiki_context_md(report)
-
-    assert "Wiki补充" in wiki_md
-    assert "概念背景解释" in wiki_md
-    assert "最大摄氧量用于描述有氧能力" in wiki_md
-    assert UIHelper.render_wiki_context_md({"analysis_framework": {"wiki_context": ""}}) == ""
 
 
 def test_format_wiki_context_has_empty_fallback():

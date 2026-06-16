@@ -1,0 +1,73 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>临时事件</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>临时事件</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <a class="journal-pill is-action" href="./ink-calendar.html">返回日历</a>
+        </div>
+      </header>
+
+      <section class="journal-hero">
+        <h1>临时事件</h1>
+        <p>比赛、出差、请假、发烧都从这里插入。</p>
+      </section>
+
+      <section class="journal-split">
+        <article class="journal-card journal-card-pad">
+          <form id="eventForm" class="journal-form-grid">
+            <label class="journal-field">
+              <span>事件类型</span>
+              <input class="journal-input" name="eventType" type="text" value="比赛" />
+            </label>
+            <label class="journal-field">
+              <span>日期</span>
+              <input class="journal-input" name="eventDate" type="date" />
+            </label>
+            <label class="journal-field is-full">
+              <span>事件名称</span>
+              <input class="journal-input" name="eventTitle" type="text" placeholder="城市 10K / 出差 / 请假" />
+            </label>
+            <label class="journal-field is-full">
+              <span>替换哪次训练</span>
+              <input class="journal-input" name="eventReplace" type="text" placeholder="长跑 55 分钟" />
+            </label>
+            <label class="journal-field is-full">
+              <span>说明</span>
+              <textarea class="journal-textarea" name="eventNote" placeholder="原训练顺延到下周一"></textarea>
+            </label>
+            <div class="journal-action-row end is-full">
+              <a class="journal-btn" href="./ink-calendar.html">取消</a>
+              <button class="journal-btn primary" type="submit">插入并重排</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="journal-card journal-card-pad">
+          <div class="journal-section-head">
+            <div>
+              <p class="journal-section-kicker">当前事件</p>
+              <h2>已插入的临时事件</h2>
+            </div>
+            <span class="journal-badge is-action">会影响本周版本</span>
+          </div>
+          <div class="journal-list" data-event-list></div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

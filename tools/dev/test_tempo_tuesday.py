@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 from pathlib import Path
 
 def _find_project_root() -> Path:
@@ -20,7 +20,7 @@ from marathon_qa_assistant.services.workout_template_retriever import (
     build_daily_workout_template_card_from_hits,
     normalize_workout_type_for_template,
 )
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
+from marathon_qa_assistant.ui.report_ui import UIHelper
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
 
 def main():
@@ -151,7 +151,7 @@ cooldown：10分钟慢跑+静态拉伸
     print("=" * 60)
     print()
 
-    # ============ 确认关键内容 ============ 
+    # ============ 确认关键内容 ============
     assert "周二｜节奏跑训练课" in rendered, "标题缺失"
     assert "节奏跑（乳酸阈值训练）" in rendered, "训练类型标签缺失"
     assert "Z4" in rendered, "强度目标缺失"

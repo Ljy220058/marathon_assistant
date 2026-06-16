@@ -7,6 +7,7 @@ extracted from api_app.py so that the API layer stays focused on HTTP routing.
 
 import asyncio
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -32,7 +33,15 @@ from marathon_qa_assistant.services.kb.evidence_chain import build_evidence_chai
 from marathon_qa_assistant.services.knowledge_graph import graph_runtime_health
 from marathon_qa_assistant.services.training_plan_review import build_training_plan_review
 
-from marathon_qa_assistant.apps.schemas import QueryRequest, QueryResponse
+from marathon_qa_assistant.apps.schemas import (
+    QueryRequest,
+    QueryResponse,
+    DailyExpertResponse,
+    NutritionistDayCard,
+    RehabDayCard,
+    ConditioningDayCard,
+    PsychologistDayCard,
+)
 from marathon_qa_assistant.nodes.expert_nodes import QA_REPORT_REQUIRED_SECTIONS
 
 
@@ -49,6 +58,11 @@ MEDICAL_DISCLAIMER = (
 
 
 def _normalize_provider(provider: str) -> str:
+    # dev 模式强制 DeepSeek：本地 ollama 推理慢（每次 18-28s × 多轮审计迭代）会导致
+    # 计划生成 504 超时（120s）。开发时统一走云端 DeepSeek（快 3-5×）。
+    # 设 MARATHON_DEV_FORCE_DEEPSEEK=1 启用（仅 dev_start.sh 使用，不影响生产）。
+    if os.environ.get("MARATHON_DEV_FORCE_DEEPSEEK") == "1":
+        return "ds"
     normalized = str(provider or "ds").strip().lower()
     if normalized in {"ds", "deepseek"}:
         return "ds"
@@ -856,6 +870,26 @@ def _query_response_from_state(
     )
     ui_policy = _build_ui_policy(str(answer_card.get("ui_render_mode") or "qa_card"))
 
+    # 提取 daily_expert_pack（mode=team 专属）
+    daily_expert_pack_response: Optional[DailyExpertResponse] = None
+    raw_pack = result.get("daily_expert_pack")
+    if isinstance(raw_pack, dict):
+        try:
+            nutritionist_raw = raw_pack.get("nutritionist")
+            rehab_raw = raw_pack.get("rehab")
+            conditioning_raw = raw_pack.get("conditioning")
+            psychologist_raw = raw_pack.get("psychologist")
+            daily_expert_pack_response = DailyExpertResponse(
+                nutritionist=NutritionistDayCard(**nutritionist_raw) if isinstance(nutritionist_raw, dict) else None,
+                rehab=RehabDayCard(**rehab_raw) if isinstance(rehab_raw, dict) else None,
+                conditioning=ConditioningDayCard(**conditioning_raw) if isinstance(conditioning_raw, dict) else None,
+                psychologist=PsychologistDayCard(**psychologist_raw) if isinstance(psychologist_raw, dict) else None,
+                generated_at=str(raw_pack.get("generated_at") or ""),
+                session_context=str(raw_pack.get("session_context") or ""),
+            )
+        except Exception:
+            daily_expert_pack_response = None
+
     response = QueryResponse(
         report=report,
         medical_disclaimer=MEDICAL_DISCLAIMER,
@@ -886,6 +920,7 @@ def _query_response_from_state(
         workflow_trace=workflow_trace,
         workflow_pause=result.get("workflow_pause") if isinstance(result.get("workflow_pause"), dict) else {},
         evidence_chain=evidence_chain,
+        daily_expert_pack=daily_expert_pack_response,
     )
     record_generation_status(generation_status)
     return response

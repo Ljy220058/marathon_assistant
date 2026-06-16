@@ -1,0 +1,22 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="历史记录" subtitle="历史记录" activeTab="profile" showSidebar={true} sidebarActive="history">
+  <article class="journal-card journal-card-pad">
+    <div class="journal-section-head">
+      <div>
+        <p class="journal-section-kicker">版本历史</p>
+        <h2>计划版本</h2>
+      </div>
+      <a class="journal-btn" href="/week-setup">重新生成</a>
+    </div>
+    <div class="journal-list" data-version-list style="margin-top: 16px;">
+      <article class="journal-tile journal-version-card is-active">
+        <span>2026-06-16 08:00</span>
+        <strong>第 1 版</strong>
+        <div class="journal-footnote">基础生成</div>
+      </article>
+    </div>
+  </article>
+</JournalLayout>

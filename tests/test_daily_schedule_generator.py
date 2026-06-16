@@ -1,4 +1,4 @@
-from marathon_qa_assistant.services.workout_template_retriever import (
+﻿from marathon_qa_assistant.services.workout_template_retriever import (
     WORKOUT_TEMPLATE_REGISTRY,
     ZONE_LABELS,
     ZONE_LABELS_DETAIL,
@@ -21,7 +21,7 @@ from marathon_qa_assistant.services.daily_schedule_generator import (
     _normalize_main_set_candidates,
 )
 from marathon_qa_assistant.nodes.output_nodes import _build_structured_report
-from marathon_qa_assistant.ui.legacy_ui import UIHelper
+from marathon_qa_assistant.ui.report_ui import UIHelper
 
 
 # ==================== Z1-Z9 强度术语测试 ====================

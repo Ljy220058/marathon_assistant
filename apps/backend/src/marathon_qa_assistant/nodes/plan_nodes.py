@@ -1,7 +1,10 @@
 from datetime import date, timedelta
 from typing import Any, Dict, List
 import asyncio
+import logging
 import re
+
+_logger = logging.getLogger("workflow_engine")
 
 try:
     from langchain_core.runnables import RunnableConfig
@@ -216,8 +219,12 @@ def _resolve_weeks_source_label(source: str) -> str:
 
 
 def _build_plan_prompt(state: IntegratedState) -> str:
-    plan_context = align_plan_duration_context(state.get("query", ""), state.get("user_profile", {}))
-    profile = plan_context["aligned_profile"]
+    from marathon_qa_assistant.core.training_plan_context import merge_plan_profile_overrides
+    query = state.get("query", "")
+    plan_context = align_plan_duration_context(query, state.get("user_profile", {}))
+    # 用 query 中显式提到的目标、PB、周跑量等覆盖 DB 中可能过时的字段，
+    # 确保配速区间推导基于本次请求语境而非历史画像。
+    profile = merge_plan_profile_overrides(query, plan_context["aligned_profile"])
 
     # Step 2: 构建文献约束表上下文 (替代硬编码分钟值)
     try:
@@ -250,6 +257,10 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 
     pace_table = "\n".join(pace_table_lines) if pace_table_lines else "（无可用配速数据，请根据用户描述推导）"
 
+    pb_half = profile.get('pb_half') or profile.get('current_half_time') or '未设置'
+    pb_full = profile.get('pb_full') or '未设置'
+    target_half = profile.get('target_half_time') or '未设置'
+
     prompt = f"""你是马拉松训练计划教练。{PLAN_COACH_IDENTITY}
 你必须先按给定训练周期理解当前阶段，再生成严谨、结构完整的训练计划输出。
 
@@ -260,6 +271,9 @@ def _build_plan_prompt(state: IntegratedState) -> str:
 ══════════════════════════
 【运动员画像】
 - 目标：{profile.get('goal', '未设置')}
+- 半马 PB（当前成绩）：{pb_half}
+- 半马目标成绩：{target_half}
+- 全马 PB：{pb_full}
 - 当前周跑量：{profile.get('weekly_mileage', 0)} km
 - T-Pace（乳酸阈配速）：{profile.get('t_pace', '') or '未设置'}
 - 经验水平：{profile.get('experience_level', '未知')}
@@ -405,7 +419,9 @@ def _build_plan_subtasks(state: IntegratedState) -> List[Dict[str, Any]]:
 
 async def planner_node(state: IntegratedState, config: RunnableConfig) -> dict:
     del config
-    if state.get("missing_fields"):
+    missing = state.get("missing_fields") or []
+    _logger.info("[planner] missing_fields=%s", missing)
+    if missing:
         return {
             "subtasks": [],
             "token_usage": ensure_usage(state.get("token_usage")),
@@ -502,6 +518,7 @@ def _static_executor_fallback(state: IntegratedState, profile: dict, evidence_li
 
 async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
     subtasks = state.get("subtasks", [])
+    _logger.info("[executor] start: subtask_count=%d", len(subtasks) if subtasks else 0)
     if not subtasks:
         return {
             "draft_plan": "",
@@ -578,6 +595,12 @@ async def executor_node(state: IntegratedState, config: RunnableConfig) -> dict:
             if needs_nutrition:
                 break
 
+    _logger.info(
+        "[executor] skeleton result: type=%s has_week_plans=%s week_count=%s",
+        type(structured_training_plan).__name__,
+        bool(isinstance(structured_training_plan, dict) and structured_training_plan.get("week_plans")),
+        len((structured_training_plan or {}).get("week_plans") or []) if isinstance(structured_training_plan, dict) else 0,
+    )
     return {
         "draft_plan": content,
         "draft_ready": True,

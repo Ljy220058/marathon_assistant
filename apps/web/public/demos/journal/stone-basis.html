@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>C1 / Stone Quiet / 训练复盘</title>
+    <link rel="stylesheet" href="./journal.css" />
+  </head>
+  <body class="theme-stone">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>Stone Quiet / 训练复盘</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <a class="journal-pill" href="./stone-day.html">返回当天详情</a>
+        </div>
+      </header>
+
+      <section class="journal-layout">
+        <aside class="journal-sidebar">
+          <p class="journal-sidebar-title">工作视图</p>
+          <nav class="journal-nav">
+            <a href="./stone-home.html">训练计划</a>
+            <a href="./stone-profile.html">我的情况</a>
+            <a href="./stone-dialog.html">智能对话</a>
+            <a class="is-active" href="./stone-basis.html">训练复盘</a>
+            <a href="./stone-history.html">历史记录</a>
+          </nav>
+        </aside>
+
+        <section class="journal-main">
+          <article class="journal-card journal-card-pad">
+            <div class="journal-section-head">
+              <div>
+                <p class="journal-section-kicker">最近 7 天</p>
+                <h2>训练复盘</h2>
+              </div>
+              <span class="journal-pill">负荷趋势稳定</span>
+            </div>
+
+            <div class="journal-metric-strip">
+              <div class="journal-stat-card"><span>本周跑量</span><strong>21.4 km</strong></div>
+              <div class="journal-stat-card"><span>完成率</span><strong>82%</strong></div>
+              <div class="journal-stat-card"><span>平均疲劳</span><strong>中等</strong></div>
+              <div class="journal-stat-card"><span>关键课完成</span><strong>2 / 3</strong></div>
+            </div>
+
+            <div class="journal-grid-2" style="margin-top: 18px;">
+              <div class="journal-chart-card">
+                <h3>训练负荷趋势</h3>
+                <p class="journal-subtitle">用折线和柱状组合看最近 7 天的负荷变化。</p>
+                <svg class="journal-chart-svg" viewBox="0 0 420 220" aria-label="训练负荷图表">
+                  <line x1="40" y1="182" x2="390" y2="182" stroke="#c7bdaa" stroke-width="1" />
+                  <line x1="40" y1="42" x2="40" y2="182" stroke="#c7bdaa" stroke-width="1" />
+                  <g fill="#d7cabb">
+                    <rect x="58" y="132" width="28" height="50" rx="6"></rect>
+                    <rect x="108" y="118" width="28" height="64" rx="6"></rect>
+                    <rect x="158" y="92" width="28" height="90" rx="6"></rect>
+                    <rect x="208" y="78" width="28" height="104" rx="6"></rect>
+                    <rect x="258" y="98" width="28" height="84" rx="6"></rect>
+                    <rect x="308" y="68" width="28" height="114" rx="6"></rect>
+                    <rect x="358" y="108" width="28" height="74" rx="6"></rect>
+                  </g>
+                  <polyline fill="none" stroke="#39566d" stroke-width="3" points="72,124 122,112 172,88 222,80 272,94 322,66 372,104"></polyline>
+                  <g fill="#39566d">
+                    <circle cx="72" cy="124" r="4"></circle>
+                    <circle cx="122" cy="112" r="4"></circle>
+                    <circle cx="172" cy="88" r="4"></circle>
+                    <circle cx="222" cy="80" r="4"></circle>
+                    <circle cx="272" cy="94" r="4"></circle>
+                    <circle cx="322" cy="66" r="4"></circle>
+                    <circle cx="372" cy="104" r="4"></circle>
+                  </g>
+                </svg>
+                <div class="journal-chart-legend">
+                  <span>日负荷</span>
+                  <span>周峰值</span>
+                  <span>恢复窗口</span>
+                </div>
+              </div>
+
+              <div class="journal-stack">
+                <div class="journal-note-card">
+                  <span>本周结论</span>
+                  <strong>整体节奏稳定，但周六长跑后的恢复偏慢。</strong>
+                </div>
+                <div class="journal-note-card">
+                  <span>下一步建议</span>
+                  <strong>下周保留周二轻松跑，周四关键课不再上调。</strong>
+                </div>
+                <div class="journal-note-card">
+                  <span>风险观察</span>
+                  <strong>小腿紧张在周六后上升，建议继续记录跑后 12 小时状态。</strong>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

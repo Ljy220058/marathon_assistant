@@ -1,0 +1,88 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>编辑我的情况</title>
+    <link rel="stylesheet" href="./journal.css" />
+    <script defer src="./journal-app.js"></script>
+  </head>
+  <body class="theme-ink">
+    <main class="journal-shell">
+      <header class="journal-topbar">
+        <div class="journal-brand">
+          <div class="journal-brand-mark">M</div>
+          <div class="journal-brand-copy">
+            <strong>马拉松助手</strong>
+            <span>编辑我的情况</span>
+          </div>
+        </div>
+        <div class="journal-toolbar">
+          <a class="journal-pill is-action" href="./ink-profile.html">返回我的情况</a>
+        </div>
+      </header>
+
+      <section class="journal-hero">
+        <h1>编辑我的情况</h1>
+        <p>先改基础画像，再生成下一版计划。</p>
+      </section>
+
+      <section class="journal-card journal-card-pad">
+        <form id="profileEditorForm" class="journal-form-grid">
+          <label class="journal-field">
+            <span>目标</span>
+            <input class="journal-input" name="goal" type="text" />
+          </label>
+          <label class="journal-field">
+            <span>比赛日期</span>
+            <input class="journal-input" name="raceDate" type="date" />
+          </label>
+          <label class="journal-field">
+            <span>水平</span>
+            <select class="journal-input" name="level">
+              <option value="新手">新手</option>
+              <option value="进阶">进阶</option>
+              <option value="有比赛经验">有比赛经验</option>
+            </select>
+          </label>
+          <label class="journal-field">
+            <span>最长训练</span>
+            <input class="journal-input" name="longestRun" type="text" />
+          </label>
+          <label class="journal-field">
+            <span>最近配速</span>
+            <input class="journal-input" name="recentPace" type="text" />
+          </label>
+          <label class="journal-field">
+            <span>膝部状态</span>
+            <select class="journal-input" name="kneeStatus">
+              <option value="无不适">无不适</option>
+              <option value="轻度紧张">轻度紧张</option>
+              <option value="明显疼痛">明显疼痛</option>
+            </select>
+          </label>
+          <label class="journal-field is-full">
+            <span>训练日</span>
+            <div class="journal-check-grid">
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周一" />周一</label>
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周二" />周二</label>
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周三" />周三</label>
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周四" />周四</label>
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周五" />周五</label>
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周六" />周六</label>
+              <label class="journal-check"><input type="checkbox" name="trainingDays" value="周日" />周日</label>
+            </div>
+          </label>
+          <label class="journal-field is-full">
+            <span>备注</span>
+            <textarea class="journal-textarea" name="note"></textarea>
+          </label>
+          <div class="journal-action-row end is-full">
+            <a class="journal-btn" href="./ink-profile.html">取消</a>
+            <button class="journal-btn primary" type="submit">保存并生成下一版</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

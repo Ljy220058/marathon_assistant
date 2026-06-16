@@ -25,12 +25,18 @@ def _load_reranker() -> Any:
         return _RERANKER_INSTANCE
     try:
         from sentence_transformers import CrossEncoder
+        try:
+            import torch
+            _device = "cuda" if torch.cuda.is_available() else "cpu"
+        except Exception:
+            _device = "cpu"
 
         _RERANKER_INSTANCE = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
+            device=_device,
         )
         _RERANKER_AVAILABLE = True
-        logger.info("bge-reranker-v2-m3 (CrossEncoder) 加载成功")
+        logger.info("bge-reranker-v2-m3 (CrossEncoder) 加载成功，device=%s", _device)
     except Exception as exc:
         _RERANKER_INSTANCE = None
         _RERANKER_AVAILABLE = False

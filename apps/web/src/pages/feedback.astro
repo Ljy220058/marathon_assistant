@@ -1,0 +1,66 @@
+---
+import JournalLayout from "../layouts/JournalLayout.astro";
+---
+
+<JournalLayout title="今日反馈" subtitle="今日反馈" activeTab="today">
+  <a slot="toolbar" class="journal-pill is-action" href="/">返回主菜单</a>
+
+  <article class="journal-card journal-card-pad">
+    <h2>今日反馈</h2>
+    <p class="journal-inline-note" style="margin-top: 10px;">保存后会决定要不要重排下一版计划。</p>
+    <form id="feedbackForm" class="journal-feedback-grid" style="margin-top: 18px;">
+      <label class="journal-field">
+        <span>完成情况</span>
+        <div class="journal-radio-row">
+          <label class="journal-radio"><input type="radio" name="completion" value="未开始" />未开始</label>
+          <label class="journal-radio journal-status-ok"><input type="radio" name="completion" value="已完成" checked />已完成</label>
+          <label class="journal-radio"><input type="radio" name="completion" value="未完成" />未完成</label>
+        </div>
+      </label>
+      <label class="journal-field">
+        <span>疲劳程度</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input class="journal-range" name="fatigue" type="range" min="1" max="5" value="3" oninput="this.nextElementSibling.textContent=this.value" />
+          <output style="min-width:1.5em;text-align:center;font-weight:600;">3</output>
+        </div>
+      </label>
+      <label class="journal-field">
+        <span>身体不适部位（没有就不勾）</span>
+        <div class="journal-check-grid">
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="左膝" />左膝</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="右膝" />右膝</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="脚踝" />脚踝</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="腰背" />腰背</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="足底" />足底</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="小腿" />小腿</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="髋部" />髋部</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="大腿" />大腿</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="肩颈" />肩颈</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="跟腱" />跟腱</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="足弓" />足弓</label>
+          <label class="journal-check"><input type="checkbox" name="bodyParts" value="上臂" />上臂</label>
+        </div>
+      </label>
+      <label class="journal-field">
+        <span>实际完成量</span>
+        <input class="journal-input" name="actualVolume" type="text" placeholder="如：完成 4/6 组 · 用时 32 分钟 · 跑了 6km" />
+      </label>
+      <label class="journal-field">
+        <span>平均心率（选填，bpm）</span>
+        <input class="journal-input" name="avgHr" type="number" min="60" max="220" placeholder="如：158" />
+      </label>
+      <label class="journal-field">
+        <span>当时气温（选填，°C）</span>
+        <input class="journal-input" name="temperature" type="number" min="-10" max="50" placeholder="如：26" />
+      </label>
+      <label class="journal-field">
+        <span>备注</span>
+        <textarea class="journal-textarea" name="notes" placeholder="今天实际发生了什么"></textarea>
+      </label>
+      <div class="journal-action-row end">
+        <button class="journal-btn" type="submit" name="action" value="save">仅保存</button>
+        <button class="journal-btn primary" type="submit" name="action" value="analyze">保存并分析负荷</button>
+      </div>
+    </form>
+  </article>
+</JournalLayout>

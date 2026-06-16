@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>方案 E / 窄屏优先</title>
+    <link rel="stylesheet" href="./demos.css" />
+  </head>
+  <body>
+    <div class="demo-layout">
+      <main class="shell" style="max-width: 760px;">
+        <header class="topbar">
+          <div class="brand">
+            <span class="brand-mark">M</span>
+            <span>马拉松助手</span>
+          </div>
+          <div class="status">窄屏方案</div>
+        </header>
+
+        <section class="hero">
+          <h2>一屏内完成：看状态，填信息，点生成。</h2>
+          <p>这个方案专门针对你当前实机偏窄的形态，不依赖顶部菜单跳转。</p>
+        </section>
+
+        <section class="content-stack">
+          <article class="panel panel-pad">
+            <h3>我的情况摘要</h3>
+            <div class="badge-row">
+              <span class="badge">半马完赛</span>
+              <span class="badge">新手</span>
+              <span class="badge">周二 周四 周六</span>
+              <span class="badge">40 分钟</span>
+            </div>
+          </article>
+
+          <article class="panel panel-pad">
+            <h3>当前状态</h3>
+            <p class="meta">服务未连接。现在可以先补全信息，稍后再生成计划。</p>
+            <div class="button-row">
+              <a class="btn" href="#">编辑我的情况</a>
+              <a class="btn" href="#">使用示例计划</a>
+            </div>
+          </article>
+        </section>
+
+        <div class="sticky-footer">
+          <span class="meta">默认主任务</span>
+          <a class="btn primary" href="#">生成训练日历</a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

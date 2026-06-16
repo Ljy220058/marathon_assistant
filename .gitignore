@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+﻿# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -168,12 +168,8 @@ archive/local_caches/
 
 # Local dependencies and runtime caches
 lib/
-.chainlit/
 .files/
-apps/**/.chainlit/
 apps/**/.files/
-!archive/legacy_chainlit/
-!archive/legacy_chainlit/**
 
 # Frontend generated files
 frontend/

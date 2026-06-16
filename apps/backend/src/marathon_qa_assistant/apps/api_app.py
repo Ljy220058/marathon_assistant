@@ -22,6 +22,20 @@ BASE_DIR = current_file.parents[2]
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
+# 必须在 workflow/langgraph 之前加载 sentence_transformers：torch 2.12+cu126 与
+# workflow 链存在 native 符号冲突，若 workflow 先加载，后续 import sentence_transformers
+# 会触发 startup segfault（exit 139，faulthandler 定位到 base/sampler.py）。
+# 这里仅提前 import 库（不加载 568MB 模型），让 torch/sentence_transformers 的 native
+# 符号先于 langgraph 注册；模型仍在 reranker 首次调用时延迟加载（见 services/reranker.py）。
+try:
+    import torch  # noqa: F401
+    from sentence_transformers import CrossEncoder  # noqa: F401
+except Exception as _early_st_error:  # 加载失败不阻断启动，reranker 将降级为纯 FAISS 排序
+    import logging as _early_logging
+    _early_logging.getLogger("api_app").warning(
+        "提前加载 sentence_transformers 失败，reranker 将降级: %s", _early_st_error
+    )
+
 from marathon_qa_assistant.core.settings import get_settings, load_project_dotenv
 
 load_project_dotenv()
@@ -115,7 +129,7 @@ app.add_middleware(RequestIDMiddleware)
 
 _RATE_LIMIT_BUCKETS: Dict[Tuple[str, str, str], List[float]] = {}
 _RATE_LIMITED_PREFIXES = ("/query", "/feedback", "/training-calendar", "/plans", "/profile")
-_PUBLIC_API_PREFIXES = ("/health", "/zone-reference", "/evidence-tier-reference", "/llm-options", "/docs", "/openapi.json")
+_PUBLIC_API_PREFIXES = ("/health", "/zone-reference", "/evidence-tier-reference", "/llm-options", "/docs", "/openapi.json", "/auth/send-code", "/auth/verify", "/auth/login")
 
 
 def _rate_limit_per_minute() -> int:
@@ -713,6 +727,7 @@ from marathon_qa_assistant.apps.routers.plans import router as plans_router
 from marathon_qa_assistant.apps.routers.profile import router as profile_router
 from marathon_qa_assistant.apps.routers.reference import router as reference_router, get_evidence_tier_reference
 from marathon_qa_assistant.apps.routers.data_rights import router as data_rights_router
+from marathon_qa_assistant.apps.routers.auth import router as auth_router
 
 app.include_router(query_router)
 app.include_router(feedback_router)
@@ -720,6 +735,7 @@ app.include_router(plans_router)
 app.include_router(profile_router)
 app.include_router(reference_router)
 app.include_router(data_rights_router)
+app.include_router(auth_router)
 
 if __name__ == "__main__":
     import uvicorn

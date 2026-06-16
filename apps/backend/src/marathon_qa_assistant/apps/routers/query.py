@@ -2,8 +2,11 @@
 
 import asyncio
 import json
+import logging
 import time
 from typing import Any, Dict, Optional, Tuple
+
+_logger = logging.getLogger("workflow_engine")
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -256,16 +259,32 @@ async def stream_query(request: QueryRequest, http_request: Request):
                         return
             # 状态判断（同 execute_query）
             workflow_error = state.get("workflow_error") if isinstance(state.get("workflow_error"), dict) else {}
-            if workflow_error:
+            has_valid_plan = (
+                isinstance(state.get("structured_training_plan"), dict)
+                and bool((state.get("structured_training_plan") or {}).get("week_plans"))
+            )
+            # AUDIT_RETRY_EXHAUSTED 且结构化计划已构建时降级为 partial 而非直接 workflow_error，
+            # 避免 critic_auditor 重试耗尽导致前端丢失 executor 已生成的 structured_training_plan。
+            if workflow_error and not (workflow_error.get("error_code") == "AUDIT_RETRY_EXHAUSTED" and has_valid_plan):
                 yield _sse_pack({"type": "workflow_error", "workflow_error": workflow_error})
                 return
             workflow_pause = state.get("workflow_pause") if isinstance(state.get("workflow_pause"), dict) else {}
             mode = str(state.get("mode") or "").strip().lower()
+            audit_partial = bool(workflow_error and workflow_error.get("error_code") == "AUDIT_RETRY_EXHAUSTED" and has_valid_plan)
             generation_status = "workflow_pause" if workflow_pause.get("status") == "awaiting_user_input" else (
                 "security_intercepted" if mode == "intercepted" else "complete"
             )
             message = "需要补齐信息，工作流已暂停。" if generation_status == "workflow_pause" else (
-                "请求已被安全护栏拦截，工作流已终止。" if generation_status == "security_intercepted" else "完整工作流已返回。"
+                "请求已被安全护栏拦截，工作流已终止。" if generation_status == "security_intercepted" else (
+                    "训练计划骨架已构建，审计重试耗尽，返回已完成的结构化计划。" if audit_partial else "完整工作流已返回。"
+                )
+            )
+            _logger.info(
+                "[stream] pre-response: is_fallback=%s stp_type=%s has_valid_plan=%s workflow_error=%s",
+                is_fallback,
+                type(state.get("structured_training_plan")).__name__,
+                has_valid_plan,
+                (state.get("workflow_error") or {}).get("error_code"),
             )
             response = _project_query_response_for_role(
                 _query_response_from_state(state, effective_request, generation_status=generation_status, message=message, user_id=user_id),

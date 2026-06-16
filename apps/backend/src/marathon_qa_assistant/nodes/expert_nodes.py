@@ -4,8 +4,65 @@ import json
 import logging
 import re
 import time
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
+
+# -------- DailyExpertPack 辅助 (mode=team only) --------------------------------
+
+# 每个专家节点在 mode=team 时往 prompt 末尾追加此格式请求，LLM 在回答末尾输出 JSON 块。
+_TEAM_CARD_NUTRITIONIST = (
+    "\n\n[仅系统读取，不对用户显示] 在你的回答末尾另起一行，输出以下 JSON（值填入实际内容，不要添加任何注释或解释）：\n"
+    '<EXPERT_CARD>{"post_workout_recovery":"","pre_workout_fuel":"","hydration_plan":"","supplement_timing":"","daily_nutrition_notes":""}</EXPERT_CARD>'
+)
+
+_TEAM_CARD_CONDITIONING = (
+    "\n\n[仅系统读取，不对用户显示] 在你的回答末尾另起一行，输出以下 JSON（值填入实际内容，不要添加任何注释或解释）：\n"
+    '<EXPERT_CARD>{"session_design":"","strength_work":"","load_recommendation":"","periodization_note":"","training_emphasis":""}</EXPERT_CARD>'
+)
+
+_TEAM_CARD_PSYCHOLOGIST = (
+    "\n\n[仅系统读取，不对用户显示] 在你的回答末尾另起一行，输出以下 JSON（值填入实际内容，不要添加任何注释或解释）：\n"
+    '<EXPERT_CARD>{"motivation_state":"","mental_challenge":"","mental_tips":"","goal_alignment":"","coping_strategy":""}</EXPERT_CARD>'
+)
+
+_TEAM_CARD_REHAB = (
+    "\n\n[仅系统读取，不对用户显示] 在你的回答末尾另起一行，输出以下 JSON（值填入实际内容，rehab_movements 须为字符串列表，should_modify_training 须为 boolean）：\n"
+    '<EXPERT_CARD>{"injury_status":"none","risk_level":"low","rehab_movements":[],"recovery_advice":"","should_modify_training":false,"modification_suggestion":""}</EXPERT_CARD>'
+)
+
+_EXPERT_CARD_RE = re.compile(r"<EXPERT_CARD>\s*(\{[^<]{0,2000}\})\s*</EXPERT_CARD>", re.DOTALL)
+_EXPERT_CARD_STRIP_RE = re.compile(
+    r"\s*\[仅系统读取[^\]]*\][^\n]*\n<EXPERT_CARD>.*?</EXPERT_CARD>\s*",
+    re.DOTALL,
+)
+
+
+def _extract_expert_card_json(content: str) -> Optional[Dict[str, Any]]:
+    """从 LLM 输出中提取 <EXPERT_CARD> JSON 块，解析失败时返回 None。"""
+    match = _EXPERT_CARD_RE.search(content)
+    if not match:
+        return None
+    try:
+        result = json.loads(match.group(1))
+        return result if isinstance(result, dict) else None
+    except Exception:
+        return None
+
+
+def _strip_expert_card(content: str) -> str:
+    """移除 LLM 输出末尾的 EXPERT_CARD 指令块，保留面向用户的正文。"""
+    stripped = _EXPERT_CARD_STRIP_RE.sub("", content)
+    return re.sub(r"\s*<EXPERT_CARD>.*?</EXPERT_CARD>\s*", "", stripped, flags=re.DOTALL).strip()
+
+
+def _pack_merge(state: Dict[str, Any], key: str, value: Dict[str, Any]) -> Dict[str, Any]:
+    """将专家当日卡片合并入 daily_expert_pack，保留其他专家已写入的数据。"""
+    pack = dict(state.get("daily_expert_pack") or {})
+    pack[key] = value
+    pack.setdefault("generated_at", datetime.now(timezone.utc).isoformat())
+    return pack
+
 
 try:
     from langchain_core.runnables import RunnableConfig
@@ -432,13 +489,29 @@ async def coach_node(state: IntegratedState, config: RunnableConfig) -> dict:
         ),
         query_terms=("marathon training", "periodization", "workout prescription", "long run", "threshold", "interval"),
     )
+    is_team_mode = state.get("mode") == "team"
     intent = str(state.get("intent_type") or "qa").lower()
     instruction = (
         "根据用户目标和现有证据生成训练计划建议，优先说明负荷、恢复和专项约束。"
         if intent == "plan"
         else "直接回答训练问题，给出可执行建议，不要反问。"
     )
+    if is_team_mode:
+        instruction += _TEAM_CARD_CONDITIONING
     content, usage = await _run_expert_llm("Coach", instruction, state, config, "教练建议")
+    # 提取体能师结构化卡片（mode=team）
+    daily_expert_pack = state.get("daily_expert_pack")
+    if is_team_mode:
+        card_data = _extract_expert_card_json(content)
+        content = _strip_expert_card(content)
+        conditioning_day: Dict[str, Any] = {
+            "session_design": str((card_data or {}).get("session_design") or ""),
+            "strength_work": str((card_data or {}).get("strength_work") or ""),
+            "load_recommendation": str((card_data or {}).get("load_recommendation") or ""),
+            "periodization_note": str((card_data or {}).get("periodization_note") or ""),
+            "training_emphasis": str((card_data or {}).get("training_emphasis") or ""),
+        }
+        daily_expert_pack = _pack_merge(state, "conditioning", conditioning_day)
     trace = _expert_evidence_trace_for_role(
         state=state,
         role_key="coach",
@@ -455,7 +528,7 @@ async def coach_node(state: IntegratedState, config: RunnableConfig) -> dict:
             "long run",
         ),
     )
-    return {
+    result = {
         "draft_plan": content,
         "rag_sources": state.get("rag_sources", []),
         "evidence_bundle": state.get("evidence_bundle"),
@@ -464,6 +537,9 @@ async def coach_node(state: IntegratedState, config: RunnableConfig) -> dict:
         "token_usage": usage,
         "reasoning_log": ["[coach] generated training guidance"],
     }
+    if daily_expert_pack is not None:
+        result["daily_expert_pack"] = daily_expert_pack
+    return result
 
 
 async def adaptive_coach_node(state: IntegratedState, config: RunnableConfig) -> dict:
@@ -527,16 +603,32 @@ async def nutritionist_node(state: IntegratedState, config: RunnableConfig) -> d
         domain_keywords=("nutrition", "hydration", "carbohydrate", "protein", "fluid", "sodium", "fueling"),
         query_terms=("nutrition", "hydration", "carbohydrate", "protein", "fluid", "sodium", "race fueling"),
     )
+    is_team_mode = state.get("mode") == "team"
     draft = str(state.get("draft_plan") or state.get("final_report") or "").strip()
     instruction = "围绕当前训练计划给出营养、补水和恢复建议；只覆盖计划中已经出现或用户明确询问的训练类型。"
+    if is_team_mode:
+        instruction += _TEAM_CARD_NUTRITIONIST
     content, usage = await _run_expert_llm("Nutritionist", instruction, state, config, "营养支持建议")
+    # 提取营养师结构化卡片（mode=team）
+    daily_expert_pack = state.get("daily_expert_pack")
+    if is_team_mode:
+        card_data = _extract_expert_card_json(content)
+        content = _strip_expert_card(content)
+        nutrition_day: Dict[str, Any] = {
+            "post_workout_recovery": str((card_data or {}).get("post_workout_recovery") or ""),
+            "pre_workout_fuel": str((card_data or {}).get("pre_workout_fuel") or ""),
+            "hydration_plan": str((card_data or {}).get("hydration_plan") or ""),
+            "supplement_timing": str((card_data or {}).get("supplement_timing") or ""),
+            "daily_nutrition_notes": str((card_data or {}).get("daily_nutrition_notes") or ""),
+        }
+        daily_expert_pack = _pack_merge(state, "nutritionist", nutrition_day)
     merged = (draft + "\n\n" + content).strip() if draft else content
     trace = _expert_evidence_trace_for_role(
         state=state,
         role_key="nutritionist",
         domain_keywords=("nutrition", "hydration", "carbohydrate", "protein", "fluid", "sodium", "fueling"),
     )
-    return {
+    result = {
         "draft_plan": merged,
         "rag_sources": state.get("rag_sources", []),
         "evidence_bundle": state.get("evidence_bundle"),
@@ -546,6 +638,9 @@ async def nutritionist_node(state: IntegratedState, config: RunnableConfig) -> d
         "token_usage": usage,
         "reasoning_log": ["[nutritionist] added nutrition guidance"],
     }
+    if daily_expert_pack is not None:
+        result["daily_expert_pack"] = daily_expert_pack
+    return result
 
 
 def _psychology_scenarios(state: IntegratedState) -> List[str]:
@@ -574,6 +669,7 @@ async def psychologist_node(state: IntegratedState, config: RunnableConfig) -> d
         domain_keywords=("sport_psychology", "psychology", "psychological", "mental", "confidence", "anxiety", "self-talk", "visualization", "imagery", "goal setting"),
         query_terms=("sport psychology", "mental skills", "self-talk", "imagery", "confidence", "anxiety", "goal setting"),
     )
+    is_team_mode = state.get("mode") == "team"
     draft = str(state.get("draft_plan") or state.get("final_report") or "").strip()
     scenarios = _psychology_scenarios(state)
     trace = _expert_evidence_trace_for_role(
@@ -581,7 +677,7 @@ async def psychologist_node(state: IntegratedState, config: RunnableConfig) -> d
         role_key="psychologist",
         domain_keywords=("sport_psychology", "psychology", "psychological", "mental", "confidence", "anxiety", "self-talk", "visualization", "imagery", "goal setting"),
     )
-    if not scenarios:
+    if not scenarios and not is_team_mode:
         return {
             "draft_plan": draft,
             "rag_sources": state.get("rag_sources", []),
@@ -595,9 +691,24 @@ async def psychologist_node(state: IntegratedState, config: RunnableConfig) -> d
         }
 
     instruction = "围绕赛前心理准备、长距离训练和高强度训练的心理支持给出建议；不得修改训练处方、营养或医疗决策。"
+    if is_team_mode:
+        instruction += _TEAM_CARD_PSYCHOLOGIST
     content, usage = await _run_expert_llm("Sport Psychologist", instruction, state, config, "心理准备参考")
+    # 提取心理学家结构化卡片（mode=team）
+    daily_expert_pack = state.get("daily_expert_pack")
+    if is_team_mode:
+        card_data = _extract_expert_card_json(content)
+        content = _strip_expert_card(content)
+        psychology_day: Dict[str, Any] = {
+            "motivation_state": str((card_data or {}).get("motivation_state") or ""),
+            "mental_challenge": str((card_data or {}).get("mental_challenge") or ""),
+            "mental_tips": str((card_data or {}).get("mental_tips") or ""),
+            "goal_alignment": str((card_data or {}).get("goal_alignment") or ""),
+            "coping_strategy": str((card_data or {}).get("coping_strategy") or ""),
+        }
+        daily_expert_pack = _pack_merge(state, "psychologist", psychology_day)
     merged = (draft + "\n\n" + content).strip() if draft else content
-    return {
+    result = {
         "draft_plan": merged,
         "rag_sources": state.get("rag_sources", []),
         "evidence_bundle": state.get("evidence_bundle"),
@@ -608,16 +719,19 @@ async def psychologist_node(state: IntegratedState, config: RunnableConfig) -> d
         "token_usage": usage,
         "reasoning_log": ["[psychologist] added psychology guidance"],
     }
+    if daily_expert_pack is not None:
+        result["daily_expert_pack"] = daily_expert_pack
+    return result
 
 
 async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict:
-    del config
     state = await _augment_state_with_role_evidence(
         state,
         role_key="therapist",
         domain_keywords=("rehab", "rehabilitation", "injury", "pain", "medical", "medical_safety", "safety", "contraindication", "return to run", "tendon", "knee"),
         query_terms=("running injury", "pain", "rehabilitation", "medical safety", "return to run", "red flags"),
     )
+    is_team_mode = state.get("mode") == "team"
     draft = str(state.get("draft_plan") or state.get("final_report") or "")
     query = str(state.get("query") or "")
     medical = state.get("medical_constraints") if isinstance(state.get("medical_constraints"), dict) else {}
@@ -639,7 +753,38 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
         role_key="therapist",
         domain_keywords=("rehab", "rehabilitation", "injury", "pain", "medical", "medical_safety", "safety", "contraindication", "return to run", "tendon", "knee"),
     )
-    return {
+    # mode=team：额外调用 LLM 生成康复结构化卡片
+    daily_expert_pack = state.get("daily_expert_pack")
+    rehab_usage = ensure_usage(state.get("token_usage"))
+    if is_team_mode:
+        rehab_instruction = (
+            "作为康复师，识别用户当前伤病状态，给出康复动作和恢复建议，"
+            "如有需要说明是否应调整训练计划。"
+        ) + _TEAM_CARD_REHAB
+        try:
+            rehab_content, rehab_usage = await _run_expert_llm("Therapist", rehab_instruction, state, config, "康复建议")
+            card_data = _extract_expert_card_json(rehab_content)
+        except Exception:
+            card_data = None
+        movements_raw = (card_data or {}).get("rehab_movements")
+        if isinstance(movements_raw, list):
+            movements = [str(m) for m in movements_raw]
+        elif isinstance(movements_raw, str) and movements_raw:
+            movements = [movements_raw]
+        else:
+            movements = []
+        modify_raw = (card_data or {}).get("should_modify_training")
+        should_modify = bool(modify_raw) if isinstance(modify_raw, bool) else str(modify_raw).lower() == "true"
+        rehab_day: Dict[str, Any] = {
+            "injury_status": str((card_data or {}).get("injury_status") or ("active" if not passed else "none")),
+            "risk_level": str((card_data or {}).get("risk_level") or ("high" if not passed else "low")),
+            "rehab_movements": movements,
+            "recovery_advice": str((card_data or {}).get("recovery_advice") or feedback_text),
+            "should_modify_training": should_modify,
+            "modification_suggestion": str((card_data or {}).get("modification_suggestion") or ""),
+        }
+        daily_expert_pack = _pack_merge(state, "rehab", rehab_day)
+    result = {
         "therapist_passed": passed,
         "medical_constraints": medical_constraints,
         "review_feedback": feedback_text,
@@ -648,9 +793,12 @@ async def therapist_node(state: IntegratedState, config: RunnableConfig) -> dict
         "evidence_bundle": state.get("evidence_bundle"),
         "role_evidence_queries": state.get("role_evidence_queries", {}),
         "expert_evidence_trace": _merge_expert_evidence_trace(state, "therapist", trace),
-        "token_usage": ensure_usage(state.get("token_usage")),
+        "token_usage": rehab_usage,
         "reasoning_log": [f"[therapist] safety review {'passed' if passed else 'blocked'}"],
     }
+    if daily_expert_pack is not None:
+        result["daily_expert_pack"] = daily_expert_pack
+    return result
 
 
 _FEEDBACK_TRIPLE_MAP: Dict[str, Tuple[str, str, str]] = {
@@ -906,7 +1054,11 @@ def _run_hard_rule_checks(state: IntegratedState) -> Dict[str, Any]:
             from marathon_qa_assistant.core.half_marathon_validator import _validate_workout_duration_bounds
 
             for issue in _validate_workout_duration_bounds(structured_plan.get("week_plans", []) or []):
-                feedback.append(f"[{issue.constraint_id}] {issue.message} -> {issue.recommendation}")
+                # severity=error（如时长超文献上限）才阻塞生成；warning（如 59min vs 下限 60min 的
+                # 边缘违规）不阻塞——否则 auto-repair 改了 main_set 里的某个时长数字后，validate 仍可能
+                # 读到文本里的另一个数字而判 fail，迭代耗尽 fail loud → 500。warning 本就是"提示非阻塞"语义。
+                if getattr(issue, "severity", "warning") == "error":
+                    feedback.append(f"[{issue.constraint_id}] {issue.message} -> {issue.recommendation}")
         except Exception:
             pass
 
